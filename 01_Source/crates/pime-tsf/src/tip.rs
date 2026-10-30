@@ -756,6 +756,7 @@ pub(crate) unsafe fn create_instance(iid: *const GUID, object: *mut *mut c_void)
 #[cfg(test)]
 mod tests {
     use super::*;
+    use windows::Win32::UI::TextServices::ITfTextInputProcessor;
 
     #[test]
     fn guard_passes_a_value_through_and_turns_a_panic_into_the_fallback() {
@@ -822,15 +823,27 @@ mod tests {
     }
 
     #[test]
-    fn the_class_factory_helper_refuses_nothing_it_can_answer_and_never_panics() {
-        let mut out: *mut c_void = std::ptr::null_mut();
-        let iid = ITfTextInputProcessorEx::IID;
-        // SAFETY: valid pointers to live locals.
-        unsafe {
-            assert!(create_instance(&iid, &mut out).is_ok());
-            assert!(!out.is_null());
-            // release the reference we were handed
-            drop(ITfTextInputProcessorEx::from_raw(out));
+    fn the_class_factory_helper_answers_every_interface_tsf_may_ask_for() {
+        // TSF activates through ITfTextInputProcessor or ITfTextInputProcessorEx; COM identity goes through IUnknown
+        for iid in [
+            ITfTextInputProcessorEx::IID,
+            ITfTextInputProcessor::IID,
+            IUnknown::IID,
+            ITfKeyEventSink::IID,
+        ] {
+            let mut out: *mut c_void = std::ptr::null_mut();
+            // SAFETY: valid pointers to live locals; the reference handed back is released at once.
+            unsafe {
+                assert!(create_instance(&iid, &mut out).is_ok(), "{iid:?}");
+                assert!(!out.is_null(), "{iid:?}");
+                drop(IUnknown::from_raw(out));
+            }
         }
+        let mut out: *mut c_void = std::ptr::null_mut();
+        // SAFETY: as above; an interface the object does not implement is an error, not a crash.
+        unsafe {
+            assert!(create_instance(&GUID::from_u128(7), &mut out).is_err());
+        }
+        assert!(out.is_null());
     }
 }
