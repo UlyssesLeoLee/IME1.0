@@ -2,7 +2,7 @@
 //! real usage afterwards, refuse when the budget is used up. This is only the bookkeeping; the HTTP client is not
 //! part of the core.
 
-use crate::error::{fail, Result};
+use crate::error::{Result, fail};
 
 /// A reservation; settle or release it exactly once.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

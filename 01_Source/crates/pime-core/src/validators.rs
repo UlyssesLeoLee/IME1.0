@@ -121,11 +121,12 @@ fn rust_char_literal(t: &[char], i: usize) -> Option<usize> {
             }
         }
         // any single unit except a line terminator
-        if let Some(c) = at(2) {
-            if bmp(c) && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}') && at(3) == Some('\'')
-            {
-                return Some(4);
-            }
+        if let Some(c) = at(2)
+            && bmp(c)
+            && !matches!(c, '\n' | '\r' | '\u{2028}' | '\u{2029}')
+            && at(3) == Some('\'')
+        {
+            return Some(4);
         }
         return None;
     }
@@ -229,13 +230,12 @@ pub fn mask_chars(text: &[char], style: Style) -> Vec<char> {
                 } else if style == Style::Rust
                     && (c == 'r' || c == 'b')
                     && !(i > 0 && is_word(text[i - 1]))
+                    && let Some((len, hashes)) = rust_raw_opener(text, i)
                 {
-                    if let Some((len, hashes)) = rust_raw_opener(text, i) {
-                        let mut closer = vec!['"'];
-                        closer.extend(std::iter::repeat_n('#', hashes));
-                        let e = find_seq(text, &closer, i + len);
-                        end = Some(e.map_or(n, |e| e + 1 + hashes));
-                    }
+                    let mut closer = vec!['"'];
+                    closer.extend(std::iter::repeat_n('#', hashes));
+                    let e = find_seq(text, &closer, i + len);
+                    end = Some(e.map_or(n, |e| e + 1 + hashes));
                 }
                 if end.is_none() && c == '"' {
                     end = Some(scan_quoted(text, i, '"', Esc::Backslash));
@@ -741,12 +741,11 @@ fn has_att_immediate(s: &[char]) -> bool {
 /// `/\[[^\]]+\]/`
 fn has_bracket_operand(s: &[char]) -> bool {
     for i in 0..s.len() {
-        if s[i] == '[' {
-            if let Some(j) = (i + 1..s.len()).find(|&k| s[k] == ']') {
-                if j >= i + 2 {
-                    return true;
-                }
-            }
+        if s[i] == '['
+            && let Some(j) = (i + 1..s.len()).find(|&k| s[k] == ']')
+            && j >= i + 2
+        {
+            return true;
         }
     }
     false
@@ -1030,12 +1029,14 @@ mod tests {
             codes("assembly", "movq %rbx, %rax\n", &[("syntax", "intel")]),
             vec!["ASM_SYNTAX_MIX"]
         );
-        assert!(codes(
-            "assembly",
-            "movq %rbx, %rax\n",
-            &[("syntax", "att"), ("assembler", "gas")]
-        )
-        .is_empty());
+        assert!(
+            codes(
+                "assembly",
+                "movq %rbx, %rax\n",
+                &[("syntax", "att"), ("assembler", "gas")]
+            )
+            .is_empty()
+        );
         assert_eq!(codes("machine-code", "GG", &[]), vec!["INVALID_HEX"]);
         assert_eq!(codes("machine-code", "90 C", &[]), vec!["ODD_HEX_LENGTH"]);
         assert!(codes("machine-code", "0x90, 0xC3\n// comment\n48 89 d8", &[]).is_empty());

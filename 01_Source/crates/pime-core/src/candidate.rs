@@ -1,7 +1,7 @@
 //! Candidate model (FR-006, DD-02 section 4.2): closed enums with a strict string round trip, deterministic
 //! ranking and de-duplication that keeps every contributing source (UT-006, UT-007, UT-008).
 
-use crate::error::{fail, PimeError, Result};
+use crate::error::{PimeError, Result, fail};
 use crate::json::Json;
 use crate::pack::render_plain;
 use crate::util::js_trim;

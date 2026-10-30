@@ -1,6 +1,6 @@
 # Acceptance checklist — what is automated and what still needs a person
 
-v0.2: the VS Code scenarios are now automated by `uat/` (24 scenarios on real VS Code 1.137.0, all passed on 2026-10-30,
+v0.2: the VS Code scenarios are now automated by `tests/uat/` (24 scenarios on real VS Code 1.137.0, all passed on 2026-10-30,
 see `02_Verification/STATUS.md`). The items below that are NOT automated have **not been executed** by anyone.
 
 ## Automated (Playwright, real VS Code, mock provider)

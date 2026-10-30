@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use pime_core::clock::ManualClock;
-use pime_core::json::{parse, Json, Limits};
+use pime_core::json::{Json, Limits, parse};
 use pime_core::protocol::Core;
 
 pub const ENTROPY: &str = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";

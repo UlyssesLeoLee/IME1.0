@@ -3,7 +3,7 @@
 //! well-formed placeholder, and user packs may only add triggers/keywords (never replace built-in behaviour).
 
 use crate::candidate::CandidateKind;
-use crate::error::{fail, PimeError, Result};
+use crate::error::{PimeError, Result, fail};
 use crate::json::{self, Json, Limits};
 use crate::util::utf16_len;
 use crate::validators::Dialect;
@@ -321,7 +321,7 @@ fn parse_trigger(t: &Json, ids: &mut HashSet<String>, user: bool) -> Result<Trig
             return invalid(format!(
                 "trigger id missing or duplicate: {}",
                 other.and_then(Json::as_str).unwrap_or("")
-            ))
+            ));
         }
     };
     ids.insert(id.clone());
@@ -489,7 +489,7 @@ pub fn parse_pack(pack: &Json, builtin: bool, bytes: usize) -> Result<Pack> {
                 _ => {
                     return invalid(format!(
                         "dialect axis {axis} needs a default among its values"
-                    ))
+                    ));
                 }
             }
         }

@@ -5,8 +5,8 @@
 mod common;
 
 use common::*;
-use pime_core::json::{parse, Json, Limits};
-use pime_core::protocol::{serve_with, Core};
+use pime_core::json::{Json, Limits, parse};
+use pime_core::protocol::{Core, serve_with};
 use std::io::{Cursor, Write};
 use std::process::{Command, Stdio};
 

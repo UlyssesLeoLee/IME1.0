@@ -1,15 +1,43 @@
 [package]
 name = "pime-core"
 version = "0.2.0"
-edition = "2021"
+edition = "2024"
 license = "MIT"
 description = "Programming IME local deterministic core: pure logic, JSON Lines protocol 0.3, a superset of 0.2 (zero third-party dependencies)"
 
 # Deliberately NO [dependencies]: the core handles untrusted text and must stay auditable.
 
+# All integration tests live in 01_Source/tests/rust (one home for every test script). The unit tests that need private access stay
+# inside the modules of src/ (#[cfg(test)]); everything else is listed here explicitly.
+autotests = false
+
 [lib]
 name = "pime_core"
 path = "src/lib.rs"
+
+[[test]]
+name = "benchmark"
+path = "../../tests/rust/benchmark.rs"
+
+[[test]]
+name = "parity"
+path = "../../tests/rust/parity.rs"
+
+[[test]]
+name = "parity_edit"
+path = "../../tests/rust/parity_edit.rs"
+
+[[test]]
+name = "protocol"
+path = "../../tests/rust/protocol.rs"
+
+[[test]]
+name = "protocol_v03"
+path = "../../tests/rust/protocol_v03.rs"
+
+[[test]]
+name = "protocol_v03_edit"
+path = "../../tests/rust/protocol_v03_edit.rs"
 
 [[bin]]
 name = "pime-core"

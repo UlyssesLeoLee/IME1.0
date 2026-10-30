@@ -1,7 +1,8 @@
 'use strict';
 // Regenerates the shared golden fixtures from the JavaScript engine. The JS unit tests re-check them on every run
 // (so a behaviour change must be a deliberate fixture update), and the Rust core must reproduce them exactly.
-// Usage: node tests/gen-fixtures.js
+// Usage: node tests/gen-fixtures.js            compare only (default)
+//        node tests/gen-fixtures.js --write    regenerate the fixtures (a deliberate behaviour change)
 const fs = require('node:fs');
 const path = require('node:path');
 const core = path.join(__dirname, '..', 'editor-bridges', 'vscode', 'src', 'core');
@@ -13,7 +14,8 @@ const secrets = require(path.join(core, 'secrets'));
 const out = path.join(__dirname, 'fixtures');
 fs.mkdirSync(out, {recursive: true});
 // --check compares instead of writing, so tests can detect drift without touching files other tools are reading.
-const CHECK = process.argv.includes('--check');
+// Safe by default: without an explicit --write the script only COMPARES (so regression runs never regenerate the golden data).
+const CHECK = !process.argv.includes('--write');
 let drift = 0;
 const write = (name, data) => {
   const text = JSON.stringify(data, null, 1) + '\n', file = path.join(out, name);

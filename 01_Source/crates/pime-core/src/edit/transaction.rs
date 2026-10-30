@@ -16,8 +16,8 @@
 //! plan, and a `finish_apply` that arrives too late is `EDIT_UNKNOWN`, never `APPLIED`. Time is always passed in
 //! (`now_ms`), so tests use a manual clock.
 
-use crate::context::{assert_full_file_writable, Snapshot};
-use crate::error::{fail, Result};
+use crate::context::{Snapshot, assert_full_file_writable};
+use crate::error::{Result, fail};
 use crate::ids::IdGen;
 use crate::sha256::sha256_hex;
 use crate::textrange::{self, Edit, Range};
@@ -264,12 +264,11 @@ impl Coordinator {
     /// Plans whose `finish_apply` did not arrive in time have an unknown result from now on.
     fn expire_pending(&mut self, now_ms: u64) {
         for p in self.pending.values() {
-            if now_ms > p.deadline {
-                if let Some(plan) = self.plans.get_mut(&p.plan_id) {
-                    if plan.status == Status::Prepared {
-                        plan.status = Status::Unknown;
-                    }
-                }
+            if now_ms > p.deadline
+                && let Some(plan) = self.plans.get_mut(&p.plan_id)
+                && plan.status == Status::Prepared
+            {
+                plan.status = Status::Unknown;
             }
         }
     }
@@ -516,7 +515,7 @@ impl Coordinator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::context::{make_snapshot, SnapshotInput};
+    use crate::context::{SnapshotInput, make_snapshot};
     use crate::textrange::pos;
 
     const URI: &str = "file:///w/a.rs";
@@ -933,7 +932,7 @@ mod tests {
             "still within the deadline"
         );
         rig.now += 81; // the deadline (80 ms) passes and the bridge never reports
-                       // a second prepare of the same plan notices: the plan is dead
+        // a second prepare of the same plan notices: the plan is dead
         assert_eq!(code(rig.prep(&plan, &doc)), "EDIT_UNKNOWN");
         assert_eq!(rig.co.status_of(rig.now, &plan.id), "UNKNOWN");
         // the late finish does not turn into APPLIED even though the document looks right
@@ -981,10 +980,11 @@ mod tests {
             .unwrap();
         let outcome = doc.write(&edits, Mode::Ok);
         rig.now += 80;
-        assert!(rig
-            .co
-            .finish_apply(rig.now, &token, outcome, Some(&doc.state()))
-            .is_ok());
+        assert!(
+            rig.co
+                .finish_apply(rig.now, &token, outcome, Some(&doc.state()))
+                .is_ok()
+        );
     }
 
     #[test]

@@ -1,18 +1,18 @@
 {
  "summary": {
-  "generated": "2026-10-30T07:16:09.068Z",
-  "node": "v22.12.0",
+  "generated": "2026-10-30T09:34:54.925Z",
+  "node": "v26.13.0",
   "js": {
-   "total": 81,
-   "pass": 81
+   "total": 90,
+   "pass": 90
   },
   "rust": {
-   "total": 101,
-   "pass": 101
+   "total": 209,
+   "pass": 209
   },
   "uat": {
-   "total": 24,
-   "pass": 24
+   "total": 31,
+   "pass": 31
   },
   "cases": {
    "UT": {
@@ -33,6 +33,10 @@
     "fail": 0,
     "notRun": 15
    }
+  },
+  "extras": {
+   "total": 15,
+   "pass": 15
   }
  },
  "rows": [
@@ -46,10 +50,10 @@
    "tests": [
     "rust: profiles::tests::ut_001_duplicate_guid_is_rejected",
     "profiles::tests::ut_001_duplicate_guid_is_rejected",
-    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
-    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
     "rust: profiles::tests::ut_001_other_invalid_sets_are_rejected",
-    "profiles::tests::ut_001_other_invalid_sets_are_rejected"
+    "profiles::tests::ut_001_other_invalid_sets_are_rejected",
+    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
+    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids"
    ],
    "failed": [],
    "reason": ""
@@ -417,6 +421,8 @@
    "tests": [
     "js: UT-025 context level capability lattice",
     "UT-025 context level capability lattice",
+    "rust: context::tests::ut_025_context_level_capability_lattice",
+    "context::tests::ut_025_context_level_capability_lattice",
     "rust: scope::tests::ut_025_capability_lattice",
     "scope::tests::ut_025_capability_lattice"
    ],
@@ -457,6 +463,8 @@
    "tests": [
     "js: UT-027 nearby excerpt is minimal and wider requests are refused",
     "UT-027 nearby excerpt is minimal and wider requests are refused",
+    "rust: context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
+    "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
@@ -472,11 +480,14 @@
    "title": "未保存缓冲区优先于磁盘",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
-    "UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk"
+    "UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
+    "rust: context::tests::ut_028_snapshot_hash_comes_from_the_unsaved_buffer_not_the_disk",
+    "context::tests::ut_028_snapshot_hash_comes_from_the_unsaved_buffer_not_the_disk"
    ],
    "failed": [],
    "reason": ""
@@ -486,11 +497,14 @@
    "title": "Grant 正确作用域和撤销",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
-    "UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests"
+    "UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
+    "rust: grants::tests::ut_029_it_015_grants_any_mismatch_is_denied_revoke_stops_new_requests",
+    "grants::tests::ut_029_it_015_grants_any_mismatch_is_denied_revoke_stops_new_requests"
    ],
    "failed": [],
    "reason": ""
@@ -506,6 +520,10 @@
    "tests": [
     "js: UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file",
     "UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file",
+    "rust: context::tests::ut_030_an_l4_disk_snapshot_can_never_be_written_back_and_l1_is_not_whole_file",
+    "context::tests::ut_030_an_l4_disk_snapshot_can_never_be_written_back_and_l1_is_not_whole_file",
+    "rust: edit::transaction::tests::ut_030_an_l4_disk_snapshot_can_never_become_a_plan",
+    "edit::transaction::tests::ut_030_an_l4_disk_snapshot_can_never_become_a_plan",
     "rust: scope::tests::ut_030_disk_content_is_preview_only",
     "scope::tests::ut_030_disk_content_is_preview_only"
    ],
@@ -573,11 +591,14 @@
    "title": "预算预留与结算",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded",
-    "UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded"
+    "UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded",
+    "rust: budget::tests::ut_035_budget_reserve_before_sending_settle_with_real_usage_refuse_when_exceeded",
+    "budget::tests::ut_035_budget_reserve_before_sending_settle_with_real_usage_refuse_when_exceeded"
    ],
    "failed": [],
    "reason": ""
@@ -704,13 +725,16 @@
    "title": "F1 双路径独立状态",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
     "UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
     "js: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
-    "UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language"
+    "UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
+    "rust: edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent",
+    "edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent"
    ],
    "failed": [],
    "reason": ""
@@ -720,11 +744,14 @@
    "title": "全量文本到 Diff 及反向重放",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline",
-    "UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline"
+    "UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline",
+    "rust: edit::diff::tests::ut_045_hunks_replay_to_the_exact_after_hash_with_crlf_and_a_changed_trailing_newline",
+    "edit::diff::tests::ut_045_hunks_replay_to_the_exact_after_hash_with_crlf_and_a_changed_trailing_newline"
    ],
    "failed": [],
    "reason": ""
@@ -734,11 +761,14 @@
    "title": "当前光标处零长插入",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range",
-    "UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range"
+    "UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range",
+    "rust: edit::transaction::tests::ut_046_it_029_zero_length_insert_at_line_3_col_6_with_emoji_changes_only_that_range",
+    "edit::transaction::tests::ut_046_it_029_zero_length_insert_at_line_3_col_6_with_emoji_changes_only_that_range"
    ],
    "failed": [],
    "reason": ""
@@ -748,11 +778,14 @@
    "title": "无用户确认零写入",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)",
-    "UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)"
+    "UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)",
+    "rust: edit::transaction::tests::ut_047_it_030_nothing_is_written_without_explicit_confirmation",
+    "edit::transaction::tests::ut_047_it_030_nothing_is_written_without_explicit_confirmation"
    ],
    "failed": [],
    "reason": ""
@@ -762,11 +795,14 @@
    "title": "按 Hunk 选择后的冲突验证",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result",
-    "UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result"
+    "UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result",
+    "rust: edit::transaction::tests::ut_048_overlapping_edits_are_rejected_disjoint_edits_build_a_reviewable_result",
+    "edit::transaction::tests::ut_048_overlapping_edits_are_rejected_disjoint_edits_build_a_reviewable_result"
    ],
    "failed": [],
    "reason": ""
@@ -776,11 +812,14 @@
    "title": "版本哈希精确比较",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token",
-    "UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token"
+    "UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token",
+    "rust: edit::transaction::tests::ut_049_it_031_st_027_a_changed_version_or_hash_yields_stale_document_and_no_token",
+    "edit::transaction::tests::ut_049_it_031_st_027_a_changed_version_or_hash_yields_stale_document_and_no_token"
    ],
    "failed": [],
    "reason": ""
@@ -790,11 +829,14 @@
    "title": "Apply token 单次使用防重放",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-050 an apply token works once; replay writes nothing more",
-    "UT-050 an apply token works once; replay writes nothing more"
+    "UT-050 an apply token works once; replay writes nothing more",
+    "rust: edit::transaction::tests::ut_050_an_apply_token_works_once_replay_writes_nothing_more",
+    "edit::transaction::tests::ut_050_an_apply_token_works_once_replay_writes_nothing_more"
    ],
    "failed": [],
    "reason": ""
@@ -804,11 +846,16 @@
    "title": "编辑结果未知绝不自动重试",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
-    "UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried"
+    "UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
+    "rust: edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown",
+    "edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown",
+    "rust: edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried",
+    "edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried"
    ],
    "failed": [],
    "reason": ""
@@ -818,13 +865,16 @@
    "title": "语法检查失败禁默认应用",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-052 a failed syntax check disables the default apply",
     "UT-052 a failed syntax check disables the default apply",
     "js: UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation",
-    "UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation"
+    "UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation",
+    "rust: edit::transaction::tests::ut_052_a_failed_syntax_check_disables_the_default_apply",
+    "edit::transaction::tests::ut_052_a_failed_syntax_check_disables_the_default_apply"
    ],
    "failed": [],
    "reason": ""
@@ -848,13 +898,16 @@
    "title": "单文件禁止跨文件计划",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
     "UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
     "js: UT-054 / IT-036 / ST-030 only the current file can be changed",
-    "UT-054 / IT-036 / ST-030 only the current file can be changed"
+    "UT-054 / IT-036 / ST-030 only the current file can be changed",
+    "rust: edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed",
+    "edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed"
    ],
    "failed": [],
    "reason": ""
@@ -951,14 +1004,14 @@
     "rust"
    ],
    "tests": [
-    "rust: install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
-    "install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
     "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
     "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
-    "rust: install_plan::tests::ut_061_uninstall_removes_only_own_guids",
-    "install_plan::tests::ut_061_uninstall_removes_only_own_guids",
+    "rust: install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
+    "install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
     "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
-    "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent"
+    "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
+    "rust: install_plan::tests::ut_061_uninstall_removes_only_own_guids",
+    "install_plan::tests::ut_061_uninstall_removes_only_own_guids"
    ],
    "failed": [],
    "reason": ""
@@ -1007,10 +1060,10 @@
    "tests": [
     "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
     "UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
-    "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
-    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
     "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
     "input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
+    "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
+    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
     "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
     "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes"
    ],
@@ -1174,11 +1227,14 @@
    "title": "补丁不允许未授权或过期",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply",
-    "UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply"
+    "UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply",
+    "rust: edit::transaction::tests::ut_075_it_015_a_revoked_grant_or_an_invalidated_plan_can_neither_prepare_nor_apply",
+    "edit::transaction::tests::ut_075_it_015_a_revoked_grant_or_an_invalidated_plan_can_neither_prepare_nor_apply"
    ],
    "failed": [],
    "reason": ""
@@ -2452,6 +2508,98 @@
    ],
    "failed": [],
    "reason": ""
+  }
+ ],
+ "extras": [
+  {
+   "id": "ANN-01",
+   "kind": "JS",
+   "title": "ANN-01 maskSource reports comment/string spans without changing its masked output",
+   "ok": true
+  },
+  {
+   "id": "ANN-02",
+   "kind": "JS",
+   "title": "ANN-02 stripComments removes comments only, in every supported language",
+   "ok": true
+  },
+  {
+   "id": "ANN-03",
+   "kind": "JS",
+   "title": "ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected",
+   "ok": true
+  },
+  {
+   "id": "ANN-04",
+   "kind": "JS",
+   "title": "ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls",
+   "ok": true
+  },
+  {
+   "id": "ANN-05",
+   "kind": "JS",
+   "title": "ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback",
+   "ok": true
+  },
+  {
+   "id": "ANN-06",
+   "kind": "JS",
+   "title": "ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled",
+   "ok": true
+  },
+  {
+   "id": "ANN-06b",
+   "kind": "JS",
+   "title": "ANN-06b F1 instructions are extended only when a setting is on and the language has line comments",
+   "ok": true
+  },
+  {
+   "id": "ANN-07",
+   "kind": "JS",
+   "title": "ANN-07 symbol index: names of declarations only, comments and strings ignored, capped",
+   "ok": true
+  },
+  {
+   "id": "ANN-10",
+   "kind": "UAT",
+   "title": "ANN-10 with AI off nothing is asked, nothing is sent: the candidate is inserted unchanged (autoComment on by default)",
+   "ok": true
+  },
+  {
+   "id": "ANN-11",
+   "kind": "UAT",
+   "title": "ANN-11 default settings + AI configured: the whole file is sent after consent and the snippet comes back with detailed comments, code unchanged",
+   "ok": true
+  },
+  {
+   "id": "ANN-12",
+   "kind": "UAT",
+   "title": "ANN-12 if the AI changes the code, its comments are discarded and the original snippet is inserted",
+   "ok": true
+  },
+  {
+   "id": "ANN-13",
+   "kind": "UAT",
+   "title": "ANN-13 refusing the consent, or turning autoComment off, inserts the snippet unchanged with zero requests",
+   "ok": true
+  },
+  {
+   "id": "ANN-14",
+   "kind": "UAT",
+   "title": "ANN-14 a file with secrets is never sent for annotation",
+   "ok": true
+  },
+  {
+   "id": "ANN-15",
+   "kind": "UAT",
+   "title": "ANN-15 graph comment: Cypher block above the snippet, built from symbol NAMES of the folder (never their code), destructive statements dropped",
+   "ok": true
+  },
+  {
+   "id": "API-01",
+   "kind": "JS",
+   "title": "API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels",
+   "ok": true
   }
  ]
 }

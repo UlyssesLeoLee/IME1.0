@@ -5,10 +5,10 @@
 mod common;
 
 use common::*;
-use pime_core::json::{parse, Json};
+use pime_core::json::{Json, parse};
 use pime_core::protocol::Core;
 use pime_core::sha256::sha256_hex;
-use pime_core::textrange::{apply_edits, Edit};
+use pime_core::textrange::{Edit, apply_edits};
 use std::io::Write;
 use std::process::{Command, Stdio};
 

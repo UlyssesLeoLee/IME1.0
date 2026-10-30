@@ -7,7 +7,7 @@
 //! change of EOL style or of the trailing newline is a real difference, and a middle part larger than
 //! [`MAX_CELLS`] LCS cells falls back to one replace hunk.
 
-use crate::error::{fail, Result};
+use crate::error::{Result, fail};
 use crate::textrange::{self, Edit};
 
 /// Largest `n * m` for which the LCS table is built (16 MB of `u32`).
@@ -392,7 +392,9 @@ mod tests {
         let lines: Vec<String> = view.lines.iter().map(|(k, t)| format!("{k}{t}")).collect();
         assert_eq!(
             lines,
-            [" line3", " line4", "-line5", "+L5a", "+L5b", " line6", " line7"]
+            [
+                " line3", " line4", "-line5", "+L5a", "+L5b", " line6", " line7"
+            ]
         );
     }
 

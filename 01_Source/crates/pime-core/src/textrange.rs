@@ -2,7 +2,7 @@
 //! Positions are zero-based `(line, character)` in UTF-16 code units, ranges are half-open, and lines end at
 //! `\r\n`, `\r` or `\n` (the VS Code line model). Offsets never split a surrogate pair or a CRLF.
 
-use crate::error::{fail, Result};
+use crate::error::{Result, fail};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Position {

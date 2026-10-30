@@ -7,7 +7,7 @@
 //! The hash of a snapshot is `sha256-utf8`: the lowercase hex SHA-256 of the UTF-8 bytes of the text, identical to
 //! the JavaScript `sha256` helper. All offsets are UTF-16 code units (`range_unit: UTF16_CODE_UNITS`).
 
-use crate::error::{fail, Result};
+use crate::error::{Result, fail};
 use crate::json::Json;
 use crate::sha256::sha256_hex;
 use crate::textrange::{self, Range};
@@ -324,10 +324,12 @@ mod tests {
             assert_full_file_writable(Some(&disk)).unwrap_err().code,
             "FULL_CONTEXT_REQUIRED"
         );
-        assert!(assert_full_file_writable(Some(&disk))
-            .unwrap_err()
-            .message
-            .contains("preview-only"));
+        assert!(
+            assert_full_file_writable(Some(&disk))
+                .unwrap_err()
+                .message
+                .contains("preview-only")
+        );
         assert_eq!(
             assert_full_file_writable(Some(&snap_at("x", "L1")))
                 .unwrap_err()

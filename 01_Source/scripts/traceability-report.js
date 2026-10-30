@@ -27,7 +27,7 @@ const noteExtra = (title, kind, ok) => { for (const id of title.match(EXTRA) || 
 const note = (id, kind, title, ok) => { const e = evidence.get(id); if (!e) return; (ok ? e[kind] : e.failed).push(`${kind}: ${title}`); if (ok && !e[kind].includes(title)) e[kind].push(title); };
 
 // ---- JS (node:test, TAP)
-const js = spawnSync(process.execPath, ['--test', '--test-reporter=tap', 'test/**/*.test.js'], {cwd: path.join(root, '01_Source', 'editor-bridges', 'vscode'), encoding: 'utf8'});
+const js = spawnSync(process.execPath, ['--test', '--test-reporter=tap', '*.test.js'], {cwd: path.join(root, '01_Source', 'tests', 'js'), encoding: 'utf8'});
 let jsTotal = 0, jsPass = 0;
 for (const m of js.stdout.matchAll(/^(not ok|ok) \d+ - (.+)$/gm)) {
   if (/ # (SKIP|TODO)\b/i.test(m[2])) continue; // a skipped test is not evidence (the engine tests skip without PIME_CORE_EXE)
@@ -51,7 +51,7 @@ if (fs.existsSync(rustFile)) {
 let uatTotal = 0, uatPass = 0;
 const uatFile = path.join(verification, 'uat', 'uat-results.json');
 if (fs.existsSync(uatFile)) {
-  const walk = suite => { for (const s of suite.specs || []) { uatTotal++; const ok = s.ok === true; if (ok) uatPass++; for (const id of s.title.match(ID) || []) note(id, 'uat', s.title.replace(/\s*\[.*$/, ''), ok); noteExtra(s.title, 'UAT', ok); } (suite.suites || []).forEach(walk); };
+  const walk = suite => { for (const s of suite.specs || []) { if ((s.tests || []).every(t => t.status === 'skipped')) continue; /* a skipped spec is not evidence (Playwright reports it as ok) */ uatTotal++; const ok = s.ok === true; if (ok) uatPass++; for (const id of s.title.match(ID) || []) note(id, 'uat', s.title.replace(/\s*\[.*$/, ''), ok); noteExtra(s.title, 'UAT', ok); } (suite.suites || []).forEach(walk); };
   (JSON.parse(fs.readFileSync(uatFile, 'utf8')).suites || []).forEach(walk);
 }
 

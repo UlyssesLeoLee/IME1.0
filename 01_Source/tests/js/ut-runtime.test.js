@@ -11,7 +11,7 @@ const ui = core('uimodel');
 const L = core('languages');
 const {CoreSupervisor, InputSession} = core('scheduler');
 
-const root = path.join(__dirname, '..');
+const root = path.join(__dirname, '..', '..', 'editor-bridges', 'vscode');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 test('UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded', () => {

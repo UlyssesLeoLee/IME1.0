@@ -280,7 +280,7 @@ test('NFR-502 purge drops expired plans, used tokens and applied source fragment
 });
 
 test('static: the F1 flow writes only through the coordinator', () => {
-  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'f1.js'), 'utf8');
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'editor-bridges', 'vscode', 'src', 'f1.js'), 'utf8');
   assert.equal((src.match(/applyEdit\(/g) || []).length, 1, 'a single WorkspaceEdit apply site');
   assert.match(src, /rt\.coordinator\.apply\(/);
   assert.doesNotMatch(src, /writeFile|appendFile|sendText|executeCommand\('type'|clipboard/);

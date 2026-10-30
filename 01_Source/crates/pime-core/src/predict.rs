@@ -3,13 +3,13 @@
 
 use crate::analysis::{classify_context, enclosing_block, nearby_identifiers};
 use crate::candidate::{
-    dedupe, rank_candidates, Candidate, CandidateKind, CandidateSource, MatchKind, RankContext,
-    Validation,
+    Candidate, CandidateKind, CandidateSource, MatchKind, RankContext, Validation, dedupe,
+    rank_candidates,
 };
 use crate::error::Result;
-use crate::pack::{dialect_matches, render_plain, Context, Registry, LANGUAGES};
+use crate::pack::{Context, LANGUAGES, Registry, dialect_matches, render_plain};
 use crate::util::{is_js_space, js_trim, utf16_len};
-use crate::validators::{validate_source, Dialect};
+use crate::validators::{Dialect, validate_source};
 use crate::x86;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, OnceLock};
@@ -208,29 +208,28 @@ impl Engine {
             }
         }
         let is_hex_bytes = is_hex_pairs(&key);
-        if out.is_empty() && !is_hex_bytes {
-            if let x86::EncodeResult::Err { code, reason } = x86::encode(&key) {
-                out.push(explain_candidate(
-                    &format!("mc.unresolved:{key}"),
-                    format!("{key}: {code}"),
-                    reason,
-                    Validation::ContextMissing,
-                    "machine-code",
-                    vec![reason.to_string()],
-                ));
-            }
+        if out.is_empty()
+            && !is_hex_bytes
+            && let x86::EncodeResult::Err { code, reason } = x86::encode(&key)
+        {
+            out.push(explain_candidate(
+                &format!("mc.unresolved:{key}"),
+                format!("{key}: {code}"),
+                reason,
+                Validation::ContextMissing,
+                "machine-code",
+                vec![reason.to_string()],
+            ));
         }
-        if is_hex_bytes {
-            if let Some(asm) = x86::disassemble_known(&key) {
-                out.push(explain_candidate(
-                    &format!("mc.disasm:{key}"),
-                    format!("{}  =  {}", key.to_uppercase(), asm),
-                    "Known-form disassembly preview",
-                    Validation::Verified,
-                    "machine-code",
-                    Vec::new(),
-                ));
-            }
+        if is_hex_bytes && let Some(asm) = x86::disassemble_known(&key) {
+            out.push(explain_candidate(
+                &format!("mc.disasm:{key}"),
+                format!("{}  =  {}", key.to_uppercase(), asm),
+                "Known-form disassembly preview",
+                Validation::Verified,
+                "machine-code",
+                Vec::new(),
+            ));
         }
         out.truncate(limit);
         out
@@ -451,8 +450,9 @@ mod tests {
         let o = PredictOptions::new("rust", "cou")
             .before("let counter = 1;\nlet count_total = counter + 2;\n");
         let r = engine().predict(&o).unwrap();
-        assert!(r
-            .iter()
-            .any(|c| c.id == "rust.id.counter" && c.source == CandidateSource::Context));
+        assert!(
+            r.iter()
+                .any(|c| c.id == "rust.id.counter" && c.source == CandidateSource::Context)
+        );
     }
 }

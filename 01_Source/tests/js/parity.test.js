@@ -10,7 +10,7 @@ const {spawnSync} = require('node:child_process');
 const {core} = require('./helpers');
 const L = core('languages'), V = core('validators'), x86 = core('x86'), secrets = core('secrets');
 
-const dir = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures');
+const dir = path.join(__dirname, '..', 'fixtures');
 const load = name => JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'));
 
 test('PARITY predict fixtures (94 cases) match the JS engine', () => {
@@ -46,7 +46,7 @@ test('PARITY secret fixtures match the JS scanner', () => {
   }
 });
 test('PARITY fixtures are exactly what the generator produces (no hand edits)', () => {
-  const gen = path.join(__dirname, '..', '..', '..', 'tests', 'gen-fixtures.js');
+  const gen = path.join(__dirname, '..', 'gen-fixtures.js');
   const r = spawnSync(process.execPath, [gen, '--check'], {encoding: 'utf8'});
   assert.equal(r.status, 0, r.stderr + r.stdout);
 });

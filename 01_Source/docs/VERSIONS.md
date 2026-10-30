@@ -8,12 +8,12 @@ and the Anthropic API version pages. "Latest" is only as good as those sources o
 |---|---|---|---|---|
 | Playwright (`@playwright/test`) | UAT | 1.64.1 (pinned) | 1.64.1 | current |
 | Rust toolchain | core, probes | 1.99.1 stable | 1.99.1 | current |
-| Rust edition | `pime-core` | 2021 -> **2024 planned** (see below) | 2024 | being upgraded |
+| Rust edition | `pime-core` | **2024** (was 2021) | 2024 | upgraded; 209 tests, clippy `-D warnings` and fmt clean |
 | wasm-bindgen | P0 probe only | 0.2.130 | 0.2.130 | current (CLI could not be installed on this machine: gnu toolchain without `dlltool`) |
 | OpenSSL (Git for Windows) | UAT test certificate | 3.5.7 | - | current build |
-| Node.js | tests, UAT, tools (not the extension) | 22.12.0 default; **26.13.0 installed side by side and used for tests** | LTS 26.13.0 | upgraded for the project; the machine default was not switched |
+| Node.js | tests, UAT, tools (not the extension) | 22.12.0 is still the machine default; **26.13.0 installed side by side (nvm) and used for every verification run** | LTS 26.13.0 | upgraded for the project; the machine default was deliberately not switched (`nvm use 26.13.0` switches it) |
 | npm | tests, UAT | **12.2.1** (under Node 26) | 12.2.1 | upgraded (needs Node 22.22.2 / 24.15 / 26+) |
-| VS Code | UAT host, extension target | 1.137.0 -> **1.144.0 planned**; `engines.vscode` stays `^1.94.0` | 1.144.0 | being upgraded |
+| VS Code | UAT host, extension target | **1.144.0** installed (was 1.137.0; installer sha256 and Microsoft signature verified); `engines.vscode` stays `^1.94.0` | 1.144.0 | upgraded; the UAT was re-run on 1.144.0 (see `02_Verification/STATUS.md`) |
 | Anthropic API version header | `anthropic-messages` adapter | **2026-10-21** default (was 2023-06-01); per-provider `apiVersion` override | 2026-10-21 | upgraded; request shape sends none of the removed parameters (temperature/top_p/top_k) |
 | OpenAI Responses API | `openai-responses` adapter | `instructions`, `input`, `max_output_tokens`, `reasoning.effort`; reads `output_text`/`output[].content[].text` and `usage.input_tokens/output_tokens` | OpenAI recommends Responses for new projects | confirmed against the API reference |
 | OpenAI Chat Completions | `openai-chat` adapter (compatible servers) | `max_tokens` by default; per-provider `maxTokensParam` | `max_tokens` is deprecated and **not compatible with o-series models**; `max_completion_tokens` replaces it | fixed by the option (default kept for third-party servers) |
@@ -23,11 +23,12 @@ and the Anthropic API version pages. "Latest" is only as good as those sources o
 | CMake / C++ standard (TSF adapter) | `windows/tsf` | CMake >= 3.21, C++17 | newer exist | **not checked**: the adapter was never built |
 | JSON Schema dialect | `schemas/` | draft 2020-12 | 2020-12 | current |
 
-## Edition 2024 migration (Rust Edition Guide)
+## Edition 2024 migration (done)
 
-Steps from the guide: `cargo update`, `cargo fix --edition`, set `edition = "2024"`, build and test, `cargo fmt`. The crate has no dependencies and
-forbids `unsafe`, so the unsafe-related 2024 changes (`set_var`, `unsafe extern`, `static mut` references) do not apply; the things to watch are the
-`gen` keyword, tail-expression temporary scope and `impl Trait` lifetime capture, all covered by `cargo fix --edition` and the 101+ tests.
+Following the Rust Edition Guide: `cargo fix --edition`, `edition = "2024"`, build and test, `cargo fmt`. Result: one automatic fix (the test
+helper named `gen`, now a reserved keyword, renamed `id_gen`); `cargo fmt` re-ordered imports; clippy's `collapsible_if` now suggests let-chains in
+edition 2024, applied with `cargo clippy --fix` (about a dozen places). The crate has no dependencies and forbids `unsafe`, so the unsafe-related
+2024 changes did not apply. 209 tests pass before and after.
 
 ## Open points
 

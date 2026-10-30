@@ -8,7 +8,7 @@ use crate::util::{
     locale_compare_ascii, rfind_char, skip_ws, split_lines, starts_at, string_of, tail_utf16,
     trailing_word,
 };
-use crate::validators::{mask_chars, Style};
+use crate::validators::{Style, mask_chars};
 use std::collections::HashMap;
 
 pub fn style_of(profile: &str) -> Option<Style> {

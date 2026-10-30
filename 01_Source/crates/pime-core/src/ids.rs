@@ -16,7 +16,7 @@
 //! entropy; a weak or leaked seed makes every id predictable. Phase P2 replaces this with the operating system
 //! random generator (no caller-supplied seed).
 
-use crate::sha256::{hmac_sha256, sha256, to_hex, Sha256};
+use crate::sha256::{Sha256, hmac_sha256, sha256, to_hex};
 
 /// Minimum accepted seed size in bytes.
 pub const MIN_ENTROPY_BYTES: usize = 32;

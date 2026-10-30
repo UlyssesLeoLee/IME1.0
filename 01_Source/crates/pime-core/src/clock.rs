@@ -3,8 +3,8 @@
 //! Every time-dependent rule (plan and token lifetimes, grant expiry, the apply deadline) takes the current time
 //! as an argument; the protocol layer reads it from a [`Clock`], so tests drive time explicitly and never sleep.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub trait Clock: Send {

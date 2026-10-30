@@ -15,11 +15,14 @@
 1. 七语言声明式规则包 + 上下文感知的本地候选（JS 与 Rust 结果逐项一致）。
 2. VS Code 扩展：状态栏语言/AI、语言锁定、候选来源与校验状态、F1 双路径面板（整文件按块 Diff 勾选 / 光标处插入）、Prepare/Apply 事务（版本+哈希复核、读回校验、单步撤销）、BYOK（三类 API、模型/Effort/预算按场景独立、能力不明不发送）、实时 AI（去抖、取消、过期丢弃）、授权与撤销、敏感信息拦截/脱敏、脱敏诊断、三语界面。
 3. Rust 核心（零依赖）：同一套语言逻辑、输入状态机、安装计划、JSON Lines 协议 0.2。
-4. Playwright UAT：24 个场景在真实 VS Code 1.137.0 上通过。
+4. 注释功能：插入内容可自动附带 AI 生成的保姆级注释，另可附带 Cypher 节点-边关系注释（见 `01_Source/docs/ANNOTATIONS.md`）。
+5. 测试脚本全部集中在 `01_Source/tests/`，回归只运行、不重新生成（见 `01_Source/tests/README.md`）。
+6. Playwright UAT：32 个场景，在真实 VS Code 1.144.0 上 JavaScript 引擎 31 通过 / 1 跳过 / 0 失败。
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **81 / 81** 通过；Rust **101 / 101** 通过；Playwright UAT **24 / 24** 通过。
+- JavaScript **100 / 100** 通过；Rust **209 / 209** 通过；Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**。
+- **Rust 引擎的 UAT 最终一轮未跑完**（运行被系统因内存不足中止，已执行的 14 个场景全部通过），因此不宣称其通过。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 编译/注册/三语言激活、签名安装器、命名管道 IPC、Credential Manager、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
 - 设计书的 168 项是计划用例，不是 168 项已通过测试。通过的测试不代表满足全部 64 条需求。

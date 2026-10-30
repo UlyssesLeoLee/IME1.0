@@ -1,7 +1,7 @@
 //! UT-068: local candidate computation benchmark - 1000 prefix events, P95 must be <= 20 ms.
 //! This is a diagnostic UT measurement; the formal P95 is measured in ST under controlled conditions.
 
-use pime_core::predict::{engine, PredictOptions};
+use pime_core::predict::{PredictOptions, engine};
 use std::time::Instant;
 
 const CASES: [(&str, &[&str]); 7] = [
@@ -42,11 +42,21 @@ const CASES: [(&str, &[&str]); 7] = [
 fn before_text(profile: &str, i: usize) -> String {
     // realistic surrounding code (about 1.5 KB) so masking and block detection are part of the measurement
     let unit = match profile {
-        "python" => "class Foo:\n    def run(self, items):\n        for item in items:\n            print(item)  # note\n",
-        "rust" => "impl Foo {\n    fn run(&self) {\n        let counter = 1; // note\n        println!(\"{}\", counter);\n    }\n}\n",
-        "typescript" => "class Foo {\n  run(items: string[]): void {\n    const counter = `x${items.length}`; // note\n  }\n}\n",
-        "powershell" => "function Get-Foo {\n    param($Path)\n    Get-ChildItem -Path $Path # note\n}\n",
-        "c" => "int main(void) {\n    int counter = 0; /* note */\n    printf(\"%d\", counter);\n}\n",
+        "python" => {
+            "class Foo:\n    def run(self, items):\n        for item in items:\n            print(item)  # note\n"
+        }
+        "rust" => {
+            "impl Foo {\n    fn run(&self) {\n        let counter = 1; // note\n        println!(\"{}\", counter);\n    }\n}\n"
+        }
+        "typescript" => {
+            "class Foo {\n  run(items: string[]): void {\n    const counter = `x${items.length}`; // note\n  }\n}\n"
+        }
+        "powershell" => {
+            "function Get-Foo {\n    param($Path)\n    Get-ChildItem -Path $Path # note\n}\n"
+        }
+        "c" => {
+            "int main(void) {\n    int counter = 0; /* note */\n    printf(\"%d\", counter);\n}\n"
+        }
         "assembly" => "_start:\n    mov rax, rbx ; note\n    push rbp\n",
         _ => "",
     };
@@ -77,7 +87,9 @@ fn ut_068_local_candidate_p95_within_20ms() {
     } else {
         "release"
     };
-    println!("UT-068 BENCHMARK: events=1000 candidates_produced={produced} P50={p50:.3} ms P95={p95:.3} ms max={max:.3} ms build={profile}");
+    println!(
+        "UT-068 BENCHMARK: events=1000 candidates_produced={produced} P50={p50:.3} ms P95={p95:.3} ms max={max:.3} ms build={profile}"
+    );
     assert!(
         produced > 0,
         "the benchmark must exercise real candidate generation"

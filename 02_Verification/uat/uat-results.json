@@ -1,12 +1,12 @@
 {
   "config": {
     "argv": [
-      "D:\\nodejs\\node.exe",
-      "D:\\IME1.0\\01_Source\\uat\\node_modules\\@playwright\\test\\cli.js",
+      "D:\\nvm\\v26.13.0\\node.exe",
+      "D:\\IME1.0\\01_Source\\tests\\uat\\node_modules\\@playwright\\test\\cli.js",
       "test"
     ],
-    "configFile": "D:\\IME1.0\\01_Source\\uat\\playwright.config.js",
-    "rootDir": "D:/IME1.0/01_Source/uat/tests",
+    "configFile": "D:\\IME1.0\\01_Source\\tests\\uat\\playwright.config.js",
+    "rootDir": "D:/IME1.0/01_Source/tests/uat/tests",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
@@ -30,7 +30,7 @@
         },
         "id": "",
         "name": "",
-        "testDir": "D:/IME1.0/01_Source/uat/tests",
+        "testDir": "D:/IME1.0/01_Source/tests/uat/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -49,8 +49,8 @@
           "actualWorkers": 1
         },
         "name": "",
-        "testDir": "D:\\IME1.0\\01_Source\\uat\\tests",
-        "snapshotDir": "D:\\IME1.0\\01_Source\\uat\\tests",
+        "testDir": "D:\\IME1.0\\01_Source\\tests\\uat\\tests",
+        "snapshotDir": "D:\\IME1.0\\01_Source\\tests\\uat\\tests",
         "testIgnore": [],
         "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
         "timeout": 120000,
@@ -103,7 +103,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -117,17 +117,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1103,
+                  "duration": 1186,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:11:13.907Z",
+                  "startTime": "2026-10-30T09:15:05.719Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -155,7 +155,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -169,17 +169,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5649,
+                  "duration": 6693,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:11:17.890Z",
+                  "startTime": "2026-10-30T09:15:09.633Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -207,7 +207,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -221,17 +221,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5704,
+                  "duration": 6480,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:11:23.547Z",
+                  "startTime": "2026-10-30T09:15:16.333Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -259,7 +259,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -273,17 +273,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4312,
+                  "duration": 4547,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:11:29.260Z",
+                  "startTime": "2026-10-30T09:15:22.820Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -311,7 +311,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -325,17 +325,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 15097,
+                  "duration": 17042,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:11:33.594Z",
+                  "startTime": "2026-10-30T09:15:27.375Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -363,7 +363,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -377,17 +377,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6673,
+                  "duration": 7182,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:11:48.703Z",
+                  "startTime": "2026-10-30T09:15:44.426Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -415,7 +415,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -429,17 +429,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5898,
+                  "duration": 5649,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:11:55.388Z",
+                  "startTime": "2026-10-30T09:15:51.617Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -467,7 +467,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -481,17 +481,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4016,
+                  "duration": 4202,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:01.302Z",
+                  "startTime": "2026-10-30T09:15:57.273Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\01-local.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -527,7 +527,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -541,17 +541,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8891,
+                  "duration": 8999,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:06.729Z",
+                  "startTime": "2026-10-30T09:16:02.734Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -579,7 +579,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -593,17 +593,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4071,
+                  "duration": 4267,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:22.138Z",
+                  "startTime": "2026-10-30T09:16:18.149Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -631,7 +631,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -645,17 +645,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3172,
+                  "duration": 3345,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:26.221Z",
+                  "startTime": "2026-10-30T09:16:22.429Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -683,7 +683,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -697,17 +697,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8175,
+                  "duration": 9041,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:29.402Z",
+                  "startTime": "2026-10-30T09:16:25.787Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -735,7 +735,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -749,17 +749,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3118,
+                  "duration": 3300,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:37.588Z",
+                  "startTime": "2026-10-30T09:16:34.840Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -787,7 +787,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -801,17 +801,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6564,
+                  "duration": 7034,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:40.717Z",
+                  "startTime": "2026-10-30T09:16:38.148Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -839,7 +839,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -853,17 +853,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4406,
+                  "duration": 4685,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:47.299Z",
+                  "startTime": "2026-10-30T09:16:45.193Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -891,7 +891,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -905,17 +905,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3499,
+                  "duration": 3459,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:51.715Z",
+                  "startTime": "2026-10-30T09:16:49.890Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -943,7 +943,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -957,17 +957,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 10466,
+                  "duration": 15584,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:12:55.221Z",
+                  "startTime": "2026-10-30T09:16:53.354Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -995,7 +995,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -1009,17 +1009,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5093,
+                  "duration": 5476,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:13:05.694Z",
+                  "startTime": "2026-10-30T09:17:08.946Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\02-ai-f1.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -1055,7 +1055,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -1069,17 +1069,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 17747,
+                  "duration": 15990,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:13:12.088Z",
+                  "startTime": "2026-10-30T09:17:15.581Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -1107,7 +1107,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -1121,17 +1121,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 19558,
+                  "duration": 18923,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:13:29.848Z",
+                  "startTime": "2026-10-30T09:17:31.581Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -1159,7 +1159,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -1173,17 +1173,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 9258,
+                  "duration": 8514,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:13:49.423Z",
+                  "startTime": "2026-10-30T09:17:50.513Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -1211,7 +1211,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -1225,17 +1225,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 14061,
+                  "duration": 14044,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:13:58.698Z",
+                  "startTime": "2026-10-30T09:17:59.037Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -1263,7 +1263,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -1277,17 +1277,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 13611,
+                  "duration": 13084,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:14:12.772Z",
+                  "startTime": "2026-10-30T09:18:13.087Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -1315,7 +1315,7 @@
                 {
                   "type": "serial",
                   "location": {
-                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                     "line": 0,
                     "column": 0
                   }
@@ -1329,17 +1329,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 18434,
+                  "duration": 19706,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-30T07:14:26.397Z",
+                  "startTime": "2026-10-30T09:18:26.176Z",
                   "annotations": [
                     {
                       "type": "serial",
                       "location": {
-                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\03-policy.spec.js",
                         "line": 0,
                         "column": 0
                       }
@@ -1357,14 +1357,464 @@
           "column": 1
         }
       ]
+    },
+    {
+      "title": "04-annotate.spec.js",
+      "file": "04-annotate.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "ANN-10 with AI off nothing is asked, nothing is sent: the candidate is inserted unchanged (autoComment on by default)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4940,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:18:45.893Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5bd1a4f40f076765ef38-dc0ed5def62bcb38031c",
+          "file": "04-annotate.spec.js",
+          "line": 41,
+          "column": 1
+        },
+        {
+          "title": "ANN-11 default settings + AI configured: the whole file is sent after consent and the snippet comes back with detailed comments, code unchanged",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9930,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:18:53.601Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5bd1a4f40f076765ef38-fa8b62cbf9f6f88bb683",
+          "file": "04-annotate.spec.js",
+          "line": 52,
+          "column": 1
+        },
+        {
+          "title": "ANN-12 if the AI changes the code, its comments are discarded and the original snippet is inserted",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4952,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:19:03.541Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5bd1a4f40f076765ef38-e13f78b78707032c6176",
+          "file": "04-annotate.spec.js",
+          "line": 75,
+          "column": 1
+        },
+        {
+          "title": "ANN-13 refusing the consent, or turning autoComment off, inserts the snippet unchanged with zero requests",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 14788,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:19:08.507Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5bd1a4f40f076765ef38-b39caea4b2655302c5b9",
+          "file": "04-annotate.spec.js",
+          "line": 85,
+          "column": 1
+        },
+        {
+          "title": "ANN-14 a file with secrets is never sent for annotation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4721,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:19:23.300Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5bd1a4f40f076765ef38-5d53dcd3a954c2d1ac87",
+          "file": "04-annotate.spec.js",
+          "line": 99,
+          "column": 1
+        },
+        {
+          "title": "ANN-15 graph comment: Cypher block above the snippet, built from symbol NAMES of the folder (never their code), destructive statements dropped",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7496,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:19:28.030Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\04-annotate.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5bd1a4f40f076765ef38-66273278e4177fc0dc5c",
+          "file": "04-annotate.spec.js",
+          "line": 107,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "05-engine.spec.js",
+      "file": "05-engine.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "ENG-01 [step 1.0] engine=rust without a usable core: clear status and notification, IME features off, no JS fallback, typing unaffected",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\05-engine.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8901,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:19:36.635Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\05-engine.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5ac0c006dd0015b3dc28-bf36751bdd1612fff311",
+          "file": "05-engine.spec.js",
+          "line": 25,
+          "column": 1
+        },
+        {
+          "title": "ENG-02 [step 1.0] engine=rust: the core is killed while VS Code runs: status switches to \"core unavailable\", candidates stop, typing continues",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\05-engine.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                },
+                {
+                  "type": "skip",
+                  "description": "needs PIME_CORE_EXE (a built pime-core)",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\05-engine.spec.js",
+                    "line": 48,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T09:19:45.540Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\05-engine.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    },
+                    {
+                      "type": "skip",
+                      "description": "needs PIME_CORE_EXE (a built pime-core)",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\tests\\uat\\tests\\05-engine.spec.js",
+                        "line": 48,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "5ac0c006dd0015b3dc28-a7fcc12cd2bca5d18331",
+          "file": "05-engine.spec.js",
+          "line": 47,
+          "column": 1
+        }
+      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-30T07:11:13.285Z",
-    "duration": 211587.251,
-    "expected": 24,
-    "skipped": 0,
+    "startTime": "2026-10-30T09:15:05.256Z",
+    "duration": 280317.522,
+    "expected": 31,
+    "skipped": 1,
     "unexpected": 0,
     "flaky": 0
   }

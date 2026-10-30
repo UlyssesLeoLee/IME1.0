@@ -13,8 +13,8 @@ use crate::clock::{Clock, SystemClock};
 use crate::json::{self, Json, JsonErrorKind, Limits};
 use crate::ops;
 use crate::pack::LANGUAGES;
-use crate::predict::{engine, PredictOptions, DEFAULT_LIMIT};
-use crate::resolve::{resolve_language, ResolveContext};
+use crate::predict::{DEFAULT_LIMIT, PredictOptions, engine};
+use crate::resolve::{ResolveContext, resolve_language};
 use crate::secrets;
 use crate::session::SessionStore;
 use crate::validators::{self, Dialect};
@@ -22,7 +22,7 @@ use crate::x86;
 use crate::{MAX_BULK_LINE_BYTES, MAX_LINE_BYTES, PROTOCOL, VERSION};
 use std::cell::RefCell;
 use std::io::{self, BufRead, Write};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 pub const MAX_PREDICT_LIMIT: i64 = 200;
 const REQUEST_LIMITS: Limits = Limits {
@@ -315,7 +315,7 @@ impl Core {
             "validate_hex" => validate_hex_op(id, req),
             "scan" => scan_op(id, req),
             _ if ops::OPS.contains(&op) => {
-                return ops::handle(&mut self.sessions, self.clock.now_ms(), op, id, req)
+                return ops::handle(&mut self.sessions, self.clock.now_ms(), op, id, req);
             }
             _ => return error_json(id, "UNKNOWN_OPERATION", None),
         };
@@ -521,11 +521,12 @@ mod tests {
         assert_eq!(c.get("validation").and_then(Json::as_str), Some("valid"));
         assert_eq!(c.get("match").and_then(Json::as_str), Some("exact"));
         assert_eq!(c.get("profile_id").and_then(Json::as_str), Some("rust"));
-        assert!(c
-            .get("text")
-            .and_then(Json::as_str)
-            .unwrap()
-            .starts_with("fn main()"));
+        assert!(
+            c.get("text")
+                .and_then(Json::as_str)
+                .unwrap()
+                .starts_with("fn main()")
+        );
         assert_eq!(
             call(r#"{"op":"predict","language":"rust","prefix":"fn","limit":300}"#)
                 .get("field")
@@ -662,11 +663,12 @@ mod tests {
         let res = r.get("result").unwrap();
         assert_eq!(res.get("highest").and_then(Json::as_str), Some("high"));
         let f = res.get("findings").and_then(Json::as_array).unwrap();
-        assert!(f.iter().all(|x| x
-            .as_object()
-            .unwrap()
-            .iter()
-            .all(|(k, _)| matches!(k.as_str(), "kind" | "severity" | "line"))));
+        assert!(f.iter().all(|x| {
+            x.as_object()
+                .unwrap()
+                .iter()
+                .all(|(k, _)| matches!(k.as_str(), "kind" | "severity" | "line"))
+        }));
     }
 
     #[test]

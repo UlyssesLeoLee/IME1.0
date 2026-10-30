@@ -1,7 +1,7 @@
 //! Protocol 0.2 integration tests: the sample request file is answered by `protocol::handle_line` and by the real
 //! `pime-core` binary over stdin/stdout, with one response line per request line and the request `id` echoed.
 
-use pime_core::json::{parse, Json, Limits};
+use pime_core::json::{Json, Limits, parse};
 use pime_core::protocol::{handle_line, serve};
 use std::io::{Cursor, Write};
 use std::process::{Command, Stdio};

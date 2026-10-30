@@ -10,8 +10,8 @@ const path = require('node:path');
 const net = require('node:net');
 
 const CODE_EXE = process.env.VSCODE_EXE || path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Microsoft VS Code', 'Code.exe');
-const EXTENSION_DIR = path.resolve(__dirname, '..', '..', 'editor-bridges', 'vscode');
-const EVIDENCE_DIR = process.env.UAT_EVIDENCE_DIR || path.resolve(__dirname, '..', '..', '..', '02_Verification', 'uat');
+const EXTENSION_DIR = path.resolve(__dirname, '..', '..', '..', 'editor-bridges', 'vscode');
+const EVIDENCE_DIR = process.env.UAT_EVIDENCE_DIR || path.resolve(__dirname, '..', '..', '..', '..', '02_Verification', 'uat');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // PIME_ENGINE=rust PIME_CORE_EXE=<path to pime-core.exe> runs the whole suite against the Rust engine (programmingIme.engine=rust).
 // Without PIME_ENGINE the profile is exactly what it always was (engine js, no core).
@@ -84,13 +84,33 @@ class VsCode {
   async quickVisible() { return this.quick.isVisible().catch(() => false); }
   async quickRows() { return (await this.page.locator('.quick-input-list .monaco-list-row').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim()); }
   async quickTitle() { return (await this.page.locator('.quick-input-title').innerText().catch(() => '')).trim(); }
+  // A shortcut can be lost while focus is in limbo (for example right after a webview panel was closed): retry, giving the workbench focus.
+  async openQuick(keys) {
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await this.page.keyboard.press(keys);
+      try { await this.quick.waitFor({state: 'visible', timeout: 3000}); return; }
+      catch (e) {
+        if (attempt === 4) throw e;
+        await this.page.keyboard.press('Escape').catch(() => {});
+        await this.page.locator('.statusbar').click({position: {x: 2, y: 2}, timeout: 2000}).catch(() => {});
+        await sleep(300);
+      }
+    }
+  }
   async waitQuick(timeout = 10000) { await this.quick.waitFor({state: 'visible', timeout}); }
   async cmd(title) {
-    await this.page.keyboard.press('Control+Shift+P');
-    await this.waitQuick();
+    await this.openQuick('Control+Shift+P');
     await this.page.keyboard.type(title, {delay: 5});
     await this.page.locator('.quick-input-list .monaco-list-row', {hasText: title}).first().waitFor({timeout: 8000});
     await this.page.keyboard.press('Enter');
+    // The palette can stay on screen for a moment after Enter (seen on VS Code 1.144): wait until it is gone or has been replaced
+    // by the picker/input the command opens, so callers never read the palette rows by mistake.
+    await this.page.waitForFunction(() => {
+      const w = document.querySelector('.quick-input-widget');
+      if (!w || getComputedStyle(w).display === 'none') return true;
+      const input = w.querySelector('.quick-input-box input');
+      return !!input && !input.value.startsWith('>');
+    }, undefined, {timeout: 6000}).catch(() => {});
   }
   async pickRow(text, {timeout = 8000} = {}) {
     const row = this.page.locator('.quick-input-list .monaco-list-row', {hasText: text}).first();
@@ -113,11 +133,10 @@ class VsCode {
     while (Date.now() < end) { last = await this.notifications(); const hit = last.find(t => re.test(t)); if (hit) return hit; await sleep(200); }
     throw new Error(`no notification matched ${re}; saw: ${JSON.stringify(last)}`);
   }
-  async clearNotifications() { await this.page.keyboard.press('Control+Shift+P'); await this.waitQuick(); await this.page.keyboard.type('Notifications: Clear All Notifications', {delay: 3}); await this.page.keyboard.press('Enter'); await sleep(200); }
+  async clearNotifications() { await this.openQuick('Control+Shift+P'); await this.page.keyboard.type('Notifications: Clear All Notifications', {delay: 3}); await this.page.keyboard.press('Enter'); await sleep(200); }
   // ---------------------------------------------------------------- editor
   async openFile(name) {
-    await this.page.keyboard.press('Control+P');
-    await this.waitQuick();
+    await this.openQuick('Control+P');
     await this.page.keyboard.type(name, {delay: 5});
     const base = path.basename(name);
     const exact = this.page.locator('.quick-input-list .monaco-list-row').filter({has: this.page.locator('.label-name', {hasText: new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)})}).first();
@@ -154,7 +173,7 @@ class VsCode {
     while (Date.now() < end) { t = await this.editorText(); if (typeof re === 'string' ? t.includes(re) : re.test(t)) return t; await sleep(150); }
     throw new Error(`editor text never matched ${re}; last: ${JSON.stringify(t.slice(0, 300))}`);
   }
-  async goto(line, col = 1) { await this.page.keyboard.press('Control+G'); await this.waitQuick(); await this.page.keyboard.type(`${line}:${col}`); await this.page.keyboard.press('Enter'); await sleep(150); }
+  async goto(line, col = 1) { await this.openQuick('Control+G'); await this.page.keyboard.type(`${line}:${col}`); await this.page.keyboard.press('Enter'); await sleep(150); }
   async end() { await this.page.keyboard.press('Control+End'); }
   async type(text, delay = 12) { await this.page.keyboard.type(text, {delay}); }
   async isActiveTabDirty() { return this.page.locator('.tab.active.dirty').count().then(n => n > 0); }

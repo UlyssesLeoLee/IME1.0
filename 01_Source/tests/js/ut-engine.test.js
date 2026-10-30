@@ -5,7 +5,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const {createEngine} = require('../src/engine');
+const {createEngine} = require('../../editor-bridges/vscode/src/engine');
 const {FakeDoc, sha} = require('./helpers');
 
 const EXE = process.env.PIME_CORE_EXE;
@@ -242,6 +242,6 @@ test('engine: settings reach the core and scenarios resolve there as in JS', {sk
   assert.deepEqual([r.scenario.providerId, r.scenario.family, r.scenario.model], ['mockA', 'openai-responses', 'm-1']);
   assert.equal(await code(() => rust.rpc({op: 'settings.resolve', scenario: 'nope'})), 'SETTINGS_INVALID');
   const t = await rust.rpc({op: 'grant.workspace_token', uris: ['file:///b', 'file:///a']});
-  assert.equal(t.workspace, require('../src/core/grants').workspaceToken(['file:///a', 'file:///b']));
+  assert.equal(t.workspace, require('../../editor-bridges/vscode/src/core/grants').workspaceToken(['file:///a', 'file:///b']));
   rust.stop();
 });

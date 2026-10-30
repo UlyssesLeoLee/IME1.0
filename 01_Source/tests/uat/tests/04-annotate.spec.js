@@ -39,7 +39,7 @@ async function pickMain(file, typed = '\nfnm') {
 }
 
 test('ANN-10 with AI off nothing is asked, nothing is sent: the candidate is inserted unchanged (autoComment on by default)', async () => {
-  const props = JSON.parse(fs.readFileSync(`${__dirname}\\..\\..\\editor-bridges\\vscode\\package.json`, 'utf8')).contributes.configuration.properties;
+  const props = JSON.parse(fs.readFileSync(require('node:path').join(__dirname, '..', '..', '..', 'editor-bridges', 'vscode', 'package.json'), 'utf8')).contributes.configuration.properties;
   expect(props['programmingIme.autoComment'].default).toBe(true);        // the checkbox is ticked by default
   expect(props['programmingIme.graphComment'].default).toBe(false);
   await pickMain('an1.rs');

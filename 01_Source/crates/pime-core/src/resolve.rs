@@ -1,7 +1,7 @@
 //! Language resolution (FR-010/011, DD section 5.3): port of `resolveLanguage` / `lexicalGuess`.
 //! A manual lock always wins; weak evidence never switches the language automatically.
 
-use crate::pack::{Registry, LANGUAGES};
+use crate::pack::{LANGUAGES, Registry};
 use crate::util::head_utf16;
 
 const STRONG_EXT: [(&str, &str); 11] = [
@@ -199,16 +199,16 @@ pub fn resolve_language(
         out.uncertain = true;
         out.suggestion = ambiguous.map(str::to_string);
     }
-    if let Some(guess) = ctx.text.and_then(lexical_guess) {
-        if guess != current {
-            if out.suggestion.is_none() {
-                out.suggestion = Some(guess.to_string());
-            }
-            if out.reason == "kept" {
-                out.reason = "lexical-suggestion";
-            }
-            out.uncertain = true;
+    if let Some(guess) = ctx.text.and_then(lexical_guess)
+        && guess != current
+    {
+        if out.suggestion.is_none() {
+            out.suggestion = Some(guess.to_string());
         }
+        if out.reason == "kept" {
+            out.reason = "lexical-suggestion";
+        }
+        out.uncertain = true;
     }
     out // never switches automatically on weak evidence
 }

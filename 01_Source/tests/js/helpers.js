@@ -1,7 +1,7 @@
 'use strict';
 // Test doubles (DD-12 "testkit"): fake provider/fetch, virtual clock, fake editor document, fault-injecting fs.
 const path = require('node:path');
-const core = name => require(path.join(__dirname, '..', 'src', 'core', name));
+const core = name => require(path.join(__dirname, '..', '..', 'editor-bridges', 'vscode', 'src', 'core', name));
 
 // Fake provider: records every call; handler decides the answer.
 function makeFetch(handler) {

@@ -10,9 +10,9 @@
 //! * the machine never writes text itself: it only emits [`Effect`]s for the host adapter to perform.
 
 use crate::candidate::{Candidate, Validation};
-use crate::error::{fail, Result};
-use crate::predict::{engine, PredictOptions};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use crate::error::{Result, fail};
+use crate::predict::{PredictOptions, engine};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 /// A request to the core is considered lost after this long (virtual or real milliseconds).
 pub const CORE_REQUEST_TIMEOUT_MS: u64 = 250;
@@ -539,10 +539,10 @@ impl<P: PredictPort> InputMachine<P> {
         if ev.ctrl || ev.alt {
             return Step::pass(); // shortcuts belong to the host
         }
-        if self.capture_active() {
-            if let Some(step) = self.reserved_key(ev) {
-                return step;
-            }
+        if self.capture_active()
+            && let Some(step) = self.reserved_key(ev)
+        {
+            return step;
         }
         let effects = self.observe(ev, now_ms);
         Step {
@@ -652,10 +652,12 @@ mod tests {
         assert_eq!(m.state(), State::Composing);
         let moved = m.on_key(KeyEvent::plain(Key::Down), 10);
         assert_eq!(moved.outcome, KeyOutcome::Consumed);
-        assert!(!moved
-            .effects
-            .iter()
-            .any(|e| matches!(e, Effect::Commit { .. })));
+        assert!(
+            !moved
+                .effects
+                .iter()
+                .any(|e| matches!(e, Effect::Commit { .. }))
+        );
         let esc = m.on_key(KeyEvent::plain(Key::Esc), 20);
         assert_eq!(esc.outcome, KeyOutcome::Consumed);
         assert!(esc.effects.contains(&Effect::EndComposition));
@@ -792,10 +794,11 @@ mod tests {
         assert_eq!(cap.selected(), 0);
         let tab = cap.on_key(KeyEvent::plain(Key::Tab), 0);
         assert_eq!(tab.outcome, KeyOutcome::Consumed);
-        assert!(tab
-            .effects
-            .iter()
-            .any(|e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.fn")));
+        assert!(
+            tab.effects.iter().any(
+                |e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.fn")
+            )
+        );
         type_text(&mut cap, "fn", 5);
         let digit = cap.on_key(KeyEvent::ch('2'), 0);
         assert_eq!(digit.outcome, KeyOutcome::Consumed);

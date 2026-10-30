@@ -61,5 +61,5 @@ generate `annotate-cases.json` / `symbols-cases.json` fixtures from the JS versi
 
 ## Evidence
 
-`test/ut-annotate.test.js` (ANN-01..07) and `uat/tests/04-annotate.spec.js` (ANN-10..15, real VS Code with the mock provider). Not covered: real AI providers,
+`tests/js/ut-annotate.test.js` (ANN-01..07) and `tests/uat/tests/04-annotate.spec.js` (ANN-10..15, real VS Code with the mock provider). Not covered: real AI providers,
 Tab acceptance of inline suggestions, very large folders.

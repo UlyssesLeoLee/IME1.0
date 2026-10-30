@@ -110,16 +110,15 @@ impl SessionStore {
         {
             return Err(OpenError::EntropyReused);
         }
-        if self.sessions.len() >= MAX_SESSIONS {
-            if let Some(oldest) = self
+        if self.sessions.len() >= MAX_SESSIONS
+            && let Some(oldest) = self
                 .sessions
                 .iter()
                 .enumerate()
                 .min_by_key(|(_, s)| s.last_used)
                 .map(|(i, _)| i)
-            {
-                self.sessions.remove(oldest);
-            }
+        {
+            self.sessions.remove(oldest);
         }
         let id = ids.next("session", 16);
         self.sessions.push(Session {
@@ -210,7 +209,7 @@ impl Session {
 mod tests {
     use super::*;
 
-    fn gen(seed: u8) -> IdGen {
+    fn id_gen(seed: u8) -> IdGen {
         let entropy: Vec<u8> = (0..32u8)
             .map(|i| i.wrapping_mul(5).wrapping_add(seed))
             .collect();
@@ -221,7 +220,7 @@ mod tests {
     fn sessions_expire_when_idle_and_are_refreshed_by_use() {
         let mut store = SessionStore::new();
         let id = store
-            .open(1000, gen(1), "en-US".into(), Session::default_settings())
+            .open(1000, id_gen(1), "en-US".into(), Session::default_settings())
             .unwrap()
             .id
             .clone();
@@ -243,7 +242,12 @@ mod tests {
         let mut first = String::new();
         for i in 0..MAX_SESSIONS {
             let id = store
-                .open(10 + i as u64, gen(i as u8 + 1), "en-US".into(), Json::Null)
+                .open(
+                    10 + i as u64,
+                    id_gen(i as u8 + 1),
+                    "en-US".into(),
+                    Json::Null,
+                )
                 .unwrap()
                 .id
                 .clone();
@@ -253,7 +257,7 @@ mod tests {
         }
         assert_eq!(store.len(), MAX_SESSIONS);
         store
-            .open(500, gen(100), "en-US".into(), Json::Null)
+            .open(500, id_gen(100), "en-US".into(), Json::Null)
             .unwrap();
         assert_eq!(store.len(), MAX_SESSIONS);
         assert!(store.get(501, &first).is_none(), "the oldest one is gone");
@@ -263,16 +267,16 @@ mod tests {
     fn reusing_entropy_is_refused_and_close_removes_the_session() {
         let mut store = SessionStore::new();
         let id = store
-            .open(1, gen(3), "en-US".into(), Json::Null)
+            .open(1, id_gen(3), "en-US".into(), Json::Null)
             .unwrap()
             .id
             .clone();
         assert_eq!(
-            store.open(2, gen(3), "en-US".into(), Json::Null).err(),
+            store.open(2, id_gen(3), "en-US".into(), Json::Null).err(),
             Some(OpenError::EntropyReused)
         );
         assert!(store.close(&id));
         assert!(!store.close(&id));
-        assert!(store.open(3, gen(3), "en-US".into(), Json::Null).is_ok());
+        assert!(store.open(3, id_gen(3), "en-US".into(), Json::Null).is_ok());
     }
 }

@@ -15,8 +15,8 @@ Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credent
 | `editor-bridges/vscode/` | VS Code 扩展：本地候选、语言锁定/识别、F1 双路径面板、Diff/Hunk、事务应用、BYOK AI、实时 AI、授权/预算/诊断 |
 | `editor-bridges/vscode/src/core/` | 与 VS Code 无关的纯逻辑（可单测） |
 | `crates/pime-core/` | Rust 核心（零第三方依赖）：同一套语言逻辑 + 输入状态机 + 安装计划 + JSON Lines 协议 0.3（0.2 的超集）；编辑路径（SHA-256/上下文/Diff/事务/授权/预算记账）已进入核心 |
-| `tests/` | `gen-fixtures.js` 与 JS/Rust 共用的金样本夹具 |
-| `uat/` | Playwright 驱动真实 VS Code 的用户验收脚本（24 个场景） |
+| `tests/` | **所有测试脚本**：`run-all.js` 统一入口、`js/` `rust/` `smoke/` `uat/` `experiments/`、共用夹具与冻结的 v0.2 基线 |
+| `tests/uat/` | Playwright 驱动真实 VS Code 的用户验收脚本（32 个场景） |
 | `windows/tsf/` | v0.1 的 TSF 实验源码，**未编译、未验证** |
 
 ## 2. 在 VS Code 里试用
@@ -45,24 +45,23 @@ Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credent
 
 ## 4. 测试
 
+所有测试脚本都保存在 `tests/` 目录下（说明见 `tests/README.md`）。回归时只**运行**已保存的脚本，不会重新生成夹具、证书或报告（除非显式要求）。
+
 ```powershell
-# JavaScript 单元/集成（90 项；另有 10 项引擎差分测试，设置 PIME_CORE_EXE 才运行，否则跳过）
-cd editor-bridges\vscode ; npm test ; npm run check
-
-# Rust 核心（209 项）。若项目目录阻止运行新编译的 exe，把输出放到别处：
-$env:CARGO_TARGET_DIR="$env:TEMP\pime-target" ; cd .. ; cargo test --workspace
-
-# 用户验收（真实 VS Code + 本地 HTTPS Mock 供应商，32 项：24 项原有 + 6 项注释 + 2 项引擎开关；Rust 引擎下 ENG-02 才运行）。需要 VS Code 和 OpenSSL（Git for Windows 自带）
-cd uat ; npm install ; npx playwright test
-
-# 重新生成 UT/IT/ST 追踪报告
-cd .. ; node scripts/traceability-report.js
+node tests/run-all.js              # 快速集合（无 GUI）：语法、夹具比对、黄金基线、Rust(209)、JS(100，含引擎差分)、真实 core.exe 冒烟
+node tests/run-all.js --all        # 另加：真实 VS Code 的 UAT（JS 引擎、Rust 引擎各一次，约 8 分钟）
+node tests/run-all.js --js         # 单步：--syntax --fixtures --golden --js --rust --smoke --uat --uat-rust
+node tests/run-all.js --uat --only-uat "UAT-23"
+node tests/run-all.js --report     # 显式：重写 02_Verification 的 UT/IT/ST 追踪报告
+node tests/gen-fixtures.js --write # 显式：有意修改行为后才重新生成黄金夹具（默认只比对）
 ```
+
+UAT 需要 VS Code 和 OpenSSL（Git for Windows 自带）；Rust 构建输出在 `CARGO_TARGET_DIR`（默认系统临时目录），Rust 引擎的 UAT 证据写到临时目录，不覆盖 `02_Verification/uat/`。
 
 Rust 核心可选接入扩展：构建 `pime-core`，把 `programmingIme.coreExecutable` 指向它（只配置可信二进制）。
 `programmingIme.engine`：`js`（默认）= 内置 JS 引擎，核心只加速本地候选（协议 0.2 或 0.3 的 `predict`），任何故障自动回退到 JS；
 `rust` = **必须**有可用的核心（协议 0.3），核心缺失或中途停止时显示“core unavailable”并停用 IME 功能（不回退到 JS，VS Code 自身输入不受影响）。修改后需重新加载窗口。
-用 Rust 引擎跑用户验收：`$env:PIME_ENGINE='rust'; $env:PIME_CORE_EXE='<pime-core.exe>'; npx playwright test`（见 `uat/README.md`）。迁移进度见 `docs/RUST_MIGRATION_PLAN.md` 第 13 节。
+用 Rust 引擎跑用户验收：`node tests/run-all.js --uat-rust`（见 `tests/uat/README.md`）。迁移进度见 `docs/RUST_MIGRATION_PLAN.md` 第 13 节。
 
 ## 5. Windows TSF 工程
 

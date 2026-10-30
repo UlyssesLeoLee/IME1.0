@@ -4,10 +4,10 @@
 
 use pime_core::context::excerpt;
 use pime_core::edit::diff::{
-    apply_hunks, build_hunks, hunk_edits, render_hunks, stats, Hunk, DEFAULT_CONTEXT,
+    DEFAULT_CONTEXT, Hunk, apply_hunks, build_hunks, hunk_edits, render_hunks, stats,
 };
 use pime_core::grants::workspace_token;
-use pime_core::json::{parse, Json, Limits};
+use pime_core::json::{Json, Limits, parse};
 use pime_core::settings::{check_endpoint, effective, resolve_scenario, validate};
 use pime_core::sha256::sha256_hex;
 use pime_core::util::utf16_len;

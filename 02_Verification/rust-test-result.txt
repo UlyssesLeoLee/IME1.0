@@ -1,131 +1,216 @@
 # Rust core (pime-core 0.2.0) verification record
-# date: 2026-10-30T15:00:38+08:00
-# host: host: x86_64-pc-windows-gnu  rustc: rustc 1.99.1 (58cf8f9c3 2026-10-13)  cargo: cargo 1.99.1 (5f94df478 2026-08-27)
-# Raw output of the commands below, in order. Build outputs went to a scratch CARGO_TARGET_DIR outside the repo.
+# date: 2026-10-30T17:34:03+08:00
+# host: host: x86_64-pc-windows-gnu, rustc 1.99.1 (58cf8f9c3 2026-10-13), cargo 1.99.1 (5f94df478 2026-08-27)
+# Raw output of the commands below, in order. Build outputs went to a scratch CARGO_TARGET_DIR outside the repo. Edition 2024.
 
 ==================== 1. cargo test --workspace (debug / unoptimized test profile) ====================
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
-     Running unittests src\lib.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\pime_core-0a94412c8e05fc50.exe)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src\lib.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\pime_core-0a94412c8e05fc50.exe)
 
-running 90 tests
+running 162 tests
 test analysis::tests::enclosing_blocks ... ok
-test analysis::tests::typescript_and_powershell_new_lines_start_statements ... ok
+test budget::tests::a_ticket_settles_or_releases_only_once ... ok
 test analysis::tests::statement_expression_and_type_positions ... ok
+test analysis::tests::literal_positions_are_detected ... ok
+test budget::tests::configure_changes_limits_but_keeps_the_counters ... ok
+test budget::tests::the_token_limit_counts_the_reservation_and_zero_limits_are_not_special_here ... ok
+test budget::tests::ut_035_budget_reserve_before_sending_settle_with_real_usage_refuse_when_exceeded ... ok
+test analysis::tests::typescript_and_powershell_new_lines_start_statements ... ok
 test candidate::tests::ut_006_invalid_values_are_rejected ... ok
-test candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row ... ok
-test input::tests::ut_003_direct_never_consumes_ascii ... ok
-test candidate::tests::ut_008_candidates_without_text_are_never_merged ... ok
 test candidate::tests::ut_007_usage_breaks_ties_before_weight ... ok
+test candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row ... ok
+test clock::tests::manual_clock_clones_share_time ... ok
+test candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable ... ok
+test candidate::tests::ut_008_candidates_without_text_are_never_merged ... ok
+test clock::tests::system_clock_is_epoch_milliseconds ... ok
+test context::tests::excerpt_bounds_never_split_a_crlf ... ok
+test context::tests::ut_025_context_level_capability_lattice ... ok
+test context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused ... ok
+test context::tests::ut_030_an_l4_disk_snapshot_can_never_be_written_back_and_l1_is_not_whole_file ... ok
+test context::tests::ut_028_snapshot_hash_comes_from_the_unsaved_buffer_not_the_disk ... ok
+test edit::diff::tests::disjoint_hunks_make_edits_in_order_and_overlaps_are_refused ... ok
+test edit::diff::tests::hunk_geometry_matches_the_js_engine ... ok
+test edit::diff::tests::insertion_at_the_end_and_deletion_of_everything ... ok
+test edit::diff::tests::lone_cr_and_missing_trailing_newline_are_real_differences ... ok
+test edit::diff::tests::ut_045_hunks_replay_to_the_exact_after_hash_with_crlf_and_a_changed_trailing_newline ... ok
+test edit::diff::tests::offsets_are_utf16_units_not_bytes_or_chars ... ok
+test edit::transaction::tests::a_finish_without_a_begin_is_refused ... ok
+test edit::transaction::tests::a_missing_finish_apply_is_edit_unknown_on_the_next_call_that_touches_the_plan ... ok
+test edit::transaction::tests::a_finish_after_the_deadline_is_edit_unknown_never_applied ... ok
+test edit::transaction::tests::a_read_only_document_is_rejected_after_the_baseline_checks ... ok
+test analysis::tests::nearby_identifiers_rank_by_frequency ... ok
+test edit::transaction::tests::a_second_begin_apply_before_the_first_finish_is_refused_without_consuming_its_token ... ok
+test edit::transaction::tests::it_032_a_verified_apply_can_be_undone_back_to_the_original_dirty_buffer ... ok
+test edit::transaction::tests::nfr_502_purge_drops_expired_plans_used_tokens_and_applied_source_fragments ... ok
+test edit::transaction::tests::ut_030_an_l4_disk_snapshot_can_never_become_a_plan ... ok
+test edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent ... ok
+test edit::transaction::tests::it_029_insert_is_refused_when_the_cursor_moved_after_the_proposal ... ok
+test edit::transaction::tests::purge_keeps_the_record_of_an_apply_that_is_still_waiting_for_its_result ... ok
+test edit::transaction::tests::the_checks_run_in_the_order_of_the_js_coordinator ... ok
+test edit::transaction::tests::ut_046_it_029_zero_length_insert_at_line_3_col_6_with_emoji_changes_only_that_range ... ok
+test edit::transaction::tests::ut_048_overlapping_edits_are_rejected_disjoint_edits_build_a_reviewable_result ... ok
+test edit::transaction::tests::ut_047_it_030_nothing_is_written_without_explicit_confirmation ... ok
+test edit::transaction::tests::ut_049_it_031_st_027_a_changed_version_or_hash_yields_stale_document_and_no_token ... ok
+test edit::transaction::tests::ut_050_an_apply_token_works_once_replay_writes_nothing_more ... ok
+test candidate::tests::ut_006_all_kinds_sources_validations_round_trip ... ok
+test edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown ... ok
+test edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed ... ok
+test edit::transaction::tests::ut_052_a_failed_syntax_check_disables_the_default_apply ... ok
+test edit::transaction::tests::ut_075_it_015_a_revoked_grant_or_an_invalidated_plan_can_neither_prepare_nor_apply ... ok
+test edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried ... ok
+test grants::tests::find_returns_the_reusable_grant_and_require_returns_the_grant ... ok
+test grants::tests::only_reusable_grants_are_exported_and_they_survive_a_round_trip ... ok
+test grants::tests::import_skips_malformed_entries_instead_of_trusting_them ... ok
+test grants::tests::ut_029_it_015_grants_any_mismatch_is_denied_revoke_stops_new_requests ... ok
+test grants::tests::revocation_variants_and_the_list_of_live_grants ... ok
+test grants::tests::workspace_tokens_hash_the_sorted_uris_and_never_contain_paths ... ok
+test ids::tests::the_same_entropy_gives_the_same_sequence_and_another_seed_a_different_one ... ok
+test ids::tests::weak_or_short_entropy_is_refused ... ok
+test input::tests::ut_003_direct_never_consumes_ascii ... ok
 test input::tests::ut_003_observing_does_not_consume_ordinary_characters_either ... ok
 test input::tests::ut_004_composition_cancel_writes_nothing ... ok
-test analysis::tests::literal_positions_are_detected ... ok
-test candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable ... ok
 test input::tests::ut_004_composition_needs_candidates_and_a_permitted_host_range ... ok
 test input::tests::ut_005_policy_disabled_behaves_like_secure_input ... ok
 test input::tests::ut_005_secure_input_clears_context_and_never_predicts ... ok
 test input::tests::ut_009_capture_without_candidates_consumes_nothing ... ok
+test grants::tests::grant_ids_are_24_hex_characters_and_unique ... ok
 test input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode ... ok
-test input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating ... ok
 test input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing ... ok
+test input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating ... ok
 test input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes ... ok
 test input::tests::ut_067_an_answered_request_never_triggers_the_watchdog ... ok
 test install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles ... ok
-test install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned ... ok
-test install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused ... ok
 test install_plan::tests::ut_002_selection_errors_and_subsets ... ok
-test json::tests::lone_surrogate_becomes_replacement_character ... ok
+test install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused ... ok
+test install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned ... ok
+test install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent ... ok
 test install_plan::tests::ut_061_uninstall_removes_only_own_guids ... ok
 test json::tests::enforces_limits ... ok
-test install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent ... ok
-test analysis::tests::nearby_identifiers_rank_by_frequency ... ok
-test json::tests::rejects_malformed_input ... ok
-test json::tests::serializer_escapes_control_characters ... ok
-test input::tests::local_predictor_drives_the_real_engine ... ok
+test json::tests::lone_surrogate_becomes_replacement_character ... ok
 test json::tests::parses_and_round_trips ... ok
+test json::tests::serializer_escapes_control_characters ... ok
+test json::tests::rejects_malformed_input ... ok
+test edit::transaction::tests::plan_ids_and_tokens_are_unique ... ok
 test input::tests::ut_067_direct_is_in_force_within_two_seconds_on_a_virtual_clock ... ok
+test input::tests::local_predictor_drives_the_real_engine ... ok
 test pack::tests::unknown_keys_are_rejected_in_every_position ... ok
-test candidate::tests::ut_006_all_kinds_sources_validations_round_trip ... ok
 test pack::tests::limits_and_placeholders_are_enforced ... ok
-test predict::tests::literal_positions_yield_nothing ... ok
 test predict::tests::identifiers_come_from_nearby_text ... ok
-test predict::tests::rust_prefix_candidates ... ok
+test predict::tests::literal_positions_yield_nothing ... ok
 test predict::tests::unsupported_dialect_is_explained_not_guessed ... ok
-test profiles::tests::ut_001_duplicate_guid_is_rejected ... ok
+test predict::tests::rust_prefix_candidates ... ok
 test profiles::tests::guid_text_round_trip ... ok
-test profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids ... ok
+test profiles::tests::ut_001_duplicate_guid_is_rejected ... ok
 test profiles::tests::ut_001_other_invalid_sets_are_rejected ... ok
-test protocol::tests::framing_errors ... ok
-test protocol::tests::health_reports_protocol_0_2_and_seven_languages ... ok
-test resolve::tests::ext_of_matches_the_reference ... ok
-test protocol::tests::resolve_validate_encode_and_hex ... ok
-test protocol::tests::scan_never_echoes_secret_values ... ok
-test scope::tests::ut_025_capability_lattice ... ok
+test profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids ... ok
 test pack::tests::dialect_resolution_defaults_and_reports_unsupported ... ok
+test protocol::tests::health_reports_protocol_0_3_and_seven_languages ... ok
+test protocol::tests::resolve_validate_encode_and_hex ... ok
+test edit::diff::tests::a_middle_part_over_the_cell_limit_is_one_replace_hunk ... ok
+test protocol::tests::scan_never_echoes_secret_values ... ok
+test protocol::tests::predict_accepts_the_bridges_pins_and_usage_counts ... ok
+test resolve::tests::ext_of_matches_the_reference ... ok
+test pack::tests::user_packs_cannot_use_builtin_only_fields_or_collide ... ok
+test protocol::tests::serve_answers_one_line_per_request_and_bounds_line_size ... ok
+test pack::tests::builtin_packs_load_and_cover_seven_languages ... ok
+test scope::tests::ut_025_capability_lattice ... ok
 test scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf ... ok
 test scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned ... ok
-test pack::tests::builtin_packs_load_and_cover_seven_languages ... ok
-test protocol::tests::serve_answers_one_line_per_request_and_bounds_line_size ... ok
 test scope::tests::ut_027_wider_requests_are_refused_not_trimmed ... ok
 test scope::tests::ut_030_disk_content_is_preview_only ... ok
 test secrets::tests::placeholders_and_env_lookups_are_not_findings ... ok
 test pack::tests::schema_version_profile_and_semver_checks ... ok
-test secrets::tests::token_shapes ... ok
 test secrets::tests::ut_062_env_files_are_sensitive_by_name ... ok
+test secrets::tests::token_shapes ... ok
+test secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values ... ok
+test session::tests::sessions_expire_when_idle_and_are_refreshed_by_use ... ok
+test session::tests::reusing_entropy_is_refused_and_close_removes_the_session ... ok
+test settings::tests::defaults_have_the_js_shape_and_order ... ok
+test settings::tests::endpoint_rules_follow_whatwg_url_parsing ... ok
+test settings::tests::integer_like_provider_ids_come_first_as_in_javascript ... ok
+test settings::tests::user_values_override_field_by_field ... ok
+test settings::tests::provider_profile_extras_pass_through_and_are_validated ... ok
+test settings::tests::scenarios_resolve_independently ... ok
+test settings::tests::validation_reports_each_problem_with_its_path ... ok
+test settings::tests::wrong_types_are_reported_by_field_name ... ok
+test sha256::tests::hex_round_trip_and_strictness ... ok
+test sha256::tests::nist_vector_448_bit_message ... ok
+test sha256::tests::nist_vector_896_bit_message ... ok
+test sha256::tests::hmac_rfc_4231_vectors ... ok
+test protocol::tests::a_line_of_exactly_the_limit_is_accepted ... ok
+test sha256::tests::nist_vector_abc ... ok
+test sha256::tests::nist_vector_empty_string ... ok
+test protocol::tests::framing_errors ... ok
+test sha256::tests::utf8_text_is_hashed_as_utf8_bytes ... ok
 test textrange::tests::edits_validate_and_apply ... ok
 test textrange::tests::eol_detection ... ok
-test secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values ... ok
 test textrange::tests::ut_026_crlf_is_not_split ... ok
 test textrange::tests::ut_026_offset_round_trip ... ok
+test session::tests::the_least_recently_used_session_is_evicted ... ok
 test textrange::tests::ut_026_out_of_range_is_rejected ... ok
-test pack::tests::user_packs_cannot_use_builtin_only_fields_or_collide ... ok
 test textrange::tests::ut_026_positions_never_split_surrogates ... ok
 test util::tests::boundary_and_words ... ok
 test util::tests::locale_compare_orders_like_icu ... ok
 test util::tests::split_lines_matches_js ... ok
-test util::tests::utf16_helpers_do_not_split_pairs ... ok
 test validators::tests::assembly_syntax_mix_and_hex ... ok
+test util::tests::utf16_helpers_do_not_split_pairs ... ok
 test validators::tests::dialect_gated_features ... ok
-test validators::tests::python_indentation_rules ... ok
 test validators::tests::masking_hides_strings_and_comments ... ok
+test validators::tests::python_indentation_rules ... ok
 test validators::tests::unknown_profile_has_no_validator ... ok
-test x86::tests::normalize_matches_js ... ok
+test resolve::tests::manual_lock_beats_everything_and_bridge_id_beats_extension ... ok
 test x86::tests::documented_forms ... ok
+test x86::tests::normalize_matches_js ... ok
 test x86::tests::unresolved_and_unsupported_never_yield_bytes ... ok
 test x86::tests::validate_hex_cases ... ok
-test protocol::tests::a_line_of_exactly_the_limit_is_accepted ... ok
-test resolve::tests::manual_lock_beats_everything_and_bridge_id_beats_extension ... ok
+test sha256::tests::chunking_never_changes_the_digest ... ok
 test resolve::tests::tsx_hint_and_weak_evidence ... ok
 test predict::tests::machine_code_is_verified_or_explained ... ok
 test protocol::tests::predict_returns_the_same_candidates_as_the_engine ... ok
 test x86::tests::catalogue_and_reverse_lookup ... ok
+test ids::tests::ids_are_unique_and_have_the_requested_length ... ok
+test sha256::tests::nist_vector_one_million_a ... ok
 
-test result: ok. 90 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 162 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
 
-     Running unittests src\main.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\pime_core-b784c093135fe5b6.exe)
+     Running unittests src\main.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\pime_core-b784c093135fe5b6.exe)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running tests\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\benchmark-ebcdd26c4f104207.exe)
+     Running ..\..\tests\rust\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\benchmark-ebcdd26c4f104207.exe)
 
 running 1 test
 test ut_068_local_candidate_p95_within_20ms ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
 
-     Running tests\parity.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\parity-6d56db748acb50c7.exe)
+     Running ..\..\tests\rust\parity.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\parity-6d56db748acb50c7.exe)
 
 running 5 tests
-test parity_resolve_cases ... ok
-test parity_validate_cases ... ok
 test parity_x86_vectors ... ok
 test parity_secret_cases ... ok
+test parity_validate_cases ... ok
+test parity_resolve_cases ... ok
 test parity_predict_cases ... ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
-     Running tests\protocol.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\protocol-dd36d86b9c8020e2.exe)
+     Running ..\..\tests\rust\parity_edit.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\parity_edit-ca5b5219f86dd965.exe)
+
+running 7 tests
+test parity_workspace_tokens ... ok
+test parity_sha256 ... ok
+test parity_diff_and_hunks ... ok
+test parity_excerpt ... ok
+test parity_endpoint_rules_match_whatwg_url_parsing ... ok
+test parity_settings_effective_validate_and_resolve ... ok
+test parity_diff_over_the_cell_limit_is_one_replace_hunk ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running ..\..\tests\rust\protocol.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\protocol-dd36d86b9c8020e2.exe)
 
 running 5 tests
 test oversized_and_invalid_lines_do_not_stop_the_server ... ok
@@ -136,6 +221,47 @@ test sample_requests_via_the_real_binary ... ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
 
+     Running ..\..\tests\rust\protocol_v03.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\protocol_v03-705d01798e73d2ac.exe)
+
+running 11 tests
+test health_reports_protocol_0_3_and_needs_no_session ... ok
+test session_close_forgets_the_session ... ok
+test session_open_returns_an_id_and_the_protocol ... ok
+test an_idle_session_expires_and_use_keeps_it_alive ... ok
+test every_0_3_operation_except_health_and_open_needs_a_live_session ... ok
+test session_open_validates_locale_entropy_and_settings ... ok
+test the_same_entropy_cannot_open_two_sessions ... ok
+test settings_apply_returns_effective_settings_and_issues ... ok
+test the_0_2_operations_work_unchanged_next_to_sessions ... ok
+test only_operations_that_carry_document_text_may_use_long_lines ... ok
+test serve_with_keeps_session_state_across_lines_and_the_binary_does_too ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running ..\..\tests\rust\protocol_v03_edit.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\protocol_v03_edit-a296493bce1f9b4e.exe)
+
+running 18 tests
+test excerpt_applies_the_policy_and_never_splits_characters ... ok
+test budget_accounting_over_the_protocol ... ok
+test every_new_operation_needs_a_session ... ok
+test grants_report_what_to_persist_and_a_new_session_can_import_it ... ok
+test text_survives_unicode_and_control_characters ... ok
+test plans_refuse_other_files_unwritable_contexts_and_bad_edits ... ok
+test the_insert_path_uses_explicit_edits_and_a_selection ... ok
+test ids_of_every_family_are_hex_and_do_not_repeat_across_sessions ... ok
+test only_the_literal_true_confirms_and_every_check_stops_the_prepare ... ok
+test sessions_do_not_see_each_others_snapshots_or_grants ... ok
+test releasing_a_snapshot_forgets_its_text_and_proposals_and_the_store_is_bounded ... ok
+test the_v0_3_sample_requests_via_handle_line ... ok
+test the_whole_f1_edit_flow_over_jsonl ... ok
+test invalidation_and_revoked_grants_block_the_apply ... ok
+test a_write_that_is_never_reported_is_edit_unknown_and_time_comes_from_the_clock ... ok
+test the_v0_3_schema_describes_every_operation_and_error ... ok
+test the_v0_3_sample_requests_via_the_real_binary ... ok
+test a_one_megabyte_document_goes_through_the_whole_edit_flow ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.62s
+
    Doc-tests pime_core
 
 running 0 tests
@@ -144,8 +270,8 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 
 ==================== 2. cargo test --test parity -- --nocapture --test-threads=1 (golden fixtures vs JS engine) ====================
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
-     Running tests\parity.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\parity-6d56db748acb50c7.exe)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running ..\..\tests\rust\parity.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\parity-6d56db748acb50c7.exe)
 
 running 5 tests
 test parity_predict_cases ... parity predict-cases: 100/100 cases match
@@ -159,52 +285,37 @@ ok
 test parity_x86_vectors ... parity x86-vectors: 59/59 cases match
 ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
 
 ==================== 3. UT-068 benchmark, DEBUG build: cargo test --test benchmark -- --nocapture ====================
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
-     Running tests\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\benchmark-ebcdd26c4f104207.exe)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running ..\..\tests\rust\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\debug\deps\benchmark-ebcdd26c4f104207.exe)
 
 running 1 test
-UT-068 BENCHMARK: events=1000 candidates_produced=2055 P50=0.159 ms P95=0.271 ms max=11.844 ms build=debug (unoptimized)
+UT-068 BENCHMARK: events=1000 candidates_produced=2055 P50=0.149 ms P95=0.254 ms max=11.683 ms build=debug (unoptimized)
 test ut_068_local_candidate_p95_within_20ms ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
 
 
 ==================== 4. UT-068 benchmark, RELEASE build: cargo test --release --test benchmark -- --nocapture ====================
    Compiling pime-core v0.2.0 (D:\IME1.0\01_Source\crates\pime-core)
-    Finished `release` profile [optimized] target(s) in 2.81s
-     Running tests\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\release\deps\benchmark-b4658273e850ffe0.exe)
+    Finished `release` profile [optimized] target(s) in 6.77s
+     Running ..\..\tests\rust\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-ed\release\deps\benchmark-b4658273e850ffe0.exe)
 
 running 1 test
-UT-068 BENCHMARK: events=1000 candidates_produced=2055 P50=0.025 ms P95=0.036 ms max=4.124 ms build=release
+UT-068 BENCHMARK: events=1000 candidates_produced=2055 P50=0.027 ms P95=0.039 ms max=4.115 ms build=release
 test ut_068_local_candidate_p95_within_20ms ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
 
 ==================== 5. cargo clippy --workspace --all-targets -- -D warnings ====================
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
-(clippy exit status: 0)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+clippy exit code: 0
 
 ==================== 6. cargo fmt --all -- --check ====================
-(fmt exit status: 0)
+fmt exit code: 0
 
-==================== 7. Differential fuzz, JS reference engine vs Rust binary (not part of the repo; script kept in the session scratchpad) ====================
-# node fuzz-diff.js <pime-core.exe> <seed> <cases-per-area>; areas: validate, predict, scan, encode, validate_hex, resolve; 'nontrivial' = expected output is not an empty list/trivial refusal
---- seed/count: 1 4000
-{"validate":{"total":4000,"diff":0,"nontrivial":2027},"predict":{"total":4000,"diff":0,"nontrivial":1564},"scan":{"total":4000,"diff":0,"nontrivial":2179},"encode":{"total":4000,"diff":0,"nontrivial":361},"validate_hex":{"total":4000,"diff":0,"nontrivial":4000},"resolve":{"total":4000,"diff":0,"nontrivial":4000}}
-ALL MATCH
---- seed/count: 777 4000
-{"validate":{"total":4000,"diff":0,"nontrivial":2113},"predict":{"total":4000,"diff":0,"nontrivial":1591},"scan":{"total":4000,"diff":0,"nontrivial":2154},"encode":{"total":4000,"diff":0,"nontrivial":331},"validate_hex":{"total":4000,"diff":0,"nontrivial":4000},"resolve":{"total":4000,"diff":0,"nontrivial":4000}}
-ALL MATCH
---- seed/count: 5 6000
-{"validate":{"total":6000,"diff":0,"nontrivial":3032},"predict":{"total":6000,"diff":0,"nontrivial":2364},"scan":{"total":6000,"diff":0,"nontrivial":3286},"encode":{"total":6000,"diff":0,"nontrivial":512},"validate_hex":{"total":6000,"diff":0,"nontrivial":6000},"resolve":{"total":6000,"diff":0,"nontrivial":6000}}
-ALL MATCH
---- seed/count: 99 6000
-{"validate":{"total":6000,"diff":0,"nontrivial":3049},"predict":{"total":6000,"diff":0,"nontrivial":2334},"scan":{"total":6000,"diff":0,"nontrivial":3273},"encode":{"total":6000,"diff":0,"nontrivial":497},"validate_hex":{"total":6000,"diff":0,"nontrivial":6000},"resolve":{"total":6000,"diff":0,"nontrivial":6000}}
-ALL MATCH
---- identifier tie-order (localeCompare) check
-LOCALE ORDER: ALL MATCH (3000 cases)
+==================== 7. Differential fuzz JS vs Rust: NOT re-run in this record (the earlier script is not part of the repository); the stored differential tests are tests/js/ut-engine.test.js ====================

@@ -144,11 +144,7 @@ pub fn normalize(text: &str) -> String {
 fn rex_rm(w: bool, reg: usize, rm: usize) -> Vec<u8> {
     let rex =
         0x40u8 | if w { 8 } else { 0 } | if reg >= 8 { 4 } else { 0 } | if rm >= 8 { 1 } else { 0 };
-    if rex != 0x40 || w {
-        vec![rex]
-    } else {
-        vec![]
-    }
+    if rex != 0x40 || w { vec![rex] } else { vec![] }
 }
 
 fn done(bytes: Vec<u8>, form: String) -> EncodeResult {
@@ -213,55 +209,57 @@ pub fn encode(instruction: &str) -> EncodeResult {
         bytes.push((if mnemonic == "push" { 0x50 } else { 0x58 }) + (r & 7) as u8);
         return done(bytes, format!("{mnemonic} r64"));
     }
-    if let Some(&(_, opcode, ext)) = ALU.iter().find(|(k, _, _)| *k == mnemonic) {
-        if operands.len() == 2 {
-            let (dst, src) = (operands[0], operands[1]);
-            for (table, wide) in [(&R64, true), (&R32, false)] {
-                let d = table.iter().position(|r| *r == dst);
-                let s = table.iter().position(|r| *r == src);
-                if let (Some(d), Some(s)) = (d, s) {
-                    let mut bytes = rex_rm(wide, s, d);
-                    bytes.push(opcode);
-                    bytes.push(0xC0 | (((s & 7) as u8) << 3) | (d & 7) as u8);
-                    let f = if wide { "r64" } else { "r32" };
-                    return done(bytes, format!("{mnemonic} {f}, {f}"));
-                }
+    if let Some(&(_, opcode, ext)) = ALU.iter().find(|(k, _, _)| *k == mnemonic)
+        && operands.len() == 2
+    {
+        let (dst, src) = (operands[0], operands[1]);
+        for (table, wide) in [(&R64, true), (&R32, false)] {
+            let d = table.iter().position(|r| *r == dst);
+            let s = table.iter().position(|r| *r == src);
+            if let (Some(d), Some(s)) = (d, s) {
+                let mut bytes = rex_rm(wide, s, d);
+                bytes.push(opcode);
+                bytes.push(0xC0 | (((s & 7) as u8) << 3) | (d & 7) as u8);
+                let f = if wide { "r64" } else { "r32" };
+                return done(bytes, format!("{mnemonic} {f}, {f}"));
             }
-            let imm = parse_imm(src);
-            if mnemonic == "mov" {
-                if let (Some(d), Some(v)) = (reg32(dst), imm) {
-                    if (0.0..=4_294_967_295.0).contains(&v) {
-                        let mut bytes = Vec::new();
-                        if d >= 8 {
-                            bytes.push(0x41);
-                        }
-                        bytes.push(0xB8 + (d & 7) as u8);
-                        bytes.extend_from_slice(&le32(v as u64 as u32));
-                        return done(bytes, "mov r32, imm32".into());
-                    }
+        }
+        let imm = parse_imm(src);
+        if mnemonic == "mov" {
+            if let (Some(d), Some(v)) = (reg32(dst), imm)
+                && (0.0..=4_294_967_295.0).contains(&v)
+            {
+                let mut bytes = Vec::new();
+                if d >= 8 {
+                    bytes.push(0x41);
                 }
-                if reg64(dst).is_some() && imm.is_some() {
-                    return unsupported("mov r64, imm has several valid encodings; the choice depends on the assembler");
-                }
+                bytes.push(0xB8 + (d & 7) as u8);
+                bytes.extend_from_slice(&le32(v as u64 as u32));
+                return done(bytes, "mov r32, imm32".into());
             }
-            if mnemonic == "add" || mnemonic == "sub" {
-                if let (Some(d), Some(v)) = (reg64(dst), imm) {
-                    let digit = ext as u8;
-                    if (-128.0..=127.0).contains(&v) {
-                        let mut bytes = rex_rm(true, 0, d);
-                        bytes.push(0x83);
-                        bytes.push(0xC0 | (digit << 3) | (d & 7) as u8);
-                        bytes.push((v as i64 & 0xFF) as u8);
-                        return done(bytes, format!("{mnemonic} r64, imm8"));
-                    }
-                    if (-2_147_483_648.0..=2_147_483_647.0).contains(&v) {
-                        let mut bytes = rex_rm(true, 0, d);
-                        bytes.push(0x81);
-                        bytes.push(0xC0 | (digit << 3) | (d & 7) as u8);
-                        bytes.extend_from_slice(&le32(v as i64 as u32));
-                        return done(bytes, format!("{mnemonic} r64, imm32"));
-                    }
-                }
+            if reg64(dst).is_some() && imm.is_some() {
+                return unsupported(
+                    "mov r64, imm has several valid encodings; the choice depends on the assembler",
+                );
+            }
+        }
+        if (mnemonic == "add" || mnemonic == "sub")
+            && let (Some(d), Some(v)) = (reg64(dst), imm)
+        {
+            let digit = ext as u8;
+            if (-128.0..=127.0).contains(&v) {
+                let mut bytes = rex_rm(true, 0, d);
+                bytes.push(0x83);
+                bytes.push(0xC0 | (digit << 3) | (d & 7) as u8);
+                bytes.push((v as i64 & 0xFF) as u8);
+                return done(bytes, format!("{mnemonic} r64, imm8"));
+            }
+            if (-2_147_483_648.0..=2_147_483_647.0).contains(&v) {
+                let mut bytes = rex_rm(true, 0, d);
+                bytes.push(0x81);
+                bytes.push(0xC0 | (digit << 3) | (d & 7) as u8);
+                bytes.extend_from_slice(&le32(v as i64 as u32));
+                return done(bytes, format!("{mnemonic} r64, imm32"));
             }
         }
     }

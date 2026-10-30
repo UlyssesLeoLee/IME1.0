@@ -35,10 +35,11 @@ pub fn is_sensitive_file_name(name: &str) -> bool {
     if b == ".env" {
         return true;
     }
-    if let Some(rest) = b.strip_prefix(".env.") {
-        if !rest.is_empty() && rest.chars().all(|c| is_word(c) || c == '.' || c == '-') {
-            return true;
-        }
+    if let Some(rest) = b.strip_prefix(".env.")
+        && !rest.is_empty()
+        && rest.chars().all(|c| is_word(c) || c == '.' || c == '-')
+    {
+        return true;
     }
     for ext in ["pem", "key", "pfx", "p12", "jks", "keystore"] {
         if b.ends_with(&format!(".{ext}")) {
@@ -181,15 +182,14 @@ fn github_token(t: &[char], p: usize) -> Step {
         && p + 3 < t.len()
         && matches!(t[p + 2], 'p' | 'o' | 'u' | 's' | 'r')
         && t[p + 3] == '_'
+        && let Some(e) = greedy_bounded(t, p + 4, alnum, 36)
     {
-        if let Some(e) = greedy_bounded(t, p + 4, alnum, 36) {
-            return hit(e);
-        }
+        return hit(e);
     }
-    if starts_at(t, p, "github_pat_") {
-        if let Some(e) = greedy_bounded(t, p + 11, |c| alnum(c) || c == '_', 40) {
-            return hit(e);
-        }
+    if starts_at(t, p, "github_pat_")
+        && let Some(e) = greedy_bounded(t, p + 11, |c| alnum(c) || c == '_', 40)
+    {
+        return hit(e);
     }
     miss(p)
 }
@@ -200,10 +200,10 @@ fn api_key(t: &[char], p: usize) -> Step {
     }
     let class = |c: char| alnum(c) || c == '_' || c == '-';
     for prefix in ["proj-", "live-", "test-", "ant-"] {
-        if starts_at(t, p + 3, prefix) {
-            if let Some(e) = greedy_bounded(t, p + 3 + prefix.len(), class, 20) {
-                return hit(e);
-            }
+        if starts_at(t, p + 3, prefix)
+            && let Some(e) = greedy_bounded(t, p + 3 + prefix.len(), class, 20)
+        {
+            return hit(e);
         }
     }
     match greedy_bounded(t, p + 3, class, 20) {
@@ -529,10 +529,10 @@ mod tests {
     #[test]
     fn placeholders_and_env_lookups_are_not_findings() {
         assert!(kinds("password = process.env.PW").is_empty());
-        assert!(kinds(
-            "secret = \"${SECRET}\"\napi_key = \"your_api_key_here\"\npassword: <password>"
-        )
-        .is_empty());
+        assert!(
+            kinds("secret = \"${SECRET}\"\napi_key = \"your_api_key_here\"\npassword: <password>")
+                .is_empty()
+        );
         assert!(kinds("fn main() {}").is_empty());
     }
 

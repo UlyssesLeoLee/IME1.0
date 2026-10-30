@@ -13,7 +13,7 @@
 //!   except where a reply is defined to carry it (`edit.result`, the 4000-unit `preview`, hunk display lines).
 
 use crate::budget::Usage;
-use crate::context::{self, selection_json, SnapshotInput};
+use crate::context::{self, SnapshotInput, selection_json};
 use crate::edit::diff::{self, Hunk};
 use crate::edit::transaction::{ApplyOutcome, DocState, Plan, PlanRequest, PrepareArgs};
 use crate::error::PimeError;
@@ -21,7 +21,7 @@ use crate::grants::{self, AuthorizeRequest, Criteria, Grant};
 use crate::ids::{IdGen, MAX_ENTROPY_BYTES};
 use crate::json::Json;
 use crate::protocol::dialect_of;
-use crate::session::{OpenError, Proposal, Session, SessionStore, MAX_TICKETS};
+use crate::session::{MAX_TICKETS, OpenError, Proposal, Session, SessionStore};
 use crate::settings;
 use crate::sha256::{from_hex, sha256_hex};
 use crate::textrange::{self, Edit, Position, Range};

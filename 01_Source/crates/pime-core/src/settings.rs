@@ -9,7 +9,7 @@
 //! Known differences from the JS reference (all in input that VS Code's typed settings never produce): array and
 //! string values where an object is expected are ignored instead of being spread into numeric keys.
 
-use crate::error::{fail, Result};
+use crate::error::{Result, fail};
 use crate::json::Json;
 
 pub const SCHEMA_VERSION: i64 = 1;
@@ -219,21 +219,21 @@ pub fn validate(settings: &Json) -> Vec<Issue> {
             });
         }
         // optional provider fields: `maxTokensParam` (openai-chat) and `apiVersion` (anthropic-messages)
-        if let Some(v) = p.get("maxTokensParam") {
-            if !v.as_str().is_some_and(|x| MAX_TOKENS_PARAMS.contains(&x)) {
-                issues.push(Issue {
-                    path: format!("providers.{id}.maxTokensParam"),
-                    message: "must be max_tokens or max_completion_tokens",
-                });
-            }
+        if let Some(v) = p.get("maxTokensParam")
+            && !v.as_str().is_some_and(|x| MAX_TOKENS_PARAMS.contains(&x))
+        {
+            issues.push(Issue {
+                path: format!("providers.{id}.maxTokensParam"),
+                message: "must be max_tokens or max_completion_tokens",
+            });
         }
-        if let Some(v) = p.get("apiVersion") {
-            if !v.as_str().is_some_and(is_api_version) {
-                issues.push(Issue {
-                    path: format!("providers.{id}.apiVersion"),
-                    message: "expected YYYY-MM-DD",
-                });
-            }
+        if let Some(v) = p.get("apiVersion")
+            && !v.as_str().is_some_and(is_api_version)
+        {
+            issues.push(Issue {
+                path: format!("providers.{id}.apiVersion"),
+                message: "expected YYYY-MM-DD",
+            });
         }
         if !p
             .get("endpoint")
@@ -441,7 +441,7 @@ pub fn check_endpoint(endpoint: &str) -> std::result::Result<(), ()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::json::{parse, Limits};
+    use crate::json::{Limits, parse};
 
     fn j(s: &str) -> Json {
         parse(s, Limits::DEFAULT).unwrap()

@@ -1,6 +1,6 @@
 'use strict';
 const path = require('node:path');
-const evidence = process.env.UAT_EVIDENCE_DIR || path.resolve(__dirname, '..', '..', '02_Verification', 'uat');
+const evidence = process.env.UAT_EVIDENCE_DIR || path.resolve(__dirname, '..', '..', '..', '02_Verification', 'uat');
 module.exports = {
   testDir: path.join(__dirname, 'tests'),
   outputDir: path.join(evidence, 'artifacts'),

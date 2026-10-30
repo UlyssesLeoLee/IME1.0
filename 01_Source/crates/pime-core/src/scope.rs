@@ -2,7 +2,7 @@
 //! Whole-file writes come only from a trusted editor buffer (L3); a file read from disk (L4) is read-only
 //! preview and is never written back. Excerpt bounds never split a surrogate pair or a CRLF (UT-026 rules).
 
-use crate::error::{fail, Result};
+use crate::error::{Result, fail};
 use crate::textrange::{is_boundary_units, units};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

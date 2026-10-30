@@ -95,18 +95,18 @@ test('UT-052 / IT-034 structural validation catches incomplete blocks and bad in
 });
 
 test('UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything', () => {
-  const dir = path.join(__dirname, '..', 'src', 'core');
+  const dir = path.join(__dirname, '..', '..', 'editor-bridges', 'vscode', 'src', 'core');
   for (const f of fs.readdirSync(dir).filter(n => n.endsWith('.js'))) {
     const src = fs.readFileSync(path.join(dir, f), 'utf8');
     // `re.exec(` (RegExp) is fine; a bare exec/spawn call or child_process import is not
     assert.doesNotMatch(src, /child_process|(?<![.\w])(?:spawn|exec|execSync|execFile)\(|(?<![.\w])eval\(|new Function\(|require\(['"]vm['"]\)|worker_threads/, `${f} must not execute code`);
     assert.doesNotMatch(src, /require\(['"]net['"]\)|require\(['"]https?['"]\)|require\(['"]dns['"]\)/, `${f} must not open sockets itself`);
   }
-  const ext = fs.readdirSync(path.join(__dirname, '..', 'src')).filter(n => n.endsWith('.js'));
-  const spawners = ext.filter(f => /child_process/.test(fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8')));
+  const ext = fs.readdirSync(path.join(__dirname, '..', '..', 'editor-bridges', 'vscode', 'src')).filter(n => n.endsWith('.js'));
+  const spawners = ext.filter(f => /child_process/.test(fs.readFileSync(path.join(__dirname, '..', '..', 'editor-bridges', 'vscode', 'src', f), 'utf8')));
   assert.deepEqual(spawners, ['coreprocess.js'], 'only the optional, explicitly configured core client may spawn a process');
-  const cp = fs.readFileSync(path.join(__dirname, '..', 'src', 'coreprocess.js'), 'utf8');
+  const cp = fs.readFileSync(path.join(__dirname, '..', '..', 'editor-bridges', 'vscode', 'src', 'coreprocess.js'), 'utf8');
   assert.match(cp, /spawn\(binary, \[\]/, 'no arguments from untrusted data');
-  const lang = fs.readFileSync(path.join(__dirname, '..', 'src', 'extension.js'), 'utf8');
+  const lang = fs.readFileSync(path.join(__dirname, '..', '..', 'editor-bridges', 'vscode', 'src', 'extension.js'), 'utf8');
   assert.match(lang, /cfg\(\)\.get\('coreExecutable'\)/, 'the binary path comes from user settings only');
 });

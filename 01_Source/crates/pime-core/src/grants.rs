@@ -6,7 +6,7 @@
 //! in the JSON shape the JS broker stored (`pime.grants.v1`) and [`PermissionBroker::import`] loads them back, so
 //! switching between the engines keeps the user's authorisations.
 
-use crate::error::{fail, Result};
+use crate::error::{Result, fail};
 use crate::ids::IdGen;
 use crate::json::Json;
 use crate::sha256::sha256_hex;
@@ -187,10 +187,10 @@ impl PermissionBroker {
     }
 
     pub fn consume(&mut self, grant_id: &str) {
-        if let Some(g) = self.grants.iter_mut().find(|g| g.id == grant_id) {
-            if g.once {
-                g.used = true;
-            }
+        if let Some(g) = self.grants.iter_mut().find(|g| g.id == grant_id)
+            && g.once
+        {
+            g.used = true;
         }
     }
 
@@ -306,7 +306,7 @@ fn parse_grant(e: &Json) -> Option<Grant> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::json::{parse, Limits};
+    use crate::json::{Limits, parse};
 
     fn ids() -> IdGen {
         let entropy: Vec<u8> = (0..32u8)

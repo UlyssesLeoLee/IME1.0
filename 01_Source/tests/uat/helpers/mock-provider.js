@@ -15,12 +15,18 @@ function findOpenssl() {
   throw new Error('OpenSSL not found: set OPENSSL_PATH (Git for Windows ships mingw64/bin/openssl.exe)');
 }
 let cert = null;
+// The throw-away certificate is generated once and reused by later runs for 20 hours (valid for 2 days): regression runs do not
+// regenerate it. It lives in the OS temp folder, never in the repository, and protects nothing but the local mock provider.
+const CERT_DIR = path.join(os.tmpdir(), 'pime-uat-cert-cache'), CERT_MAX_AGE_MS = 20 * 3600 * 1000;
 function ensureCert() {
   if (cert) return cert;
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pime-uat-cert-'));
-  const keyFile = path.join(dir, 'key.pem'), certFile = path.join(dir, 'cert.pem');
-  execFileSync(findOpenssl(), ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', keyFile, '-out', certFile, '-days', '2', '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1'], {stdio: 'pipe'});
-  cert = {dir, keyFile, certFile, key: fs.readFileSync(keyFile), cert: fs.readFileSync(certFile)};
+  const keyFile = path.join(CERT_DIR, 'key.pem'), certFile = path.join(CERT_DIR, 'cert.pem');
+  const fresh = fs.existsSync(keyFile) && fs.existsSync(certFile) && Date.now() - fs.statSync(certFile).mtimeMs < CERT_MAX_AGE_MS;
+  if (!fresh) {
+    fs.mkdirSync(CERT_DIR, {recursive: true});
+    execFileSync(findOpenssl(), ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', keyFile, '-out', certFile, '-days', '2', '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1'], {stdio: 'pipe'});
+  }
+  cert = {dir: CERT_DIR, keyFile, certFile, key: fs.readFileSync(keyFile), cert: fs.readFileSync(certFile)};
   return cert;
 }
 

@@ -384,10 +384,10 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 ### 13.3 验证（本机实测，见最终报告）
 
 - `cargo test --workspace`：**209** 个测试（开始时 101）；`cargo clippy --workspace --all-targets -- -D warnings`、`cargo fmt --all -- --check` 干净。
-- JS：`npm test` 90 项 + 10 项引擎差分测试（`test/ut-engine.test.js`，需要 `PIME_CORE_EXE`，未设置时**跳过**而不是通过）；`npm run check` 通过；`node tests/gen-fixtures.js --check` 最新（新增 `edit-cases.json`：SHA-256、diff/hunk/render/选择、摘录、设置、端点、工作区令牌，全部由 JS 生成、Rust 逐项一致）。
+- JS：`npm test` 90 项 + 10 项引擎差分测试（`tests/js/ut-engine.test.js`，需要 `PIME_CORE_EXE`，未设置时**跳过**而不是通过）；`npm run check` 通过；`node tests/gen-fixtures.js --check` 最新（新增 `edit-cases.json`：SHA-256、diff/hunk/render/选择、摘录、设置、端点、工作区令牌，全部由 JS 生成、Rust 逐项一致）。
 - UAT（2026-10-30，真实 VS Code 1.137.0，每次一个实例）：**js 引擎 31 通过 + 1 跳过**（24 项原有 + 6 项注释 + ENG-01；ENG-02 需要核心，故跳过）；**rust 引擎 32/32 通过**（核心为 debug 构建的 `pime-core.exe`）。
-  新增 `uat/tests/05-engine.spec.js`：ENG-01（`engine=rust` 且核心不存在 → 状态栏 `core unavailable`、一次性通知、F1 仍打开命令面板、无 JS 回退、输入不受影响）、ENG-02（运行中强杀核心 → 同样降级）。
-  复现：`cargo build` → `$env:PIME_ENGINE='rust'; $env:PIME_CORE_EXE='<pime-core.exe 路径>'; $env:UAT_EVIDENCE_DIR='<证据目录>'; cd uat; npx playwright test`（默认引擎：不设这三个变量；约 4.3 分钟）。
+  新增 `tests/uat/tests/05-engine.spec.js`：ENG-01（`engine=rust` 且核心不存在 → 状态栏 `core unavailable`、一次性通知、F1 仍打开命令面板、无 JS 回退、输入不受影响）、ENG-02（运行中强杀核心 → 同样降级）。
+  复现：`cargo build` → `$env:PIME_ENGINE='rust'; $env:PIME_CORE_EXE='<pime-core.exe 路径>'; $env:UAT_EVIDENCE_DIR='<证据目录>'; cd tests/uat; npx playwright test`（默认引擎：不设这三个变量；约 4.3 分钟）。
 - 移植到 Rust 的 UT/IT 编号（函数名带同样的编号，如 `ut_045_hunks_replay_to_the_exact_after_hash_with_crlf_and_a_changed_trailing_newline`）：UT-025/027/028/029/030、UT-035、UT-044/045/046/047/048/049/050/051/052/053/054、UT-075，IT-015/029/030/031/032/033/035/036，ST-027/030，NFR-502（UT-026 此前已在 `textrange.rs`）。
 
 ### 13.4 与计划/任务书的偏离及原因

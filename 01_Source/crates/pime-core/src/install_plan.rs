@@ -5,7 +5,7 @@
 //! input method or for touching another IME's profile, so such a plan cannot be expressed at all.
 //! [`SystemState`] is a fake of the OS registration state used to prove the effect of a plan in tests.
 
-use crate::profiles::{builtin_profiles, is_own_guid, Guid, LanguageProfile, PIME_CLSID};
+use crate::profiles::{Guid, LanguageProfile, PIME_CLSID, builtin_profiles, is_own_guid};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
