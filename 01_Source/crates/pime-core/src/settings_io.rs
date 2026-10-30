@@ -55,6 +55,23 @@ impl Fs for StdFs {
         std::fs::copy(from, to).map(|_| ())
     }
     fn rename(&self, from: &Path, to: &Path) -> io::Result<()> {
+        // on Windows a virus scanner or indexer can hold the destination for a moment (access denied / sharing
+        // violation); a short bounded retry keeps that from failing a save, a real refusal still surfaces
+        let mut delay = std::time::Duration::from_millis(10);
+        for _ in 0..4 {
+            match std::fs::rename(from, to) {
+                Err(e)
+                    if matches!(
+                        e.kind(),
+                        io::ErrorKind::PermissionDenied | io::ErrorKind::ResourceBusy
+                    ) =>
+                {
+                    std::thread::sleep(delay);
+                    delay *= 2;
+                }
+                done => return done,
+            }
+        }
         std::fs::rename(from, to)
     }
     fn remove(&self, path: &Path) -> io::Result<()> {

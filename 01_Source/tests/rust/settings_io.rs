@@ -30,6 +30,19 @@ fn names(dir: &Path) -> Vec<String> {
     v
 }
 
+/// The folder listing once leftover temp files are gone. A failed write removes its temp file best effort, and on Windows a
+/// virus scanner can hold that file for a moment, so the cleanup is given a second to show.
+fn settled(dir: &Path) -> Vec<String> {
+    for _ in 0..20 {
+        let v = names(dir);
+        if v.iter().all(|n| !n.contains(".tmp-")) {
+            return v;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    names(dir)
+}
+
 const GOOD: &str = r#"{"schema_version":1,"x":"old"}"#;
 const NEW: &str = r#"{"schema_version":1,"x":"new"}"#;
 
@@ -64,13 +77,13 @@ fn a_failing_write_leaves_the_last_good_file_and_removes_its_temp_file() {
     // the target's folder is gone: the temp file cannot even be created
     let orphan = dir.join("missing-folder").join("settings.json");
     assert!(write_file_atomic(&StdFs, &orphan, NEW).is_err());
-    assert_eq!(names(&dir), ["settings.json"]);
+    assert_eq!(settled(&dir), ["settings.json"]);
     // the target is a directory: the temp file is written, the rename fails, the temp file is removed again
     let blocked = dir.join("blocked.json");
     std::fs::create_dir(&blocked).unwrap();
     assert!(write_file_atomic(&StdFs, &blocked, NEW).is_err());
     assert_eq!(
-        names(&dir),
+        settled(&dir),
         ["blocked.json", "settings.json"],
         "no .tmp- file is left behind"
     );
@@ -150,7 +163,7 @@ fn writers_in_parallel_never_expose_a_partial_file() {
     let rec = read_json_recovering(&StdFs, &file, &|_| true);
     assert!(rec.value.is_some() && !rec.recovered);
     assert!(
-        names(&dir).iter().all(|n| !n.contains(".tmp-")),
+        settled(&dir).iter().all(|n| !n.contains(".tmp-")),
         "no temp file is left behind: {:?}",
         names(&dir)
     );
