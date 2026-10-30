@@ -303,10 +303,11 @@ pub fn validate_sid(sid: &str) -> Result<(), IpcError> {
 /// Access mask granted to the user on the pipe: `FILE_GENERIC_READ | FILE_GENERIC_WRITE`, which includes
 /// `FILE_CREATE_PIPE_INSTANCE` (0x4). That right is needed: the server creates one more instance per accepted
 /// client, and Windows checks it against this very DACL for the server's own token (measured here: with the masks
-/// 0x120083 and 0x120087 the second `CreateNamedPipeW` of the server failed with ERROR_ACCESS_DENIED; the full
-/// generic read/write set works). Consequence, documented in `docs/IPC.md` section 5: another process of the same
-/// user can add instances to the live pipe too; mutual authentication makes that a denial of service, not a way to
-/// read or forge anything. Deliberately not `GA`: no `WRITE_DAC`, `WRITE_OWNER` or `DELETE`.
+/// 0x120083 and 0x120087 the server's replacement instances could not be created, ERROR_ACCESS_DENIED observed for
+/// the first mask; the full generic read/write set works). Consequence, documented in `docs/IPC.md` sections 5 and 6:
+/// another process of the same user can add instances to the live pipe too; the handshake keeps it from posing as the
+/// server or a client, but it can relay a handshake it cannot forge, and frames are not yet authenticated one by one.
+/// Deliberately not `GA`: no `WRITE_DAC`, `WRITE_OWNER` or `DELETE`.
 pub const PIPE_USER_ACCESS_MASK: u32 = 0x0012_019F;
 
 /// `D:P(A;;<mask>;;;<SID>)`: a protected DACL (no inheritance) with a single ACE for this user, nobody else.

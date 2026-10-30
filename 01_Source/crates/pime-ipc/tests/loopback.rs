@@ -769,6 +769,40 @@ fn it_004_ipc_timeout_part_server_that_never_accepts() {
 // ---------------------------------------------------------------------------------------------------------------
 // load
 
+/// UT-068/NFR-201 context (not the benchmark of the design: that one measures the local candidate computation): the
+/// cost of one request/response round trip over the pipe, so the budget left for the computation is known. Debug build;
+/// the assertion is a loose sanity bound on the median, the numbers are printed for docs/IPC.md.
+#[test]
+fn ut_ipc_round_trip_latency_is_reported() {
+    let server = Server::start();
+    let mut c = server.connect("tsf", &[]).unwrap();
+    let mut micros: Vec<u128> = Vec::new();
+    for i in 0..400 {
+        let started = Instant::now();
+        let r = c
+            .request_within(
+                &format!(r#"{{"op":"health","id":{i}}}"#),
+                Duration::from_secs(2),
+            )
+            .expect("reply");
+        micros.push(started.elapsed().as_micros());
+        assert!(r.text.contains("\"ok\":true"));
+    }
+    micros.sort_unstable();
+    let pick = |q: f64| micros[((micros.len() as f64 * q) as usize).min(micros.len() - 1)];
+    println!(
+        "round trip over the pipe, 400 small requests (debug build): p50 {} us, p95 {} us, max {} us",
+        pick(0.50),
+        pick(0.95),
+        micros[micros.len() - 1]
+    );
+    assert!(
+        pick(0.50) < 20_000,
+        "median round trip above 20 ms: {} us",
+        pick(0.50)
+    );
+}
+
 #[test]
 fn it_003_many_sequential_connections() {
     let server = Server::start();
