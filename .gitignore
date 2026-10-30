@@ -1,2 +1,5 @@
 # Playwright failure artifacts (the evidence screenshots and uat-results.json are kept)
 02_Verification/uat/artifacts/
+
+# sub-agent working copies created by the harness
+.claude/worktrees/

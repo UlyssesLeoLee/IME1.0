@@ -165,10 +165,11 @@ reg query "HKLM\SOFTWARE\Microsoft\CTF\TIP\$Clsid" /s
 | 其下 `InprocServer32` 默认值 | `C:\Program Files\PIME\pime_tsf.dll`（**没有引号**） |
 | `InprocServer32` 的 `ThreadingModel` | `Apartment` |
 | `HKLM\SOFTWARE\Microsoft\CTF\TIP\{43F95ED1-...}\LanguageProfile` | 三个语言键 `0x00000804`、`0x00000409`、`0x00000411`，各含一个本产品的 profile GUID |
-| 同一 TIP 键下的 `Category` | 含下面四个类别，**不含 SECUREMODE** |
+| 同一 TIP 键下的 `Category` | 只含下面两个类别；**不含 SECUREMODE、IMMERSIVESUPPORT、UIELEMENTENABLED**（见下） |
 
-类别 GUID：`TIP_KEYBOARD {34745C63-B2F0-4784-8B67-5E12C8701A31}`、`IMMERSIVESUPPORT {13A016DF-560B-46CD-947A-4C3AF1E0E35D}`、
-`SYSTRAYSUPPORT {25504FB4-7BAB-4BC1-9C69-CF81890F0EF5}`、`UIELEMENTENABLED {49D2F9CF-1F5E-11D7-A6D3-00065B84435C}`。
+类别 GUID：`TIP_KEYBOARD {34745C63-B2F0-4784-8B67-5E12C8701A31}`、`SYSTRAYSUPPORT {25504FB4-7BAB-4BC1-9C69-CF81890F0EF5}`。
+
+**有意不注册**（每一项都是对宿主的承诺，实现了才加）：`UIELEMENTENABLED`、`IMMERSIVESUPPORT`（商店应用只会通过 TSF UI 元素协议显示候选，而本输入法还没有实现 `ITfUIElementMgr` / `ITfCandidateListUIElement`，自绘候选窗在那里不会出现），`SECUREMODE`（不让未审查的 DLL 被加载进登录界面和 UAC 提示）。
 **不应出现** `SECUREMODE {49D2F9CE-1F5E-11D7-A6D3-00065B84435C}`（有意不注册：否则 Windows 会在登录界面和 UAC 的安全桌面里加载这个未经审查的 DLL）。
 
 再运行两次注册（共三次，对应 IT-001 的“调用三次注册”），每次都应成功，且键值不变（幂等）：
@@ -231,7 +232,7 @@ Set-WinUserLanguageList $l -Force
 | 记事本 | 输入 1000 个字符加换行（ST-005），再保存，比较哈希 | 见下面的脚本 |
 | 浏览器文本框 | Edge 打开一个本地 HTML 页，里面有 `<textarea>` | 浏览器自己也处理 TSF |
 | VS Code | 输入 `fn`，看候选，Esc，接受，Ctrl+Z（ST-006） | 桩阶段只能确认“字符照常输入、没有崩溃” |
-| UWP / 商店应用 | 例如“设置”应用顶部的搜索框，或任意带文本框的商店应用 | 需要 `IMMERSIVESUPPORT`；桩没有实现 `ITfTextInputProcessorEx`，可能不被加载，记录 |
+| UWP / 商店应用 | 例如“设置”应用顶部的搜索框，或任意带文本框的商店应用 | **预期不可用**：目前有意不注册 `IMMERSIVESUPPORT`（UI 元素协议未实现），Windows 不会在商店应用里提供本输入法；确认它没有出现、也没有影响其他输入法即可 |
 | 开始菜单搜索 | 按 Win 键直接输入 | 同上；还可能被代码完整性策略拒绝，见下 |
 | 密码框 | 在本地 HTML 页里放 `<input type=password>`，在 Edge 中输入 | **必须什么都不显示、什么都不吞**（IT-005）：不出现候选窗，字符正常变成圆点，按键没有被消耗 |
 | 登录/锁屏、UAC 提示 | `Win+L`、以管理员运行一个程序 | 键盘列表里**不应**出现本产品（没有注册 SECUREMODE） |
@@ -344,7 +345,7 @@ Sandbox 里直接关闭窗口。卸载成功不代替回滚：测试完一律还
 | 12 | 杀 Core/Worker/UI 后输入 100 字符并计时（10.3） | ST-037 | 直通可用≤2s；无丢字/重复字符 | NOT RUN | | 需要 P3，当前无故障注入点 |
 | 13 | 按键清单（8）逐项 | 设计书 DD §5.3 / UT-009（按键规则）；ST-006 的候选选择和取消 | 见第 8 步表格 | NOT RUN | | 需要 M3 |
 | 14 | 候选窗位置、100/150/200 % DPI、双显示器（9） | 兼容性分级，不属于上面的用例 | 光标处出现、不抢焦点、大小合适 | NOT RUN | | |
-| 15 | 商店应用、开始菜单搜索的可用性（7） | 兼容性分级 | 记录 可用 / 受限 / 不支持 及原因 | NOT RUN | | 需要 `IMMERSIVESUPPORT` 和 `ITfTextInputProcessorEx` |
+| 15 | 商店应用、开始菜单搜索的可用性（7） | 兼容性分级 | 记录 可用 / 受限 / 不支持 及原因 | NOT RUN | | 目前**不支持**（有意不注册 `IMMERSIVESUPPORT`）；实现 UI 元素协议后再测 |
 
 ### 12.3 这次测试要回答的问题（实测填写）
 
