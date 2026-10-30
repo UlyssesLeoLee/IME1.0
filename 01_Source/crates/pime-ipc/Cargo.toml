@@ -1,0 +1,44 @@
+# PIME-IPC/1: the authenticated named-pipe transport between TSF, Core, Worker, UI and the editor bridges (docs/IPC.md).
+# Deliberately NOT a member of the main workspace: it needs `unsafe` for the Win32 pipe/ACL calls, it has its own
+# Cargo.lock, and the `windows` crate is pinned to 0.58 because 0.60+ import Windows functions with raw-dylib, which needs
+# a real binutils `dlltool`/`as` on the x86_64-pc-windows-gnu toolchain (see docs/VERSIONS.md). `pime-core` stays
+# dependency-free and `#![forbid(unsafe_code)]`; this crate reuses its SHA-256/HMAC and JSON parser.
+[package]
+name = "pime-ipc"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "PIME-IPC/1: length-prefixed frames, mutual HMAC-SHA-256 handshake and a per-user ACL named pipe (Windows)"
+
+# The integration tests are listed explicitly (like pime-core) so a later move to 01_Source/tests/rust is a path change.
+autotests = false
+
+[lib]
+name = "pime_ipc"
+path = "src/lib.rs"
+
+[[test]]
+name = "loopback"
+path = "tests/loopback.rs"
+
+[dependencies]
+pime-core = { path = "../pime-core" }
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "=0.58.0"
+features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  # BCryptGenRandom: the only entropy source (pime-core has none)
+  "Win32_Security_Cryptography",
+  "Win32_Storage_FileSystem",
+  "Win32_System_IO",
+  "Win32_System_Pipes",
+  # ProcessIdToSessionId: the same-session check (DD 2.1: other users AND other sessions are refused)
+  "Win32_System_RemoteDesktop",
+  "Win32_System_Threading",
+]
+
+[workspace]
