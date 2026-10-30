@@ -10,7 +10,7 @@ tests/
   golden-v0.2/             frozen behaviour of release v0.2 - read-only (SHA256SUMS.txt)
   js/                      node:test suites for the extension's pure logic and engine adapter (ut-*.test.js, parity.test.js, helpers.js)
   rust/                    integration tests of crates/pime-core (wired through [[test]] entries in its Cargo.toml)
-  smoke/                   core-binary-smoke.js: the real pime-core.exe over JSON Lines
+  smoke/                   core-binary-smoke.js: the real pime-core.exe over JSON Lines; tsf-dll-check.js: builds crates/pime-tsf and inspects the DLL
   uat/                     Playwright user-acceptance tests on the real VS Code (+ HTTPS mock provider, helpers)
   experiments/             feasibility probes that are scripts, e.g. wasm-panel-probe (WASM inside a VS Code webview)
 ```
@@ -20,9 +20,9 @@ Unit tests that need private access stay inside the Rust modules (`#[cfg(test)]`
 ## Running
 
 ```powershell
-node tests/run-all.js                    # fast set, no GUI: syntax, fixtures, golden, Rust, JS (+ engine differential tests), smoke
+node tests/run-all.js                    # fast set, no GUI: syntax, fixtures, golden, Rust, JS (+ engine differential tests), smoke, TSF DLL build + PE check
 node tests/run-all.js --all              # + UAT with the JavaScript engine and UAT with the Rust engine (about 8 minutes)
-node tests/run-all.js --js               # single steps: --syntax --fixtures --golden --js --rust --smoke --uat --uat-rust
+node tests/run-all.js --js               # single steps: --syntax --fixtures --golden --js --rust --smoke --tsf --uat --uat-rust
 node tests/run-all.js --uat --only-uat "UAT-23"
 node tests/run-all.js --report           # explicit: rewrite 02_Verification/test-execution-report.* from the last results
 ```

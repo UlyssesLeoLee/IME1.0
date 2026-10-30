@@ -1,0 +1,40 @@
+# The Windows text-service DLL (TSF text input processor), written in Rust.
+# Deliberately NOT a member of the main workspace: it needs `unsafe` (COM), it has its own Cargo.lock, and the
+# `windows` crate is pinned to 0.58 because 0.60+ import Windows functions with raw-dylib, which needs a real
+# binutils `dlltool`/`as` on the x86_64-pc-windows-gnu toolchain (not installed here). 0.58 ships prebuilt import
+# libraries, so no MSVC, Windows SDK or binutils is needed. See docs/VERSIONS.md.
+[package]
+name = "pime-tsf"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "Programming IME text service (TSF) in Rust: in-process input state machine from pime-core"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pime-core = { path = "../pime-core" }
+
+[dependencies.windows]
+version = "=0.58.0"
+features = [
+  "implement",
+  "Win32_Foundation",
+  "Win32_System_Com",
+  "Win32_UI_TextServices",
+  "Win32_UI_Input_KeyboardAndMouse",
+]
+
+[dependencies.windows-core]
+version = "=0.58.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[workspace]

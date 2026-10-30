@@ -1,7 +1,7 @@
 # Programming IME — 设计文档与源码合集（v0.2.0）
 
 - 交付版本：**Code v0.2.0**（2026-10-30）。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
-- 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；不是 Windows 系统输入法安装包**。Windows TSF 未编译、未验证。
+- 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；不是 Windows 系统输入法安装包**。系统输入法（`01_Source/crates/pime-tsf`，纯 Rust）已能构建 x64 DLL 并通过产物检查，但**尚未注册、尚未处理按键、尚无候选窗**，也未在 Windows 虚拟机中验证；v1.0.0 安装包因此暂停发布。
 
 ## 目录
 
@@ -21,10 +21,10 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **100 / 100** 通过；Rust **209 / 209** 通过；Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**。
+- JavaScript **100 / 100** 通过；Rust **220 / 220** 通过；Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**。
 - **Rust 引擎的 UAT 最终一轮未跑完**（运行被系统因内存不足中止，已执行的 14 个场景全部通过），因此不宣称其通过。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
-- **未执行**：Windows TSF 编译/注册/三语言激活、签名安装器、命名管道 IPC、Credential Manager、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
+- **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器、命名管道 IPC、Credential Manager、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
 - 设计书的 168 项是计划用例，不是 168 项已通过测试。通过的测试不代表满足全部 64 条需求。
 
 ## 安全提醒

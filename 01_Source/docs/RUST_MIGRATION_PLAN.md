@@ -131,7 +131,7 @@ P2 起按上述边界拆成 cargo workspace 的多个 crate（拆分不改变行
 - 范围：`windows/tsf` 用 Rust 重写：`ITfTextInputProcessorEx`、`ITfKeyEventSink`、组合与提交（编辑会话）、三语言 Profile 注册；TSF 回调内**不做**网络/磁盘/等待 AI（DD §1.1 规则 1）；原生候选浮层/语言下拉（`pime-ui.exe`，Win32 + Direct2D，DPI 感知，多屏回退）。
 - 退出条件：**G0**：三种系统语言下选择、激活、输入成功（ST-001..005），原输入法与默认设置不受影响；安全输入框零采集（IT-005）；TSF 故障保持 Direct。
 - 风险：宿主兼容性（不同应用对 TSF 范围的暴露不同）；候选窗定位；这是整个项目**不确定性最大**的一步，也是 v0.1 以来一直未验证的缺口。
-- 前置：Windows 11 VM、MSVC、Windows SDK、测试签名证书。
+- 前置：Windows 11 VM（Sandbox / Hyper-V，可丢弃、有管理员权限）、测试签名证书。MSVC 与 Windows SDK 对**构建**已不是必需（见 §6，`windows` 钉 0.58 的 GNU 路径已验证），但仍可用于对照构建和签名工具。
 
 ### P5 安装器与签名（L）
 - 范围：`windows/installer`：注册/卸载 COM 与三个 Profile（只动本产品 GUID，UT-002/061 已有 Rust 计划生成器）、文件部署、回滚、升级迁移；签名流程。
@@ -265,6 +265,7 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 - **P2 起**：仅允许 Microsoft 官方的 `windows` / `windows-sys`（用于 WinHTTP、Credential Manager、命名管道、TSF/COM）；每个新增依赖要有决策记录（用途、替代方案、体积、是否有构建脚本、许可证）。接受 `cargo deny`/`cargo vet` 之类的供应链检查（**待决策**具体工具）。
 - 构建环境：P2–P5 需要能构建 `windows` crate 的机器（MSVC 或可用链接器）。本开发机的限制（带构建脚本的依赖无法执行）只影响本机，不应成为设计约束；建议在 Windows 11 VM/CI 上构建这些阶段。
 - 核心 crate 保持 `#![forbid(unsafe_code)]`；所有 `unsafe` 隔离在 `pime-ipc`、`windows/tsf`、`windows/ui`、`pime-ai-worker` 的 FFI 边界，并逐处注释安全前提。
+- **P4 的构建路径（2026-10-30 实测，M2）**：`crates/pime-tsf`（TSF 文本服务 DLL，纯 Rust）可以在本机 `x86_64-pc-windows-gnu` 工具链上构建，**不需要 MSVC、Windows SDK 或 binutils**，前提是把 `windows` / `windows-core` 钉在 **0.58.0**（它依赖 `windows-targets 0.52` 自带的预编译导入库）。`windows` 0.60 / 0.61 / 0.62 改用 raw-dylib，要求 PATH 上有可用的 `dlltool`（连同 `as`）；本机 Rust 自带的 `dlltool.exe` 缺少汇编器，构建失败（已逐版本验证）。这是**有意的版本钉**，不是疏忽：当机器装有 MSVC 或 MinGW-w64 binutils 时再升级。`pime-tsf` 不是主工作区成员（需要 `unsafe`，有独立的 `Cargo.lock`），由 `tests/smoke/tsf-dll-check.js` 检查产物（x64、四个 COM 导出、只导入系统 DLL）。**构建成功不等于输入法可用**：注册、激活、按键、候选窗都尚未验证（见 13.7）。
 
 ## 7. 测试与证据延续
 
@@ -316,6 +317,7 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 - DD §2：保留 `PIME-IPC/1` 命名管道设计；在 P3 之前，v0.2/P1 使用 stdio JSON Lines 协议 0.2/0.3（仅限同机受信子进程）。
 - DD-05：记录 P1 的密钥过渡路径与 P2 的目标路径。
 - DD-12：测试夹具与 UAT 作为迁移回归门槛。
+- DD §5.3（按键规则）与 UT-009：用户要求系统输入法的操作方式与搜狗等主流输入法一致（含候选前后翻页）。实现为**候选捕获/组合状态下的扩展键位**：数字键在**当前页**内选词（每页 1–9 个，默认 5）、PageUp/PageDown 翻页（仅在多于一页时消费，否则交还宿主滚动编辑器）、Up/Down 与 Shift+Tab 移动高亮、Tab/Enter 确认、Esc 取消、空格仅在组合状态确认（候选捕获状态下需显式开启 `space_confirms`）、`= . ]` / `- , [` 标点翻页默认**关闭**（它们是代码字符：`a.b`、`x - 1`）、单击 Shift 切换暂停/恢复（Shift 本身不被吞）。**直通（Direct）与观察（Observing）状态仍然不吞任何键**，UT-009 的原约束不变；只有显式启用候选捕获才消费。输入法之间的切换（Win+Space、Ctrl+Shift）由 Windows 负责，不由本输入法实现。
 - 若批准，再统一出 DD v1.1 与追踪表更新，并保持 FR/NFR → DD → 测试 的追踪链。
 
 ## 12. 相对规模一览
@@ -412,3 +414,17 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 
 步骤 1.2–1.6 全部未做（AI 请求构造/解析、调度与历元、设置迁移、i18n、F1 状态机、删除 JS 核心、`glue-check` 上限）；JS 核心模块与 JS 单测仍在；默认引擎仍是 `js`。
 Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug 构建下的耗时只作了功能验证。
+
+### 13.7 P4 起步（2026-10-30）：按键映射与 DLL 构建路径（里程碑 M1、M2）
+
+用户在发布前要求：安装后应像搜狗等输入法那样可以进入输入法，操作方式与主流一致（含前后切换）。因此 v1.0.0 安装包**暂停发布**，先做系统输入法。里程碑：
+
+| 里程碑 | 内容 | 状态 |
+|---|---|---|
+| M1 | `pime-core` 输入状态机的主流键位：分页、页内数字选词、PageUp/PageDown、Shift+Tab、空格（组合态）、可选标点翻页、Shift 单击暂停/恢复（见 §11） | **完成并测试**：11 个新增测试 `key_01..key_11`，全部 Rust 测试 173 项（lib）通过，clippy/fmt 干净 |
+| M2 | 纯 Rust 的 TSF DLL 能否在本机工具链构建 | **完成**：`crates/pime-tsf`（`windows` 钉 0.58.0），产物 x64、四个 COM 导出、只导入系统 DLL，已内联链接 `pime-core`；`DllRegisterServer` 仍返回 `E_NOTIMPL` |
+| M3 | TIP：`ITfTextInputProcessorEx`、`ITfKeyEventSink`、保留键、编辑会话中的组合与提交、原生 Win32 候选窗（无需注册即可单独演示） | 未做 |
+| M4 | 在 Windows Sandbox / Hyper-V 虚拟机里注册并在 zh-CN / en-US / ja-JP 下激活、输入（G0）；对照 SampleIME 检查注册的类别（含 Immersive 支持类别，否则 Store 应用和开始菜单搜索里不可用） | **未运行**：需要用户提供带管理员权限、可丢弃的测试环境；本机不注册 |
+| M5 | 安装器（HKLM 注册需要管理员权限，故安装器要提权；先确认逐用户注册是否可行）、可干净卸载、不抢占默认输入法 | 未做 |
+
+限制（必须如实记录）：构建只有 x64，32 位应用看不到该输入法（需另构建 i686 并同样注册）；M1 的键位在纯逻辑层经过完整测试，但 TSF 层尚未把键事件接入状态机，所以**今天的 DLL 不处理任何按键**。

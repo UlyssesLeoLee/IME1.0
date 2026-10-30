@@ -4,7 +4,9 @@
 //! Hard rules enforced here (and proven by the UT-003/004/005/009/064/067 tests below):
 //! * DIRECT never consumes a key and never observes text;
 //! * keys are consumed only in COMPOSING (an explicit, owned composition) or in the explicitly enabled
-//!   candidate-capture mode, and only for the reserved keymap (Tab, Enter, Esc, digits, Up, Down);
+//!   candidate-capture mode, and only for the reserved keymap (Tab, Enter, Esc, digits, Up, Down, Shift+Tab,
+//!   PageUp/PageDown when there is more than one page, Space in COMPOSING, optional punctuation paging);
+//! * a lone Shift tap toggles the user's pause (like the Chinese/English switch of mainstream IMEs); Shift is never consumed;
 //! * secure input / disabled policy clears the context, refuses prediction and AI, and passes every key through;
 //! * a core/IPC failure (error, timeout, panic) ends in pass-through within the 2 s design budget;
 //! * the machine never writes text itself: it only emits [`Effect`]s for the host adapter to perform.
@@ -41,7 +43,11 @@ pub enum Key {
     Down,
     Left,
     Right,
+    PageUp,
+    PageDown,
     Backspace,
+    /// Shift pressed and released with no other key in between (detected by the host adapter).
+    ShiftTap,
     Other(u32),
 }
 
@@ -50,6 +56,7 @@ pub struct KeyEvent {
     pub key: Key,
     pub ctrl: bool,
     pub alt: bool,
+    pub shift: bool,
 }
 
 impl KeyEvent {
@@ -58,6 +65,14 @@ impl KeyEvent {
             key,
             ctrl: false,
             alt: false,
+            shift: false,
+        }
+    }
+
+    pub fn shifted(key: Key) -> KeyEvent {
+        KeyEvent {
+            shift: true,
+            ..KeyEvent::plain(key)
         }
     }
 
@@ -85,6 +100,34 @@ pub enum Effect {
         candidate_id: String,
         text: String,
     },
+    /// The user paused or resumed the IME (Shift tap or the language-bar button): update the mode indicator.
+    ModeChanged {
+        paused: bool,
+    },
+}
+
+/// Mainstream candidate-window options. They only matter while keys are consumed at all (COMPOSING or enabled
+/// candidate capture); DIRECT and OBSERVING never consume anything, whatever is set here.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct KeyMap {
+    /// Candidates per page (1..=9): the digits 1..=page_size pick within the current page.
+    pub page_size: usize,
+    /// Space confirms the highlighted candidate in candidate-capture mode too (always in COMPOSING).
+    /// Off by default: in code, Space is a character the host must receive.
+    pub space_confirms: bool,
+    /// `=` `.` `]` page forward and `-` `,` `[` page back (only with more than one page). Off by default:
+    /// they are code characters (`a.b`, `x - 1`).
+    pub punct_paging: bool,
+}
+
+impl Default for KeyMap {
+    fn default() -> KeyMap {
+        KeyMap {
+            page_size: 5,
+            space_confirms: false,
+            punct_paging: false,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -149,8 +192,10 @@ pub struct InputMachine<P: PredictPort> {
     selected: usize,
     observation_granted: bool,
     capture_enabled: bool,
+    keymap: KeyMap,
     secure: bool,
     policy_disabled: bool,
+    user_paused: bool,
     composition_owned: bool,
     ai_queue: usize,
     profile_epoch: u64,
@@ -181,8 +226,10 @@ impl<P: PredictPort> InputMachine<P> {
             selected: 0,
             observation_granted: false,
             capture_enabled: false,
+            keymap: KeyMap::default(),
             secure: false,
             policy_disabled: false,
+            user_paused: false,
             composition_owned: false,
             ai_queue: 0,
             profile_epoch: 0,
@@ -206,6 +253,42 @@ impl<P: PredictPort> InputMachine<P> {
 
     pub fn selected(&self) -> usize {
         self.selected
+    }
+
+    fn page_size(&self) -> usize {
+        self.keymap.page_size.clamp(1, 9)
+    }
+
+    /// Zero-based page of the highlighted candidate.
+    pub fn page(&self) -> usize {
+        self.selected / self.page_size()
+    }
+
+    pub fn page_count(&self) -> usize {
+        self.candidates.len().div_ceil(self.page_size())
+    }
+
+    /// The candidates the window shows right now (the digits 1.. pick from this slice).
+    pub fn page_items(&self) -> &[Candidate] {
+        let start = (self.page() * self.page_size()).min(self.candidates.len());
+        let end = (start + self.page_size()).min(self.candidates.len());
+        &self.candidates[start..end]
+    }
+
+    pub fn keymap(&self) -> KeyMap {
+        self.keymap
+    }
+
+    pub fn set_keymap(&mut self, keymap: KeyMap) {
+        self.keymap = KeyMap {
+            page_size: keymap.page_size.clamp(1, 9),
+            ..keymap
+        };
+        self.selected = self.selected.min(self.candidates.len().saturating_sub(1));
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.user_paused
     }
 
     pub fn profile_epoch(&self) -> u64 {
@@ -257,8 +340,20 @@ impl<P: PredictPort> InputMachine<P> {
         self.refresh_suspension()
     }
 
+    /// The user pauses or resumes the IME (Shift tap, language-bar button): PAUSED behaves like SUSPENDED
+    /// (nothing observed, nothing shown, every key to the host). Secure input and policy stay stronger than the user.
+    pub fn set_paused(&mut self, paused: bool) -> Vec<Effect> {
+        if self.user_paused == paused {
+            return Vec::new();
+        }
+        self.user_paused = paused;
+        let mut effects = self.refresh_suspension();
+        effects.push(Effect::ModeChanged { paused });
+        effects
+    }
+
     fn refresh_suspension(&mut self) -> Vec<Effect> {
-        if self.secure || self.policy_disabled {
+        if self.secure || self.policy_disabled || self.user_paused {
             return self.suspend();
         }
         if self.state == State::Suspended {
@@ -304,6 +399,9 @@ impl<P: PredictPort> InputMachine<P> {
                 "SECURE_INPUT",
                 "secure input: no context is collected and no request is made",
             ),
+            State::Suspended if self.user_paused && !self.policy_disabled => {
+                fail("AI_DISABLED", "paused by the user")
+            }
             State::Suspended => fail("AI_DISABLED", "disabled by application policy"),
             State::FaultFallback => fail("IPC_TIMEOUT", "core unavailable"),
             State::Direct => fail("CONTEXT_UNAVAILABLE", "no legal context in direct mode"),
@@ -351,7 +449,7 @@ impl<P: PredictPort> InputMachine<P> {
         if self.state == State::FaultFallback {
             self.profile_epoch += 1;
             self.fault_at = None;
-            self.state = if self.secure || self.policy_disabled {
+            self.state = if self.secure || self.policy_disabled || self.user_paused {
                 State::Suspended
             } else if self.observation_granted {
                 State::Observing
@@ -417,6 +515,40 @@ impl<P: PredictPort> InputMachine<P> {
         Some(effects)
     }
 
+    /// Highlight the next (`forward`) or previous candidate, wrapping around; the page follows the highlight.
+    fn step_selection(&mut self, forward: bool) -> Option<Vec<Effect>> {
+        let n = self.candidates.len();
+        if n == 0 {
+            return None;
+        }
+        self.selected = if forward {
+            (self.selected + 1) % n
+        } else {
+            (self.selected + n - 1) % n
+        };
+        Some(vec![Effect::SelectionMoved(self.selected)])
+    }
+
+    /// PageDown / PageUp. With a single page the key is not ours (it scrolls the editor); on the first or last
+    /// page it is consumed without effect, like the mainstream IMs.
+    fn turn_page(&mut self, forward: bool) -> Option<Vec<Effect>> {
+        let pages = self.page_count();
+        if pages <= 1 {
+            return None;
+        }
+        let page = self.page();
+        let target = if forward {
+            (page + 1).min(pages - 1)
+        } else {
+            page.saturating_sub(1)
+        };
+        if target == page {
+            return Some(Vec::new());
+        }
+        self.selected = target * self.page_size();
+        Some(vec![Effect::SelectionMoved(self.selected)])
+    }
+
     fn reserved_key(&mut self, ev: KeyEvent) -> Option<Step> {
         let consumed = |effects: Vec<Effect>| {
             Some(Step {
@@ -425,20 +557,31 @@ impl<P: PredictPort> InputMachine<P> {
             })
         };
         match ev.key {
+            // Shift+Tab walks backwards like Up (Tab itself confirms, as the design's configurable confirm key)
+            Key::Tab if ev.shift => self.step_selection(false).and_then(consumed),
             Key::Tab | Key::Enter => self.accept(self.selected).and_then(consumed),
+            Key::Char(' ') if self.state == State::Composing || self.keymap.space_confirms => {
+                self.accept(self.selected).and_then(consumed)
+            }
             Key::Char(d @ '1'..='9') => {
-                let idx = d as usize - '1' as usize;
+                let n = d as usize - '1' as usize;
+                if n >= self.page_size() {
+                    return None; // beyond the visible page: the digit is the host's
+                }
+                let idx = self.page() * self.page_size() + n;
                 self.selectable(idx)?;
                 self.accept(idx).and_then(consumed)
             }
             Key::Up | Key::Down if !self.candidates.is_empty() => {
-                let n = self.candidates.len();
-                self.selected = if ev.key == Key::Up {
-                    (self.selected + n - 1) % n
-                } else {
-                    (self.selected + 1) % n
-                };
-                consumed(vec![Effect::SelectionMoved(self.selected)])
+                self.step_selection(ev.key == Key::Down).and_then(consumed)
+            }
+            Key::PageDown => self.turn_page(true).and_then(consumed),
+            Key::PageUp => self.turn_page(false).and_then(consumed),
+            Key::Char('=' | '.' | ']') if self.keymap.punct_paging => {
+                self.turn_page(true).and_then(consumed)
+            }
+            Key::Char('-' | ',' | '[') if self.keymap.punct_paging => {
+                self.turn_page(false).and_then(consumed)
             }
             Key::Esc => {
                 let mut effects = Vec::new();
@@ -530,6 +673,14 @@ impl<P: PredictPort> InputMachine<P> {
                 effects,
             };
         }
+        if ev.key == Key::ShiftTap {
+            // the user's pause/resume; Shift itself always reaches the host
+            let effects = self.set_paused(!self.user_paused);
+            return Step {
+                outcome: KeyOutcome::PassThrough,
+                effects,
+            };
+        }
         if matches!(
             self.state,
             State::FaultFallback | State::Suspended | State::Direct
@@ -574,6 +725,14 @@ mod tests {
                 1 => Err(CoreFault::Timeout),
                 2 => Err(CoreFault::Disconnected),
                 3 => panic!("worker panicked (test)"),
+                4 => Ok((0..12)
+                    .map(|i| {
+                        let mut c = Candidate::new(&format!("c{i}"));
+                        c.validation = Validation::Valid;
+                        c.text = Some(format!("t{i}"));
+                        c
+                    })
+                    .collect()),
                 _ => {
                     let mut c = Candidate::new(&format!("t.{}", r.prefix))
                         .with_source(CandidateSource::Rule);
@@ -815,6 +974,7 @@ mod tests {
             key: Key::Tab,
             ctrl: true,
             alt: false,
+            shift: false,
         };
         assert_eq!(cap.on_key(chord, 0).outcome, KeyOutcome::PassThrough);
     }
@@ -937,6 +1097,311 @@ mod tests {
             assert!(m.tick(t).is_empty());
         }
         assert_eq!(m.state(), State::Observing);
+    }
+
+    /// Capture on, twelve candidates showing (three pages of five).
+    fn paged() -> InputMachine<Spy> {
+        let mut m = InputMachine::new(Spy { calls: 0, mode: 4 }, "rust");
+        m.grant_observation(true);
+        m.set_candidate_capture(true);
+        type_text(&mut m, "a", 0);
+        assert_eq!((m.state(), m.candidates().len()), (State::Candidates, 12));
+        m
+    }
+
+    fn commit_id(step: &Step) -> Option<&str> {
+        step.effects.iter().find_map(|e| match e {
+            Effect::Commit { candidate_id, .. } => Some(candidate_id.as_str()),
+            _ => None,
+        })
+    }
+
+    #[test]
+    fn key_01_pages_forward_and_back_and_stop_at_both_ends() {
+        let mut m = paged();
+        assert_eq!((m.page(), m.page_count(), m.page_items().len()), (0, 3, 5));
+        let down = m.on_key(KeyEvent::plain(Key::PageDown), 1);
+        assert_eq!(down.outcome, KeyOutcome::Consumed);
+        assert_eq!(down.effects, vec![Effect::SelectionMoved(5)]);
+        assert_eq!((m.page(), m.page_items()[0].id.as_str()), (1, "c5"));
+        m.on_key(KeyEvent::plain(Key::PageDown), 2);
+        assert_eq!(
+            (m.page(), m.page_items().len()),
+            (2, 2),
+            "the last page is short"
+        );
+        let end = m.on_key(KeyEvent::plain(Key::PageDown), 3);
+        assert_eq!(
+            end.outcome,
+            KeyOutcome::Consumed,
+            "consumed, like the mainstream IMs"
+        );
+        assert!(end.effects.is_empty());
+        assert_eq!(m.selected(), 10);
+        m.on_key(KeyEvent::plain(Key::PageUp), 4);
+        m.on_key(KeyEvent::plain(Key::PageUp), 5);
+        assert_eq!((m.page(), m.selected()), (0, 0));
+        let top = m.on_key(KeyEvent::plain(Key::PageUp), 6);
+        assert_eq!((top.outcome, m.selected()), (KeyOutcome::Consumed, 0));
+        assert_eq!(m.stats.commits, 0, "paging never writes");
+    }
+
+    #[test]
+    fn key_02_digits_pick_within_the_current_page_only() {
+        let mut m = paged();
+        m.on_key(KeyEvent::plain(Key::PageDown), 1);
+        assert_eq!(
+            m.on_key(KeyEvent::ch('6'), 2).outcome,
+            KeyOutcome::PassThrough,
+            "6 is beyond a five-candidate page: the host gets it"
+        );
+        assert_eq!(m.stats.commits, 0);
+        // a passed-through digit is typed text: the candidates refresh and the page starts over
+        assert_eq!((m.page(), m.selected()), (0, 0));
+        m.on_key(KeyEvent::plain(Key::PageDown), 3);
+        let pick = m.on_key(KeyEvent::ch('2'), 3);
+        assert_eq!(pick.outcome, KeyOutcome::Consumed);
+        assert_eq!(commit_id(&pick), Some("c6"), "page 2, item 2");
+        assert_eq!(m.state(), State::Observing);
+    }
+
+    #[test]
+    fn key_03_a_nine_item_page_uses_all_digits_and_the_page_size_is_clamped() {
+        let mut m = paged();
+        m.set_keymap(KeyMap {
+            page_size: 9,
+            ..KeyMap::default()
+        });
+        assert_eq!((m.page_count(), m.page_items().len()), (2, 9));
+        assert_eq!(commit_id(&m.on_key(KeyEvent::ch('9'), 1)), Some("c8"));
+        m.set_keymap(KeyMap {
+            page_size: 40,
+            ..KeyMap::default()
+        });
+        assert_eq!(m.keymap().page_size, 9);
+        m.set_keymap(KeyMap {
+            page_size: 0,
+            ..KeyMap::default()
+        });
+        assert_eq!(m.keymap().page_size, 1);
+    }
+
+    #[test]
+    fn key_04_up_and_down_carry_the_page_with_them_and_shift_tab_goes_back() {
+        let mut m = paged();
+        for _ in 0..5 {
+            m.on_key(KeyEvent::plain(Key::Down), 1);
+        }
+        assert_eq!((m.selected(), m.page()), (5, 1));
+        let back = m.on_key(KeyEvent::shifted(Key::Tab), 2);
+        assert_eq!(back.outcome, KeyOutcome::Consumed);
+        assert_eq!((m.selected(), m.page()), (4, 0));
+        assert_eq!(m.stats.commits, 0, "Shift+Tab walks, it does not confirm");
+        m.on_key(KeyEvent::plain(Key::Up), 3);
+        m.on_key(KeyEvent::plain(Key::Up), 4);
+        m.on_key(KeyEvent::plain(Key::Up), 5);
+        m.on_key(KeyEvent::plain(Key::Up), 6);
+        m.on_key(KeyEvent::plain(Key::Up), 7);
+        assert_eq!(
+            m.selected(),
+            11,
+            "wraps from the first to the last candidate"
+        );
+        assert_eq!(m.page(), 2);
+    }
+
+    #[test]
+    fn key_05_single_page_keeps_page_keys_for_the_host() {
+        let mut m = machine(); // two candidates
+        m.grant_observation(true);
+        m.set_candidate_capture(true);
+        type_text(&mut m, "fn", 0);
+        assert_eq!(m.page_count(), 1);
+        for k in [Key::PageUp, Key::PageDown] {
+            assert_eq!(
+                m.on_key(KeyEvent::plain(k), 1).outcome,
+                KeyOutcome::PassThrough,
+                "{k:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn key_06_space_confirms_only_when_composing_or_explicitly_enabled() {
+        let mut m = paged();
+        assert_eq!(
+            m.on_key(KeyEvent::ch(' '), 1).outcome,
+            KeyOutcome::PassThrough,
+            "capture alone: Space stays a code character"
+        );
+        let mut m = paged();
+        m.set_keymap(KeyMap {
+            space_confirms: true,
+            ..KeyMap::default()
+        });
+        assert_eq!(commit_id(&m.on_key(KeyEvent::ch(' '), 1)), Some("c0"));
+        let mut m = paged(); // composing: an explicit, owned composition
+        assert_eq!(m.begin_composition(true), Some(Effect::BeginComposition));
+        m.on_key(KeyEvent::plain(Key::Down), 1);
+        let step = m.on_key(KeyEvent::ch(' '), 2);
+        assert_eq!(commit_id(&step), Some("c1"));
+        assert!(step.effects.contains(&Effect::EndComposition));
+    }
+
+    #[test]
+    fn key_07_punctuation_paging_is_off_by_default_and_never_eats_code_characters() {
+        let mut m = paged();
+        for c in ['=', '.', ']', '-', ',', '['] {
+            assert_eq!(
+                m.on_key(KeyEvent::ch(c), 1).outcome,
+                KeyOutcome::PassThrough,
+                "{c:?} is code"
+            );
+            assert_eq!(m.selected(), 0);
+        }
+        let mut m = paged();
+        m.set_keymap(KeyMap {
+            punct_paging: true,
+            ..KeyMap::default()
+        });
+        assert_eq!(m.on_key(KeyEvent::ch('='), 1).outcome, KeyOutcome::Consumed);
+        assert_eq!(m.page(), 1);
+        m.on_key(KeyEvent::ch('.'), 2);
+        assert_eq!(m.page(), 2);
+        m.on_key(KeyEvent::ch(','), 3);
+        m.on_key(KeyEvent::ch('-'), 4);
+        assert_eq!(m.page(), 0);
+        // with a single page they are still characters
+        let mut one = machine();
+        one.grant_observation(true);
+        one.set_candidate_capture(true);
+        one.set_keymap(KeyMap {
+            punct_paging: true,
+            ..KeyMap::default()
+        });
+        type_text(&mut one, "fn", 0);
+        assert_eq!(
+            one.on_key(KeyEvent::ch('.'), 1).outcome,
+            KeyOutcome::PassThrough
+        );
+    }
+
+    #[test]
+    fn key_08_none_of_the_new_keys_is_consumed_outside_capture_or_composition() {
+        let keys = [
+            KeyEvent::plain(Key::PageUp),
+            KeyEvent::plain(Key::PageDown),
+            KeyEvent::shifted(Key::Tab),
+            KeyEvent::ch(' '),
+            KeyEvent::ch('='),
+            KeyEvent::ch('.'),
+        ];
+        let all = KeyMap {
+            page_size: 5,
+            space_confirms: true,
+            punct_paging: true,
+        };
+        let mut direct = InputMachine::new(Spy { calls: 0, mode: 4 }, "rust");
+        direct.set_keymap(all);
+        for k in keys {
+            assert_eq!(
+                direct.on_key(k, 0).outcome,
+                KeyOutcome::PassThrough,
+                "Direct {k:?}"
+            );
+        }
+        let mut shown = InputMachine::new(Spy { calls: 0, mode: 4 }, "rust");
+        shown.grant_observation(true); // observing with candidates, capture NOT enabled
+        shown.set_keymap(all);
+        type_text(&mut shown, "a", 0);
+        assert_eq!(shown.state(), State::Candidates);
+        for k in keys {
+            assert_eq!(
+                shown.on_key(k, 1).outcome,
+                KeyOutcome::PassThrough,
+                "no capture {k:?}"
+            );
+        }
+        assert_eq!((shown.stats.commits, shown.selected()), (0, 0));
+        // chords belong to the host even in capture
+        let mut cap = paged();
+        let chord = KeyEvent {
+            ctrl: true,
+            ..KeyEvent::plain(Key::PageDown)
+        };
+        assert_eq!(cap.on_key(chord, 1).outcome, KeyOutcome::PassThrough);
+    }
+
+    #[test]
+    fn key_09_a_shift_tap_pauses_and_resumes_and_is_never_consumed() {
+        let mut m = paged();
+        m.begin_composition(true).unwrap();
+        let calls = m.port().calls;
+        let off = m.on_key(KeyEvent::plain(Key::ShiftTap), 1);
+        assert_eq!(
+            off.outcome,
+            KeyOutcome::PassThrough,
+            "Shift always reaches the host"
+        );
+        assert!(off.effects.contains(&Effect::EndComposition));
+        assert!(off.effects.contains(&Effect::HideCandidates));
+        assert!(off.effects.contains(&Effect::ModeChanged { paused: true }));
+        assert!(
+            !off.effects
+                .iter()
+                .any(|e| matches!(e, Effect::Commit { .. }))
+        );
+        assert_eq!((m.state(), m.is_paused()), (State::Suspended, true));
+        assert!(m.context().is_empty() && m.candidates().is_empty());
+        for c in "let value = 1;".chars() {
+            assert_eq!(
+                m.on_key(KeyEvent::ch(c), 2).outcome,
+                KeyOutcome::PassThrough
+            );
+        }
+        assert_eq!(m.port().calls, calls, "nothing is predicted while paused");
+        assert_eq!(m.request_ai().unwrap_err().code, "AI_DISABLED");
+        let on = m.on_key(KeyEvent::plain(Key::ShiftTap), 3);
+        assert_eq!(on.effects, vec![Effect::ModeChanged { paused: false }]);
+        assert_eq!((m.state(), m.is_paused()), (State::Observing, false));
+        type_text(&mut m, "a", 4);
+        assert_eq!(m.state(), State::Candidates, "predicting again");
+    }
+
+    #[test]
+    fn key_10_secure_input_and_policy_outrank_the_users_pause_toggle() {
+        let mut m = machine();
+        m.grant_observation(true);
+        m.set_secure_context(true);
+        let step = m.on_key(KeyEvent::plain(Key::ShiftTap), 1);
+        assert_eq!(step.outcome, KeyOutcome::PassThrough);
+        assert!(
+            step.effects.is_empty(),
+            "no mode change inside a secure field"
+        );
+        assert!(!m.is_paused());
+        // paused first, then a secure field, then back: still paused (the user's choice survives)
+        let mut m = machine();
+        m.grant_observation(true);
+        m.set_paused(true);
+        m.set_secure_context(true);
+        m.set_secure_context(false);
+        assert_eq!((m.state(), m.is_paused()), (State::Suspended, true));
+        m.set_paused(false);
+        assert_eq!(m.state(), State::Observing);
+        assert!(
+            m.set_paused(false).is_empty(),
+            "no effect when nothing changes"
+        );
+    }
+
+    #[test]
+    fn key_11_a_paused_direct_machine_resumes_to_direct_not_observing() {
+        let mut m = machine(); // never granted observation
+        m.set_paused(true);
+        assert_eq!(m.state(), State::Suspended);
+        m.set_paused(false);
+        assert_eq!(m.state(), State::Direct);
     }
 
     #[test]

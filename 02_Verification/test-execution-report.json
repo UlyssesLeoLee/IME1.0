@@ -1,14 +1,14 @@
 {
  "summary": {
-  "generated": "2026-10-30T09:34:54.925Z",
+  "generated": "2026-10-30T09:59:07.997Z",
   "node": "v26.13.0",
   "js": {
    "total": 90,
    "pass": 90
   },
   "rust": {
-   "total": 209,
-   "pass": 209
+   "total": 220,
+   "pass": 220
   },
   "uat": {
    "total": 31,
@@ -48,12 +48,12 @@
     "rust"
    ],
    "tests": [
+    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
+    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
     "rust: profiles::tests::ut_001_duplicate_guid_is_rejected",
     "profiles::tests::ut_001_duplicate_guid_is_rejected",
     "rust: profiles::tests::ut_001_other_invalid_sets_are_rejected",
-    "profiles::tests::ut_001_other_invalid_sets_are_rejected",
-    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
-    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids"
+    "profiles::tests::ut_001_other_invalid_sets_are_rejected"
    ],
    "failed": [],
    "reason": ""
@@ -152,10 +152,10 @@
    "tests": [
     "js: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
     "UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
-    "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
-    "candidate::tests::ut_007_usage_breaks_ties_before_weight",
     "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
-    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable"
+    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
+    "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "candidate::tests::ut_007_usage_breaks_ties_before_weight"
    ],
    "failed": [],
    "reason": ""
@@ -187,10 +187,10 @@
     "rust"
    ],
    "tests": [
-    "rust: input::tests::ut_009_capture_without_candidates_consumes_nothing",
-    "input::tests::ut_009_capture_without_candidates_consumes_nothing",
     "rust: input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode",
-    "input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode"
+    "input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode",
+    "rust: input::tests::ut_009_capture_without_candidates_consumes_nothing",
+    "input::tests::ut_009_capture_without_candidates_consumes_nothing"
    ],
    "failed": [],
    "reason": ""
@@ -465,12 +465,12 @@
     "UT-027 nearby excerpt is minimal and wider requests are refused",
     "rust: context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
-    "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
-    "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
-    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed"
+    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
+    "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
+    "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf"
    ],
    "failed": [],
    "reason": ""
@@ -852,10 +852,10 @@
    "tests": [
     "js: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
     "UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
-    "rust: edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown",
-    "edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown",
     "rust: edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried",
-    "edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried"
+    "edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried",
+    "rust: edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown",
+    "edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown"
    ],
    "failed": [],
    "reason": ""
@@ -1004,10 +1004,10 @@
     "rust"
    ],
    "tests": [
-    "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
-    "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
     "rust: install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
     "install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
+    "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
+    "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
     "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
     "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
     "rust: install_plan::tests::ut_061_uninstall_removes_only_own_guids",
@@ -1060,10 +1060,10 @@
    "tests": [
     "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
     "UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
-    "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
-    "input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
     "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
     "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
+    "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
+    "input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
     "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
     "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes"
    ],

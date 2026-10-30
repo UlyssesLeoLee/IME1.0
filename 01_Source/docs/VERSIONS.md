@@ -20,7 +20,8 @@ and the Anthropic API version pages. "Latest" is only as good as those sources o
 | OpenAI reasoning effort values | effort negotiation | `auto, none, minimal, low, medium, high, xhigh, max, extended` | `none, minimal, low, medium, high, xhigh, max`; "not all models support every value" | updated; a level is sent only when the capability record says the model supports it |
 | VS Code API used | extension | `InlineCompletionItem.filterText`, `QuickPickItemKind`, `asWebviewUri`, `WorkspaceEdit`, SecretStorage | documented and current in the API reference | no deprecation found in the docs; behaviour on 1.144 is checked by the UAT |
 | Playwright API used | UAT | `chromium.connectOverCDP` (documented; Electron `launch` is not used because the release VS Code build refuses the inspector) | documented | current |
-| CMake / C++ standard (TSF adapter) | `windows/tsf` | CMake >= 3.21, C++17 | newer exist | **not checked**: the adapter was never built |
+| `windows` / `windows-core` crates (TSF DLL `crates/pime-tsf`) | system input method | **0.58.0, pinned on purpose** | 0.62.2 (`windows`), 0.100.0 (`windows-core`) | **deliberately NOT latest**: 0.60, 0.61 and 0.62 import Windows functions with raw-dylib, which needs a working binutils `dlltool` + `as` on `x86_64-pc-windows-gnu`; this machine's Rust-bundled `dlltool.exe` has no assembler and the build fails (tried 0.60, 0.61, 0.62). 0.58 ships prebuilt import libraries and builds with no MSVC. Upgrade once MSVC or MinGW-w64 binutils is installed |
+| CMake / C++ standard (legacy C++ TSF skeleton) | `windows/tsf` | CMake >= 3.21, C++17 | newer exist | **not checked**: never built; superseded by the Rust `crates/pime-tsf` (see above) |
 | JSON Schema dialect | `schemas/` | draft 2020-12 | 2020-12 | current |
 
 ## Edition 2024 migration (done)

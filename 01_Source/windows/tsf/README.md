@@ -1,5 +1,8 @@
 # Windows TSF G0 pass-through adapter
 
+> **Superseded.** The text service is being rewritten in Rust as `crates/pime-tsf` (see `docs/RUST_MIGRATION_PLAN.md` section 13.7); it builds
+> with the GNU toolchain and needs no MSVC. This C++ skeleton is kept only as a reference for the prototype GUIDs and the registration flow.
+
 **EXPERIMENTAL / Windows-only / not yet built or exercised on Windows 11.**
 
 This implements a minimal in-process COM `ITfTextInputProcessor` and `ITfKeyEventSink`.
