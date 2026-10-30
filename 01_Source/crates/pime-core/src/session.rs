@@ -63,6 +63,8 @@ pub struct Session {
     pub redactions: Vec<crate::ops_ai::RedactionSet>,
     pub input: crate::scheduler::InputSession,
     pub sched: crate::scheduler::Scheduler,
+    /// Step 1.3: the diagnostics ring, created on the first `diag.*` call (see `ops_cfg.rs`).
+    pub diag: Option<crate::diag::Diagnostics>,
 }
 
 pub struct SessionStore {
@@ -147,6 +149,7 @@ impl SessionStore {
             redactions: Vec::new(),
             input: crate::scheduler::InputSession::default(),
             sched: crate::scheduler::Scheduler::default(),
+            diag: None,
         });
         Ok(self.sessions.last_mut().expect("just pushed"))
     }

@@ -1,0 +1,8982 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "rows": [
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 1,
+   "total": 12,
+   "expect": {
+    "label": "main function",
+    "description": "[本地规则] 语法检查通过",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "1 / 12: main function, 本地规则, 语法检查通过",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "AI idea",
+    "source": "ai",
+    "validation": "unchecked",
+    "text": "x"
+   },
+   "index": 2,
+   "total": 12,
+   "expect": {
+    "label": "AI idea",
+    "description": "[AI] 未检查",
+    "detail": "",
+    "ariaLabel": "2 / 12: AI idea, AI, 未检查",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "jmp foo",
+    "source": "rule",
+    "validation": "context_missing",
+    "text": null,
+    "explain": "jump"
+   },
+   "index": 3,
+   "total": 12,
+   "expect": {
+    "label": "jmp foo",
+    "description": "[本地规则] 缺少上下文",
+    "detail": "jump",
+    "ariaLabel": "3 / 12: jmp foo, 本地规则, 缺少上下文, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "merged",
+    "source": "rule",
+    "sources": [
+     "rule",
+     "ai"
+    ],
+    "validation": "verified",
+    "text": ""
+   },
+   "index": 4,
+   "total": 12,
+   "expect": {
+    "label": "merged",
+    "description": "[本地规则 +1] 已验证",
+    "detail": "",
+    "ariaLabel": "4 / 12: merged, 本地规则 +1, 已验证",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "user",
+    "source": "user_rule",
+    "sources": [
+     "user_rule",
+     "rule",
+     "ai",
+     "context"
+    ],
+    "validation": "invalid",
+    "text": "x"
+   },
+   "index": 5,
+   "total": 12,
+   "expect": {
+    "label": "user",
+    "description": "[用户规则 +3] 无效",
+    "detail": "",
+    "ariaLabel": "5 / 12: user, 用户规则 +3, 无效",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "no source",
+    "validation": "valid",
+    "text": "y"
+   },
+   "index": 6,
+   "total": 12,
+   "expect": {
+    "label": "no source",
+    "description": "[src.undefined] 语法检查通过",
+    "detail": "",
+    "ariaLabel": "6 / 12: no source, src.undefined, 语法检查通过",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "unknown validation",
+    "source": "rule",
+    "validation": "weird",
+    "text": "t"
+   },
+   "index": 7,
+   "total": 12,
+   "expect": {
+    "label": "unknown validation",
+    "description": "[本地规则] val.weird",
+    "detail": "",
+    "ariaLabel": "7 / 12: unknown validation, 本地规则, val.weird",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "empty sources",
+    "source": "ai",
+    "sources": [],
+    "validation": "valid",
+    "text": "t"
+   },
+   "index": 8,
+   "total": 12,
+   "expect": {
+    "label": "empty sources",
+    "description": "[AI] 语法检查通过",
+    "detail": "",
+    "ariaLabel": "8 / 12: empty sources, AI, 语法检查通过",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "blank explain",
+    "source": "context",
+    "validation": "valid",
+    "explain": "",
+    "assumptions": [
+     "",
+     "only"
+    ],
+    "text": "t"
+   },
+   "index": 9,
+   "total": 12,
+   "expect": {
+    "label": "blank explain",
+    "description": "[附近代码] 语法检查通过",
+    "detail": "only",
+    "ariaLabel": "9 / 12: blank explain, 附近代码, 语法检查通过",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "no text key",
+    "source": "rule",
+    "validation": "valid"
+   },
+   "index": 10,
+   "total": 12,
+   "expect": {
+    "label": "no text key",
+    "description": "[本地规则] 语法检查通过",
+    "detail": "",
+    "ariaLabel": "10 / 12: no text key, 本地规则, 语法检查通过, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "null parts",
+    "source": "rule",
+    "validation": null,
+    "explain": null,
+    "assumptions": null,
+    "sources": null,
+    "text": "z"
+   },
+   "index": 11,
+   "total": 12,
+   "expect": {
+    "label": "null parts",
+    "description": "[本地规则] val.null",
+    "detail": "",
+    "ariaLabel": "11 / 12: null parts, 本地规则, val.null",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "zh-CN",
+   "candidate": {
+    "label": "AI",
+    "source": "ai",
+    "validation": "valid",
+    "explain": "e",
+    "assumptions": [
+     "x",
+     "y",
+     "z"
+    ],
+    "text": "a\nb"
+   },
+   "index": 12,
+   "total": 12,
+   "expect": {
+    "label": "AI",
+    "description": "[AI] 语法检查通过",
+    "detail": "e · x · y · z",
+    "ariaLabel": "12 / 12: AI, AI, 语法检查通过",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 1,
+   "total": 12,
+   "expect": {
+    "label": "main function",
+    "description": "[local rule] syntax ok",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "1 / 12: main function, local rule, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "AI idea",
+    "source": "ai",
+    "validation": "unchecked",
+    "text": "x"
+   },
+   "index": 2,
+   "total": 12,
+   "expect": {
+    "label": "AI idea",
+    "description": "[AI] unchecked",
+    "detail": "",
+    "ariaLabel": "2 / 12: AI idea, AI, unchecked",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "jmp foo",
+    "source": "rule",
+    "validation": "context_missing",
+    "text": null,
+    "explain": "jump"
+   },
+   "index": 3,
+   "total": 12,
+   "expect": {
+    "label": "jmp foo",
+    "description": "[local rule] context missing",
+    "detail": "jump",
+    "ariaLabel": "3 / 12: jmp foo, local rule, context missing, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "merged",
+    "source": "rule",
+    "sources": [
+     "rule",
+     "ai"
+    ],
+    "validation": "verified",
+    "text": ""
+   },
+   "index": 4,
+   "total": 12,
+   "expect": {
+    "label": "merged",
+    "description": "[local rule +1] verified",
+    "detail": "",
+    "ariaLabel": "4 / 12: merged, local rule +1, verified",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "user",
+    "source": "user_rule",
+    "sources": [
+     "user_rule",
+     "rule",
+     "ai",
+     "context"
+    ],
+    "validation": "invalid",
+    "text": "x"
+   },
+   "index": 5,
+   "total": 12,
+   "expect": {
+    "label": "user",
+    "description": "[your rule +3] invalid",
+    "detail": "",
+    "ariaLabel": "5 / 12: user, your rule +3, invalid",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "no source",
+    "validation": "valid",
+    "text": "y"
+   },
+   "index": 6,
+   "total": 12,
+   "expect": {
+    "label": "no source",
+    "description": "[src.undefined] syntax ok",
+    "detail": "",
+    "ariaLabel": "6 / 12: no source, src.undefined, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "unknown validation",
+    "source": "rule",
+    "validation": "weird",
+    "text": "t"
+   },
+   "index": 7,
+   "total": 12,
+   "expect": {
+    "label": "unknown validation",
+    "description": "[local rule] val.weird",
+    "detail": "",
+    "ariaLabel": "7 / 12: unknown validation, local rule, val.weird",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "empty sources",
+    "source": "ai",
+    "sources": [],
+    "validation": "valid",
+    "text": "t"
+   },
+   "index": 8,
+   "total": 12,
+   "expect": {
+    "label": "empty sources",
+    "description": "[AI] syntax ok",
+    "detail": "",
+    "ariaLabel": "8 / 12: empty sources, AI, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "blank explain",
+    "source": "context",
+    "validation": "valid",
+    "explain": "",
+    "assumptions": [
+     "",
+     "only"
+    ],
+    "text": "t"
+   },
+   "index": 9,
+   "total": 12,
+   "expect": {
+    "label": "blank explain",
+    "description": "[nearby code] syntax ok",
+    "detail": "only",
+    "ariaLabel": "9 / 12: blank explain, nearby code, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "no text key",
+    "source": "rule",
+    "validation": "valid"
+   },
+   "index": 10,
+   "total": 12,
+   "expect": {
+    "label": "no text key",
+    "description": "[local rule] syntax ok",
+    "detail": "",
+    "ariaLabel": "10 / 12: no text key, local rule, syntax ok, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "null parts",
+    "source": "rule",
+    "validation": null,
+    "explain": null,
+    "assumptions": null,
+    "sources": null,
+    "text": "z"
+   },
+   "index": 11,
+   "total": 12,
+   "expect": {
+    "label": "null parts",
+    "description": "[local rule] val.null",
+    "detail": "",
+    "ariaLabel": "11 / 12: null parts, local rule, val.null",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "AI",
+    "source": "ai",
+    "validation": "valid",
+    "explain": "e",
+    "assumptions": [
+     "x",
+     "y",
+     "z"
+    ],
+    "text": "a\nb"
+   },
+   "index": 12,
+   "total": 12,
+   "expect": {
+    "label": "AI",
+    "description": "[AI] syntax ok",
+    "detail": "e · x · y · z",
+    "ariaLabel": "12 / 12: AI, AI, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 1,
+   "total": 12,
+   "expect": {
+    "label": "main function",
+    "description": "[ローカル規則] 構文チェック OK",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "1 / 12: main function, ローカル規則, 構文チェック OK",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "AI idea",
+    "source": "ai",
+    "validation": "unchecked",
+    "text": "x"
+   },
+   "index": 2,
+   "total": 12,
+   "expect": {
+    "label": "AI idea",
+    "description": "[AI] 未チェック",
+    "detail": "",
+    "ariaLabel": "2 / 12: AI idea, AI, 未チェック",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "jmp foo",
+    "source": "rule",
+    "validation": "context_missing",
+    "text": null,
+    "explain": "jump"
+   },
+   "index": 3,
+   "total": 12,
+   "expect": {
+    "label": "jmp foo",
+    "description": "[ローカル規則] コンテキスト不足",
+    "detail": "jump",
+    "ariaLabel": "3 / 12: jmp foo, ローカル規則, コンテキスト不足, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "merged",
+    "source": "rule",
+    "sources": [
+     "rule",
+     "ai"
+    ],
+    "validation": "verified",
+    "text": ""
+   },
+   "index": 4,
+   "total": 12,
+   "expect": {
+    "label": "merged",
+    "description": "[ローカル規則 +1] 検証済み",
+    "detail": "",
+    "ariaLabel": "4 / 12: merged, ローカル規則 +1, 検証済み",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "user",
+    "source": "user_rule",
+    "sources": [
+     "user_rule",
+     "rule",
+     "ai",
+     "context"
+    ],
+    "validation": "invalid",
+    "text": "x"
+   },
+   "index": 5,
+   "total": 12,
+   "expect": {
+    "label": "user",
+    "description": "[ユーザー規則 +3] 無効",
+    "detail": "",
+    "ariaLabel": "5 / 12: user, ユーザー規則 +3, 無効",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "no source",
+    "validation": "valid",
+    "text": "y"
+   },
+   "index": 6,
+   "total": 12,
+   "expect": {
+    "label": "no source",
+    "description": "[src.undefined] 構文チェック OK",
+    "detail": "",
+    "ariaLabel": "6 / 12: no source, src.undefined, 構文チェック OK",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "unknown validation",
+    "source": "rule",
+    "validation": "weird",
+    "text": "t"
+   },
+   "index": 7,
+   "total": 12,
+   "expect": {
+    "label": "unknown validation",
+    "description": "[ローカル規則] val.weird",
+    "detail": "",
+    "ariaLabel": "7 / 12: unknown validation, ローカル規則, val.weird",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "empty sources",
+    "source": "ai",
+    "sources": [],
+    "validation": "valid",
+    "text": "t"
+   },
+   "index": 8,
+   "total": 12,
+   "expect": {
+    "label": "empty sources",
+    "description": "[AI] 構文チェック OK",
+    "detail": "",
+    "ariaLabel": "8 / 12: empty sources, AI, 構文チェック OK",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "blank explain",
+    "source": "context",
+    "validation": "valid",
+    "explain": "",
+    "assumptions": [
+     "",
+     "only"
+    ],
+    "text": "t"
+   },
+   "index": 9,
+   "total": 12,
+   "expect": {
+    "label": "blank explain",
+    "description": "[近くのコード] 構文チェック OK",
+    "detail": "only",
+    "ariaLabel": "9 / 12: blank explain, 近くのコード, 構文チェック OK",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "no text key",
+    "source": "rule",
+    "validation": "valid"
+   },
+   "index": 10,
+   "total": 12,
+   "expect": {
+    "label": "no text key",
+    "description": "[ローカル規則] 構文チェック OK",
+    "detail": "",
+    "ariaLabel": "10 / 12: no text key, ローカル規則, 構文チェック OK, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "null parts",
+    "source": "rule",
+    "validation": null,
+    "explain": null,
+    "assumptions": null,
+    "sources": null,
+    "text": "z"
+   },
+   "index": 11,
+   "total": 12,
+   "expect": {
+    "label": "null parts",
+    "description": "[ローカル規則] val.null",
+    "detail": "",
+    "ariaLabel": "11 / 12: null parts, ローカル規則, val.null",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "ja-JP",
+   "candidate": {
+    "label": "AI",
+    "source": "ai",
+    "validation": "valid",
+    "explain": "e",
+    "assumptions": [
+     "x",
+     "y",
+     "z"
+    ],
+    "text": "a\nb"
+   },
+   "index": 12,
+   "total": 12,
+   "expect": {
+    "label": "AI",
+    "description": "[AI] 構文チェック OK",
+    "detail": "e · x · y · z",
+    "ariaLabel": "12 / 12: AI, AI, 構文チェック OK",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 1,
+   "total": 12,
+   "expect": {
+    "label": "main function",
+    "description": "[local rule] syntax ok",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "1 / 12: main function, local rule, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "AI idea",
+    "source": "ai",
+    "validation": "unchecked",
+    "text": "x"
+   },
+   "index": 2,
+   "total": 12,
+   "expect": {
+    "label": "AI idea",
+    "description": "[AI] unchecked",
+    "detail": "",
+    "ariaLabel": "2 / 12: AI idea, AI, unchecked",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "jmp foo",
+    "source": "rule",
+    "validation": "context_missing",
+    "text": null,
+    "explain": "jump"
+   },
+   "index": 3,
+   "total": 12,
+   "expect": {
+    "label": "jmp foo",
+    "description": "[local rule] context missing",
+    "detail": "jump",
+    "ariaLabel": "3 / 12: jmp foo, local rule, context missing, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "merged",
+    "source": "rule",
+    "sources": [
+     "rule",
+     "ai"
+    ],
+    "validation": "verified",
+    "text": ""
+   },
+   "index": 4,
+   "total": 12,
+   "expect": {
+    "label": "merged",
+    "description": "[local rule +1] verified",
+    "detail": "",
+    "ariaLabel": "4 / 12: merged, local rule +1, verified",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "user",
+    "source": "user_rule",
+    "sources": [
+     "user_rule",
+     "rule",
+     "ai",
+     "context"
+    ],
+    "validation": "invalid",
+    "text": "x"
+   },
+   "index": 5,
+   "total": 12,
+   "expect": {
+    "label": "user",
+    "description": "[your rule +3] invalid",
+    "detail": "",
+    "ariaLabel": "5 / 12: user, your rule +3, invalid",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "no source",
+    "validation": "valid",
+    "text": "y"
+   },
+   "index": 6,
+   "total": 12,
+   "expect": {
+    "label": "no source",
+    "description": "[src.undefined] syntax ok",
+    "detail": "",
+    "ariaLabel": "6 / 12: no source, src.undefined, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "unknown validation",
+    "source": "rule",
+    "validation": "weird",
+    "text": "t"
+   },
+   "index": 7,
+   "total": 12,
+   "expect": {
+    "label": "unknown validation",
+    "description": "[local rule] val.weird",
+    "detail": "",
+    "ariaLabel": "7 / 12: unknown validation, local rule, val.weird",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "empty sources",
+    "source": "ai",
+    "sources": [],
+    "validation": "valid",
+    "text": "t"
+   },
+   "index": 8,
+   "total": 12,
+   "expect": {
+    "label": "empty sources",
+    "description": "[AI] syntax ok",
+    "detail": "",
+    "ariaLabel": "8 / 12: empty sources, AI, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "blank explain",
+    "source": "context",
+    "validation": "valid",
+    "explain": "",
+    "assumptions": [
+     "",
+     "only"
+    ],
+    "text": "t"
+   },
+   "index": 9,
+   "total": 12,
+   "expect": {
+    "label": "blank explain",
+    "description": "[nearby code] syntax ok",
+    "detail": "only",
+    "ariaLabel": "9 / 12: blank explain, nearby code, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "no text key",
+    "source": "rule",
+    "validation": "valid"
+   },
+   "index": 10,
+   "total": 12,
+   "expect": {
+    "label": "no text key",
+    "description": "[local rule] syntax ok",
+    "detail": "",
+    "ariaLabel": "10 / 12: no text key, local rule, syntax ok, not insertable",
+    "insertable": false
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "null parts",
+    "source": "rule",
+    "validation": null,
+    "explain": null,
+    "assumptions": null,
+    "sources": null,
+    "text": "z"
+   },
+   "index": 11,
+   "total": 12,
+   "expect": {
+    "label": "null parts",
+    "description": "[local rule] val.null",
+    "detail": "",
+    "ariaLabel": "11 / 12: null parts, local rule, val.null",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "fr-FR",
+   "candidate": {
+    "label": "AI",
+    "source": "ai",
+    "validation": "valid",
+    "explain": "e",
+    "assumptions": [
+     "x",
+     "y",
+     "z"
+    ],
+    "text": "a\nb"
+   },
+   "index": 12,
+   "total": 12,
+   "expect": {
+    "label": "AI",
+    "description": "[AI] syntax ok",
+    "detail": "e · x · y · z",
+    "ariaLabel": "12 / 12: AI, AI, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 0,
+   "total": 0,
+   "expect": {
+    "label": "main function",
+    "description": "[local rule] syntax ok",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "0 / 0: main function, local rule, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 7,
+   "total": 3,
+   "expect": {
+    "label": "main function",
+    "description": "[local rule] syntax ok",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "7 / 3: main function, local rule, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 1.5,
+   "total": 2,
+   "expect": {
+    "label": "main function",
+    "description": "[local rule] syntax ok",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "1.5 / 2: main function, local rule, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": 1e+21,
+   "total": 1,
+   "expect": {
+    "label": "main function",
+    "description": "[local rule] syntax ok",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "1e+21 / 1: main function, local rule, syntax ok",
+    "insertable": true
+   }
+  },
+  {
+   "locale": "en-US",
+   "candidate": {
+    "label": "main function",
+    "source": "rule",
+    "validation": "valid",
+    "explain": "Entry point",
+    "assumptions": [
+     "a",
+     "b"
+    ],
+    "text": "fn main() {}"
+   },
+   "index": -1,
+   "total": 5,
+   "expect": {
+    "label": "main function",
+    "description": "[local rule] syntax ok",
+    "detail": "Entry point · a · b",
+    "ariaLabel": "-1 / 5: main function, local rule, syntax ok",
+    "insertable": true
+   }
+  }
+ ],
+ "places": [
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": -320,
+    "y": 518,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": 100,
+    "y": 1228,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": 10,
+    "y": 28,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": 2240,
+    "y": 1237,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": -1920,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": 0,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 38.25,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": -320,
+    "y": 877,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 718.5,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": -320,
+    "y": 518,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 100,
+    "y": 1228,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 10,
+    "y": 28,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 2240,
+    "y": 1237,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": -1920,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 0,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 38.25,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": -320,
+    "y": 877,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 718.5,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": -320,
+    "y": 518,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": 100,
+    "y": 1228,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": 10,
+    "y": 28,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": 2240,
+    "y": 1237,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": -1920,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": 0,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 38.25,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": -320,
+    "y": 877,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 90
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 718.5,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": -400,
+    "y": 523,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 100,
+    "y": 1178,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 10,
+    "y": 33,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 2160,
+    "y": 1187,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": -1920,
+    "y": 23,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 0,
+    "y": 23,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 43.25,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": -400,
+    "y": 827,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 723.5,
+    "w": 400,
+    "h": 250
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": -480,
+    "y": 527,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 100,
+    "y": 1128,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 10,
+    "y": 37,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 2080,
+    "y": 1137,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": -1920,
+    "y": 27,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 0,
+    "y": 27,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 47.25,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": -480,
+    "y": 777,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 727.5,
+    "w": 480,
+    "h": 300
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": -560,
+    "y": 532,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": 100,
+    "y": 1078,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": 10,
+    "y": 42,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": 2000,
+    "y": 1087,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": -1920,
+    "y": 32,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": 0,
+    "y": 32,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 52.25,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": -560,
+    "y": 727,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 175
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 732.5,
+    "w": 560,
+    "h": 350
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": -800,
+    "y": 545,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": 100,
+    "y": 928,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": 10,
+    "y": 55,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": 1760,
+    "y": 937,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": -1920,
+    "y": 45,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": 0,
+    "y": 45,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": 1760,
+    "y": 65.25,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": -800,
+    "y": 577,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 745.5,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": -800,
+    "y": 545,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": 100,
+    "y": 928,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": 10,
+    "y": 55,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": 1760,
+    "y": 937,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": -1920,
+    "y": 45,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": 0,
+    "y": 45,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": 1760,
+    "y": 65.25,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": -800,
+    "y": 577,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 300
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 745.5,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": -320,
+    "y": 518,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": 100,
+    "y": 1228,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": 10,
+    "y": 28,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": 2240,
+    "y": 1237,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": -1920,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": 0,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 38.25,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": -320,
+    "y": 877,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": null
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 718.5,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": -320,
+    "y": 518,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": 100,
+    "y": 1228,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": 10,
+    "y": 28,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": 2240,
+    "y": 1237,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": -1920,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": 0,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 38.25,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": -320,
+    "y": 877,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 0
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 718.5,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": -320,
+    "y": 518,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": 100,
+    "y": 1228,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": 10,
+    "y": 28,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": 2240,
+    "y": 1237,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": -1920,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": 0,
+    "y": 18,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 38.25,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": -320,
+    "y": 877,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 99.5
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 718.5,
+    "w": 320,
+    "h": 200
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": -427,
+    "y": 524,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": 100,
+    "y": 1161,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": 10,
+    "y": 34,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": 2133,
+    "y": 1170,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": -1920,
+    "y": 24,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": 0,
+    "y": 24,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": 1919.5,
+    "y": 44.25,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": -427,
+    "y": 810,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 133.3
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 724.5,
+    "w": 427,
+    "h": 267
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -30,
+     "y": 500
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": -800,
+    "y": 545,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100,
+     "y": 1430
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": 100,
+    "y": 928,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 99999,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 10,
+     "y": 10
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": 10,
+    "y": 55,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2559,
+     "y": 1439
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": 1760,
+    "y": 937,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1920,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": -1920,
+    "y": 45,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 0,
+     "y": 0
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": 0,
+    "y": 45,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1919.5,
+     "y": 20.25
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": 1760,
+    "y": 65.25,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": -1,
+     "y": 1079
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": -800,
+    "y": 577,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 2560,
+     "y": 100
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 100.5,
+     "y": 700.5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 249.9
+   },
+   "expect": {
+    "x": 100.5,
+    "y": 745.5,
+    "w": 800,
+    "h": 500
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 4000,
+     "h": 10
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 4000,
+     "h": 10
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 1920,
+     "h": 1080
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 5,
+    "y": 23,
+    "w": 1920,
+    "h": 1080
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 1920,
+     "h": 1080
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 640,
+    "y": 318,
+    "w": 1920,
+    "h": 1080
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 1921,
+     "h": 1080
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 5,
+    "y": 23,
+    "w": 1921,
+    "h": 1080
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 1921,
+     "h": 1080
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 639,
+    "y": 318,
+    "w": 1921,
+    "h": 1080
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 2,
+     "h": 2
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 5,
+    "y": 28,
+    "w": 3,
+    "h": 3
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 2,
+     "h": 2
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 1000,
+    "y": 1423,
+    "w": 3,
+    "h": 3
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 3,
+     "h": 3
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 5,
+    "y": 28,
+    "w": 4,
+    "h": 4
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 3,
+     "h": 3
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 125
+   },
+   "expect": {
+    "x": 1000,
+    "y": 1423,
+    "w": 4,
+    "h": 4
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 321,
+     "h": 201
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 5,
+    "y": 32,
+    "w": 482,
+    "h": 302
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 321,
+     "h": 201
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 150
+   },
+   "expect": {
+    "x": 1000,
+    "y": 1096,
+    "w": 482,
+    "h": 302
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 0,
+     "h": 0
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 5,
+    "y": 23,
+    "w": 0,
+    "h": 0
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 0,
+     "h": 0
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 100
+   },
+   "expect": {
+    "x": 1000,
+    "y": 1418,
+    "w": 0,
+    "h": 0
+   }
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 1024,
+     "h": 600
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 1000,
+     "y": 1400
+    },
+    "size": {
+     "w": 1024,
+     "h": 600
+    },
+    "monitors": [
+     {
+      "x": -1920,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 2560,
+      "h": 1440
+     }
+    ],
+    "dpi": 250
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": []
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 5,
+     "y": 5
+    },
+    "size": {
+     "w": 320,
+     "h": 200
+    },
+    "monitors": [
+     {
+      "x": 0,
+      "y": 0,
+      "w": 100,
+      "h": 100
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "input": {
+    "caret": {
+     "x": 50,
+     "y": 50
+    },
+    "size": {
+     "w": 10,
+     "h": 10
+    },
+    "monitors": [
+     {
+      "x": 0,
+      "y": 0,
+      "w": 100,
+      "h": 100
+     },
+     {
+      "x": 0,
+      "y": 0,
+      "w": 4000,
+      "h": 4000
+     }
+    ]
+   },
+   "expect": {
+    "x": 50,
+    "y": 68,
+    "w": 10,
+    "h": 10
+   }
+  }
+ ],
+ "envs": [
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": true,
+    "reasons": []
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": true,
+    "reasons": []
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": true,
+    "reasons": []
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "arm64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "ia32",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": null,
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "x64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "arm64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": "ia32",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "linux",
+    "arch": null,
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "x64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": "ia32",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "darwin",
+    "arch": null,
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "x64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "arm64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": "ia32",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": null,
+    "arch": null,
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "x64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "arm64",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": "ia32",
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": 22631
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": 22000
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": 21999
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": 22000.5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": "22631"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": -1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": 5,
+    "arch": null,
+    "build": 26100
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": 100
+   },
+   "expect": {
+    "supported": true,
+    "reasons": []
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": 150
+   },
+   "expect": {
+    "supported": true,
+    "reasons": []
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": 250
+   },
+   "expect": {
+    "supported": true,
+    "reasons": []
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": 99.9
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": 250.1
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": 300
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": 0
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": -5
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": null
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": "150"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64",
+    "build": 26100,
+    "dpi": true
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "display scaling must be between 100% and 250%"
+    ]
+   }
+  },
+  {
+   "input": {
+    "platform": "win32",
+    "arch": "x64"
+   },
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  },
+  {
+   "input": {},
+   "expect": {
+    "supported": false,
+    "reasons": [
+     "Windows is required",
+     "x64 is required",
+     "Windows 11 (build 22000 or newer) is required"
+    ]
+   }
+  }
+ ]
+}
