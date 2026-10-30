@@ -1,4 +1,4 @@
 [workspace]
 members = ["crates/pime-core"]
-exclude = ["crates/pime-tsf", "crates/pime-ai-worker", "crates/pime-setup"]
+exclude = ["crates/pime-tsf", "crates/pime-ai-worker", "crates/pime-setup", "crates/pime-ipc"]
 resolver = "2"

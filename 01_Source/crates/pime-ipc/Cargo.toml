@@ -20,7 +20,7 @@ path = "src/lib.rs"
 
 [[test]]
 name = "loopback"
-path = "tests/loopback.rs"
+path = "../../tests/ipc/loopback.rs"
 
 [dependencies]
 pime-core = { path = "../pime-core" }
