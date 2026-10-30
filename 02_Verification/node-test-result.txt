@@ -1,617 +1,725 @@
-# JavaScript tests (tests/js, node:test) - raw output, 2026-10-30T17:58:54+08:00, node v26.13.0
+# JavaScript tests (tests/js, node:test) - raw output, 2026-10-30T22:11:28+08:00, node v26.13.0
 # command: PIME_CORE_EXE=<debug pime-core> node --test --test-reporter=tap *.test.js   (the engine differential tests run because the core exe is set); then node scripts/check-syntax.js
 
 TAP version 13
 # Subtest: PARITY predict fixtures (94 cases) match the JS engine
 ok 1 - PARITY predict fixtures (94 cases) match the JS engine
   ---
-  duration_ms: 28.9426
+  duration_ms: 37.9527
   type: 'test'
   ...
 # Subtest: PARITY validate fixtures match the JS validators
 ok 2 - PARITY validate fixtures match the JS validators
   ---
-  duration_ms: 1.5755
+  duration_ms: 3.0665
   type: 'test'
   ...
 # Subtest: PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes)
 ok 3 - PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes)
   ---
-  duration_ms: 0.5737
+  duration_ms: 1.5604
   type: 'test'
   ...
 # Subtest: PARITY resolve fixtures match the JS language resolver
 ok 4 - PARITY resolve fixtures match the JS language resolver
   ---
-  duration_ms: 0.6713
+  duration_ms: 1.4093
   type: 'test'
   ...
 # Subtest: PARITY secret fixtures match the JS scanner
 ok 5 - PARITY secret fixtures match the JS scanner
   ---
-  duration_ms: 2.1556
+  duration_ms: 3.0875
   type: 'test'
   ...
 # Subtest: PARITY fixtures are exactly what the generator produces (no hand edits)
 ok 6 - PARITY fixtures are exactly what the generator produces (no hand edits)
   ---
-  duration_ms: 180.8109
+  duration_ms: 369.8775
   type: 'test'
   ...
 # Subtest: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors
 ok 7 - UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors
   ---
-  duration_ms: 9.3287
+  duration_ms: 9.2348
   type: 'test'
   ...
 # Subtest: UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only
 ok 8 - UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only
   ---
-  duration_ms: 3.5122
+  duration_ms: 5.468
   type: 'test'
   ...
 # Subtest: UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise
 ok 9 - UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise
   ---
-  duration_ms: 0.9833
+  duration_ms: 2.2162
   type: 'test'
   ...
 # Subtest: API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels
 ok 10 - API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels
   ---
-  duration_ms: 0.9105
+  duration_ms: 1.8681
   type: 'test'
   ...
 # Subtest: UT-072 / IT-046 a stale capability record is treated as unknown and never sent
 ok 11 - UT-072 / IT-046 a stale capability record is treated as unknown and never sent
   ---
-  duration_ms: 0.2112
+  duration_ms: 0.3123
   type: 'test'
   ...
 # Subtest: UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work
 ok 12 - UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work
   ---
-  duration_ms: 6.7273
+  duration_ms: 11.1503
   type: 'test'
   ...
 # Subtest: UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded
 ok 13 - UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded
   ---
-  duration_ms: 0.7977
+  duration_ms: 1.7589
   type: 'test'
   ...
 # Subtest: UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI
 ok 14 - UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI
   ---
-  duration_ms: 2.5893
+  duration_ms: 2.6598
   type: 'test'
   ...
 # Subtest: UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens
 ok 15 - UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens
   ---
-  duration_ms: 104.8437
+  duration_ms: 98.8538
   type: 'test'
   ...
 # Subtest: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only
 ok 16 - UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only
   ---
-  duration_ms: 0.6964
+  duration_ms: 0.8192
   type: 'test'
   ...
 # Subtest: UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves
 ok 17 - UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves
   ---
-  duration_ms: 0.9342
+  duration_ms: 0.957
   type: 'test'
   ...
 # Subtest: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed
 ok 18 - UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed
   ---
-  duration_ms: 0.5545
+  duration_ms: 0.5586
   type: 'test'
   ...
 # Subtest: IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal
 ok 19 - IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal
   ---
-  duration_ms: 2.5147
+  duration_ms: 3.3197
   type: 'test'
   ...
 # Subtest: UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled
 ok 20 - UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled
   ---
-  duration_ms: 0.9848
+  duration_ms: 1.44
   type: 'test'
   ...
 # Subtest: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight
 ok 21 - UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight
   ---
-  duration_ms: 0.6728
+  duration_ms: 0.9741
   type: 'test'
   ...
 # Subtest: UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely
 ok 22 - UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely
   ---
-  duration_ms: 0.2848
+  duration_ms: 0.3354
   type: 'test'
   ...
 # Subtest: ANN-01 maskSource reports comment/string spans without changing its masked output
 ok 23 - ANN-01 maskSource reports comment/string spans without changing its masked output
   ---
-  duration_ms: 1.5503
+  duration_ms: 2.0424
   type: 'test'
   ...
 # Subtest: ANN-02 stripComments removes comments only, in every supported language
 ok 24 - ANN-02 stripComments removes comments only, in every supported language
   ---
-  duration_ms: 0.4165
+  duration_ms: 0.4959
   type: 'test'
   ...
 # Subtest: ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected
 ok 25 - ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected
   ---
-  duration_ms: 1.829
+  duration_ms: 1.7499
   type: 'test'
   ...
 # Subtest: ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls
 ok 26 - ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls
   ---
-  duration_ms: 1.1847
+  duration_ms: 0.8713
   type: 'test'
   ...
 # Subtest: ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback
 ok 27 - ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback
   ---
-  duration_ms: 0.9791
+  duration_ms: 1.1825
   type: 'test'
   ...
 # Subtest: ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled
 ok 28 - ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled
   ---
-  duration_ms: 0.3101
+  duration_ms: 0.424
   type: 'test'
   ...
 # Subtest: ANN-06b F1 instructions are extended only when a setting is on and the language has line comments
 ok 29 - ANN-06b F1 instructions are extended only when a setting is on and the language has line comments
   ---
-  duration_ms: 0.1851
+  duration_ms: 0.2373
   type: 'test'
   ...
 # Subtest: ANN-07 symbol index: names of declarations only, comments and strings ignored, capped
 ok 30 - ANN-07 symbol index: names of declarations only, comments and strings ignored, capped
   ---
-  duration_ms: 2.781
+  duration_ms: 3.1089
   type: 'test'
   ...
 # Subtest: UT-025 context level capability lattice
 ok 31 - UT-025 context level capability lattice
   ---
-  duration_ms: 2.2913
+  duration_ms: 3.1312
   type: 'test'
   ...
 # Subtest: UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected
 ok 32 - UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected
   ---
-  duration_ms: 0.6336
+  duration_ms: 1.0395
   type: 'test'
   ...
 # Subtest: UT-027 nearby excerpt is minimal and wider requests are refused
 ok 33 - UT-027 nearby excerpt is minimal and wider requests are refused
   ---
-  duration_ms: 0.2859
+  duration_ms: 0.4676
   type: 'test'
   ...
 # Subtest: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk
 ok 34 - UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk
   ---
-  duration_ms: 1.4655
+  duration_ms: 2.1318
   type: 'test'
   ...
 # Subtest: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests
 ok 35 - UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests
   ---
-  duration_ms: 3.9635
+  duration_ms: 6.1261
   type: 'test'
   ...
 # Subtest: UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file
 ok 36 - UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file
   ---
-  duration_ms: 0.6109
+  duration_ms: 1.2508
   type: 'test'
   ...
 # Subtest: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only
 ok 37 - UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only
   ---
-  duration_ms: 0.4726
+  duration_ms: 1.2204
   type: 'test'
   ...
 # Subtest: UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline
 ok 38 - UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline
   ---
-  duration_ms: 0.674
+  duration_ms: 1.9202
   type: 'test'
   ...
 # Subtest: UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range
 ok 39 - UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range
   ---
-  duration_ms: 0.7661
+  duration_ms: 1.2805
   type: 'test'
   ...
 # Subtest: UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)
 ok 40 - UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)
   ---
-  duration_ms: 0.4466
+  duration_ms: 0.8351
   type: 'test'
   ...
 # Subtest: UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result
 ok 41 - UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result
   ---
-  duration_ms: 0.5136
+  duration_ms: 0.4945
   type: 'test'
   ...
 # Subtest: UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token
 ok 42 - UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token
   ---
-  duration_ms: 0.4275
+  duration_ms: 0.4091
   type: 'test'
   ...
 # Subtest: UT-050 an apply token works once; replay writes nothing more
 ok 43 - UT-050 an apply token works once; replay writes nothing more
   ---
-  duration_ms: 0.6461
+  duration_ms: 0.6895
   type: 'test'
   ...
 # Subtest: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried
 ok 44 - UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried
   ---
-  duration_ms: 85.1202
+  duration_ms: 95.7519
   type: 'test'
   ...
 # Subtest: IT-032 a verified apply can be undone back to the original dirty buffer
 ok 45 - IT-032 a verified apply can be undone back to the original dirty buffer
   ---
-  duration_ms: 0.3626
+  duration_ms: 0.4735
   type: 'test'
   ...
 # Subtest: UT-054 / IT-036 / ST-030 only the current file can be changed
 ok 46 - UT-054 / IT-036 / ST-030 only the current file can be changed
   ---
-  duration_ms: 0.2036
+  duration_ms: 0.2729
   type: 'test'
   ...
 # Subtest: UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply
 ok 47 - UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply
   ---
-  duration_ms: 0.2573
+  duration_ms: 0.39
   type: 'test'
   ...
 # Subtest: UT-052 a failed syntax check disables the default apply
 ok 48 - UT-052 a failed syntax check disables the default apply
   ---
-  duration_ms: 0.0921
+  duration_ms: 0.1618
   type: 'test'
   ...
 # Subtest: IT-029 insert is refused when the cursor moved after the proposal
 ok 49 - IT-029 insert is refused when the cursor moved after the proposal
   ---
-  duration_ms: 0.0811
+  duration_ms: 0.1548
   type: 'test'
   ...
 # Subtest: NFR-502 purge drops expired plans, used tokens and applied source fragments
 ok 50 - NFR-502 purge drops expired plans, used tokens and applied source fragments
   ---
-  duration_ms: 0.1918
+  duration_ms: 0.3312
   type: 'test'
   ...
 # Subtest: static: the F1 flow writes only through the coordinator
 ok 51 - static: the F1 flow writes only through the coordinator
   ---
-  duration_ms: 0.3861
+  duration_ms: 0.509
+  type: 'test'
+  ...
+# Subtest: AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)
+ok 52 - AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)
+  ---
+  duration_ms: 101.1764
+  type: 'test'
+  ...
+# Subtest: AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036)
+ok 53 - AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036)
+  ---
+  duration_ms: 1187.3064
+  type: 'test'
+  ...
+# Subtest: AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)
+ok 54 - AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)
+  ---
+  duration_ms: 108.6461
+  type: 'test'
+  ...
+# Subtest: AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070)
+ok 55 - AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070)
+  ---
+  duration_ms: 233.3979
+  type: 'test'
+  ...
+# Subtest: AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)
+ok 56 - AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)
+  ---
+  duration_ms: 41.7846
+  type: 'test'
+  ...
+# Subtest: AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)
+ok 57 - AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)
+  ---
+  duration_ms: 103.8393
+  type: 'test'
+  ...
+# Subtest: AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)
+ok 58 - AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)
+  ---
+  duration_ms: 57.4235
+  type: 'test'
+  ...
+# Subtest: AI engine: annotations and the symbol index are identical in both engines (ANN-02..07)
+ok 59 - AI engine: annotations and the symbol index are identical in both engines (ANN-02..07)
+  ---
+  duration_ms: 54.7425
+  type: 'test'
+  ...
+# Subtest: scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)
+ok 60 - scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)
+  ---
+  duration_ms: 2422.0653
+  type: 'test'
+  ...
+# Subtest: scheduler: with the core gone nothing is scheduled and nothing throws (the AI path is optional)
+ok 61 - scheduler: with the core gone nothing is scheduled and nothing throws (the AI path is optional)
+  ---
+  duration_ms: 124.9467
+  type: 'test'
+  ...
+# Subtest: CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056)
+ok 62 - CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056)
+  ---
+  duration_ms: 107.2556
+  type: 'test'
+  ...
+# Subtest: CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031)
+ok 63 - CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031)
+  ---
+  duration_ms: 85.4562
+  type: 'test'
+  ...
+# Subtest: CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046)
+ok 64 - CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046)
+  ---
+  duration_ms: 82.2416
+  type: 'test'
+  ...
+# Subtest: CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071)
+ok 65 - CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071)
+  ---
+  duration_ms: 56.047
+  type: 'test'
+  ...
+# Subtest: CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)
+ok 66 - CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)
+  ---
+  duration_ms: 67.5029
+  type: 'test'
+  ...
+# Subtest: CFG engine adapter: the presentation methods answer like the JS engine, and still answer when the core is down
+ok 67 - CFG engine adapter: the presentation methods answer like the JS engine, and still answer when the core is down
+  ---
+  duration_ms: 56.3143
   type: 'test'
   ...
 # Subtest: engine: the Rust engine starts, opens a session and reports itself available
-ok 52 - engine: the Rust engine starts, opens a session and reports itself available
+ok 68 - engine: the Rust engine starts, opens a session and reports itself available
   ---
-  duration_ms: 84.7373
+  duration_ms: 121.0677
   type: 'test'
   ...
 # Subtest: engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine
-ok 53 - engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine
+ok 69 - engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine
   ---
-  duration_ms: 143.2314
+  duration_ms: 167.3092
   type: 'test'
   ...
 # Subtest: engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)
-ok 54 - engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)
+ok 70 - engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)
   ---
-  duration_ms: 62.8502
+  duration_ms: 79.2329
   type: 'test'
   ...
 # Subtest: engine: excerpts and insert previews are identical in both engines (UT-027)
-ok 55 - engine: excerpts and insert previews are identical in both engines (UT-027)
+ok 71 - engine: excerpts and insert previews are identical in both engines (UT-027)
   ---
-  duration_ms: 68.3607
+  duration_ms: 50.138
   type: 'test'
   ...
 # Subtest: engine: prepare/apply give the same outcome in both engines (UT-047..052)
-ok 56 - engine: prepare/apply give the same outcome in both engines (UT-047..052)
+ok 72 - engine: prepare/apply give the same outcome in both engines (UT-047..052)
   ---
-  duration_ms: 105.3738
+  duration_ms: 68.0842
   type: 'test'
   ...
 # Subtest: engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)
-ok 57 - engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)
+ok 73 - engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)
   ---
-  duration_ms: 66.4957
+  duration_ms: 86.7221
   type: 'test'
   ...
 # Subtest: engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)
-ok 58 - engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)
+ok 74 - engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)
   ---
-  duration_ms: 218.8474
+  duration_ms: 202.9797
   type: 'test'
   ...
 # Subtest: engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation
-ok 59 - engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation
+ok 75 - engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation
   ---
-  duration_ms: 181.3571
+  duration_ms: 166.0078
   type: 'test'
   ...
 # Subtest: engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back
-ok 60 - engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back
+ok 76 - engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back
   ---
-  duration_ms: 1556.5887
+  duration_ms: 1582.1158
   type: 'test'
   ...
 # Subtest: engine: settings reach the core and scenarios resolve there as in JS
-ok 61 - engine: settings reach the core and scenarios resolve there as in JS
+ok 77 - engine: settings reach the core and scenarios resolve there as in JS
   ---
-  duration_ms: 80.0259
+  duration_ms: 53.8283
   type: 'test'
   ...
 # Subtest: UT-006 candidate kind/source/validation round-trip and invalid kind rejected
-ok 62 - UT-006 candidate kind/source/validation round-trip and invalid kind rejected
+ok 78 - UT-006 candidate kind/source/validation round-trip and invalid kind rejected
   ---
-  duration_ms: 2.0948
+  duration_ms: 2.1549
   type: 'test'
   ...
 # Subtest: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
-ok 63 - UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
+ok 79 - UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
   ---
-  duration_ms: 0.3307
+  duration_ms: 0.3468
   type: 'test'
   ...
 # Subtest: UT-008 de-duplication keeps one row and every source
-ok 64 - UT-008 de-duplication keeps one row and every source
+ok 80 - UT-008 de-duplication keeps one row and every source
   ---
-  duration_ms: 0.2624
+  duration_ms: 0.2696
   type: 'test'
   ...
 # Subtest: UT-010 placeholders become snippet tab stops, or plain text without a bridge
-ok 65 - UT-010 placeholders become snippet tab stops, or plain text without a bridge
+ok 81 - UT-010 placeholders become snippet tab stops, or plain text without a bridge
   ---
-  duration_ms: 0.2164
+  duration_ms: 0.2165
   type: 'test'
   ...
 # Subtest: UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
-ok 66 - UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
+ok 82 - UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
   ---
-  duration_ms: 12.8515
+  duration_ms: 18.6114
   type: 'test'
   ...
 # Subtest: UT-012 bridge languageId beats extension and lexical hints
-ok 67 - UT-012 bridge languageId beats extension and lexical hints
+ok 83 - UT-012 bridge languageId beats extension and lexical hints
   ---
-  duration_ms: 0.2683
+  duration_ms: 0.4215
   type: 'test'
   ...
 # Subtest: UT-013 / IT-010 ambiguous signals keep the current language and only suggest
-ok 68 - UT-013 / IT-010 ambiguous signals keep the current language and only suggest
+ok 84 - UT-013 / IT-010 ambiguous signals keep the current language and only suggest
   ---
-  duration_ms: 0.2616
+  duration_ms: 0.4362
   type: 'test'
   ...
 # Subtest: UT-014 / IT-011 manual lock outranks automatic detection until unlocked
-ok 69 - UT-014 / IT-011 manual lock outranks automatic detection until unlocked
+ok 85 - UT-014 / IT-011 manual lock outranks automatic detection until unlocked
   ---
-  duration_ms: 0.1936
+  duration_ms: 0.3157
   type: 'test'
   ...
 # Subtest: UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
-ok 70 - UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
+ok 86 - UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
   ---
-  duration_ms: 0.1395
+  duration_ms: 0.2777
   type: 'test'
   ...
 # Subtest: UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
-ok 71 - UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
+ok 87 - UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
   ---
-  duration_ms: 1.0507
+  duration_ms: 1.8908
   type: 'test'
   ...
 # Subtest: UT-017 Rust: no semicolon is forced when the position is not provably a statement
-ok 72 - UT-017 Rust: no semicolon is forced when the position is not provably a statement
+ok 88 - UT-017 Rust: no semicolon is forced when the position is not provably a statement
   ---
-  duration_ms: 0.4774
+  duration_ms: 0.7063
   type: 'test'
   ...
 # Subtest: UT-018 Python templates follow the host indentation and EOL without mixing
-ok 73 - UT-018 Python templates follow the host indentation and EOL without mixing
+ok 89 - UT-018 Python templates follow the host indentation and EOL without mixing
   ---
-  duration_ms: 0.3667
+  duration_ms: 0.5209
   type: 'test'
   ...
 # Subtest: UT-019 TSX: a generic arrow is never offered as a bare <T>
-ok 74 - UT-019 TSX: a generic arrow is never offered as a bare <T>
+ok 90 - UT-019 TSX: a generic arrow is never offered as a bare <T>
   ---
-  duration_ms: 0.3354
+  duration_ms: 0.5838
   type: 'test'
   ...
 # Subtest: UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
-ok 75 - UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
+ok 91 - UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
   ---
-  duration_ms: 0.615
+  duration_ms: 0.9281
   type: 'test'
   ...
 # Subtest: UT-037 nearby code feeds identifier candidates (no project-wide claims)
-ok 76 - UT-037 nearby code feeds identifier candidates (no project-wide claims)
+ok 92 - UT-037 nearby code feeds identifier candidates (no project-wide claims)
   ---
-  duration_ms: 0.5022
+  duration_ms: 0.6533
   type: 'test'
   ...
 # Subtest: UT-041 candidates carry source, language and explanation; unverified AI never looks verified
-ok 77 - UT-041 candidates carry source, language and explanation; unverified AI never looks verified
+ok 93 - UT-041 candidates carry source, language and explanation; unverified AI never looks verified
   ---
-  duration_ms: 0.455
+  duration_ms: 0.5873
   type: 'test'
   ...
 # Subtest: UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
-ok 78 - UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
+ok 94 - UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
   ---
-  duration_ms: 1.4621
+  duration_ms: 1.6619
   type: 'test'
   ...
 # Subtest: UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
-ok 79 - UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
+ok 95 - UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
   ---
-  duration_ms: 2.936
+  duration_ms: 2.4584
   type: 'test'
   ...
-# \# UT-068 P95=0.508ms max=1.683ms node=v26.13.0 platform=win32/x64
+# \# UT-068 P95=0.715ms max=3.018ms node=v26.13.0 platform=win32/x64
 # Subtest: UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded
-ok 80 - UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded
+ok 96 - UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded
   ---
-  duration_ms: 1.4429
+  duration_ms: 1.401
   type: 'test'
   ...
 # Subtest: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
-ok 81 - UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
+ok 97 - UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
   ---
-  duration_ms: 3.8348
+  duration_ms: 4.0474
   type: 'test'
   ...
 # Subtest: UT-057 every candidate row is described by text (source, validation, position, action), not colour
-ok 82 - UT-057 every candidate row is described by text (source, validation, position, action), not colour
+ok 98 - UT-057 every candidate row is described by text (source, validation, position, action), not colour
   ---
-  duration_ms: 0.317
+  duration_ms: 0.3365
   type: 'test'
   ...
 # Subtest: UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
-ok 83 - UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
+ok 99 - UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
   ---
-  duration_ms: 0.2037
+  duration_ms: 0.2157
   type: 'test'
   ...
 # Subtest: UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
-ok 84 - UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
+ok 100 - UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
   ---
-  duration_ms: 0.2299
+  duration_ms: 0.4394
   type: 'test'
   ...
 # Subtest: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
-ok 85 - UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
+ok 101 - UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
   ---
-  duration_ms: 2.9906
+  duration_ms: 4.035
   type: 'test'
   ...
 # Subtest: UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
-ok 86 - UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
+ok 102 - UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
   ---
-  duration_ms: 2.3794
+  duration_ms: 3.1806
   type: 'test'
   ...
 # Subtest: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
-ok 87 - UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
+ok 103 - UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
   ---
-  duration_ms: 3.1669
+  duration_ms: 4.037
   type: 'test'
   ...
 # Subtest: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
-ok 88 - UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
+ok 104 - UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
   ---
-  duration_ms: 3.7231
+  duration_ms: 4.0238
   type: 'test'
   ...
 # Subtest: UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
-ok 89 - UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
+ok 105 - UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
   ---
-  duration_ms: 22.279
+  duration_ms: 25.1936
   type: 'test'
   ...
 # Subtest: UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
-ok 90 - UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
+ok 106 - UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
   ---
-  duration_ms: 369.5643
+  duration_ms: 427.1589
   type: 'test'
   ...
 # Subtest: UT-074 static: nothing in the source writes a key to settings, files or logs
-ok 91 - UT-074 static: nothing in the source writes a key to settings, files or logs
+ok 107 - UT-074 static: nothing in the source writes a key to settings, files or logs
   ---
-  duration_ms: 1.1632
+  duration_ms: 1.3012
   type: 'test'
   ...
 # Subtest: FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
-ok 92 - FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
+ok 108 - FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
   ---
-  duration_ms: 0.1417
+  duration_ms: 0.1645
+  type: 'test'
+  ...
+# Subtest: SCR-01 the status bar model renders exactly what the extension rendered inline, in every state and locale
+ok 109 - SCR-01 the status bar model renders exactly what the extension rendered inline, in every state and locale
+  ---
+  duration_ms: 12.1493
+  type: 'test'
+  ...
+# Subtest: SCR-01 the status menu lists the actions in order; the AI item names the action and is English in every locale
+ok 110 - SCR-01 the status menu lists the actions in order; the AI item names the action and is English in every locale
+  ---
+  duration_ms: 0.7589
   type: 'test'
   ...
 # Subtest: UT-020 PowerShell candidates are plain text only (never executed)
-ok 93 - UT-020 PowerShell candidates are plain text only (never executed)
+ok 111 - UT-020 PowerShell candidates are plain text only (never executed)
   ---
-  duration_ms: 4.2741
+  duration_ms: 4.8443
   type: 'test'
   ...
 # Subtest: UT-021 C declarations and standard versions
-ok 94 - UT-021 C declarations and standard versions
+ok 112 - UT-021 C declarations and standard versions
   ---
-  duration_ms: 0.4244
+  duration_ms: 0.5121
   type: 'test'
   ...
 # Subtest: UT-022 assembly dialect: Intel and AT&T are never silently mixed
-ok 95 - UT-022 assembly dialect: Intel and AT&T are never silently mixed
+ok 113 - UT-022 assembly dialect: Intel and AT&T are never silently mixed
   ---
-  duration_ms: 1.3698
+  duration_ms: 1.5528
   type: 'test'
   ...
 # Subtest: UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
-ok 96 - UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
+ok 114 - UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
   ---
-  duration_ms: 0.9786
+  duration_ms: 1.1029
   type: 'test'
   ...
 # Subtest: UT-024 / ST-043 unresolved symbols never produce bytes
-ok 97 - UT-024 / ST-043 unresolved symbols never produce bytes
+ok 115 - UT-024 / ST-043 unresolved symbols never produce bytes
   ---
-  duration_ms: 8.2899
+  duration_ms: 10.6923
   type: 'test'
   ...
 # Subtest: ST-043 independent golden vectors for the verified x86-64 forms
-ok 98 - ST-043 independent golden vectors for the verified x86-64 forms
+ok 116 - ST-043 independent golden vectors for the verified x86-64 forms
   ---
-  duration_ms: 1.7751
+  duration_ms: 2.2558
   type: 'test'
   ...
 # Subtest: UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
-ok 99 - UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
+ok 117 - UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
   ---
-  duration_ms: 0.8502
+  duration_ms: 1.1437
   type: 'test'
   ...
 # Subtest: UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
-ok 100 - UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
+ok 118 - UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
   ---
-  duration_ms: 3.2365
+  duration_ms: 4.3592
   type: 'test'
   ...
-1..100
-# tests 100
+1..118
+# tests 118
 # suites 0
-# pass 100
+# pass 118
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 2714.6616
+# duration_ms 4620.9572
 
 # ---- syntax check
-syntax check: 50/50 files OK
+syntax check: 55/55 files OK

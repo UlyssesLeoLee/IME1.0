@@ -1,14 +1,14 @@
 {
  "summary": {
-  "generated": "2026-10-30T09:59:07.997Z",
+  "generated": "2026-10-30T14:11:37.988Z",
   "node": "v26.13.0",
   "js": {
-   "total": 90,
-   "pass": 90
+   "total": 92,
+   "pass": 92
   },
   "rust": {
-   "total": 220,
-   "pass": 220
+   "total": 359,
+   "pass": 359
   },
   "uat": {
    "total": 31,
@@ -48,12 +48,12 @@
     "rust"
    ],
    "tests": [
-    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
-    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
     "rust: profiles::tests::ut_001_duplicate_guid_is_rejected",
     "profiles::tests::ut_001_duplicate_guid_is_rejected",
     "rust: profiles::tests::ut_001_other_invalid_sets_are_rejected",
-    "profiles::tests::ut_001_other_invalid_sets_are_rejected"
+    "profiles::tests::ut_001_other_invalid_sets_are_rejected",
+    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
+    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids"
    ],
    "failed": [],
    "reason": ""
@@ -187,10 +187,10 @@
     "rust"
    ],
    "tests": [
-    "rust: input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode",
-    "input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode",
     "rust: input::tests::ut_009_capture_without_candidates_consumes_nothing",
-    "input::tests::ut_009_capture_without_candidates_consumes_nothing"
+    "input::tests::ut_009_capture_without_candidates_consumes_nothing",
+    "rust: input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode",
+    "input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode"
    ],
    "failed": [],
    "reason": ""
@@ -465,12 +465,12 @@
     "UT-027 nearby excerpt is minimal and wider requests are refused",
     "rust: context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
+    "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
+    "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
-    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
-    "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
-    "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf"
+    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed"
    ],
    "failed": [],
    "reason": ""
@@ -535,11 +535,14 @@
    "title": "Vault 非明文序列化",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
-    "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors"
+    "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
+    "rust: ut_031_the_api_key_only_travels_in_the_prepared_headers",
+    "ut_031_the_api_key_only_travels_in_the_prepared_headers"
    ],
    "failed": [],
    "reason": ""
@@ -598,7 +601,9 @@
     "js: UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded",
     "UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded",
     "rust: budget::tests::ut_035_budget_reserve_before_sending_settle_with_real_usage_refuse_when_exceeded",
-    "budget::tests::ut_035_budget_reserve_before_sending_settle_with_real_usage_refuse_when_exceeded"
+    "budget::tests::ut_035_budget_reserve_before_sending_settle_with_real_usage_refuse_when_exceeded",
+    "rust: ut_035_prepare_reserves_complete_settles_with_the_real_usage",
+    "ut_035_prepare_reserves_complete_settles_with_the_real_usage"
    ],
    "failed": [],
    "reason": ""
@@ -652,11 +657,16 @@
    "title": "旧 seq 与 doc epoch 淘汰",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
-    "UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight"
+    "UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
+    "rust: scheduler::tests::ut_039_only_the_latest_input_runs_and_stale_results_are_discarded",
+    "scheduler::tests::ut_039_only_the_latest_input_runs_and_stale_results_are_discarded",
+    "rust: ut_039_the_core_decides_when_to_send_and_which_result_is_stale",
+    "ut_039_the_core_decides_when_to_send_and_which_result_is_stale"
    ],
    "failed": [],
    "reason": ""
@@ -667,11 +677,14 @@
    "status": "PASS",
    "via": [
     "js",
+    "rust",
     "uat"
    ],
    "tests": [
     "js: UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
     "UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
+    "rust: scheduler::tests::ut_040_pausing_blocks_the_timer",
+    "scheduler::tests::ut_040_pausing_blocks_the_timer",
     "uat: UAT-35",
     "UAT-35"
    ],
@@ -734,7 +747,9 @@
     "js: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
     "UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
     "rust: edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent",
-    "edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent"
+    "edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent",
+    "rust: i18n::tests::ut_044_texts_are_translated_per_locale_and_arguments_fill_in_one_pass",
+    "i18n::tests::ut_044_texts_are_translated_per_locale_and_arguments_fill_in_one_pass"
    ],
    "failed": [],
    "reason": ""
@@ -852,10 +867,10 @@
    "tests": [
     "js: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
     "UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
-    "rust: edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried",
-    "edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried",
     "rust: edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown",
-    "edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown"
+    "edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown",
+    "rust: edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried",
+    "edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried"
    ],
    "failed": [],
    "reason": ""
@@ -906,6 +921,8 @@
     "UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
     "js: UT-054 / IT-036 / ST-030 only the current file can be changed",
     "UT-054 / IT-036 / ST-030 only the current file can be changed",
+    "rust: ai::tests::ut_054_model_output_is_data_unknown_keys_are_ignored",
+    "ai::tests::ut_054_model_output_is_data_unknown_keys_are_ignored",
     "rust: edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed",
     "edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed"
    ],
@@ -917,11 +934,14 @@
    "title": "候选浮层尺寸与越界回退",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-055 overlay placement stays on the caret monitor and hides when it cannot be located",
-    "UT-055 overlay placement stays on the caret monitor and hides when it cannot be located"
+    "UT-055 overlay placement stays on the caret monitor and hides when it cannot be located",
+    "rust: uimodel::tests::ut_055_the_overlay_stays_on_the_caret_monitor_and_hides_when_it_cannot_be_located",
+    "uimodel::tests::ut_055_the_overlay_stays_on_the_caret_monitor_and_hides_when_it_cannot_be_located"
    ],
    "failed": [],
    "reason": ""
@@ -932,11 +952,14 @@
    "status": "PASS",
    "via": [
     "js",
+    "rust",
     "uat"
    ],
    "tests": [
     "js: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
     "UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
+    "rust: i18n::tests::ut_056_the_interface_locale_is_independent_of_the_editor_language",
+    "i18n::tests::ut_056_the_interface_locale_is_independent_of_the_editor_language",
     "uat: UAT-33",
     "UAT-33"
    ],
@@ -948,11 +971,14 @@
    "title": "无障碍候选播报属性",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-057 every candidate row is described by text (source, validation, position, action), not colour",
-    "UT-057 every candidate row is described by text (source, validation, position, action), not colour"
+    "UT-057 every candidate row is described by text (source, validation, position, action), not colour",
+    "rust: uimodel::tests::ut_057_every_candidate_row_is_described_by_text",
+    "uimodel::tests::ut_057_every_candidate_row_is_described_by_text"
    ],
    "failed": [],
    "reason": ""
@@ -962,13 +988,16 @@
    "title": "规则包 Schema 与资源边界",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions",
     "UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions",
     "js: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working",
-    "UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working"
+    "UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working",
+    "rust: settings_migrate::tests::ut_058_bad_user_packs_are_rejected_and_skipped_valid_ones_are_kept",
+    "settings_migrate::tests::ut_058_bad_user_packs_are_rejected_and_skipped_valid_ones_are_kept"
    ],
    "failed": [],
    "reason": ""
@@ -978,11 +1007,14 @@
    "title": "配置迁移/回退版本",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
-    "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules"
+    "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
+    "rust: settings_migrate::tests::ut_059_migration_keeps_the_previous_settings_when_the_write_fails",
+    "settings_migrate::tests::ut_059_migration_keeps_the_previous_settings_when_the_write_fails"
    ],
    "failed": [],
    "reason": ""
@@ -1008,10 +1040,10 @@
     "install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
     "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
     "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
-    "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
-    "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
     "rust: install_plan::tests::ut_061_uninstall_removes_only_own_guids",
-    "install_plan::tests::ut_061_uninstall_removes_only_own_guids"
+    "install_plan::tests::ut_061_uninstall_removes_only_own_guids",
+    "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
+    "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent"
    ],
    "failed": [],
    "reason": ""
@@ -1060,6 +1092,8 @@
    "tests": [
     "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
     "UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
+    "rust: input::tests::ut_064_a_failure_while_candidates_show_hides_the_window",
+    "input::tests::ut_064_a_failure_while_candidates_show_hides_the_window",
     "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
     "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
     "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
@@ -1167,11 +1201,14 @@
    "title": "错误诊断去敏",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only",
-    "UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only"
+    "UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only",
+    "rust: diag::tests::ut_071_only_whitelisted_token_like_metadata_is_recorded",
+    "diag::tests::ut_071_only_whitelisted_token_like_metadata_is_recorded"
    ],
    "failed": [],
    "reason": ""
@@ -1195,13 +1232,18 @@
    "title": "迁移中断不损用户配置",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
     "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
     "js: UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption",
-    "UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption"
+    "UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption",
+    "rust: settings_io::tests::ut_073_a_corrupt_file_is_recovered_from_the_bak",
+    "settings_io::tests::ut_073_a_corrupt_file_is_recovered_from_the_bak",
+    "rust: settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file",
+    "settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file"
    ],
    "failed": [],
    "reason": ""
@@ -1263,11 +1305,14 @@
    "title": "环境与 DPI 配置校验",
    "status": "PASS",
    "via": [
-    "js"
+    "js",
+    "rust"
    ],
    "tests": [
     "js: UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained",
-    "UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained"
+    "UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained",
+    "rust: uimodel::tests::ut_077_the_environment_check_explains_what_is_unsupported",
+    "uimodel::tests::ut_077_the_environment_check_explains_what_is_unsupported"
    ],
    "failed": [],
    "reason": ""

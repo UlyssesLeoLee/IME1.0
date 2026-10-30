@@ -21,7 +21,7 @@ see `02_Verification/STATUS.md`). The items below that are NOT automated have **
 
 | ID | Procedure | Needs |
 |---|---|---|
-| G0-01..04 | Build and sign the TSF DLL, register 3 profiles, type in Notepad, unregister and reboot | Windows 11 VM, MSVC, Windows SDK, test certificate |
+| G0-01..04 | Build the TSF DLL (`crates/pime-tsf`, builds with the GNU toolchain, no MSVC needed), register 3 profiles, type in Notepad, unregister and reboot: follow `docs/TSF_VM_TEST_PLAN.md` | Disposable Windows 11 VM or Windows Sandbox with admin rights, test certificate for signing |
 | G2-real | Real provider (OpenAI / compatible / Anthropic) with a test key: request shape, model ids, effort acceptance | a disposable API key and network access |
 | ACC | Screen reader, high-contrast theme, 100-250 % DPI, multi-monitor, keyboard-only walk-through | a person with the tools |
 | SOAK | 30 minutes offline typing across the seven profiles (ST-038), CPU idle <= 1 % (ST-039) | benchmark machine |

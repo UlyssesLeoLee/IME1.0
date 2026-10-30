@@ -336,7 +336,7 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 
 ## 13. 进度记录（Progress）
 
-> 最近更新：2026-10-30。**步骤 1.0 与 1.1 已实现**（工作区未提交）；1.2 及以后**未开始**。本节只记录事实；设计正文（第 5 节）未改。
+> 最近更新：2026-10-30。**步骤 1.0–1.3 的 Rust 实现已完成并经 JS/Rust 对照测试**（1.2 见 13.8，1.3 余下部分见 13.9）；**1.4（F1 状态机与视图模型）、1.5（删除 JS 核心、默认引擎切到 Rust）、1.6 未开始**。P2/P3/P4/P5 的第一版见 13.10。本节只记录事实；设计正文（第 5 节）未改。
 
 ### 13.1 1.0 交付：协议 0.3 骨架与引擎开关
 
@@ -412,7 +412,7 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 
 ### 13.6 未做 / 未验证
 
-步骤 1.2–1.6 全部未做（AI 请求构造/解析、调度与历元、设置迁移、i18n、F1 状态机、删除 JS 核心、`glue-check` 上限）；JS 核心模块与 JS 单测仍在；默认引擎仍是 `js`。
+（本节写于 1.1 之后；1.2、1.3 已在 13.8、13.9 交付。）仍未做：F1 状态机与视图模型（1.4）、删除 JS 核心并切换默认引擎（1.5，必须先有完整一轮的 Rust 引擎 UAT）、`glue-check` 上限与 `schemas/f1-view-v1.json`（1.6）；JS 核心模块与 JS 单测仍在；默认引擎仍是 `js`。
 Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug 构建下的耗时只作了功能验证。
 
 ### 13.7 P4 起步（2026-10-30）：按键映射与 DLL 构建路径（里程碑 M1、M2）
@@ -423,9 +423,9 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 |---|---|---|
 | M1 | `pime-core` 输入状态机的主流键位：分页、页内数字选词、PageUp/PageDown、Shift+Tab、空格（组合态）、可选标点翻页、Shift 单击暂停/恢复（见 §11） | **完成并测试**：11 个新增测试 `key_01..key_11`，全部 Rust 测试 173 项（lib）通过，clippy/fmt 干净 |
 | M2 | 纯 Rust 的 TSF DLL 能否在本机工具链构建 | **完成**：`crates/pime-tsf`（`windows` 钉 0.58.0），产物 x64、四个 COM 导出、只导入系统 DLL，已内联链接 `pime-core`；`DllRegisterServer` 仍返回 `E_NOTIMPL` |
-| M3 | TIP：`ITfTextInputProcessorEx`、`ITfKeyEventSink`、保留键、编辑会话中的组合与提交、原生 Win32 候选窗（无需注册即可单独演示） | 未做 |
+| M3 | TIP：`ITfTextInputProcessorEx`、`ITfKeyEventSink`、保留键、编辑会话中的组合与提交、原生 Win32 候选窗（无需注册即可单独演示） | **代码完成，TSF 部分只做了编译级验证**：TIP 相关 63 项测试（含默认配置不吞代码字符的打字脚本；pime-tsf 合计 122 项 = TIP 63 + 候选窗 28 + 注册 29 + 基础 2），候选窗布局与绘制清单有 28 项测试并用演示程序做过一次 100% 缩放的目视检查；COM 胶水从未在 TSF 里运行 |
 | M4 | 在 Windows Sandbox / Hyper-V 虚拟机里注册并在 zh-CN / en-US / ja-JP 下激活、输入（G0）；对照 SampleIME 检查注册的类别（含 Immersive 支持类别，否则 Store 应用和开始菜单搜索里不可用） | **未运行**：需要用户提供带管理员权限、可丢弃的测试环境；本机不注册 |
-| M5 | 安装器（HKLM 注册需要管理员权限，故安装器要提权；先确认逐用户注册是否可行）、可干净卸载、不抢占默认输入法 | 未做 |
+| M5 | 安装器（HKLM 注册需要管理员权限，故安装器要提权；先确认逐用户注册是否可行）、可干净卸载、不抢占默认输入法 | **第一版已构建**（`crates/pime-setup`，见 13.10）：`--dry-run` 与临时目录安装已验证；注册、提权、卸载、开机删除、虚拟机安装**均未运行** |
 
 限制（必须如实记录）：构建只有 x64，32 位应用看不到该输入法（需另构建 i686 并同样注册）；M1 的键位在纯逻辑层经过完整测试，但 TSF 层尚未把键事件接入状态机，所以**今天的 DLL 不处理任何按键**。
 
@@ -494,3 +494,16 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 未移植：`languages.js` 的 `loadRegistry`（读磁盘的包加载器；核心的内置注册表编译进二进制）；`migrateStore` 的“存储”在核心里是 `SettingsStore` trait（JS 是鸭子类型对象），文件实现 `FileStore` 见上。
 
 验证（本机，2026-10-30，`CARGO_TARGET_DIR` 为本工作项专用目录）：`cargo fmt --all -- --check`、`cargo clippy --workspace --all-targets -- -D warnings` 干净；`cargo test --workspace` **359** 项通过（开始时 298；新增：`jsval/i18n/diag/uimodel/settings_migrate/settings_io` 的单元测试，`parity_cfg` 11、`protocol_v03_cfg` 15、`settings_io` 5）；新增夹具 `cfg-cases.json`、`diag-cases.json`、`i18n-cases.json`、`ui-cases.json`（均由 JS 生成；逐项比对共 3046 条：设置 76、v0.1 迁移 53、整文档迁移/存储 52、导出/导入 34、用户规则 12、全部 104×3 文案 + 31×3 错误句 405、`t/describe/resolve/bundle` 1456、诊断 51、候选行/浮层/环境 408、状态栏/菜单 499），旧夹具与 `tests/golden-v0.2` 字节不变（`gen-fixtures.js` 比对模式通过）；JS：`node tests/run-all.js --syntax --fixtures --golden --js --rust --smoke` 全部通过，JS 118 项（开始时 110；+6 项核心差分 `ut-engine-cfg.test.js` + 2 项 `ut-status.test.js`；未设 `PIME_CORE_EXE` 时差分测试跳过）。**UAT 未运行**（本项不得启动 VS Code）：状态栏、状态菜单、候选 QuickPick、诊断命令的 UAT 由集成者在 `js` 与 `rust` 两种引擎下运行。维护提示：`i18n_table.rs` 没有仓库内生成器，`i18n.js` 的文案一旦改动，`parity_cfg` 会失败，需按 `tests/fixtures/i18n-cases.json` 手工更新该表；`gen-fixtures.js --write` 会把旧夹具改写成 LF，提交前要还原（比对模式下旧夹具必须不变）。
+
+### 13.10 并行工作项汇总（2026-10-30）：P2、P3、M3、M4/M5 的第一版
+
+| 工作项 | 位置 | 结果（本机实测） | 未验证 / 未做 |
+|---|---|---|---|
+| TIP（M3） | `crates/pime-tsf/src/{tip,keymap,controller}.rs`、`pime-core::InputMachine::would_consume` | TIP 63 项测试（pime-tsf 合计 122）；默认**不吞任何代码字符**（候选捕获与自动组合默认关闭），`Ctrl+Alt+Space` 显式进入组合后才有搜狗式按键 | COM 胶水从未在 TSF 中运行；虚拟机专属清单见 `docs/TSF_VM_TEST_PLAN.md` 与 TIP 报告：宿主调用顺序、同步编辑会话、候选窗位置滞后、密码框检测、死键/AltGr、Shift 单击 |
+| 候选窗 | `layout.rs`、`popup.rs`、`examples/popup_demo.rs` | 28 项布局测试；演示程序 100% 缩放目视检查 | 其他 DPI、多显示器、高对比度、真实宿主、读屏 |
+| 注册（M4 前置） | `register.rs`、`docs/TSF_VM_TEST_PLAN.md` | 纯计划 + 后端 trait + 回滚，29 项假后端测试；**从未对真实注册表执行**；只声明 `TIP_KEYBOARD` 与 `SYSTRAYSUPPORT` | `UIELEMENTENABLED`、`IMMERSIVESUPPORT` 有意不注册：TIP 尚未实现 TSF UI 元素协议（`ITfUIElementMgr`/`ITfCandidateListUIElement`），商店应用与开始菜单搜索里本输入法不可用，实现后再加 |
+| P2 AI Worker | `crates/pime-ai-worker`、`docs/AI_WORKER.md` | 90 项单元测试 + 25 项烟雾测试（对 HTTPS 模拟服务器）；默认拒绝自签名证书；密钥只在 Worker 内，按 host 绑定 | 真实服务商、代理、企业 TLS 检查、持久凭据、与扩展的实际对接 |
+| P3 IPC | `crates/pime-ipc`、`docs/IPC.md` | 91 项测试（单元 + 真实命名管道回环），重复 3 次 | 异 SID 拒绝（IT-003）、远程客户端、跨会话、完整 IT-004/ST-037、AppContainer、32 位；握手后的帧没有逐帧 MAC（同用户进程可中继握手，见 IPC.md 威胁模型） |
+| 安装器（M5） | `crates/pime-setup`、`scripts/{build-installer,package-vsix}.js`、`docs/INSTALLER.md` | 50 项单元测试；构建出 x64 安装器（≈3 MB）与 .vsix（vsce 钉 4.0.0）；`--dry-run` 不改动任何东西 | 临时目录集成测试在本机被终端防护拦截（os error 5），仅有代理的运行记录；注册/提权/UAC/开机删除/`code` 安装/签名/虚拟机安装均未运行；**未签名**，SmartScreen 会提示 |
+
+仍然开放（下一步）：TSF UI 元素协议；1.4 F1 状态机；Rust 引擎 UAT 完整一轮（两次因内存不足被系统中止，最近一次已通过 18 个场景）后再做 1.5；虚拟机里的 M4。
