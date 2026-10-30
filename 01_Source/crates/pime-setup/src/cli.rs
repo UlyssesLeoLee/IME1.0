@@ -415,12 +415,23 @@ fn run_child(
     };
     let log = std::fs::read_to_string(&log_path).unwrap_or_default();
     let _ = std::fs::remove_file(&log_path);
-    for l in log
-        .lines()
-        .filter(|l| !l.starts_with("DONE: ") && !l.starts_with("FAILED: "))
-    {
+    for l in echoed_lines(&log) {
         rep.line(l);
     }
+    interpret_child(code, &log)
+}
+
+/// The child's log lines that the parent shows. The child's own `DONE:` / `FAILED:` summary is left out: the parent
+/// prints its own, and showing both would report the result twice.
+fn echoed_lines(log: &str) -> Vec<&str> {
+    log.lines()
+        .filter(|l| !l.starts_with("DONE: ") && !l.starts_with("FAILED: "))
+        .collect()
+}
+
+/// Turns the elevated child's exit code and log into this process's result: 0 and 3010 are success (3010 asks for a
+/// restart), anything else is a failure whose reason is the last `FAILED:` line of the log.
+fn interpret_child(code: i32, log: &str) -> Result<Finish, Failure> {
     let pick = |prefix: &str| -> Vec<String> {
         log.lines()
             .filter(|l| l.starts_with(prefix))
@@ -578,5 +589,50 @@ mod tests {
         assert_eq!(child_flags(&b), ["--vscode-deferred"]);
         let u = parse("--uninstall").unwrap();
         assert_eq!(child_flags(&u), ["--uninstall", "--vscode-deferred"]);
+    }
+
+    const CHILD_LOG: &str = "[1/10] create folder C:\\x\nWARNING: VS Code was not found\nDONE: Programming IME 0.2.0 installed (C:\\x)\n";
+
+    #[test]
+    fn st_035_the_elevated_childs_exit_code_and_log_become_the_parents_result() {
+        let ok = interpret_child(EXIT_OK, CHILD_LOG).ok().unwrap();
+        assert!(!ok.restart_needed);
+        assert_eq!(ok.notes, ["WARNING: VS Code was not found"]);
+
+        let restart = interpret_child(EXIT_RESTART, CHILD_LOG).ok().unwrap();
+        assert!(
+            restart.restart_needed,
+            "3010 asks for a sign-out or restart"
+        );
+
+        // any other code is a failure carrying the child's own reason (the LAST FAILED line) and its exit code
+        let log = "[8/10] register\nFAILED: step 8 failed: regsvr32 exited with code 5\n";
+        let f = interpret_child(EXIT_FAILED, log).err().unwrap();
+        assert_eq!(f.code, EXIT_FAILED);
+        assert_eq!(f.message, "step 8 failed: regsvr32 exited with code 5");
+        assert!(!f.localized);
+        let two = "FAILED: first\nFAILED: second\n";
+        assert_eq!(
+            interpret_child(EXIT_USAGE, two).err().unwrap().message,
+            "second"
+        );
+
+        // a child that died without writing a log still yields a clear failure, never a success
+        let f = interpret_child(-1, "").err().unwrap();
+        assert_eq!(f.code, -1);
+        assert!(f.message.contains("exit code -1"));
+        assert!(interpret_child(EXIT_FAILED, "").is_err());
+    }
+
+    #[test]
+    fn st_035_the_child_summary_is_not_echoed_a_second_time() {
+        assert_eq!(
+            echoed_lines(CHILD_LOG),
+            [
+                "[1/10] create folder C:\\x",
+                "WARNING: VS Code was not found"
+            ]
+        );
+        assert!(echoed_lines("FAILED: boom\nDONE: x\n").is_empty());
     }
 }

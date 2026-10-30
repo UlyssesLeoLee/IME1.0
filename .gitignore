@@ -1,6 +1,5 @@
 # Playwright failure artifacts (the evidence screenshots and uat-results.json are kept)
 02_Verification/uat/artifacts/
 
-# installer build output (scripts/build-installer.js, scripts/package-vsix.js) and local cargo output of crates/pime-setup
+# installer build output: scripts/build-installer.js and scripts/package-vsix.js write the installer, the .vsix, the payload and the staging folder here
 01_Source/dist/
-01_Source/crates/pime-setup/target/

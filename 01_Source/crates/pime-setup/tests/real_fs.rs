@@ -294,17 +294,9 @@ fn st_035_unsafe_prefixes_and_bad_arguments_exit_with_2_before_anything_happens(
         "relative",
         r"\\server\share\x",
     ] {
-        let (code, text) = setup(
-            &exe,
-            &[
-                "--silent",
-                "--no-register",
-                "--no-arp",
-                "--no-vscode",
-                "--prefix",
-                prefix,
-            ],
-        );
+        // --dry-run only: were the check ever to regress, a real run here would ask for administrator rights and write
+        // into the Windows folder. The refusal happens while the plan is built, which a dry run does as well.
+        let (code, text) = setup(&exe, &["--dry-run", "--prefix", prefix]);
         assert_eq!(code, 2, "{prefix}: {text}");
         assert!(
             text.contains("refusing this install folder"),

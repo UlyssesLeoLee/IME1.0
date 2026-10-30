@@ -160,7 +160,7 @@ node scripts/build-installer.js 0.3.0-pre1   # 指定安装器版本（默认取
 然后检查结果：x64 PE、控制台子系统、只导入系统 DLL（`scripts/pe-info.js`）、用独立的读取器校验载荷、运行 `--dry-run`（只打印计划，不创建任何东西）证明安装包能找到并校验自己的载荷。
 **从不运行安装器本体**。构建输出 `dist/` 已在 `.gitignore`。
 
-crate 自身的检查（在 `crates/pime-setup` 下）：`cargo fmt`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（48 个单元测试 + 5 个集成测试，不需要载荷）。
+crate 自身的检查（在 `crates/pime-setup` 下）：`cargo fmt`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（50 个单元测试 + 5 个集成测试，不需要载荷）。
 
 2026-10-30 本机一次实测：安装包 2,978,899 字节（桩 505,344 + `pime_tsf.dll` 239,616 + `pime-core.exe` 2,126,963 + `.vsix` 105,452 + 其它），
 sha256 `a3dcd330013497c6fa12db8ac634fd1518f420d3446221ed0141fe1df2b9c79d`（仅作记录；构建不保证逐位可复现）。
