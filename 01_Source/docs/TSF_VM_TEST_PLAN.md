@@ -57,6 +57,8 @@ node scripts\pe-info.js "$env:TEMP\pime-cargo-target\x86_64-pc-windows-gnu\relea
 预期输出：`machine: x64 (AMD64)`，`kind: DLL`，导出恰好 `DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer`，
 导入只有系统 DLL（`advapi32`、`ole32`、`kernel32` 等）。不是 x64 就停下来。
 
+DLL 的来源现在只有这一条（上面的构建）。安装器（M5）还不存在，将来用安装器装出来的 DLL 要重复一遍本手册。
+
 记录哈希和提交号，写进第 12 步的环境表：
 
 ```powershell
@@ -100,6 +102,7 @@ $Regsvr = "$env:SystemRoot\System32\regsvr32.exe"      # 64 位版本；SysWOW64
 $Clsid  = '{43F95ED1-95B4-421D-8F5A-837128C2D854}'
 $Prof   = @{ zh = '{223FD919-F8CB-476C-A852-351E7381C801}'; en = '{68ED92DE-77CF-43B1-A7B2-D3BE2686E2A0}'; ja = '{22E54B52-5082-42D3-9E41-1C2E0CE74DFB}' }
 New-Item -ItemType Directory -Force C:\pime-test | Out-Null
+[Environment]::Is64BitProcess    # 必须是 True：在 32 位 PowerShell 里 System32 会被悄悄重定向到 SysWOW64，$Regsvr 就成了 32 位版本
 
 function Save-ImeState($label) {
   $d = "C:\pime-test\$label"; New-Item -ItemType Directory -Force $d | Out-Null

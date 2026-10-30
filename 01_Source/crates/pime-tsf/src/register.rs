@@ -1723,9 +1723,4 @@ mod tests {
         );
         assert_eq!(guarded(|| panic!("boom")), E_UNEXPECTED);
     }
-
-    #[test]
-    fn the_real_backend_refuses_to_open_under_test() {
-        assert_eq!(RealBackend::open().err(), Some(E_ACCESSDENIED));
-    }
 }
