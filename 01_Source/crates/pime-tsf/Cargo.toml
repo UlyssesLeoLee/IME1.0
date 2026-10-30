@@ -46,7 +46,8 @@ version = "=0.58.0"
 opt-level = "s"
 lto = true
 codegen-units = 1
-panic = "abort"
+# "unwind", not "abort": every COM entry point catches panics (see `tip::guard`); an abort would kill the host application
+panic = "unwind"
 strip = true
 
 [workspace]

@@ -701,6 +701,44 @@ impl<P: PredictPort> InputMachine<P> {
             effects,
         }
     }
+
+    /// Whether [`InputMachine::on_key`] would answer [`KeyOutcome::Consumed`] for `ev` right now, without touching
+    /// anything. TSF asks `OnTestKeyDown` (is this key yours?) before `OnKeyDown` (do it), and the test must not
+    /// change state; the grid test `key_12_*` proves this mirrors `on_key` for every state, key and option.
+    pub fn would_consume(&self, ev: KeyEvent) -> bool {
+        if self.secure
+            || self.policy_disabled
+            || ev.key == Key::ShiftTap
+            || matches!(
+                self.state,
+                State::FaultFallback | State::Suspended | State::Direct
+            )
+            || ev.ctrl
+            || ev.alt
+            || !self.capture_active()
+        {
+            return false;
+        }
+        let selectable = |idx: usize| self.selectable(idx).is_some();
+        match ev.key {
+            Key::Tab if ev.shift => !self.candidates.is_empty(),
+            Key::Tab | Key::Enter => selectable(self.selected),
+            Key::Char(' ') if self.state == State::Composing || self.keymap.space_confirms => {
+                selectable(self.selected)
+            }
+            Key::Char(d @ '1'..='9') => {
+                let n = d as usize - '1' as usize;
+                n < self.page_size() && selectable(self.page() * self.page_size() + n)
+            }
+            Key::Up | Key::Down => !self.candidates.is_empty(),
+            Key::PageUp | Key::PageDown => self.page_count() > 1,
+            Key::Char('=' | '.' | ']' | '-' | ',' | '[') if self.keymap.punct_paging => {
+                self.page_count() > 1
+            }
+            Key::Esc => true,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -712,7 +750,7 @@ mod tests {
     #[derive(Default)]
     struct Spy {
         calls: usize,
-        mode: u8, // 0 ok, 1 timeout, 2 disconnected, 3 panic
+        mode: u8, // 0 ok, 1 timeout, 2 disconnected, 3 panic, 4 twelve candidates, 5 mixed selectability
     }
 
     impl PredictPort for Spy {
@@ -733,6 +771,24 @@ mod tests {
                         c
                     })
                     .collect()),
+                5 => Ok([
+                    (Validation::Valid, true),
+                    (Validation::Invalid, true),
+                    (Validation::Valid, false), // no text: shown, never insertable
+                    (Validation::ContextMissing, true),
+                    (Validation::Verified, true),
+                    (Validation::Unchecked, true),
+                    (Validation::Valid, true),
+                ]
+                .into_iter()
+                .enumerate()
+                .map(|(i, (validation, has_text))| {
+                    let mut c = Candidate::new(&format!("m{i}"));
+                    c.validation = validation;
+                    c.text = has_text.then(|| format!("t{i}"));
+                    c
+                })
+                .collect()),
                 _ => {
                     let mut c = Candidate::new(&format!("t.{}", r.prefix))
                         .with_source(CandidateSource::Rule);
@@ -1402,6 +1458,231 @@ mod tests {
         assert_eq!(m.state(), State::Suspended);
         m.set_paused(false);
         assert_eq!(m.state(), State::Direct);
+    }
+
+    /// Every situation the key sink can find the machine in. Built from scratch each time (the machine is not
+    /// `Clone`): one copy answers `would_consume`, the other runs `on_key`.
+    #[derive(Clone, Copy, Debug)]
+    enum Scene {
+        Direct,
+        ObservingEmpty,
+        CandidatesNoCapture,
+        CandidatesSinglePage,
+        CandidatesFirstPage,
+        CandidatesMiddlePage,
+        CandidatesLastPage,
+        CandidatesNoneLeft,
+        CandidatesMixed,
+        Composing,
+        ComposingLastPage,
+        ComposingNoCandidates,
+        Fault,
+        Paused,
+        Secure,
+        PolicyDisabled,
+    }
+
+    const SCENES: [Scene; 16] = [
+        Scene::Direct,
+        Scene::ObservingEmpty,
+        Scene::CandidatesNoCapture,
+        Scene::CandidatesSinglePage,
+        Scene::CandidatesFirstPage,
+        Scene::CandidatesMiddlePage,
+        Scene::CandidatesLastPage,
+        Scene::CandidatesNoneLeft,
+        Scene::CandidatesMixed,
+        Scene::Composing,
+        Scene::ComposingLastPage,
+        Scene::ComposingNoCandidates,
+        Scene::Fault,
+        Scene::Paused,
+        Scene::Secure,
+        Scene::PolicyDisabled,
+    ];
+
+    fn build_scene(scene: Scene, keymap: KeyMap) -> InputMachine<Spy> {
+        let mode = match scene {
+            Scene::CandidatesSinglePage => 0,
+            Scene::CandidatesMixed => 5,
+            _ => 4,
+        };
+        let mut m = InputMachine::new(Spy { calls: 0, mode }, "rust");
+        m.set_keymap(keymap);
+        m.set_candidate_capture(!matches!(scene, Scene::CandidatesNoCapture));
+        if matches!(scene, Scene::Direct) {
+            return m;
+        }
+        m.grant_observation(true);
+        let typed = !matches!(scene, Scene::ObservingEmpty);
+        if typed {
+            type_text(&mut m, "a", 0);
+        }
+        let page_down = |m: &mut InputMachine<Spy>, n: usize| {
+            for _ in 0..n {
+                m.on_key(KeyEvent::plain(Key::PageDown), 1);
+            }
+        };
+        match scene {
+            Scene::CandidatesMiddlePage => page_down(&mut m, 1),
+            Scene::CandidatesLastPage => page_down(&mut m, 12),
+            Scene::CandidatesNoneLeft => m.set_language("python"), // state stays Candidates, the list is gone
+            Scene::Composing => {
+                m.begin_composition(true);
+            }
+            Scene::ComposingLastPage => {
+                m.begin_composition(true);
+                page_down(&mut m, 12);
+            }
+            Scene::ComposingNoCandidates => {
+                m.begin_composition(true);
+                m.on_key(KeyEvent::ch('('), 2); // not a prefix character: the list empties, Composing stays
+            }
+            Scene::Fault => {
+                m.report_core_failure(3);
+            }
+            Scene::Paused => {
+                m.set_paused(true);
+            }
+            Scene::Secure => {
+                m.set_secure_context(true);
+            }
+            Scene::PolicyDisabled => {
+                m.set_policy_disabled(true);
+            }
+            _ => {}
+        }
+        m
+    }
+
+    fn grid_keys() -> Vec<Key> {
+        let mut keys = vec![
+            Key::Tab,
+            Key::Enter,
+            Key::Esc,
+            Key::Up,
+            Key::Down,
+            Key::Left,
+            Key::Right,
+            Key::PageUp,
+            Key::PageDown,
+            Key::Backspace,
+            Key::ShiftTap,
+            Key::Other(0x70),
+        ];
+        keys.extend(" 0123456789a=.]-,[(".chars().map(Key::Char));
+        keys
+    }
+
+    #[test]
+    fn key_12_would_consume_is_the_pure_twin_of_on_key_for_every_state_key_and_option() {
+        let mut consumed_keys = std::collections::HashSet::new();
+        let mut consumed_total = 0usize;
+        for scene in SCENES {
+            for page_size in [1, 5, 9] {
+                for (space_confirms, punct_paging) in
+                    [(false, false), (true, false), (false, true), (true, true)]
+                {
+                    let keymap = KeyMap {
+                        page_size,
+                        space_confirms,
+                        punct_paging,
+                    };
+                    for key in grid_keys() {
+                        for bits in 0u8..8 {
+                            let ev = KeyEvent {
+                                key,
+                                shift: bits & 1 != 0,
+                                ctrl: bits & 2 != 0,
+                                alt: bits & 4 != 0,
+                            };
+                            let probe = build_scene(scene, keymap);
+                            let before = (
+                                probe.state(),
+                                probe.selected(),
+                                probe.candidates().len(),
+                                probe.context().to_string(),
+                                probe.stats,
+                                probe.port().calls,
+                                probe.is_paused(),
+                            );
+                            let predicted = probe.would_consume(ev);
+                            let after = (
+                                probe.state(),
+                                probe.selected(),
+                                probe.candidates().len(),
+                                probe.context().to_string(),
+                                probe.stats,
+                                probe.port().calls,
+                                probe.is_paused(),
+                            );
+                            assert_eq!(before, after, "would_consume mutated {scene:?} {ev:?}");
+                            let actual = build_scene(scene, keymap).on_key(ev, 9).outcome
+                                == KeyOutcome::Consumed;
+                            assert_eq!(
+                                predicted, actual,
+                                "{scene:?} {keymap:?} {ev:?}: would_consume vs on_key"
+                            );
+                            if actual {
+                                consumed_total += 1;
+                                consumed_keys.insert(format!("{:?}", ev.key));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // the grid is not vacuous: every reserved key is consumed somewhere in it
+        for key in [
+            "Tab",
+            "Enter",
+            "Esc",
+            "Up",
+            "Down",
+            "PageUp",
+            "PageDown",
+            "Char(' ')",
+            "Char('1')",
+            "Char('5')",
+            "Char('9')",
+            "Char('=')",
+            "Char('[')",
+        ] {
+            assert!(
+                consumed_keys.contains(key),
+                "{key} is never consumed in the grid"
+            );
+        }
+        assert!(
+            consumed_total > 1000,
+            "only {consumed_total} consumed cases"
+        );
+    }
+
+    #[test]
+    fn key_12_would_consume_is_false_in_direct_observing_and_every_suspension() {
+        let all = KeyMap {
+            page_size: 5,
+            space_confirms: true,
+            punct_paging: true,
+        };
+        for scene in [
+            Scene::Direct,
+            Scene::ObservingEmpty,
+            Scene::CandidatesNoCapture,
+            Scene::Fault,
+            Scene::Paused,
+            Scene::Secure,
+            Scene::PolicyDisabled,
+        ] {
+            let m = build_scene(scene, all);
+            for key in grid_keys() {
+                assert!(
+                    !m.would_consume(KeyEvent::plain(key)),
+                    "{scene:?} must not claim {key:?}"
+                );
+            }
+        }
     }
 
     #[test]
