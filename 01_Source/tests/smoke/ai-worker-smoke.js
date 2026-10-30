@@ -12,10 +12,11 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const http = require('node:http');
+const https = require('node:https');
 const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
-const {startMock} = require('../uat/helpers/mock-provider.js');
+const {startMock, ensureCert} = require('../uat/helpers/mock-provider.js');
 const {parsePe} = require('../../scripts/pe-info.js');
 // system DLLs present on every Windows 10/11 x64 installation (the list of tests/smoke/tsf-dll-check.js plus the two this worker is built for)
 const ALLOWED_IMPORT = /^(kernel32|ntdll|ole32|oleaut32|msvcrt|propsys|userenv|ws2_32|bcryptprimitives|user32|gdi32|advapi32|msctf|winhttp|crypt32|api-ms-win-[a-z0-9-]+)\.dll$/;
@@ -143,13 +144,18 @@ async function check(name, fn) {
       assert.equal((await unknown.exited).code, 2);
     });
 
-    await check('the product start (no options) relaxes nothing', async () => {
+    await check('the product start (no options, no test variable) relaxes nothing: flags in health and a self-signed certificate is rejected', async () => {
       const w = new Worker([], {}); // not even the test-mode variable
       const h = await w.call({op: 'health'});
       assert.equal(h.ok, true); assert.equal(h.name, 'pime-ai-worker'); assert.equal(h.transport, 'winhttp'); assert.equal(h.protocol, '0.3');
       assert.deepEqual([h.testMode, h.insecureTestCa, h.allowLoopbackHttp, h.namespace], [false, false, false, 'ProgrammingIME']);
       assert.deepEqual(h.ops, ['health', 'http.send', 'http.cancel', 'cred.set', 'cred.exists', 'cred.delete']);
-      // the real credential namespace is deliberately not touched by this test, not even to read it
+      // behaviour, not just the flags: the bare product start still verifies certificates against the system store, so the
+      // mock's self-signed one is rejected (no credential reference: Credential Manager is not touched, not even to read it)
+      const before = mock.count();
+      const r = await send(w, 50, url('openai-responses'), {headers: jsonHeaders, body: '{}'});
+      assert.deepEqual([r.ok, r.error], [false, 'DEPTH_ZERO_SELF_SIGNED_CERT'], JSON.stringify(r));
+      assert.equal(mock.count(), before, 'the handshake failed before any HTTP request');
       await w.end();
     });
 
@@ -212,6 +218,7 @@ async function check(name, fn) {
       assert.match(r.headers['content-type'], /application\/json/);
       assert.equal(mock.requests.length, 1);
       const seen = mock.requests[0];
+      assert.match(seen.headers['accept-encoding'] || '', /gzip/, 'WinHTTP decompression is on, so the response cap applies to the decoded bytes');
       assert.equal(seen.headers.authorization, `Bearer ${KEY_A}`, 'positive control: the key reached the server');
       assert.equal(seen.method, 'POST'); assert.equal(seen.headers['content-type'], 'application/json');
       assert.deepEqual(JSON.parse(seen.rawBody), {model: 'm', input: 'hi'}, 'the body arrived intact');
@@ -336,6 +343,17 @@ async function check(name, fn) {
       const closed = await new Promise(resolve => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const {port} = s.address(); s.close(() => resolve(port)); }); });
       const r = await send(w, 1100, `https://127.0.0.1:${closed}/v1`, {body: '{}', timeoutMs: 8000});
       assert.deepEqual([r.ok, r.error], [false, 'CONNECT_FAILED'], JSON.stringify(r));
+    });
+
+    await check('--insecure-test-ca relaxes the authority check only: a name that is not in the certificate is still CERT_HOSTNAME_MISMATCH', async () => {
+      // the mock's certificate covers 127.0.0.1 and localhost; the same certificate served on 127.0.0.2 has the wrong name
+      const c = ensureCert();
+      const server = https.createServer({key: c.key, cert: c.cert}, (req, res) => { req.resume(); res.end('{}'); });
+      await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.2', resolve); });
+      try {
+        const r = await send(w, 1110, `https://127.0.0.2:${server.address().port}/v1`, {body: '{}', timeoutMs: 8000});
+        assert.deepEqual([r.ok, r.error], [false, 'CERT_HOSTNAME_MISMATCH'], JSON.stringify(r));
+      } finally { await new Promise(resolve => { server.closeAllConnections?.(); server.close(resolve); }); }
     });
 
     // ------------------------------------------------------------------------------------------ plain http, test mode

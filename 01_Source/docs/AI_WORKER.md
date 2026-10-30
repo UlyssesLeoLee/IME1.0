@@ -85,13 +85,21 @@ JavaScript client already applied; the download is abandoned the moment it is ex
 | 3 | A key is only ever sent to the origin it was stored for. | `CREDENTIAL_ORIGIN_MISMATCH` check before any I/O | unit test, smoke "origin it was not stored for" |
 | 4 | A provider that echoes the key gets it removed from body and headers (`[redacted]`, counted in `redactions`). | `redact::scrub_exact` | unit test, smoke "echoes the key back" (positive control: the mock really received it) |
 | 5 | The key appears in no reply line and no stderr line; the worker has no log. | design + `Secret` has no value in `Debug`; stderr only via `redact::diagnostic` | smoke final check over every line of every worker started |
-| 6 | Product default = system trust store, no relaxation; test relaxations need the environment gate, apply to loopback only and are visible in `health`. | `config::parse_config`, `PreparedRequest::accept_untrusted_ca` | `config` unit tests, smoke "self-signed REJECTED" (exact token, and the mock saw zero requests) |
+| 6 | Product default = system trust store, no relaxation; test relaxations need the environment gate, apply to loopback only and are visible in `health`. Under `--insecure-test-ca` only the authority check is relaxed. | `config::parse_config`, `PreparedRequest::accept_untrusted_ca` | `config` unit tests; smoke: the bare product start rejects the mock's self-signed certificate (exact token `DEPTH_ZERO_SELF_SIGNED_CERT`, the mock saw zero requests), test mode without the flag does too, and with the flag a certificate served under a name it does not cover is still `CERT_HOSTNAME_MISMATCH` (validity dates: by design, not tested) |
 | 7 | https only (plain http for loopback in test mode only); no user info, numeric hosts, fragments or backslashes in URLs. | `policy::parse_url` | unit tests, smoke policy check |
 | 8 | Redirects are never followed (the credential header must not travel to another host); a 3xx is `REDIRECT_BLOCKED`. | `WINHTTP_OPTION_REDIRECT_POLICY_NEVER` + engine | smoke "redirects are never followed" (exactly one request reached the mock) |
 | 9 | Timeout and cancel really abort the WinHTTP request (the request handle is closed). | `transport::Flight`, `winhttp.rs` | smoke "timeout" (deadline held), "cancel mid-flight" (CANCELLED within about 30 ms of a 30 s request); a throw-away stress run of 360 overlapping send/cancel/timeout cycles ended with the right tokens and a healthy worker (not part of the repository) |
-| 10 | Response size cap, header allow-list (`set-cookie`, `www-authenticate`, `location` never leave). | `engine::response_fields`, `winhttp.rs` | unit tests, smoke |
+| 10 | Response size cap, header allow-list (`set-cookie`, `www-authenticate`, `location` never leave). WinHTTP decompression is on (the request carries `Accept-Encoding: gzip`), so the cap applies to decoded bytes. | `engine::response_fields`, `winhttp.rs` | unit tests, smoke (a compressed response itself was not exercised) |
 | 11 | Key material this crate owns is wiped after use (volatile writes). | `secret.rs`: `Secret`, `WideSecret`, buffers built with exact capacity | wipe unit tests (spare capacity included) |
 | 12 | TLS 1.2/1.3 only, no cookies, no automatic Windows credentials. | session/request options in `winhttp.rs` | NOT separately verified (see below) |
+
+**Scrubbing is an exact match.** `scrub_exact` removes the key as the worker holds it. A provider that echoes it in another form (a JSON string
+that escapes `/` as `\/`, percent-encoding, a partial key such as `sk-...abcd`) is not caught; keys may contain `/`. The mitigation is that a key is
+only ever sent to the one origin it was stored for.
+
+**A panic ends the worker.** The release profile uses `panic = "abort"` (like `pime-tsf`), so the `catch_unwind` in the engine only fires in
+debug builds; in the product a panic terminates the process silently (the panic hook prints nothing, a message could contain request text).
+The caller must treat that as the worker's death, which the architecture already requires it to survive (typing stays unaffected).
 
 **What wiping does not reach (stated, not hidden).** Copies the operating system, the stdio pipe buffers and WinHTTP make internally; the
 intermediate buffers of the JSON parser while it grows the string of a `cred.set` line (the line buffer and the final string are wiped, a
@@ -112,7 +120,7 @@ Verified on this machine (Windows 11 Pro 10.0.26300, `x86_64-pc-windows-gnu`, Ru
 
 - `cargo test` in the crate: **90** unit tests (protocol engine with a fake transport and an in-memory vault, URL/header/template policy, redaction,
   framing, error mapping, wipe primitives, the test-mode gate), `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check`.
-- `node tests/smoke/ai-worker-smoke.js` (24 checks, run against both the debug and the release build): the real `pime-ai-worker.exe` over
+- `node tests/smoke/ai-worker-smoke.js` (25 checks, run against both the debug and the release build; exit code 0): the real `pime-ai-worker.exe` over
   WinHTTP against the UAT mock provider on loopback HTTPS (and a Node HTTP server for the plain-http test option); the executable is x64 and
   imports only Windows system DLLs; real Credential Manager entries named `PIME-TEST-<random>/<provider>` with session persistence, listed by
   `cmdkey` while they exist, deleted afterwards, none left (checked by `cmdkey` and by a fresh worker).
@@ -148,12 +156,33 @@ Verified on this machine (Windows 11 Pro 10.0.26300, `x86_64-pc-windows-gnu`, Ru
    calls `cred.delete`. `AiClient.infer` stops receiving `key`: the family adapters build the request *without* a credential header and add
    `credentialRef` + `authHeader`; the HTTP send becomes `http.send`, `AbortController` becomes `http.cancel`, and the worker's tokens map onto the
    existing codes (`TIMEOUT` -> `AI_TIMEOUT`, `CANCELLED` -> `AI_CANCELLED`, `NO_CREDENTIAL` -> `VAULT_ERROR`, the rest -> `AI_NETWORK` with the
-   token as detail). The key is then in JavaScript only at the moment the user types it. Plain-http UAT: start the worker with
-   `PIME_WORKER_TEST_MODE=1 --insecure-test-ca` so that the mock's self-signed certificate is accepted without touching the system store.
+   token as detail). The key is then in JavaScript only at the moment the user types it. For the UAT (HTTPS mock provider) start the worker with
+   `PIME_WORKER_TEST_MODE=1` and `--insecure-test-ca` so that the mock's self-signed certificate is accepted without touching the system trust
+   store, and add `--test-credential-namespace PIME-TEST-<run>` so the UAT never touches the real `ProgrammingIME/...` credentials.
 3. **Step B (P3).** `pime-core` talks to the worker over the `PIME-IPC/1` named pipe (core `ai.prepare` returns `http{...}` plus `credentialRef`
    and `authHeader`); JavaScript is out of the AI path. **Step C (P4)**: key entry moves to a native dialog so JavaScript never sees a key.
 4. Plan P2 exit conditions: the UAT-under-worker run, the disk/memory scan beyond the worker's own output, and "kill the worker, typing is
    unaffected" (IT-042 / ST-037) need the extension side of step A and are **not done** here.
+
+## Dependencies (decision record, plan section 6)
+
+| Dependency | Purpose | Alternatives considered | Cost | Build script | Licence |
+|---|---|---|---|---|---|
+| `windows =0.58.0` with the features `Win32_Foundation`, `Win32_Networking_WinHttp`, `Win32_Security_Credentials`, `Win32_Security_Cryptography` | WinHTTP, Credential Manager; the last feature (the `crypt32` function `CertFreeCertificateContext` and the certificate structs) is used only to tell a self-signed certificate (`DEPTH_ZERO_SELF_SIGNED_CERT`) from an untrusted root (`CERT_UNTRUSTED`). It goes beyond the two features decided for P2; dropping it only degrades that one distinction. | rustls (rejected in the P2 decision), `windows-sys`, hand-written `extern` blocks (more `unsafe` of our own) | release executable 388 KB (`opt-level = "s"`, LTO, stripped); imports only `winhttp`, `advapi32`, `crypt32`, `kernel32`, `ntdll`, `msvcrt`, `bcryptprimitives` and one `api-ms-win-core` set | `windows_x86_64_gnu` (links the prebuilt import libraries; it is the one that can hit Defender's `os error 5` on a fresh build) and `proc-macro2` | MIT OR Apache-2.0 |
+| transitive: `windows-core`, `-result`, `-strings`, `-targets`, `-implement`, `-interface`, `proc-macro2`, `quote`, `syn`, `unicode-ident` | pulled in by `windows-core 0.58` (the proc macros run at build time only) | - | - | see above | MIT OR Apache-2.0 |
+| `pime-core` (path dependency) | its `json` module: the parser/serializer with size and depth limits, so the worker and the core read and write exactly the same JSON | a second parser (a differential-parser risk) | none (`pime-core` has no dependencies and `forbid(unsafe_code)`) | none | MIT |
+
+The pin `=0.58.0` is deliberate and has the same reason as for `pime-tsf` (see `docs/VERSIONS.md`): 0.60 and later import with raw-dylib, which needs a
+working `dlltool` on this GNU host. Supply-chain tooling (`cargo deny` / `cargo vet`) is still the open decision of plan section 10, item 3.
+
+## Choices beyond the brief (to confirm)
+
+- **`cred.set` requires `host`** (origin binding, see above). It protects the key from a compromised caller at the cost of one more field and of
+  re-entering the key when a provider's endpoint changes.
+- The worker answers `CONNECT_FAILED`, not `REFUSED`: WinHTTP reports one error for refused, unreachable and filtered connections.
+- **Every** redirect is refused (`REDIRECT_BLOCKED`), not only cross-host ones, matching `redirect: 'error'` in `core/ai.js`.
+- "Loopback" means `127.0.0.0/8` and `localhost` (it decides which hosts the test options may relax and which skip the system proxy).
+- Only `GET` and `POST`; unknown request fields are refused; the credential operations use the same `credentialRef` name as `http.send`.
 
 ## Developer commands
 
