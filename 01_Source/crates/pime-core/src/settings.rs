@@ -11,16 +11,16 @@
 
 use crate::error::{Result, fail};
 use crate::json::Json;
+use crate::jsval::{js_order, to_js_string};
 
 pub const SCHEMA_VERSION: i64 = 1;
 pub const SCENARIOS: [&str; 3] = ["realtime", "f1Full", "f1Insert"];
 pub const API_FAMILIES: [&str; 3] = ["openai-responses", "openai-chat", "anthropic-messages"];
-pub const EFFORT_LEVELS: [&str; 8] = [
-    "auto", "none", "minimal", "low", "medium", "high", "xhigh", "extended",
-];
-pub const MAX_TOKENS_PARAMS: [&str; 2] = ["max_tokens", "max_completion_tokens"];
+/// One list for the settings check and the effort negotiation (they were two lists once, and this one lacked `max`).
+pub use crate::ai::EFFORT_LEVELS;
+pub use crate::ai::MAX_TOKENS_PARAMS;
 
-type Obj = Vec<(String, Json)>;
+pub(crate) type Obj = Vec<(String, Json)>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Issue {
@@ -32,7 +32,7 @@ fn s(v: &str) -> Json {
     Json::str(v)
 }
 
-fn default_providers() -> Obj {
+pub(crate) fn default_providers() -> Obj {
     let p = |api: &str, endpoint: &str| Json::obj(vec![("api", s(api)), ("endpoint", s(endpoint))]);
     vec![
         (
@@ -53,7 +53,7 @@ fn default_providers() -> Obj {
     ]
 }
 
-fn default_scenario(name: &str) -> Obj {
+pub(crate) fn default_scenario(name: &str) -> Obj {
     let (max_tokens, timeout) = match name {
         "realtime" => (250, 8000),
         "f1Full" => (12000, 60000),
@@ -81,7 +81,7 @@ fn default_budget() -> Obj {
 }
 
 /// `{...base, ...over}`: overridden keys keep their position, new keys are appended.
-fn spread(mut base: Obj, over: &[(String, Json)]) -> Obj {
+pub(crate) fn spread(mut base: Obj, over: &[(String, Json)]) -> Obj {
     for (k, v) in over {
         match base.iter_mut().find(|(bk, _)| bk == k) {
             Some(slot) => slot.1 = v.clone(),
@@ -89,29 +89,6 @@ fn spread(mut base: Obj, over: &[(String, Json)]) -> Obj {
         }
     }
     js_order(base)
-}
-
-/// The array-index value of a canonical numeric key (`"0"`, `"17"`), if it is one.
-fn array_index(key: &str) -> Option<u64> {
-    if key.is_empty() || key.len() > 10 || (key.len() > 1 && key.starts_with('0')) {
-        return None;
-    }
-    if !key.bytes().all(|b| b.is_ascii_digit()) {
-        return None;
-    }
-    key.parse::<u64>().ok().filter(|n| *n < 4_294_967_295)
-}
-
-/// JavaScript property order: integer-like keys ascending first, then the other keys in insertion order.
-fn js_order(obj: Obj) -> Obj {
-    if !obj.iter().any(|(k, _)| array_index(k).is_some()) {
-        return obj;
-    }
-    let (mut ints, rest): (Vec<_>, Vec<_>) =
-        obj.into_iter().partition(|(k, _)| array_index(k).is_some());
-    ints.sort_by_key(|(k, _)| array_index(k));
-    ints.extend(rest);
-    ints
 }
 
 /// `/^[\w.-]{1,40}$/` (JavaScript `\w` is ASCII only).
@@ -227,8 +204,9 @@ pub fn validate(settings: &Json) -> Vec<Issue> {
                 message: "must be max_tokens or max_completion_tokens",
             });
         }
+        // the reference tests `String(apiVersion)`, so a one-element array holding a date passes there as well
         if let Some(v) = p.get("apiVersion")
-            && !v.as_str().is_some_and(is_api_version)
+            && !is_api_version(&to_js_string(v))
         {
             issues.push(Issue {
                 path: format!("providers.{id}.apiVersion"),
@@ -634,6 +612,27 @@ mod tests {
                 "timeoutMs"
             ]
         );
+    }
+
+    #[test]
+    fn every_effort_level_the_bridge_offers_is_valid_including_max() {
+        for level in [
+            "auto", "none", "minimal", "low", "medium", "high", "xhigh", "max", "extended",
+        ] {
+            let e = effective(&j(&format!(
+                r#"{{"scenarios":{{"realtime":{{"effort":"{level}"}}}}}}"#
+            )))
+            .unwrap();
+            assert!(validate(&e).is_empty(), "{level} must be accepted");
+        }
+        for bad in ["MAX", "Max", "", "turbo", "max "] {
+            let e = effective(&j(&format!(
+                r#"{{"scenarios":{{"realtime":{{"effort":"{bad}"}}}}}}"#
+            )))
+            .unwrap();
+            assert_eq!(validate(&e).len(), 1, "{bad:?} must be refused");
+        }
+        assert_eq!(EFFORT_LEVELS, crate::ai::EFFORT_LEVELS);
     }
 
     #[test]

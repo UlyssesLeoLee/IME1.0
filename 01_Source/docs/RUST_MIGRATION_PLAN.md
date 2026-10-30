@@ -455,3 +455,42 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 **发现的 JS 缺陷（按原样移植并在夹具中固定，未静默修复）**：同一请求的多个片段分别脱敏时占位符都从 `PIME_REDACTED_1` 重新编号，`restore` 以后者覆盖前者（`runInsert` 的 before/after/selected、实时补全的 before/after 都会碰到），模型回复里的占位符可能还原成另一段的原值；修复只需让编号在同一集合内续号，需同时改 JS 与夹具。`Retry-After` 头缺失时 JS 得到 `retryAfterSec: 0`（`Number(null)`），而没有头部 API 时是 `undefined`，两者冷却都是 30 s，已原样保留。
 **与设计书/计划的出入**：设计书 12.2 把"预算超限"归入 `AI_RATE_LIMIT`，JS 与本实现使用独立的 `AI_BUDGET_EXCEEDED`（设计书 12.2 的表里没有该码）；计划 5.3 的 `ai.abort` 不需要（取消与超时作为 `ai.complete` 的传输错误报告）；计划 5.3 的 `lang.state` 返回"解析结果、方言、历元"，实现返回决策与历元键，方言值仍由 `languages.resolveDialect` 在 JS 侧求值（核心尚无方言表接口）。顺带发现 `settings.rs` 的 `EFFORT_LEVELS` 少了 JS 的 `max`（`validate` 会把 `effort:"max"` 报为无效，`ai.rs` 的协商表是完整的 9 个），属于 1.3 设置迁移（P1B）的范围，本项未改。
 验证（本机，2026-10-30）：`cargo test --workspace` 293 项（开始时 220，新增 73：模块内单测，以及 `parity_ai`、`parity_annotate`、`parity_sched`、`protocol_v03_ai` 四个集成测试文件，后者含真实二进制的往返）；新增夹具 `ai-cases.json`（效果协商 348、请求构造 22、响应解析 45、HTTP 状态 120、传输错误 204、提示 18、模型输出 232、完整 `prepare→提供商→complete` 44 个场景 343 步）、`privacy-cases.json`、`annotate-cases.json`（验证 1540、回复 1449、Cypher 77、提示 83、附加指令 288）、`symbols-cases.json`、`sched-cases.json`（71 个调度场景含 60 个固定种子的随机场景，共 2503 步；会话历元/锁 4 个场景），均由 JS 生成、Rust 逐项一致；JS 侧 `tests/js/ut-engine-ai.test.js` 10 项（需要 `PIME_CORE_EXE`）用同一个记录式假提供商比较两个引擎发出的字节与结果。**UAT 未运行**（本项不得启动 VS Code），Rust 引擎下的 UAT-20/21/26..31 与 UAT-01..08/33..35 由集成者运行。
+
+### 13.9 1.3 余下部分交付（P1B，2026-10-30）：设置迁移与原子写入、诊断、文案、UI 模型
+
+范围：`settings.js`（校验、迁移、导出/导入、用户规则包校验、原子写入与 `.bak` 恢复）、`diagnostics.js`、`i18n.js`、`uimodel.js`（候选行、浮层定位、环境检查，以及从 `extension.js` 抽出的状态栏/菜单文案）的**纯逻辑**迁入 `pime-core`，行为与 JS 逐项一致；JS 核心模块一个都没删，默认引擎仍是 `js`。
+新模块：`jsval.rs`（JS 语义小工具：`String(x)`、真值、`Math.round`、属性顺序、`toISOString`、`JSON.stringify` 缩进输出）、`settings_migrate.rs`（`migrateV0/migrate/migrateStore`、导出/导入、`buildRegistryWithUserRules`）、`settings_io.rs`（原子写入，见下）、`diag.rs`、`i18n.rs` + `i18n_table.rs`（104 条文案 + 31 条错误句，由 `i18n.js` 机械转写，按 key × 语言逐项比对）、`uimodel.rs`、`ops_cfg.rs`（操作处理，`ops.rs` 只增加分派与列表两行）。`session.rs` 增加 `diag: Option<Diagnostics>`（首次 `diag.*` 调用时才创建，因此不改变任何已有会话的 id 序列）。
+**已知缺陷已修复**：`settings.rs` 的 `EFFORT_LEVELS` 缺 `max`，`validate` 会把 `effort:"max"` 报为无效（见 13.8）。先加夹具（`cfg-cases.json`，两处失败：`scenarios.*.effort:"max"`），看到它失败，再改为与 `ai.rs` 共用同一张 9 级表（`pub use crate::ai::EFFORT_LEVELS`）。同一夹具还发现 `apiVersion` 的校验在 JS 里是 `String(apiVersion)`（单元素数组 `["2023-06-01"]` 也通过），已一并对齐。
+
+协议 0.3 新增 18 个操作（全部带 `session`；schema 与错误元数据在 `schemas/core-protocol-v0.3.json`，`RULEPACK_INVALID` 加入错误枚举）：
+
+| 操作 | 作用 |
+|---|---|
+| `settings.validate` | `validateSettings`：给定（或会话当前的）有效设置的问题列表，含 `max`、`apiVersion`、`maxTokensParam` |
+| `settings.migrate` | `migrate` + `migrateStore` 要写入的文档：v0.1 平铺键 → v1；v1 透传；更新的 `schema_version` → `SETTINGS_INVALID`；`checkedAt` 用核心的时钟 |
+| `settings.export` / `settings.import` | `exportSettings`（含密钥样内容则拒绝，错误不回显内容）/ `importSettings`（解析、迁移、合并默认值、校验；不应用，由桥写配置） |
+| `settings.rules_check` | `buildRegistryWithUserRules` 的校验部分：逐个用户规则包按数据校验，接受/拒绝（含 code、message）。核心**不保留**注册表（见“未做”） |
+| `diag.record` / `diag.summary` / `diag.text` | 会话内 500 条的诊断环：只留白名单字段，值必须是短 token（`[A-Za-z0-9_.:-]{0,64}`）或数字，其余 `"[filtered]"`；匿名会话 id = SHA-256(种子) 前 12 位，种子来自会话熵 |
+| `ui.resolve_locale` / `ui.text` / `ui.error_text` | `resolveLocale` / `t()`（一遍替换 `{n}`、缺省回退英文、未知 key 返回自身）/ `describeError` |
+| `ui.bundle` / `ui.errors` | 文案字典（全部或指定 key；`raw:true` 保留 `{n}` 模板，供桥缓存）/ 31 条错误句 |
+| `ui.candidate_rows` / `ui.place_overlay` / `ui.check_env` | `candidateRow`（UT-057）、`placeOverlay`（UT-055）、`checkEnvironment`（UT-077） |
+| `ui.status_model` / `ui.menu_model` | 状态栏两个条目与状态菜单的纯文本模型（SCR-01） |
+
+**文件 I/O 的边界（有意决定）**：原子写入（临时文件 → 旧文件另存 `.bak` → 重命名；ENOSPC/崩溃发生在重命名之前时旧文件不变，临时文件被清理）与 `.bak` 恢复实现为库函数 `settings_io::{write_file_atomic, read_json_recovering, FileStore}`，通过 `Fs` trait 访问文件系统（测试用内存实现注入 ENOSPC/重命名失败，真文件测试只在 `CARGO_TARGET_TMPDIR` 下）。**没有任何协议操作接受路径**：否则管道的对端可以让核心写任意文件。`lib.rs`/`protocol.rs` 的“核心不访问文件”注释相应加了一句说明。与 JS 相比更严格两处：重命名前对临时文件 `sync_all`；仅当旧文件能解析为 JSON 时才把它复制成 `.bak`（JS 把损坏的文件盖到最后一份好备份上，随后再失败就两份都没了）。另：临时文件名带进程内计数器（同一进程的两个写入者不共用临时文件）；`StdFs::rename` 对 Windows 上杀毒/索引器瞬时占用目标（拒绝访问、共享冲突）做最多 4 次、10–80 ms 的有界重试，真正的拒绝仍会返回错误。**今天扩展里没有调用方**：设置在 VS Code 配置与 `globalState` 中，JS 的 `writeFileAtomic/readJsonRecovering/migrateStore` 只被单元测试使用；这部分是为核心自己持有设置目录（1.5/P2）准备的库代码。
+
+与 JS 的**有意差异**（都在 VS Code 的类型化设置不会产生的输入上，或偏安全侧）：
+1. 诊断：`timestamp` 必须是数字，否则用核心时钟。JS 对 `timestamp` **不做任何过滤**，调用者传入路径字符串就会被记录（违反 FR-050/NFR-301“不记录路径/内容”的意图）；`__proto__`/`constructor` 等作为组件名/错误码时 JS 因为用普通对象计数而丢失或写出函数文本，Rust 当作普通名字。
+2. `i18n`：key 恰好是 `Object.prototype` 成员名（`constructor`、`toString`…）时 JS 抛 `TypeError`，Rust 当作未知 key 返回自身。
+3. 设置：`provider:"toString"`、`api:"toString"` 在 JS 里通过原型查找被接受（`validateSettings` 返回 `[]`，`resolveScenario` 把它当提供商），Rust 拒绝——JS 缺陷，未复制；v0.1 文档里非字符串的 `endpoint` 记为冲突；`JSON.parse` 接受重复键而本 crate 的严格解析器拒绝（该文件视为“不是有效 JSON”）；`providers/scenarios/budget` 类型错误时 `effective` 报错而不是展开（13.1 已记）。
+4. 输入类型：`ui.candidate_rows`、`ui.status_model` 等对类型化输入做校验，非典型输入返回 `INVALID_REQUEST`，而 JS 按其强制转换继续；数字参数、`args` 的取值仍按 JS 的 `String(x)`（`jsval::to_js_string`）。
+5. 用户规则包：核心的 `predict` 用的仍是内置注册表（自 1.0 起），**`engine=rust` 下用户规则包不会影响候选**（`settings.rules_check` 只报告校验结果）。要让它生效需要“按会话的注册表 + `predict` 带 `session`”，属于 1.4/1.5。
+
+**JS 与设计书的出入**（均已按原样移植或在上面说明，未静默修改 JS）：DD §12.2 的日志白名单是 `timestamp, component, error_code, elapsed_ms, request_type, anonymized_session, counters`，JS 的 `ALLOWED` 另有 `error_detail`、`provider_id`（Rust 保持一致），且对 `timestamp` 不过滤（见上）；状态栏菜单的 AI 项 `AI: off`/`AI: on` 在 `extension.js` 里是写死的英文（FR-044 未覆盖，`menuModel` 保持原样并在测试里固定）；`writeFileAtomic` 会用损坏文件覆盖 `.bak`（NFR-401，见上）。
+
+扩展接线（核心渲染只在 `engine=rust`；但 `extension.js` 的改动对**两种引擎**都生效：`updateStatus` 改调 `statusModel`、`menu()` 按 `id` 派发、`showCandidates`/`showDiagnostics` 经 `engine.*`。`js` 下 `JsEngine` 委托给同一批 JS 函数，`ut-status.test.js` 与旧内联代码逐状态比对，行为应当不变，但本机无法加载 `extension.js` 实跑，所以 UAT 需要**两种引擎都跑**；`src/core` 无一文件被删）：
+- 已接线：`showCandidates` 的候选行（`engine.candidateRows` → `ui.candidate_rows`，只发送行要读的字段，不发送片段文本）、状态菜单（`engine.menuModel`，`menu()` 按 `id` 派发动作）、`showDiagnostics` 的环境检查（`engine.checkEnvironment`）。三者都已是异步上下文；核心不可用或没有应答时 `RustEngine` 回退到 JS 模块渲染**同样的文本**（夹具保证两者逐字节一致），这样核心停掉后菜单和诊断仍可用（文案只是展示，不是引擎回退）。`engine.js`/`extension.js`/`uimodel.js` 的改动：状态栏文案从 `extension.js` 抽成 `uimodel.statusModel`/`menuModel`（`tests/js/ut-status.test.js` 用原内联代码做参照逐状态比对），`updateStatus` 仍同步调用 JS 函数（重绘是同步的，两种引擎共用）。
+- **有意未接线**（不改变同步代码为异步）：`L()`/`t()`（几十处同步调用，且“核心不可用”文案必须在没有核心时也能显示；方案：核心可用后拉取一次 `ui.bundle{raw:true}` + `ui.errors` 缓存，`L` 只做 `{n}` 填充，核心不可用时用 1.5 保留的静态英文表）、`resolveScenario`/`rt.settings`（同步、调用点多；核心已持有相同的有效设置，`settings.apply`/`settings.resolve` 由夹具保证一致）、`migrateOldSettings`（在核心启动之前运行；`settings.migrate` 已就绪，接线需要把它挪到 `startCore()` 之后并保留 JS 路径直到 1.5）、`reloadRules`（见差异 5）、诊断（`record` 是同步即发即弃的调用，会话建立前的事件会丢；方案：`RustDiagnostics` 缓冲到会话就绪后发送，`showDiagnostics` 里 `await summary()`）、`ui.status_model`（`updateStatus` 同步）。
+
+未移植：`languages.js` 的 `loadRegistry`（读磁盘的包加载器；核心的内置注册表编译进二进制）；`migrateStore` 的“存储”在核心里是 `SettingsStore` trait（JS 是鸭子类型对象），文件实现 `FileStore` 见上。
+
+验证（本机，2026-10-30，`CARGO_TARGET_DIR` 为本工作项专用目录）：`cargo fmt --all -- --check`、`cargo clippy --workspace --all-targets -- -D warnings` 干净；`cargo test --workspace` **359** 项通过（开始时 298；新增：`jsval/i18n/diag/uimodel/settings_migrate/settings_io` 的单元测试，`parity_cfg` 11、`protocol_v03_cfg` 15、`settings_io` 5）；新增夹具 `cfg-cases.json`、`diag-cases.json`、`i18n-cases.json`、`ui-cases.json`（均由 JS 生成；逐项比对共 3046 条：设置 76、v0.1 迁移 53、整文档迁移/存储 52、导出/导入 34、用户规则 12、全部 104×3 文案 + 31×3 错误句 405、`t/describe/resolve/bundle` 1456、诊断 51、候选行/浮层/环境 408、状态栏/菜单 499），旧夹具与 `tests/golden-v0.2` 字节不变（`gen-fixtures.js` 比对模式通过）；JS：`node tests/run-all.js --syntax --fixtures --golden --js --rust --smoke` 全部通过，JS 118 项（开始时 110；+6 项核心差分 `ut-engine-cfg.test.js` + 2 项 `ut-status.test.js`；未设 `PIME_CORE_EXE` 时差分测试跳过）。**UAT 未运行**（本项不得启动 VS Code）：状态栏、状态菜单、候选 QuickPick、诊断命令的 UAT 由集成者在 `js` 与 `rust` 两种引擎下运行。维护提示：`i18n_table.rs` 没有仓库内生成器，`i18n.js` 的文案一旦改动，`parity_cfg` 会失败，需按 `tests/fixtures/i18n-cases.json` 手工更新该表；`gen-fixtures.js --write` 会把旧夹具改写成 LF，提交前要还原（比对模式下旧夹具必须不变）。

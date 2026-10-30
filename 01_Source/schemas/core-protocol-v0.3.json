@@ -73,7 +73,25 @@
     {"$ref": "#/$defs/schedIsCurrentRequest"},
     {"$ref": "#/$defs/langStateRequest"},
     {"$ref": "#/$defs/langLockRequest"},
-    {"$ref": "#/$defs/langUnlockRequest"}
+    {"$ref": "#/$defs/langUnlockRequest"},
+    {"$ref": "#/$defs/settingsValidateRequest"},
+    {"$ref": "#/$defs/settingsMigrateRequest"},
+    {"$ref": "#/$defs/settingsExportRequest"},
+    {"$ref": "#/$defs/settingsImportRequest"},
+    {"$ref": "#/$defs/settingsRulesCheckRequest"},
+    {"$ref": "#/$defs/diagRecordRequest"},
+    {"$ref": "#/$defs/diagSummaryRequest"},
+    {"$ref": "#/$defs/diagTextRequest"},
+    {"$ref": "#/$defs/uiResolveLocaleRequest"},
+    {"$ref": "#/$defs/uiTextRequest"},
+    {"$ref": "#/$defs/uiErrorTextRequest"},
+    {"$ref": "#/$defs/uiBundleRequest"},
+    {"$ref": "#/$defs/uiErrorsRequest"},
+    {"$ref": "#/$defs/uiCandidateRowsRequest"},
+    {"$ref": "#/$defs/uiPlaceOverlayRequest"},
+    {"$ref": "#/$defs/uiCheckEnvRequest"},
+    {"$ref": "#/$defs/uiStatusModelRequest"},
+    {"$ref": "#/$defs/uiMenuModelRequest"}
   ],
   "$defs": {
     "id": {"type": "integer", "description": "Optional correlation id, echoed verbatim as `id` in the response. A non-integer id is rejected with INVALID_REQUEST (field `id`)."},
@@ -667,6 +685,120 @@
       "properties": {"op": {"const": "lang.unlock"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "scope": {"enum": ["file", "global"], "default": "file"}, "file_key": {"type": "string", "default": ""}}
     },
 
+    "settingsValidateRequest": {
+      "type": "object",
+      "description": "validateSettings: the problems of effective settings (the given ones, else the session's), each with its path. Effort levels: auto, none, minimal, low, medium, high, xhigh, max, extended.",
+      "required": ["op","session"],
+      "properties": {"op": {"const": "settings.validate"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "settings": {"type": ["object", "null"], "description": "Effective settings {providers, scenarios, budget}; the session settings when omitted."}}
+    },
+    "settingsMigrateRequest": {
+      "type": "object",
+      "description": "migrate (+ the document migrateStore writes): a v1 document passes through, a v0.1 flat one becomes the v1 structure (checkedAt from the core's clock), a newer schema_version answers SETTINGS_INVALID. `document` is what a store should hold afterwards: fields the settings do not own are kept, the legacy flat keys are retired.",
+      "required": ["op","session","doc"],
+      "properties": {"op": {"const": "settings.migrate"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "doc": {"type": "object"}}
+    },
+    "settingsExportRequest": {
+      "type": "object",
+      "description": "exportSettings: the settings as pretty JSON (schema_version, providers, scenarios, budget). Anything secret-like in it answers SETTINGS_INVALID.",
+      "required": ["op","session"],
+      "properties": {"op": {"const": "settings.export"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "settings": {"type": ["object", "null"], "description": "The session settings when omitted."}}
+    },
+    "settingsImportRequest": {
+      "type": "object",
+      "description": "importSettings: parse, migrate, merge with the defaults and validate; nothing is applied (the bridge writes the configuration). The request may be a long line.",
+      "required": ["op","session","text"],
+      "properties": {"op": {"const": "settings.import"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "text": {"type": "string", "description": "A settings file."}}
+    },
+    "settingsRulesCheckRequest": {
+      "type": "object",
+      "description": "buildRegistryWithUserRules, validation only: every user rule pack is checked as data against the built-in rules; a bad pack is rejected with its code and message and skipped. The core keeps no registry (its predictions use the built-in rules). The request may be a long line.",
+      "required": ["op","session","files"],
+      "properties": {"op": {"const": "settings.rules_check"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "files": {"type": "array", "maxItems": 256, "items": {"type": "object", "required": ["name", "text"], "properties": {"name": {"type": "string"}, "text": {"type": "string", "description": "A pack over 262144 bytes is rejected."}}}}}
+    },
+    "diagRecordRequest": {
+      "type": "object",
+      "description": "Records one diagnostic event in the session's ring (500 events). Only these fields are kept: timestamp (a number, else the core's clock), component, error_code, error_detail, elapsed_ms, request_type, provider_id and counters; values must be short tokens ([A-Za-z0-9_.:-], at most 64 characters) or numbers, everything else becomes \"[filtered]\".",
+      "required": ["op","session","event"],
+      "properties": {"op": {"const": "diag.record"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "event": {"type": "object"}}
+    },
+    "diagSummaryRequest": {
+      "type": "object",
+      "description": "The ring summarised: total, counts by error code and the last result per component.",
+      "required": ["op","session"],
+      "properties": {"op": {"const": "diag.summary"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "diagTextRequest": {
+      "type": "object",
+      "description": "The ring as one JSON line per event, oldest first.",
+      "required": ["op","session"],
+      "properties": {"op": {"const": "diag.text"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "uiResolveLocaleRequest": {
+      "type": "object",
+      "description": "resolveLocale: an explicit interface locale wins, otherwise the editor language (zh* -> zh-CN, ja* -> ja-JP, anything else en-US).",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "ui.resolve_locale"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "setting": {"description": "zh-CN, en-US or ja-JP; any other value (auto) defers to the language."}, "language": {"description": "The editor language; en when omitted. Any non-string reads as String(value)."}}
+    },
+    "uiTextRequest": {
+      "type": "object",
+      "description": "An interface text by key: {0}, {1}, ... are replaced in one pass by the arguments (null is empty, other values read as String(value)); an unknown key answers itself; a missing translation reads English.",
+      "required": ["op","session","key"],
+      "properties": {"op": {"const": "ui.text"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "key": {"type": "string"}, "args": {"type": ["array", "null"], "maxItems": 64}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+    "uiErrorTextRequest": {
+      "type": "object",
+      "description": "describeError: the sentence of a stable error code, else `message`, else the code itself.",
+      "required": ["op","session","code"],
+      "properties": {"op": {"const": "ui.error_text"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "code": {"type": "string"}, "message": {"type": ["string", "null"]}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+    "uiBundleRequest": {
+      "type": "object",
+      "description": "A dictionary of interface texts: the asked keys, or all 104 when `keys` is omitted. Texts are rendered WITHOUT arguments (placeholders become empty) unless `raw` is true, which keeps {0}, {1}, ... so that a bridge can cache the templates and fill them itself. Integer-like keys come first.",
+      "required": ["op","session"],
+      "properties": {"op": {"const": "ui.bundle"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "keys": {"type": ["array", "null"], "maxItems": 4096, "items": {"type": "string"}}, "raw": {"type": ["boolean", "null"], "default": false}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+    "uiErrorsRequest": {
+      "type": "object",
+      "description": "The sentence of every error code that has one (31), for one locale.",
+      "required": ["op","session"],
+      "properties": {"op": {"const": "ui.errors"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+    "uiCandidateRowsRequest": {
+      "type": "object",
+      "description": "Candidate rows for the quick pick: label, description ([source] validation), detail, ariaLabel (n / total ...) and whether the candidate can be inserted. Meaning is carried by text, never by colour.",
+      "required": ["op","session","candidates"],
+      "properties": {"op": {"const": "ui.candidate_rows"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "candidates": {"type": "array", "maxItems": 1000, "items": {"type": "object", "required": ["label"], "properties": {"label": {"type": "string"}, "source": {"type": ["string", "null"]}, "sources": {"type": ["array", "null"], "items": {"type": ["string", "null"]}}, "validation": {"type": ["string", "null"]}, "explain": {"type": ["string", "null"]}, "assumptions": {"type": ["array", "null"], "items": {"type": ["string", "null"]}}, "text": {"description": "null or absent: the candidate cannot be inserted"}}}}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+    "uiPlaceOverlayRequest": {
+      "type": "object",
+      "description": "Places a candidate window inside the monitor work area that contains the caret (below the line, flipped above or clamped when there is no room). null when the caret is on no monitor or the window does not fit: hide, never steal focus.",
+      "required": ["op","session","caret","size","monitors"],
+      "properties": {"op": {"const": "ui.place_overlay"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "caret": {"type": "object", "required": ["x", "y"], "properties": {"x": {"type": "number"}, "y": {"type": "number"}}}, "size": {"type": "object", "required": ["w", "h"], "properties": {"w": {"type": "number"}, "h": {"type": "number"}}}, "monitors": {"type": "array", "maxItems": 64, "items": {"type": "object", "required": ["x", "y", "w", "h"], "properties": {"x": {"type": "number"}, "y": {"type": "number"}, "w": {"type": "number"}, "h": {"type": "number"}}}}, "dpi": {"type": ["number", "null"], "description": "Display scaling in percent, clamped to 100-250; 100 when omitted."}}
+    },
+    "uiCheckEnvRequest": {
+      "type": "object",
+      "description": "The environment check: Windows 11 (build >= 22000) on x64, display scaling 100-250 %. Fields that are missing or of another type count as unsupported (an omitted dpi is skipped).",
+      "required": ["op","session"],
+      "properties": {"op": {"const": "ui.check_env"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "platform": {}, "arch": {}, "build": {}, "dpi": {}}
+    },
+
+    "uiStatusModelRequest": {
+      "type": "object",
+      "description": "The two status bar items as plain text, from everything the extension knows when it redraws. The redraw itself is synchronous, so the bridge keeps its JS function; this operation is the ported, parity-tested equivalent.",
+      "required": ["op", "session", "core_down", "enabled", "session_language", "paused", "ai_enabled", "budget"],
+      "properties": {"op": {"const": "ui.status_model"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "core_down": {"type": "boolean", "description": "The Rust engine's core is unavailable."}, "reason": {"type": ["string", "null"]}, "enabled": {"type": "boolean"},
+        "info": {"type": ["object", "null"], "required": ["language"], "properties": {"language": {"type": "string"}, "locked": {"type": "boolean"}, "uncertain": {"type": "boolean"}, "suggestion": {"type": ["string", "null"]}}},
+        "session_language": {"type": "string"}, "paused": {"type": "boolean"}, "ai_enabled": {"type": "boolean"},
+        "scenario": {"type": ["object", "null"], "properties": {"model": {"type": "string"}, "effort": {"type": "string"}}},
+        "budget": {"type": "object", "required": ["requests", "tokens"], "properties": {"requests": {"type": "number"}, "tokens": {"type": "number"}, "estimated": {"type": "boolean"}}}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+    "uiMenuModelRequest": {
+      "type": "object",
+      "description": "The status bar menu: a title and the items in order; the id is what the extension maps to its action. The AI item names the action and is English in every locale.",
+      "required": ["op", "session", "paused", "ai_enabled"],
+      "properties": {"op": {"const": "ui.menu_model"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "paused": {"type": "boolean"}, "ai_enabled": {"type": "boolean"}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+
     "hunk": {
       "type": "object",
       "description": "Geometry in 1-based lines and UTF-16 offsets plus the display lines (kind ' ', '-' or '+'; two lines of context).",
@@ -1055,6 +1187,114 @@
           "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "locked": {"type": "boolean"}, "file_locks": {"type": "object", "additionalProperties": {"$ref": "#/$defs/language"}}, "global_lock": {"oneOf": [{"$ref": "#/$defs/language"}, {"type": "null"}]}}
         },
         {
+          "title": "settings.validate",
+          "type": "object",
+          "required": ["ok","issues"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "issues": {"type": "array", "items": {"type": "object", "required": ["path", "message"], "properties": {"path": {"type": "string"}, "message": {"type": "string"}}}}}
+        },
+        {
+          "title": "settings.migrate",
+          "type": "object",
+          "required": ["ok","result","document"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "result": {"type": "object", "required": ["schema_version", "conflicts", "notes"], "properties": {"schema_version": {"const": 1}, "providers": {"type": "object"}, "scenarios": {"type": "object"}, "conflicts": {"type": "array", "items": {"type": "object", "required": ["key", "reason"], "properties": {"key": {"type": "string"}, "reason": {"type": "string"}}}}, "notes": {"type": "array", "items": {"type": "string"}}}}, "document": {"type": "object", "description": "What a settings store holds after the migration."}}
+        },
+        {
+          "title": "settings.export",
+          "type": "object",
+          "required": ["ok","text"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}}
+        },
+        {
+          "title": "settings.import",
+          "type": "object",
+          "required": ["ok","settings","conflicts","notes"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "settings": {"type": "object", "required": ["providers", "scenarios", "budget"]}, "conflicts": {"type": "array"}, "notes": {"type": "array", "items": {"type": "string"}}}
+        },
+        {
+          "title": "settings.rules_check",
+          "type": "object",
+          "required": ["ok","accepted","rejected"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "accepted": {"type": "array", "items": {"type": "string"}}, "rejected": {"type": "array", "items": {"type": "object", "required": ["name", "code", "message"], "properties": {"name": {"type": "string"}, "code": {"type": "string"}, "message": {"type": "string"}}}}}
+        },
+        {
+          "title": "diag.record",
+          "type": "object",
+          "required": ["ok","event"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "event": {"type": "object", "description": "The sanitised event as stored; fields in the order timestamp, component, error_code, error_detail, elapsed_ms, request_type, anonymized_session, provider_id, counters."}}
+        },
+        {
+          "title": "diag.summary",
+          "type": "object",
+          "required": ["ok","summary"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "summary": {"type": "object", "required": ["total", "byCode", "lastByComponent"], "properties": {"total": {"type": "integer", "minimum": 0, "maximum": 500}, "byCode": {"type": "object", "additionalProperties": {"type": "integer"}}, "lastByComponent": {"type": "object", "additionalProperties": {"type": "object", "required": ["error_code", "elapsed_ms"]}}}}}
+        },
+        {
+          "title": "diag.text",
+          "type": "object",
+          "required": ["ok","text"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}}
+        },
+        {
+          "title": "ui.resolve_locale",
+          "type": "object",
+          "required": ["ok","locale"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "locale": {"enum": ["zh-CN", "en-US", "ja-JP"]}}
+        },
+        {
+          "title": "ui.text",
+          "type": "object",
+          "required": ["ok","text"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}}
+        },
+        {
+          "title": "ui.error_text",
+          "type": "object",
+          "required": ["ok","text"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}}
+        },
+        {
+          "title": "ui.bundle",
+          "type": "object",
+          "required": ["ok","locale","bundle"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "locale": {"type": "string"}, "bundle": {"type": "object", "additionalProperties": {"type": "string"}}}
+        },
+        {
+          "title": "ui.errors",
+          "type": "object",
+          "required": ["ok","locale","errors"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "locale": {"type": "string"}, "errors": {"type": "object", "additionalProperties": {"type": "string"}}}
+        },
+        {
+          "title": "ui.candidate_rows",
+          "type": "object",
+          "required": ["ok","rows"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "rows": {"type": "array", "items": {"type": "object", "required": ["label", "description", "detail", "ariaLabel", "insertable"], "properties": {"label": {"type": "string"}, "description": {"type": "string"}, "detail": {"type": "string"}, "ariaLabel": {"type": "string"}, "insertable": {"type": "boolean"}}}}}
+        },
+        {
+          "title": "ui.place_overlay",
+          "type": "object",
+          "required": ["ok","placement"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "placement": {"oneOf": [{"type": "object", "required": ["x", "y", "w", "h"], "properties": {"x": {"type": "number"}, "y": {"type": "number"}, "w": {"type": "number"}, "h": {"type": "number"}}}, {"type": "null"}]}}
+        },
+        {
+          "title": "ui.check_env",
+          "type": "object",
+          "required": ["ok","supported","reasons"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "supported": {"type": "boolean"}, "reasons": {"type": "array", "items": {"type": "string"}}}
+        },
+        {
+          "title": "ui.status_model",
+          "type": "object",
+          "required": ["ok", "model"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "model": {"type": "object", "required": ["lang", "ai"], "properties": {"lang": {"type": "object", "required": ["text", "tooltip"], "properties": {"text": {"type": "string"}, "tooltip": {"type": "string"}}}, "ai": {"type": "object", "required": ["text", "tooltip"], "properties": {"text": {"type": "string"}, "tooltip": {"type": "string"}}}}}}
+        },
+        {
+          "title": "ui.menu_model",
+          "type": "object",
+          "required": ["ok", "model"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "model": {"type": "object", "required": ["title", "items"], "properties": {"title": {"type": "string"}, "items": {"type": "array", "items": {"type": "object", "required": ["id", "label"], "properties": {"id": {"enum": ["language", "pause", "ai", "usage", "permissions", "diagnostics", "f1"]}, "label": {"type": "string"}}}}}}}
+        },
+        {
           "title": "success without data (session.close, grant.consume, budget.configure, budget.reset, edit.discard, edit.purge)",
           "type": "object",
           "required": ["ok"],
@@ -1072,7 +1312,7 @@
                 "AI_BUDGET_EXCEEDED", "CONTEXT_UNAVAILABLE", "CROSS_FILE_DENIED", "DOCUMENT_CLOSED", "EDIT_REJECTED", "EDIT_UNKNOWN",
                 "FULL_CONTEXT_REQUIRED", "GRANT_DENIED", "MODEL_UNSUPPORTED", "PATCH_INVALID", "SETTINGS_INVALID", "STALE_DOCUMENT",
                 "STALE_RESULT", "STALE_SELECTION", "TARGET_RANGE_INVALID", "TOKEN_INVALID", "USER_CONFIRMATION_REQUIRED", "VALIDATION_FAILED",
-                "AI_DISABLED", "AI_RATE_LIMIT", "AI_AUTH_FAILED", "AI_QUOTA", "AI_SERVER_ERROR", "AI_TIMEOUT", "AI_NETWORK", "AI_BAD_REQUEST", "AI_CANCELLED", "OUTPUT_INVALID", "VAULT_ERROR", "CONSENT_REQUIRED", "SENSITIVE_BLOCKED"
+                "RULEPACK_INVALID", "AI_DISABLED", "AI_RATE_LIMIT", "AI_AUTH_FAILED", "AI_QUOTA", "AI_SERVER_ERROR", "AI_TIMEOUT", "AI_NETWORK", "AI_BAD_REQUEST", "AI_CANCELLED", "OUTPUT_INVALID", "VAULT_ERROR", "CONSENT_REQUIRED", "SENSITIVE_BLOCKED"
               ]
             },
             "field": {"type": "string", "description": "INVALID_REQUEST: the offending request field (nested fields as a.b)."},

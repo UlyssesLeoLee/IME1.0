@@ -198,6 +198,247 @@ write('secret-cases.json', {generated_by: 'tests/gen-fixtures.js', cases: secret
     workspaceTokens: workspaces.map(uris => ({uris, token: grantsMod.workspaceToken(uris)}))
   });
 }
+// ---------------------------------------------------------------- step 1.3 (P1B): settings, diagnostics, i18n, UI models
+// Oracles for crates/pime-core: settings.rs (effort levels, migration, export/import, user rules), diag.rs, i18n.rs, uimodel.rs.
+// Written to cfg-cases.json, diag-cases.json, i18n-cases.json and ui-cases.json; the Rust tests are tests/rust/parity_cfg.rs.
+// Time is always explicit (never Date.now) so that the files are stable.
+{
+  const settingsMod = require(path.join(core, 'settings'));
+  const aiMod = require(path.join(core, 'ai'));
+  const attempt = fn => { try { return {value: fn()}; } catch (e) { return {error: {code: e.code, message: e.message}}; } };
+  const settle = values => {
+    const e = settingsMod.effective(values);
+    const resolved = {};
+    for (const name of settingsMod.SCENARIOS) { try { resolved[name] = settingsMod.resolveScenario(e, name); } catch (err) { resolved[name] = {error: err.code}; } }
+    let nope; try { settingsMod.resolveScenario(e, 'nope'); } catch (err) { nope = err.code; }
+    return {values, effective: e, issues: settingsMod.validateSettings(e), resolved, unknownScenario: nope};
+  };
+  const prov = extra => ({providers: {p: {api: 'openai-chat', endpoint: 'https://p.example/v1', ...extra}}});
+  const withScenario = (over, providerId = 'p') => ({...prov({}), scenarios: {realtime: {provider: providerId, ...over}}});
+  const settingsInputs = [
+    // every effort level the bridge offers, in every scenario (the Rust list once lacked `max`), then values that are not levels
+    ...aiMod.EFFORT_LEVELS.map(effort => ({scenarios: {realtime: {effort}, f1Full: {effort}, f1Insert: {effort}}})),
+    ...['', 'MAX', 'Max', ' max', 'max ', 'turbo', 'xxhigh', null, 5, true, ['max'], {}].map(effort => ({scenarios: {realtime: {effort}}})),
+    // provider profile fields
+    ...['2023-06-01', '2023-6-1', '20230601', 'latest', '', null, 5, '2023-06-01\n', '２023-06-01', '2023-06-01 ', true, ['2023-06-01'], ['2023-06-01', 'x']]
+      .map(apiVersion => prov({api: 'anthropic-messages', apiVersion})),
+    ...['max_tokens', 'max_completion_tokens', 'max_new_tokens', '', null, 5, ['max_tokens'], 'MAX_TOKENS'].map(maxTokensParam => prov({maxTokensParam})),
+    // numeric ranges
+    ...[1, 64000, 64001, 0, -1, 1.5, '5', null, 1e3, true, 1e21, 9007199254740993].map(maxOutputTokens => withScenario({maxOutputTokens})),
+    ...[1000, 999, 300000, 300001, 5000.5, '1000', null, 0, -1000].map(timeoutMs => withScenario({timeoutMs})),
+    // providers: ids, definitions and endpoints
+    {providers: {['a'.repeat(40)]: {api: 'openai-chat', endpoint: 'https://a.example/'}, ['a'.repeat(41)]: {api: 'openai-chat', endpoint: 'https://b.example/'}, 'x y': {api: 'openai-chat', endpoint: 'https://c.example/'}, 'é': {api: 'openai-chat', endpoint: 'https://d.example/'}, 'a-b.c_d': {api: 'openai-chat', endpoint: 'https://e.example/'}, '': {api: 'openai-chat', endpoint: 'https://f.example/'}}},
+    {providers: {openai: null}},
+    {providers: {openai: null}, scenarios: {realtime: {provider: 'anthropic'}}},
+    {providers: {openai: {api: 'anthropic-messages'}, anthropic: {endpoint: 'http://insecure.example/'}, 'openai-compatible': {endpoint: ''}}},
+    {providers: {q: {}}}, {providers: {q: {api: 'openai-chat'}}}, {providers: {q: {endpoint: 'https://q.example/'}}},
+    {providers: {r: {api: 'openai-responses', endpoint: 'https://user:pw@r.example/'}, s: {api: 'openai-responses', endpoint: 'https:s.example'}, t: {api: 5, endpoint: 5}}},
+    {scenarios: {realtime: null, f1Full: 5, f1Insert: {}}},
+    {scenarios: {realtime: {provider: 'openai-compatible', model: 'gpt-x', effort: 'max', maxOutputTokens: 500, timeoutMs: 20000, effortCapability: {state: 'supported', supported: ['max'], checkedAt: '2026-10-30T00:00:00.000Z'}}}},
+    {budget: {maxRequests: 0, maxTokens: 0, pricePer1kTokens: 0.002}}, {budget: {pricePer1kTokens: 1e-7}}, {budget: null}
+  ];
+  // v0.1 flat keys -> v1 (migrateV0), with explicit clocks
+  const NOW = Date.parse('2026-10-30T12:00:00.000Z');
+  const oldInputs = [
+    {}, {provider: 'openai-compatible', endpoint: 'https://api.example.com/v1/chat/completions', model: 'm1', effort: 'high', effortCapability: 'supported', userRules: [{id: 'mine'}], theme: 'x'},
+    {provider: 'anthropic'}, {provider: 'openai'}, {provider: 5}, {provider: null}, {provider: 'openai-compatible'},
+    {endpoint: 'http://x', effort: 'turbo'}, {endpoint: 'https://e.example/v1'}, {provider: 'openai-compatible', endpoint: '  https://trim.example/x  '},
+    {endpoint: ''}, {endpoint: null}, {endpoint: 'ftp://x'}, {endpoint: 'https://user:pw@h.example/'}, {endpoint: 'https://[::1]:8443/x'},
+    {effort: 'max'}, {effort: 'extended'}, {effort: 'auto'}, {effort: ''}, {effort: 'MAX'}, {effort: 'low '}, {effort: null}, {effort: 0}, {effort: 5}, {effort: ['max']}, {effort: {}}, {effort: true}, {effort: false}, {effort: 1e21},
+    {effortCapability: 'supported'}, {effortCapability: 'unsupported'}, {effortCapability: 'unknown'}, {effortCapability: 'SUPPORTED'}, {effortCapability: {state: 'supported'}}, {effortCapability: true},
+    {model: 'm'}, {model: ''}, {model: 5}, {model: null}, {model: ['x']}, {model: 'モデル\u0001'},
+    {schema_version: 0, model: 'z'}
+  ];
+  const nows = [NOW, 0, Date.parse('2024-02-29T23:59:59.999Z'), -1, 253402300799999, 253402300800000, -62198755200000, 8.64e15, -8.64e15, Date.parse('2100-03-01T00:00:00.000Z'), 1.9];
+  const migrateCases = [
+    ...oldInputs.map(old => ({old, now: NOW, expect: settingsMod.migrateV0(old, NOW)})),
+    ...nows.map(now => ({old: {effortCapability: 'supported'}, now, expect: settingsMod.migrateV0({effortCapability: 'supported'}, now)}))
+  ];
+  // migrate() and migrateStore() of whole documents (what the settings store holds)
+  const docs = [
+    {schema_version: 1, providers: {mockA: {api: 'openai-chat', endpoint: 'https://a.example/v1'}}, scenarios: {realtime: {provider: 'mockA'}}, budget: {maxRequests: 5}, extra: 1},
+    {schema_version: 1}, {schema_version: 1, providers: 5}, {schema_version: 1, scenarios: {f1Full: {effort: 'max'}}},
+    {schema_version: 0, provider: 'openai-compatible', model: 'm1', userRules: [{id: 'mine'}], theme: 'x'}, {}, {userRules: [1]}, {provider: 'anthropic', effort: 'max', effortCapability: 'supported'},
+    {schema_version: 2}, {schema_version: '1'}, {schema_version: null}, {schema_version: 1.5}, {schema_version: true}, {schema_version: false}, {schema_version: [1]}, {schema_version: {a: 1}}, {schema_version: [1, [2, null]]},
+    {schema_version: 1e21}, {schema_version: 1e-7}, {schema_version: -1}, {schema_version: ''}, {schema_version: 'x'.repeat(300)},
+    {schema_version: 1, conflicts: ['x'], notes: 5, provider: 'openai', endpoint: 'x', model: 'm', effort: 'e', effortCapability: 'c'},
+    {10: 1, schema_version: 1, b: 2, 2: 3}
+  ];
+  const storeOutcome = (doc, failWith) => {
+    let written = null;
+    const store = {read: () => doc, write: o => { if (failWith) throw failWith; written = JSON.parse(JSON.stringify(o)); }};
+    const r = attempt(() => { const x = settingsMod.migrateStore(store, NOW); return {document: written, conflicts: x.conflicts, notes: x.notes}; });
+    return r;
+  };
+  const migrateDocs = docs.map(doc => ({doc, now: NOW, migrate: attempt(() => settingsMod.migrate(doc, NOW)), store: storeOutcome(doc)}));
+  const failing = [
+    {doc: docs[4], failure: {code: 'ENOSPC', message: 'ENOSPC: no space left'}}, {doc: docs[4], failure: {message: 'disk full'}}, {doc: docs[0], failure: {code: 'EACCES', message: 'denied'}},
+    {doc: docs[8], failure: {code: 'ENOSPC', message: 'never reached'}}
+  ].map(({doc, failure}) => ({doc, failure, store: storeOutcome(doc, Object.assign(new Error(failure.message), failure.code ? {code: failure.code} : {}))}));
+  // export / import
+  const exportInputs = [
+    settingsMod.effective({}),
+    settingsMod.effective({providers: {mockA: {api: 'openai-chat', endpoint: 'https://a.example/v1', maxTokensParam: 'max_completion_tokens'}}, scenarios: {f1Full: {provider: 'mockA', model: 'モデル\u0001"q"\\', effort: 'max'}}, budget: {pricePer1kTokens: 1e-7, maxRequests: 0}}),
+    {providers: {}, scenarios: {}}, {providers: {}, scenarios: {}, budget: {}}, {scenarios: {realtime: {model: 'm'}}},
+    settingsMod.effective({providers: {p: {api: 'openai-chat', endpoint: 'https://p.example/v1', note: 'sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH'}}}),
+    settingsMod.effective({scenarios: {realtime: {model: 'AKIAIOSFODNN7EXAMPLE'}}}),
+    settingsMod.effective({scenarios: {realtime: {model: '-----BEGIN RSA PRIVATE KEY-----\nMIIEow'}}})
+  ];
+  const exported = exportInputs.map(settings => ({settings, expect: attempt(() => settingsMod.exportSettings(settings))}));
+  const importTexts = [
+    ...exported.filter(e => e.expect.value).map(e => e.expect.value),
+    '{bad', '', '[]', 'null', 'true', 'false', '0', '123', '""', '"str"', '{}', '{"schema_version":0}', '{"schema_version":3}', '{"schema_version":"1"}',
+    JSON.stringify({schema_version: 1, providers: {X: {api: 'openai-chat', endpoint: 'http://x'}}}),
+    JSON.stringify({schema_version: 1, scenarios: {realtime: {effort: 'max', provider: 'nope'}}}),
+    JSON.stringify({schema_version: 1, scenarios: {realtime: {effort: 'max'}}}),
+    JSON.stringify({schema_version: 1, scenarios: {realtime: {effort: 'turbo', maxOutputTokens: 0, timeoutMs: 1}}}),
+    JSON.stringify({provider: 'openai-compatible', endpoint: 'https://api.example.com/v1/chat/completions', model: 'm1', effort: 'max', effortCapability: 'unsupported'}),
+    JSON.stringify({endpoint: 'http://x', effort: 'turbo'}), JSON.stringify({schema_version: 1, budget: {maxRequests: 7}, extra: true})
+  ];
+  const imported = importTexts.map(text => ({text, expect: attempt(() => settingsMod.importSettings(text))}));
+  // user rule packs: validated as data; a bad pack is reported and skipped (UT-058)
+  const goodPack = {schema_version: 1, profile_id: 'python', version: '1.0.0', triggers: [{id: 'my.log', pattern: 'logd', candidates: [{label: 'debug log', text: 'logging.debug("${msg}")'}]}]};
+  const ruleFile = (name, pack, raw) => ({name, text: raw !== undefined ? raw : JSON.stringify(pack)});
+  const builtinTriggerId = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'language-packs', 'python.json'), 'utf8')).triggers[0].id;
+  const trig = over => ({...goodPack.triggers[0], ...over});
+  const ruleSets = [
+    [ruleFile('good.json', goodPack)],
+    [ruleFile('good.json', goodPack), ruleFile('same.json', goodPack)],
+    [ruleFile('evil.json', {...goodPack, triggers: [trig({id: 'my.evil', candidates: [{label: 'x', text: 'x', shell: 'calc.exe'}]})]})],
+    [ruleFile('arr.json', null, '[]'), ruleFile('five.json', null, '5'), ruleFile('null.json', null, 'null'), ruleFile('str.json', null, '"s"'), ruleFile('bad.json', null, '{bad'), ruleFile('empty.json', null, '')],
+    [ruleFile('cobol.json', {...goodPack, profile_id: 'cobol'}), ruleFile('v2.json', {...goodPack, schema_version: 2}), ruleFile('ver.json', {...goodPack, version: '1.0'}), ruleFile('extra.json', {...goodPack, shell: 1})],
+    [ruleFile('kw.json', {...goodPack, keywords: ['bad kw']}), ruleFile('kwok.json', {...goodPack, triggers: [trig({id: 'kw.ok', pattern: 'kwx'})], keywords: ['alpha', 'b#c.$-d']}), ruleFile('kwnum.json', {...goodPack, keywords: [5]})],
+    [ruleFile('collide.json', {...goodPack, triggers: [trig({id: builtinTriggerId})]}), ruleFile('dup.json', {...goodPack, triggers: [trig({id: 'twice'}), trig({id: 'twice', pattern: 'other'})]})],
+    [ruleFile('pat.json', {...goodPack, triggers: [trig({pattern: 'x'.repeat(65)})]}), ruleFile('pat2.json', {...goodPack, triggers: [trig({id: 'p2', pattern: 'bad pattern'})]}), ruleFile('kind.json', {...goodPack, triggers: [trig({id: 'k1', kind: 'nope'})]}), ruleFile('weight.json', {...goodPack, triggers: [trig({id: 'w1', weight: 101})]}), ruleFile('weightok.json', {...goodPack, triggers: [trig({id: 'w2', pattern: 'w2x', weight: 100, kind: 'prefix'})]})],
+    [ruleFile('nocand.json', {...goodPack, triggers: [trig({candidates: []})]}), ruleFile('toomany.json', {...goodPack, triggers: [trig({candidates: Array.from({length: 9}, () => ({label: 'l', text: 't'}))})]}), ruleFile('longtext.json', {...goodPack, triggers: [trig({candidates: [{label: 'l', text: 't'.repeat(4001)}]})]}), ruleFile('longlabel.json', {...goodPack, triggers: [trig({candidates: [{label: 'l'.repeat(201), text: 't'}]})]}), ruleFile('emptytext.json', {...goodPack, triggers: [trig({candidates: [{label: 'l', text: ''}]})]})],
+    [ruleFile('ph.json', {...goodPack, triggers: [trig({candidates: [{label: 'l', text: 'a ${bad'}]})]}), ruleFile('phok.json', {...goodPack, triggers: [trig({id: 'ph2', pattern: 'ph2x', candidates: [{label: 'l', text: 'a ${1:x} ${name} ${2}'}]})]}), ruleFile('assume.json', {...goodPack, triggers: [trig({candidates: [{label: 'l', text: 't', assumptions: [1]}]})]})],
+    [ruleFile('huge.json', {...goodPack, keywords: [], triggers: [], pad: '@PAD@'}), ruleFile('after.json', {...goodPack, triggers: [trig({id: 'after.huge', pattern: 'ah'})]})],
+    [ruleFile('multi.json', {...goodPack, triggers: [trig({id: 'u1'}), trig({id: 'u2', pattern: 'u2x'})]}), ruleFile('multi2.json', {...goodPack, triggers: [trig({id: 'u2', pattern: 'u2y'})]})]
+  ];
+  const fillPad = f => f.name === 'huge.json' ? {...f, text: f.text.replace('@PAD@', 'x'.repeat(300000))} : f;
+  const rules = ruleSets.map(files => {
+    const built = settingsMod.buildRegistryWithUserRules(files.map(fillPad));
+    return {files, padChars: files.some(f => f.name === 'huge.json') ? 300000 : 0, accepted: built.accepted, rejected: built.rejected.map(r => ({name: r.name, code: r.code, message: r.message}))};
+  });
+  write('cfg-cases.json', {
+    generated_by: 'tests/gen-fixtures.js',
+    effortLevels: aiMod.EFFORT_LEVELS,
+    settings: settingsInputs.map(settle),
+    migrateV0: migrateCases, migrateDocs, migrateFailing: failing, exported, imported, rules
+  });
+}
+{
+  const i18n = require(path.join(core, 'i18n'));
+  const attempt = fn => { try { return {value: fn()}; } catch (e) { return {error: {code: e.code, message: e.message}}; } };
+  const keys = Object.keys(i18n.S), codes = Object.keys(i18n.ERR);
+  const locales = [...i18n.LOCALES, 'fr-FR', 'zh-cn', '', 'auto'];
+  const argLists = [[], ['A', 'B', 'C', 'D', 'E']];
+  const t = [];
+  for (const locale of [...i18n.LOCALES, 'fr-FR']) for (const key of keys) for (const args of argLists) t.push({locale, key, args, expect: i18n.t(locale, key, ...args)});
+  for (const locale of ['zh-cn', '', 'auto', 'ja']) for (const key of keys.slice(0, 6)) t.push({locale, key, args: ['A', 'B'], expect: i18n.t(locale, key, 'A', 'B')});
+  // argument types: numbers print like JavaScript, null is empty, arrays join, objects are [object Object], one pass only
+  const mixed = [[2, 7, 1, 3], [1.5, 0, -1, 1e21], [null, true, false, 'x'], [[1, 2], {a: 1}, '{1}', '$&'], ['{0}', '{1}', '{2}', '{3}']];
+  for (const key of ['f1.hunk', 'f1.usage', 'consent.sensitive', 'f1.scope.full', 'annotate.done', 'cand.pick']) for (const args of mixed) for (const locale of i18n.LOCALES) t.push({locale, key, args, expect: i18n.t(locale, key, ...args)});
+  for (const key of ['x {0} y {1} z {2}', '{01}|{ 1}|{1 }|{}|{-1}|{1', '{{0}}', '{99999999999999999999999}', 'no.such.key', '']) for (const args of [[], ['a', 'b']]) t.push({locale: 'en-US', key, args, expect: i18n.t('en-US', key, ...args)});
+  const describe = [];
+  for (const locale of locales) for (const code of codes) describe.push({locale, code, message: 'fallback message', expect: i18n.describeError(locale, code, 'fallback message')});
+  for (const locale of i18n.LOCALES) for (const [code, message] of [['NOPE', 'raw message'], ['NOPE', ''], ['NOPE', undefined], ['', ''], ['STALE_DOCUMENT', undefined]]) describe.push({locale, code, ...(message === undefined ? {} : {message}), expect: i18n.describeError(locale, code, message)});
+  const settings = ['zh-CN', 'en-US', 'ja-JP', 'auto', '', 'ZH-CN', 'zh', null, 5, ['zh-CN'], {}];
+  const languages = ['en', 'zh', 'zh-cn', 'zh-TW', 'ZH-HANS', 'ja', 'JA-jp', 'ja-JP', 'jaja', 'fr', 'de-DE', '', ' zh', 'xzh', null, 5, ['zh'], ['ja', 'x'], 'İ', 'zhx'];
+  const resolve = [];
+  for (const setting of settings) { resolve.push({setting, expect: i18n.resolveLocale(setting)}); for (const language of languages) resolve.push({setting, language, expect: i18n.resolveLocale(setting, language)}); }
+  const bundleKeys = [['f1.hunk', 'status.off', 'f1.title'], ['status.off', 'status.off', 'cand.none'], ['10', 'f1.idle', '2', 'nope', 'b', '1'], [], ['annotate.progress', 'annotate.consent.file', 'engine.unavailable']];
+  const bundles = [];
+  for (const locale of locales) for (const list of bundleKeys) bundles.push({locale, keys: list, expect: i18n.bundle(locale, list)});
+  write('i18n-cases.json', {
+    generated_by: 'tests/gen-fixtures.js',
+    locales: i18n.LOCALES, keys, errorCodes: codes,
+    strings: keys.map(key => ({key, texts: i18n.S[key]})), errors: codes.map(code => ({code, texts: i18n.ERR[code]})),
+    t, describe, resolve, bundles
+  });
+}
+{
+  const {Diagnostics, sanitize, ALLOWED} = require(path.join(core, 'diagnostics'));
+  const NOW = Date.parse('2026-10-30T12:00:00.000Z');
+  const token64 = 'a'.repeat(64);
+  const events = [
+    {}, {component: 'ai', error_code: 'AI_TIMEOUT', error_detail: 'status_429', elapsed_ms: 123.6, request_type: 'f1Full', provider_id: 'openai:api.openai.com', counters: {requests: 1, tokens: 2.5}},
+    {component: 'my component'}, {component: 'C:\\Users\\me\\x.rs'}, {component: '/home/me/secret.rs'}, {component: token64}, {component: token64 + 'a'}, {component: ''}, {component: 'é'}, {component: 'a\n'}, {component: 'a.b:c-d_e'},
+    {error_code: 'sk-proj-abcdefghijklmnopqrstuvwxyz'}, {error_code: 5}, {error_code: -3.5}, {error_code: 2.5}, {error_code: 0.5}, {error_code: -0.5}, {error_code: 1e21}, {error_code: 1.4999999999999998},
+    {component: null}, {component: true}, {component: false}, {component: ['a']}, {component: {a: 1}},
+    {elapsed_ms: 'abc'}, {elapsed_ms: 12}, {elapsed_ms: -3.5}, {elapsed_ms: 0},
+    {counters: {}}, {counters: {a: 1, 'b c': 2, d: 'x', e: null, f: true, g: 2.5}}, {counters: {10: 1, 2: 2, a: 3, 1: 4}}, {counters: [1, 2, 3]}, {counters: 'abc'}, {counters: 5}, {counters: null}, {counters: true}, {counters: {a: {b: 1}}},
+    {counters: {['x'.repeat(65)]: 1, ['x'.repeat(64)]: 2, '': 3, 'é': 4, 'a b': 5, 'a/b': 6}}, {counters: [1, 'x', null, 4]},
+    {input_text: 'secret', source_code: 'fn main() {}', prompt: 'p', api_key: 'sk-x', document_uri: 'file:///x', response: 'r', component: 'ok'},
+    {timestamp: 12345}, {timestamp: 1.5}, {timestamp: 0}, {timestamp: -7}, {anonymized_session: 'evil'}, {timestamp: 5, component: 'a', error_code: 'b', error_detail: 'c', elapsed_ms: 1, request_type: 'd', anonymized_session: 'e', provider_id: 'f', counters: {g: 1}}
+  ];
+  const sanitized = events.map(event => ({event, session: 'abcdef012345', expect: sanitize({timestamp: NOW, ...event}, 'abcdef012345')}));
+  // the ring: capacity, the anonymised session id, the summary and the text
+  const runRing = (seed, max, evs) => {
+    let tick = 1000;
+    const lines = [];
+    const d = new Diagnostics({now: () => tick++, sessionSeed: seed, max, sink: l => lines.push(l)});
+    const records = evs.map(e => d.record(e));
+    return {seed, max, events: evs, session: d.session, records, lines, kept: d.events, summary: d.summary(), text: d.toText()};
+  };
+  const ringEvents = [
+    {component: 'ai', error_code: 'AI_TIMEOUT', elapsed_ms: 10}, {component: 'ai', error_code: 'OK', elapsed_ms: 12.5}, {component: 'edit', error_code: 'EDIT_UNKNOWN'}, {component: 'ai', elapsed_ms: 7},
+    {error_code: ''}, {component: '', error_code: 404, elapsed_ms: 1}, {component: 7, error_code: 'AI_TIMEOUT'}, {component: 'edit', error_code: 'x y', elapsed_ms: 'slow'}, {component: 'ai', error_code: 0}, {request_type: 'f1', counters: {a: 1}}
+  ];
+  const rings = [runRing('seed-ring', 500, ringEvents), runRing('seed-ring', 3, ringEvents), runRing('', 1, ringEvents), runRing('é', 0, ringEvents.slice(0, 2)), runRing('seed-ring', 500, [])];
+  write('diag-cases.json', {generated_by: 'tests/gen-fixtures.js', allowed: ALLOWED, now: NOW, sanitize: sanitized, rings});
+}
+{
+  const ui = require(path.join(core, 'uimodel'));
+  const i18n = require(path.join(core, 'i18n'));
+  const cands = [
+    {label: 'main function', source: 'rule', validation: 'valid', explain: 'Entry point', assumptions: ['a', 'b'], text: 'fn main() {}'},
+    {label: 'AI idea', source: 'ai', validation: 'unchecked', text: 'x'}, {label: 'jmp foo', source: 'rule', validation: 'context_missing', text: null, explain: 'jump'},
+    {label: 'merged', source: 'rule', sources: ['rule', 'ai'], validation: 'verified', text: ''}, {label: 'user', source: 'user_rule', sources: ['user_rule', 'rule', 'ai', 'context'], validation: 'invalid', text: 'x'},
+    {label: 'no source', validation: 'valid', text: 'y'}, {label: 'unknown validation', source: 'rule', validation: 'weird', text: 't'}, {label: 'empty sources', source: 'ai', sources: [], validation: 'valid', text: 't'},
+    {label: 'blank explain', source: 'context', validation: 'valid', explain: '', assumptions: ['', 'only'], text: 't'}, {label: 'no text key', source: 'rule', validation: 'valid'},
+    {label: 'null parts', source: 'rule', validation: null, explain: null, assumptions: null, sources: null, text: 'z'}, {label: 'AI', source: 'ai', validation: 'valid', explain: 'e', assumptions: ['x', 'y', 'z'], text: 'a\nb'}
+  ];
+  const rows = [];
+  for (const locale of [...i18n.LOCALES, 'fr-FR']) cands.forEach((c, i) => rows.push({locale, candidate: c, index: i + 1, total: cands.length, expect: ui.candidateRow(locale, c, i + 1, cands.length)}));
+  for (const [index, total] of [[0, 0], [7, 3], [1.5, 2], [1e21, 1], [-1, 5]]) rows.push({locale: 'en-US', candidate: cands[0], index, total, expect: ui.candidateRow('en-US', cands[0], index, total)});
+  const monitors = [{x: -1920, y: 0, w: 1920, h: 1080}, {x: 0, y: 0, w: 2560, h: 1440}];
+  const size = {w: 320, h: 200};
+  const placeCase = (input) => ({input, expect: ui.placeOverlay(input) ?? null});
+  const places = [];
+  for (const dpi of [undefined, 100, 90, 125, 150, 175, 250, 300, null, 0, 99.5, 133.3, 249.9]) {
+    for (const caret of [{x: -30, y: 500}, {x: 100, y: 1430}, {x: 99999, y: 5}, {x: 10, y: 10}, {x: 2559, y: 1439}, {x: -1920, y: 0}, {x: 0, y: 0}, {x: 1919.5, y: 20.25}, {x: -1, y: 1079}, {x: 2560, y: 100}, {x: 100.5, y: 700.5}]) {
+      const input = {caret, size, monitors, ...(dpi === undefined ? {} : {dpi})};
+      places.push(placeCase(input));
+    }
+  }
+  for (const [s, d] of [[{w: 4000, h: 10}, undefined], [{w: 1920, h: 1080}, 100], [{w: 1921, h: 1080}, 100], [{w: 2, h: 2}, 125], [{w: 3, h: 3}, 125], [{w: 321, h: 201}, 150], [{w: 0, h: 0}, 100], [{w: 1024, h: 600}, 250]]) {
+    places.push(placeCase({caret: {x: 5, y: 5}, size: s, monitors, ...(d === undefined ? {} : {dpi: d})}));
+    places.push(placeCase({caret: {x: 1000, y: 1400}, size: s, monitors, ...(d === undefined ? {} : {dpi: d})}));
+  }
+  places.push(placeCase({caret: {x: 5, y: 5}, size, monitors: []}), placeCase({caret: {x: 5, y: 5}, size, monitors: [{x: 0, y: 0, w: 100, h: 100}]}), placeCase({caret: {x: 50, y: 50}, size: {w: 10, h: 10}, monitors: [{x: 0, y: 0, w: 100, h: 100}, {x: 0, y: 0, w: 4000, h: 4000}]}));
+  const envs = [];
+  for (const platform of ['win32', 'linux', 'darwin', null, 5]) for (const arch of ['x64', 'arm64', 'ia32', null]) for (const build of [22631, 22000, 21999, 0, 22000.5, '22631', null, -1, 26100]) envs.push({platform, arch, build});
+  for (const dpi of [100, 150, 250, 99.9, 250.1, 300, 0, -5, null, '150', true]) envs.push({platform: 'win32', arch: 'x64', build: 26100, dpi});
+  envs.push({platform: 'win32', arch: 'x64'}, {});
+  // status bar items and the menu (SCR-01)
+  const infos = [null, {language: 'rust', locked: false, uncertain: false}, {language: 'c', locked: true, uncertain: true, suggestion: 'cpp'}, {language: 'python', locked: false, uncertain: true}, {language: 'rust', uncertain: true, suggestion: ''}];
+  const scenarios = [null, {model: '', effort: 'auto'}, {model: 'gpt-x', effort: 'max'}];
+  const usage = {requests: 12, tokens: 3456, estimated: true};
+  const grid = [];
+  for (const coreDown of [false, true]) for (const enabled of [true, false]) for (const info of infos) for (const paused of [false, true]) for (const aiEnabled of [false, true]) for (const scenario of scenarios) {
+    grid.push({coreDown, reason: 'the core process ended', enabled, info, sessionLanguage: 'typescript', paused, aiEnabled, scenario, budget: usage});
+  }
+  const statuses = [];
+  for (const locale of [...i18n.LOCALES, 'fr-FR']) grid.forEach((state, i) => { if (locale === 'en-US' || i % 3 === 0) statuses.push({locale, state, expect: ui.statusModel(locale, state)}); });
+  for (const budget of [{requests: 0, tokens: 0, estimated: false}, {requests: 1, tokens: 1e21, estimated: false}, {requests: 200, tokens: 400000, estimated: true}]) {
+    const state = {...grid[0], enabled: true, coreDown: false, info: infos[2], budget};
+    statuses.push({locale: 'en-US', state, expect: ui.statusModel('en-US', state)});
+  }
+  const menus = [];
+  for (const locale of [...i18n.LOCALES, 'fr-FR']) for (const paused of [false, true]) for (const aiEnabled of [false, true]) menus.push({locale, paused, aiEnabled, expect: ui.menuModel(locale, {paused, aiEnabled})});
+  write('ui-cases.json', {generated_by: 'tests/gen-fixtures.js', rows, places, envs: envs.map(input => ({input, expect: ui.checkEnvironment(input)})), statuses, menus});
+}
 // ---------------------------------------------------------------- steps 1.2 / 1.3: AI request logic, privacy, annotations, symbols, scheduling
 // Oracles for crates/pime-core: ai.rs, ops_ai.rs (prepare/complete), secrets.rs (assess/redact/restore), annotate.rs, symbols.rs, scheduler.rs.
 // Everything here is produced by the JavaScript modules; the Rust tests (tests/rust/parity_ai.rs, parity_annotate.rs, parity_sched.rs) must reproduce it.

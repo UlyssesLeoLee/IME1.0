@@ -6,8 +6,9 @@
 //! lines up to [`MAX_BULK_LINE_BYTES`]; every other operation keeps the 64 KiB limit.
 //!
 //! Every request may carry an integer `id` that is echoed as `id` in the response. The core never executes
-//! anything, never opens files or the network, and never echoes secret values (`scan` returns kind, severity
-//! and line only).
+//! anything, never opens files or the network (no operation takes a path; the settings file's atomic write in
+//! `settings_io` is a library facility for the embedding bridge), and never echoes secret values (`scan` returns
+//! kind, severity and line only).
 
 use crate::clock::{Clock, SystemClock};
 use crate::json::{self, Json, JsonErrorKind, Limits};
