@@ -5,10 +5,8 @@ const path = require('node:path');
 const {rt, cfg, L, errorText, enabled, aiEnabled, workspaceId, refreshSettings, grantProviderId, init} = require('./runtime');
 const lang = require('./languageState');
 const f1 = require('./f1');
-const {RealtimeScheduler} = require('./core/scheduler');
 const languages = require('./core/languages');
 const aiMod = require('./core/ai');
-const secrets = require('./core/secrets');
 const settingsMod = require('./core/settings');
 const {fail, codeOf} = require('./core/errors');
 const {sha256} = require('./core/context');
@@ -89,27 +87,25 @@ function realtimeAllowed() {
 async function runRealtime(payload, signal) {
   const sc = settingsMod.resolveScenario(rt.settings, 'realtime');
   const key = await rt.ctx.secrets.get('pime-key:' + sc.providerId);
-  const verdict = secrets.assessOutbound(payload.before + payload.after, {fileName: payload.fileName, scope: 'realtime'});
+  const verdict = await rt.engine.privacy.assess(payload.before + payload.after, {fileName: payload.fileName, scope: 'realtime'});
   if (verdict.action === 'block') throw fail('SENSITIVE_BLOCKED', 'nearby code contains high-risk secrets');
   let {before, after} = payload;
-  const map = [];
-  if (verdict.action === 'redact') {
-    for (const part of ['before', 'after']) {
-      const text = part === 'before' ? before : after;
-      const red = secrets.redact(text, secrets.scan(text).findings);
-      map.push(...red.map); if (part === 'before') before = red.text; else after = red.text;
-    }
-  }
-  const prompt = aiMod.buildPrompt('realtime', {language: payload.language, dialect: payload.dialect, before, after, typedPrefix: payload.prefix});
-  const res = await rt.ai.infer({...sc, providerId: grantProviderId(sc), key, ...prompt, signal, grantScope: 'L1'});
-  const parsed = aiMod.parseModelResult(res.text, {task: 'realtime'});
-  return parsed.insertCandidates.slice(0, 2).map(raw => map.length ? secrets.restore(raw, map) : {text: raw, unresolved: 0}).filter(r => !r.unresolved && r.text.trim()).map((r, i) => ({
-    id: `ai.${sha256(r.text).slice(0, 10)}`, kind: 'ai_inline', source: 'ai', profile_id: payload.language, label: r.text.split('\n')[0].slice(0, 80), text: r.text, plain: true,
-    explain: 'AI suggestion - not verified by the local syntax rules', validation: 'unchecked', assumptions: ['Model output; review before accepting'], match: 'context', weight: 10 - i
-  }));
+  const set = rt.engine.privacy.redactionSet();
+  try {
+    if (verdict.action === 'redact') { before = await rt.engine.privacy.redact(before, set); after = await rt.engine.privacy.redact(after, set); }
+    const prompt = await rt.engine.buildPrompt('realtime', {language: payload.language, dialect: payload.dialect, before, after, typedPrefix: payload.prefix});
+    const res = await rt.ai.infer({...sc, providerId: grantProviderId(sc), key, ...prompt, signal, grantScope: 'L1'});
+    const parsed = await rt.engine.parseModelResult(res.text, {task: 'realtime'});
+    const usable = [];
+    for (const raw of parsed.insertCandidates.slice(0, 2)) { const r = await rt.engine.privacy.restore(raw, set); if (!r.unresolved && r.text.trim()) usable.push(r); }
+    return usable.map((r, i) => ({
+      id: `ai.${sha256(r.text).slice(0, 10)}`, kind: 'ai_inline', source: 'ai', profile_id: payload.language, label: r.text.split('\n')[0].slice(0, 80), text: r.text, plain: true,
+      explain: 'AI suggestion - not verified by the local syntax rules', validation: 'unchecked', assumptions: ['Model output; review before accepting'], match: 'context', weight: 10 - i
+    }));
+  } finally { await rt.engine.privacy.release(set); }
 }
 function setupScheduler() {
-  rt.scheduler = new RealtimeScheduler({
+  rt.scheduler = rt.engine.createScheduler({
     debounceMs: cfg().get('debounceMs'), run: runRealtime, isAllowed: realtimeAllowed,
     onResult: (items, key) => {
       const editor = vscode.window.activeTextEditor;

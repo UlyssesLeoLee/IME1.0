@@ -428,3 +428,30 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 | M5 | 安装器（HKLM 注册需要管理员权限，故安装器要提权；先确认逐用户注册是否可行）、可干净卸载、不抢占默认输入法 | 未做 |
 
 限制（必须如实记录）：构建只有 x64，32 位应用看不到该输入法（需另构建 i686 并同样注册）；M1 的键位在纯逻辑层经过完整测试，但 TSF 层尚未把键事件接入状态机，所以**今天的 DLL 不处理任何按键**。
+
+### 13.8 1.2 与 1.3（调度部分）交付（P1A，2026-10-30）
+
+范围：`ai.js`（请求构造/解析、Effort 协商、错误映射、输出校验、提示构造）、`secrets.js` 的脱敏/还原、`annotate.js`、`symbols.js`、`scheduler.js`（历元、去抖、过期规则）的**纯逻辑**迁入 `pime-core`，JS 仍负责 HTTP 发送、定时器与 `AbortController`。
+新模块：`ai.rs`、`annotate.rs`、`symbols.rs`、`scheduler.rs`、`ops_ai.rs`（操作处理，使 `ops.rs` 只增加一行分派）、`regex.rs`（私有的小型回溯匹配器，直接运行 JS 的符号/Cypher 正则原文，保证匹配语义一致；有步数上限，恶意长行不会失控）；`secrets.rs` 增加 `assess_outbound/summarize/redact/restore`；`validators.rs` 增加带区间的遮蔽 `mask_chars_spans`（`maskSource` 的第三个参数）。协议 0.3 仍是 0.2 的超集，新增操作全部带 `session`，文档与 JSON Schema 在 `schemas/core-protocol-v0.3.json`（请求、应答、错误元数据）。
+错误应答新增可选字段（只在 AI 失败时出现）：`retryable`、`user_action`、`retry_after_sec`、`detail`、`budget`（`OpError` 新增 `extra`）。
+
+| 操作 | 作用（一行） |
+|---|---|
+| `ai.prompt` | `buildPrompt`：固定的无工具指令 + 数据通道（`JSON.stringify(payload)`），文件文本不进入指令 |
+| `ai.prepare` | `AiClient.infer` 发送前的全部检查（同样的顺序）：关闭/冷却/家族/模型/HTTPS 端点/密钥/授权（核心自己的授权代理，授权令牌在此消费）/最后一道敏感闸/预算预留/Effort 协商，返回 `http{url,headers,body}`、超时、`max_response_units`、Effort 说明 |
+| `ai.complete` | 报告结果（传输错误 \| HTTP 状态 + `Retry-After` 原值 + 正文）：错误映射、429 冷却、响应解析与用量、预算结算（未知/负数用量按估算）、返回文本/用量/`estimated`/Effort |
+| `ai.parse` | `parseModelResult`：围栏容忍、未知键忽略（`ignoredKeys`）、边界、跨文件计划只留当前文件、补丁应用、CRLF 转换 |
+| `privacy.assess` | `assessOutbound`：`allow/redact/block/confirm` + 发现项（只有类型/严重度/行号）+ 按类型汇总 |
+| `privacy.redact` / `privacy.restore` / `privacy.release` | 脱敏（原值与占位符映射留在核心，`redaction` 集合最多 16 个/会话）、还原（未解析的占位符计数）、释放 |
+| `annotate.supports` / `annotate.prompt` / `annotate.f1_addendum` / `annotate.apply` | 注释支持与前缀、提示构造、F1 附加指令、`applyAnnotateReply`（只允许加注释的验证、`${` 中和、Cypher 清洗与重渲染） |
+| `symbols.extract` / `symbols.dir_candidates` | 符号索引；目录扫描的纯决策（普通文件、非当前、非凭据文件名、扩展名可识别） |
+| `sched.configure` / `sched.schedule` / `sched.fire` / `sched.finish` / `sched.cancel` | 实时调度状态机：去抖窗口（150–1000，默认 350）、最新输入、是否启动、结果交付或以 `STALE_RESULT`/错误码丢弃、统计；返回 JS 需要执行的效果（清定时器/中止/`arm_ms`） |
+| `sched.touch` / `sched.is_current` / `lang.state` / `lang.lock` / `lang.unlock` | `InputSession`：历元（seq/profile/document）、语言锁、`resolve`；Rust 侧已实现并有夹具，**扩展尚未接线**（`languageState.js` 是同步的，需要在 1.4/1.5 随胶水重排一起改成异步） |
+
+扩展接线（仅 `engine=rust`，默认仍是 `js`，`src/core` 无一文件被删）：`engine.js` 增加 `createAi/budget/buildPrompt/parseModelResult/privacy/annotate/symbols/createScheduler`，JS 引擎委托给原模块、Rust 引擎走核心；`f1.js`、`extension.js`、`annotate.js`、`runtime.js` 只把原来直接调用核心 JS 模块的地方改成 `await rt.engine.…`（无 `if (rust)`）。`RustAiClient` 负责 `fetch`（超时、`redirect:'error'`、用户取消、响应大小）并把结果交给 `ai.complete`；预算由核心持有，状态栏通过最近一次应答的快照同步读取（`RustBudgetView`），限额在 `settings.apply` 之后用 `budget.configure` 下发。`RustScheduler` 自己保管定时器、中止信号和串行链，所有判断来自核心。
+未接线（有意）：`configureAI`/`chooseModel` 用的 `FAMILIES`、`EFFORT_LEVELS`、`checkEndpoint`（同步输入校验，仍读 JS 模块，1.5 前改为启动时缓存的数据）；`rt.session`/`languageState.js` 的历元与语言锁（见上）；`diagnostics.record` 仍由 JS 客户端调用。
+
+与 JS 的**有意差异**（均为提供商不会产生、且偏安全侧的输入；夹具回避，Rust 单测覆盖）：回复含重复键、嵌套超过 64 层或数字非有限 → `OUTPUT_INVALID`（JSON 解析器是严格的）；孤立代理项转义变 U+FFFD；用量不是非负整数（负数、小数、字符串、`null`/布尔）一律视为"无用量"（JS 会接受并可能让预算倒退）；`checkedAt` 只认 ISO 8601，无偏移的日期时间按 UTC；非字符串的回复文本（Chat 的 `content` 为数组）、会让 JS 解析器抛 `TypeError` 的回复（`null`、`output` 不是数组）按"无文本"处理（`OUTPUT_INVALID`，而不是未归类的异常）；端点 URL 只做常见规范化（小写主机、`//`、去默认端口、空路径为 `/`），转义/IDNA 由发送方的 URL 解析器完成；`ai.prepare` 的 `enabled`/`trusted` 必须显式给出（缺失 = `INVALID_REQUEST`，避免忘记传参而放行）。
+**发现的 JS 缺陷（按原样移植并在夹具中固定，未静默修复）**：同一请求的多个片段分别脱敏时占位符都从 `PIME_REDACTED_1` 重新编号，`restore` 以后者覆盖前者（`runInsert` 的 before/after/selected、实时补全的 before/after 都会碰到），模型回复里的占位符可能还原成另一段的原值；修复只需让编号在同一集合内续号，需同时改 JS 与夹具。`Retry-After` 头缺失时 JS 得到 `retryAfterSec: 0`（`Number(null)`），而没有头部 API 时是 `undefined`，两者冷却都是 30 s，已原样保留。
+**与设计书/计划的出入**：设计书 12.2 把"预算超限"归入 `AI_RATE_LIMIT`，JS 与本实现使用独立的 `AI_BUDGET_EXCEEDED`（设计书 12.2 的表里没有该码）；计划 5.3 的 `ai.abort` 不需要（取消与超时作为 `ai.complete` 的传输错误报告）；计划 5.3 的 `lang.state` 返回"解析结果、方言、历元"，实现返回决策与历元键，方言值仍由 `languages.resolveDialect` 在 JS 侧求值（核心尚无方言表接口）。顺带发现 `settings.rs` 的 `EFFORT_LEVELS` 少了 JS 的 `max`（`validate` 会把 `effort:"max"` 报为无效，`ai.rs` 的协商表是完整的 9 个），属于 1.3 设置迁移（P1B）的范围，本项未改。
+验证（本机，2026-10-30）：`cargo test --workspace` 293 项（开始时 220，新增 73：模块内单测，以及 `parity_ai`、`parity_annotate`、`parity_sched`、`protocol_v03_ai` 四个集成测试文件，后者含真实二进制的往返）；新增夹具 `ai-cases.json`（效果协商 348、请求构造 22、响应解析 45、HTTP 状态 120、传输错误 204、提示 18、模型输出 232、完整 `prepare→提供商→complete` 44 个场景 343 步）、`privacy-cases.json`、`annotate-cases.json`（验证 1540、回复 1449、Cypher 77、提示 83、附加指令 288）、`symbols-cases.json`、`sched-cases.json`（71 个调度场景含 60 个固定种子的随机场景，共 2503 步；会话历元/锁 4 个场景），均由 JS 生成、Rust 逐项一致；JS 侧 `tests/js/ut-engine-ai.test.js` 10 项（需要 `PIME_CORE_EXE`）用同一个记录式假提供商比较两个引擎发出的字节与结果。**UAT 未运行**（本项不得启动 VS Code），Rust 引擎下的 UAT-20/21/26..31 与 UAT-01..08/33..35 由集成者运行。

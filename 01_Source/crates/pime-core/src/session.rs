@@ -54,6 +54,15 @@ pub struct Session {
     pub broker: PermissionBroker,
     pub budget: Budget,
     pub tickets: HashMap<String, Ticket>,
+    // steps 1.2 / 1.3 (see `ops_ai.rs`)
+    /// AI requests that were prepared and are waiting for the bridge's outcome (oldest first).
+    pub ai_pending: Vec<crate::ops_ai::PendingAi>,
+    /// No AI request before this time (epoch ms): the provider rate-limited us.
+    pub ai_cooldown_until: u64,
+    /// Redaction maps (`PIME_REDACTED_n` -> original) by id; the originals never leave the core.
+    pub redactions: Vec<crate::ops_ai::RedactionSet>,
+    pub input: crate::scheduler::InputSession,
+    pub sched: crate::scheduler::Scheduler,
 }
 
 pub struct SessionStore {
@@ -133,6 +142,11 @@ impl SessionStore {
             broker: PermissionBroker::new(),
             budget: Budget::default(),
             tickets: HashMap::new(),
+            ai_pending: Vec::new(),
+            ai_cooldown_until: 0,
+            redactions: Vec::new(),
+            input: crate::scheduler::InputSession::default(),
+            sched: crate::scheduler::Scheduler::default(),
         });
         Ok(self.sessions.last_mut().expect("just pushed"))
     }

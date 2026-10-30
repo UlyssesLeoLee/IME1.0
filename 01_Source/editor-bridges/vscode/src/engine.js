@@ -8,6 +8,9 @@
 //   engine.coordinator  same methods as core/transaction.js EditCoordinator   (createPlan, prepare, apply, invalidate, purge)
 //   engine.broker       same methods as core/grants.js PermissionBroker       (+ findNow, revokeProviderPrefix)
 //   engine.snapshot / excerpt / validateSnapshot / propose / select / resultText / hunkEdits   (the F1 edit path)
+//   engine.createAi / budget / buildPrompt / parseModelResult                  (steps 1.2: request logic; the HTTP call stays here in JS)
+//   engine.privacy / annotate / symbols                                        (outbound gate, annotations, symbol index)
+//   engine.createScheduler                                                     (step 1.3: the realtime scheduling decisions)
 // Every method may return a Promise (Rust) or a plain value (JS): callers always `await`.
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -19,6 +22,12 @@ const diffMod = require('./core/diff');
 const {validateSource} = require('./core/validators');
 const {applyEdits} = require('./core/textrange');
 const {fail} = require('./core/errors');
+const aiMod = require('./core/ai');
+const secretsMod = require('./core/secrets');
+const annotateMod = require('./core/annotate');
+const symbolsMod = require('./core/symbols');
+const languagesMod = require('./core/languages');
+const {RealtimeScheduler} = require('./core/scheduler');
 
 const PROTOCOL_ANY = /^0\.[23]/;   // an optional core (js engine) may speak 0.2 or 0.3
 const PROTOCOL_RUST = /^0\.3/;     // session operations need 0.3
@@ -45,7 +54,36 @@ class JsEngine {
     this.broker = new JsBroker({store: globalState});
     this.coordinator = new EditCoordinator();
     this.fallbackAllowed = true; this.predictTimeoutMs = 0; // 0 = the CoreProcess default (100 ms)
+    this.budget = new aiMod.Budget();
+    this.privacy = {
+      assess: (text, {fileName, scope}) => {
+        const v = secretsMod.assessOutbound(text, {fileName, scope});
+        return {action: v.action, scanned: {highest: v.scanned.highest, sensitiveFile: v.scanned.sensitiveFile, blocked: v.scanned.blocked, truncated: v.scanned.truncated}, summary: secretsMod.summarize(v.scanned.findings)};
+      },
+      redactionSet: () => ({map: [], count: 0}),
+      redact: (text, set) => { const red = secretsMod.redact(text, secretsMod.scan(text, {fileName: ''}).findings); set.map.push(...red.map); set.count = set.map.length; return red.text; },
+      restore: (text, set) => set.map.length ? secretsMod.restore(text, set.map) : {text, unresolved: 0},
+      release: () => {}
+    };
+    this.annotate = {supports: profile => annotateMod.supportsAnnotation(profile), prompt: a => annotateMod.buildAnnotatePrompt(a), f1Addendum: a => annotateMod.f1Addendum(a), apply: (raw, a) => annotateMod.applyAnnotateReply(raw, a)};
+    this.symbols = {
+      extract: (profile, text, max) => symbolsMod.extractSymbols(profile, text, max),
+      // entries: [{name, isFile}] -> [{name, language}]: the files of a folder worth reading (no credential-like names, a known extension)
+      dirCandidates: (currentName, entries) => {
+        const out = [];
+        for (const {name, isFile} of entries) {
+          if (!isFile || name === currentName || secretsMod.isSensitiveFileName(name)) continue;
+          const decision = languagesMod.resolveLanguage({languageId: '', fileName: name});
+          if (decision.reason === 'extension' || decision.reason === 'bridge-languageId') out.push({name, language: decision.language});
+        }
+        return out;
+      }
+    };
   }
+  createAi({diagnostics, isEnabled, authorize}) { return new aiMod.AiClient({budget: this.budget, diagnostics, isEnabled, authorize}); }
+  buildPrompt(task, payload) { return aiMod.buildPrompt(task, payload); }
+  parseModelResult(raw, options) { return aiMod.parseModelResult(raw, options); }
+  createScheduler(options) { return new RealtimeScheduler(options); }
   available() { return true; }
   predictClient() { return this.core && !this.core.dead ? this.core : null; }
   describe() { return this.core && !this.core.dead ? 'rust' : 'js-fallback'; }
@@ -159,13 +197,159 @@ class RustBroker {
   async list() { return (await this.engine.rpc({op: 'grant.list'})).grants; }
 }
 
+// The budget lives in the core (ai.prepare reserves, ai.complete settles); the status bar and the usage message read it
+// synchronously, so this view keeps the figures of the last reply (every AI reply carries them).
+class RustBudgetView {
+  constructor(engine) {
+    this.engine = engine; this.cache = {requests: 0, tokens: 0, estimated: false, cost: null};
+    this.maxRequests = Infinity; this.maxTokens = Infinity; this.price = 0; // the limits are configured in the core by applySettings
+  }
+  _sync(snapshot) { this.cache = snapshot; }
+  snapshot() { return this.cache; }
+  reset() {
+    this.cache = {requests: 0, tokens: 0, estimated: false, cost: this.cache.cost === null ? null : 0};
+    if (this.engine.available()) this.engine.rpc({op: 'budget.reset'}).catch(() => {});
+  }
+}
+
+// AiClient over the core: ai.prepare does everything that has to happen before bytes leave (checks, authorisation, the
+// sensitivity gate, the budget reservation, effort negotiation, the request), this class sends it - the one thing the core
+// does not do - and reports the outcome to ai.complete, which maps errors, parses the reply and settles the budget.
+class RustAiClient {
+  constructor({engine, diagnostics = null, isEnabled = () => true, isTrusted = () => true, workspace, now = Date.now, fetchImpl = (...a) => fetch(...a)}) {
+    Object.assign(this, {engine, diagnostics, isEnabled, isTrusted, workspace, now, fetchImpl});
+    this.sentCount = 0; this.inFlight = 0; this.maxInFlight = 0;
+  }
+  // req: the same fields as AiClient.infer
+  async infer(req) {
+    const t0 = this.now();
+    const record = (code, extra) => this.diagnostics && this.diagnostics.record({component: 'ai', error_code: code || 'OK', elapsed_ms: this.now() - t0, request_type: req.scenario, ...extra});
+    try {
+      const w = this.workspace();
+      const prepared = await this.engine.rpc({
+        op: 'ai.prepare', enabled: !!this.isEnabled(), trusted: !!this.isTrusted(), instructions: req.instructions, input: req.input, provider_id: req.providerId, grant_scope: req.grantScope,
+        ...(typeof w === 'string' ? {workspace: w} : {workspace_uris: w.uris}), grant_id: req.grantId, allow_sensitive: !!req.allowSensitive,
+        family: req.family, endpoint: req.endpoint, key: req.key, model: req.model, max_output_tokens: req.maxOutputTokens, timeout_ms: req.timeoutMs,
+        effort: req.effort, capability: req.capability, api_version: req.apiVersion, max_tokens_param: req.maxTokensParam
+      }, EDIT_TIMEOUT_MS);
+      // own (ref'd) timer instead of AbortSignal.timeout: the deadline must hold even if nothing else keeps the loop alive
+      const deadline = new AbortController();
+      const timer = setTimeout(() => deadline.abort(Object.assign(new Error('request timed out'), {name: 'TimeoutError'})), prepared.timeout_ms);
+      const signals = [deadline.signal];
+      if (req.signal) signals.push(req.signal);
+      this.sentCount++; this.inFlight++; this.maxInFlight = Math.max(this.maxInFlight, this.inFlight);
+      let outcome;
+      try {
+        // redirect:'error' - the credential header must never follow a redirect to another host
+        const response = await this.fetchImpl(prepared.http.url, {method: 'POST', headers: prepared.http.headers, body: JSON.stringify(prepared.http.body), signal: AbortSignal.any(signals), redirect: 'error'});
+        if (!response.ok) outcome = {status: response.status, retry_after: response.headers?.get?.('retry-after')};
+        else {
+          const text = await response.text();
+          outcome = text.length > prepared.max_response_units ? {status: response.status, oversize: true} : {status: response.status, body: text};
+        }
+      } catch (e) {
+        outcome = {transport_error: {name: e && e.name ? String(e.name) : '', code: String((e && (e.code || (e.cause && e.cause.code))) || ''), user_aborted: !!(req.signal && req.signal.aborted)}};
+      } finally { this.inFlight--; clearTimeout(timer); }
+      const done = await this.engine.rpc({op: 'ai.complete', request: prepared.request, ...outcome}, EDIT_TIMEOUT_MS);
+      record('OK', {provider_id: req.providerId});
+      return {text: done.text, usage: done.usage, estimated: done.estimated, effort: done.effort, elapsedMs: done.elapsed_ms};
+    } catch (e) {
+      record(e.code || 'INTERNAL', {provider_id: req.providerId, error_detail: e.detail});
+      throw e;
+    }
+  }
+}
+
+// RealtimeScheduler whose decisions (is this input still the newest, may the request start, is the result stale, how long
+// to debounce) come from the core. The bridge keeps what only it can do: the timer, the abort signal and the chain that
+// lets one request run at a time. Replies are applied in the order of the requests (one pipe), and while the core is
+// unavailable nothing is scheduled (the AI path is optional, typing is never affected).
+class RustScheduler {
+  constructor({engine, debounceMs, timers = {setTimeout, clearTimeout}, run, onResult = () => {}, onDiscard = () => {}, isAllowed = () => true}) {
+    Object.assign(this, {engine, timers, run, onResult, onDiscard, isAllowed});
+    this.debounceMs = 350; this.timer = null; this.controller = null; this.chain = Promise.resolve();
+    this.stats = {scheduled: 0, started: 0, delivered: 0, discarded: 0, inFlight: 0, maxInFlight: 0};
+    this.wanted = debounceMs; this.configuredFor = null;
+    this._configure();
+  }
+  _ask(body) { return this.engine.rpc(body).then(r => { if (r.stats) this.stats = r.stats; return r; }, () => null); }
+  // The window lives in the core's session: it is (re)sent whenever the setting changes or the core has a new session
+  // (the scheduler is created before the core has started).
+  setDebounce(ms) { this.wanted = ms; this.configuredFor = null; this._configure(); }
+  _configure() {
+    if (!this.engine.available() || this.configuredFor === this.engine.session) return;
+    this.configuredFor = this.engine.session;
+    this._ask({op: 'sched.configure', debounce_ms: this.wanted}).then(r => { if (r) this.debounceMs = r.debounce_ms; });
+  }
+  _stop() {
+    if (this.timer) { this.timers.clearTimeout(this.timer); this.timer = null; }
+    if (this.controller) this.controller.abort();
+  }
+  // Local state is invalidated at once; the network abort is best effort (already-sent data cannot be recalled).
+  schedule(key, payload) {
+    const allowed = !!this.isAllowed(); // a synchronous gate, asked now like the reference does
+    this._configure();
+    this._ask({op: 'sched.schedule', key, allowed}).then(r => {
+      if (!r) return;
+      if (r.effects.clear_timer && this.timer) { this.timers.clearTimeout(this.timer); this.timer = null; }
+      if (r.effects.abort && this.controller) this.controller.abort();
+      if (r.effects.arm_ms !== null) {
+        this.timer = this.timers.setTimeout(() => { this.timer = null; this.chain = this.chain.then(() => this._fire(key, payload)).catch(() => {}); }, r.effects.arm_ms);
+      }
+    });
+  }
+  async _fire(key, payload) {
+    const started = await this._ask({op: 'sched.fire', key, allowed: !!this.isAllowed()});
+    if (!started || !started.start) return; // superseded while waiting for the previous request
+    const controller = this.controller = new AbortController();
+    let result, failure = null;
+    try { result = await this.run(payload, controller.signal, key); } catch (e) { failure = e || new Error('failed'); }
+    const verdict = await this._ask({op: 'sched.finish', key, ok: !failure, code: failure && failure.code ? failure.code : undefined});
+    if (!verdict) return;
+    if (verdict.action === 'deliver') this.onResult(result, key); else this.onDiscard(verdict.code, key);
+  }
+  cancel() { this._stop(); this._ask({op: 'sched.cancel'}); }
+}
+
 class RustEngine {
   constructor({globalState, onChange = () => {}}) {
     this.kind = 'rust'; this.core = null; this.session = null; this.state = 'starting'; this.reason = ''; this.onChange = onChange;
     this.broker = new RustBroker(this, globalState);
     this.coordinator = new RustCoordinator(this);
     this.fallbackAllowed = false; this.predictTimeoutMs = 2000; // no fallback: a slow answer means "no candidates this keystroke"
+    this.budget = new RustBudgetView(this);
+    this.privacy = {
+      assess: async (text, {fileName, scope}) => { const r = await this.rpc({op: 'privacy.assess', text, file_name: fileName, scope}, EDIT_TIMEOUT_MS); return {action: r.action, scanned: r.scanned, summary: r.summary}; },
+      redactionSet: () => ({id: null, count: 0}), // the originals stay in the core; a set only holds the id of its map
+      redact: async (text, set) => { const r = await this.rpc({op: 'privacy.redact', text, redaction: set.id || undefined}, EDIT_TIMEOUT_MS); set.id = r.redaction; set.count = r.total; return r.text; },
+      restore: async (text, set) => {
+        if (!set.count) return {text, unresolved: 0};
+        const r = await this.rpc({op: 'privacy.restore', text, redaction: set.id}, EDIT_TIMEOUT_MS);
+        return {text: r.text, unresolved: r.unresolved};
+      },
+      release: async set => { const id = set.id; set.id = null; set.count = 0; if (id && this.available()) await this.rpc({op: 'privacy.release', redaction: id}).catch(() => {}); }
+    };
+    this.annotate = {
+      supports: async (profile, dialect) => (await this.rpc({op: 'annotate.supports', language: profile, dialect})).supported,
+      prompt: async a => {
+        const r = await this.rpc({op: 'annotate.prompt', language: a.language, dialect: a.dialect, locale: a.locale, comment: !!a.comment, graph: !!a.graph, file_name: a.fileName, file_text: a.fileText, snippet: a.snippet, line: a.line, current_symbols: a.currentSymbols, directory_symbols: a.directorySymbols}, EDIT_TIMEOUT_MS);
+        return {instructions: r.instructions, input: r.input};
+      },
+      f1Addendum: async a => (await this.rpc({op: 'annotate.f1_addendum', task: a.task, comment: !!a.comment, graph: !!a.graph, locale: a.locale, language: a.language, dialect: a.dialect})).text,
+      apply: async (raw, a) => {
+        const r = await this.rpc({op: 'annotate.apply', raw, profile: a.profile, original: a.original, dialect: a.dialect, comment: !!a.comment, graph: !!a.graph}, EDIT_TIMEOUT_MS);
+        return r.commented === undefined ? {text: r.text, notes: r.notes} : {text: r.text, notes: r.notes, commented: r.commented, graph: r.graph};
+      }
+    };
+    this.symbols = {
+      extract: async (profile, text, max) => (await this.rpc({op: 'symbols.extract', language: profile, text, max}, EDIT_TIMEOUT_MS)).symbols,
+      dirCandidates: async (currentName, entries) => (await this.rpc({op: 'symbols.dir_candidates', current_name: currentName, entries: entries.map(e => ({name: e.name, is_file: !!e.isFile}))})).candidates
+    };
   }
+  createAi({diagnostics, isEnabled, isTrusted, workspace}) { return new RustAiClient({engine: this, diagnostics, isEnabled, isTrusted, workspace}); }
+  async buildPrompt(task, payload) { const r = await this.rpc({op: 'ai.prompt', task, payload}, EDIT_TIMEOUT_MS); return {instructions: r.instructions, input: r.input}; }
+  async parseModelResult(raw, {task = 'full', baseline = '', currentFile = ''} = {}) { return (await this.rpc({op: 'ai.parse', raw, task, baseline, current_file: currentFile}, EDIT_TIMEOUT_MS)).result; }
+  createScheduler(options) { return new RustScheduler({engine: this, ...options}); }
   available() { return this.state === 'ready' && !!this.core && !this.core.dead; }
   predictClient() { return this.available() ? this.core : null; }
   describe() { return this.available() ? 'rust' : 'unavailable'; }
@@ -202,7 +386,11 @@ class RustEngine {
   // Settings reach the core in order with every later request (one pipe), so this does not need to be awaited.
   applySettings(values, locale) {
     if (!this.available()) return;
-    this.core.request({op: 'settings.apply', session: this.session, values, locale}, {timeoutMs: START_TIMEOUT_MS}).catch(() => {});
+    // the effective budget limits go to the core's budget (0 = unlimited), in the same order on the pipe
+    this.core.request({op: 'settings.apply', session: this.session, values, locale}, {timeoutMs: START_TIMEOUT_MS}).then(r => {
+      const b = r.ok && r.settings && r.settings.budget;
+      if (b && this.available()) return this.core.request({op: 'budget.configure', session: this.session, max_requests: b.maxRequests, max_tokens: b.maxTokens, price_per_1k_tokens: b.pricePer1kTokens}, {timeoutMs: START_TIMEOUT_MS});
+    }).catch(() => {});
   }
   // One request to the core's session. A failure becomes a PimeError with the core's error code; a dead core switches
   // the IME features off (reported through onChange), a slow one only fails this request.
@@ -211,9 +399,14 @@ class RustEngine {
     let r;
     try { r = await this.core.request({...body, session: this.session}, {timeoutMs}); }
     catch { if (this.core && this.core.dead) this.noteFailure(); throw fail('IPC_TIMEOUT', 'the Programming IME core did not answer in time'); }
+    if (r.budget) this.budget._sync(r.budget); // every AI reply, failures included, carries the budget after it
     if (!r.ok) {
       if (r.error === 'CORE_UNAVAILABLE' || r.error === 'NO_SESSION') this.noteFailure(r.error === 'NO_SESSION' ? 'the core lost the session' : 'the core stopped');
-      throw fail(r.error || 'INTERNAL', r.message || r.error);
+      // an AI failure also carries the metadata of the reference error
+      const err = fail(r.error || 'INTERNAL', r.message || r.error, {retryable: r.retryable === true, userAction: r.user_action || ''});
+      if (r.retry_after_sec !== undefined) err.retryAfterSec = r.retry_after_sec;
+      if (r.detail !== undefined) err.detail = r.detail;
+      throw err;
     }
     return r;
   }

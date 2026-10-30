@@ -6,13 +6,10 @@ const vscode = require('vscode');
 const crypto = require('node:crypto');
 const {rt, L, errorText, enabled, aiEnabled, workspaceId, grantProviderId} = require('./runtime');
 const {fail, codeOf} = require('./core/errors');
-const secrets = require('./core/secrets');
-const aiMod = require('./core/ai');
 const settingsMod = require('./core/settings');
 const {F1Panel, I18N_KEYS} = require('./ui/f1panel');
 const {bundle} = require('./core/i18n');
 const lang = require('./languageState');
-const annotate = require('./core/annotate');
 const annotation = require('./annotate');
 
 const PREVIEW_SCHEME = 'pime-preview';
@@ -25,9 +22,9 @@ const short = h => h.slice(0, 12);
 const visibleEditorFor = doc => vscode.window.visibleTextEditors.find(e => e.document === doc);
 const baseName = p => String(p || '').split(/[\\/]/).pop();
 // autoComment / graphComment: the proposal is reviewed in the panel, so the settings only extend the model instructions
-function withAnnotation(prompt, task, s) {
+async function withAnnotation(prompt, task, s) {
   const w = annotation.wanted();
-  const add = annotate.f1Addendum({task, comment: w.comment, graph: w.graph, locale: rt.locale, language: s.profile, dialect: s.dialect});
+  const add = await rt.engine.annotate.f1Addendum({task, comment: w.comment, graph: w.graph, locale: rt.locale, language: s.profile, dialect: s.dialect});
   return add ? {...prompt, instructions: prompt.instructions + add} : prompt;
 }
 
@@ -189,10 +186,10 @@ async function obtainGrants(s, runnable) {
 }
 // Returns {text, map, allowSensitive, redactedCount, cancelled}
 async function sensitivityGate(s) {
-  const verdict = secrets.assessOutbound(s.snapshot.content, {fileName: s.snapshot.file_name, scope: 'f1'});
+  const verdict = await rt.engine.privacy.assess(s.snapshot.content, {fileName: s.snapshot.file_name, scope: 'f1'});
   if (verdict.action === 'allow') return {mode: 'plain'};
   if (verdict.action === 'redact') return {mode: 'redact'};
-  const kinds = Object.entries(secrets.summarize(verdict.scanned.findings)).map(([k, n]) => `${k}×${n}`).join(', ') || 'sensitive file name';
+  const kinds = Object.entries(verdict.summary).map(([k, n]) => `${k}×${n}`).join(', ') || 'sensitive file name';
   const choice = await vscode.window.showWarningMessage(L('consent.sensitive', kinds), {modal: true, detail: L('consent.risk')}, L('consent.redact'), L('consent.raw'));
   if (!choice) return {cancelled: true};
   return choice === L('consent.redact') ? {mode: 'redact'} : {mode: 'raw'};
@@ -224,29 +221,29 @@ async function generate(tabs) {
   } catch (e) { s.banner = {kind: 'error', text: L('f1.error', errorText(e))}; }
   finally { s.busy = false; render(); }
 }
-function prepareText(text, gate) {
-  if (gate.mode === 'redact') { const sc = secrets.scan(text, {fileName: ''}); const red = secrets.redact(text, sc.findings); return {text: red.text, map: red.map}; }
-  return {text, map: []};
-}
-const noteCommon = (tab, res, parsed, map) => {
+// One redaction set per request: every part of the prompt that is redacted joins it, and the model's reply is restored from
+// it. The originals stay wherever the engine keeps them (the core, with the Rust engine).
+const prepareText = async (text, gate, set) => gate.mode === 'redact' ? rt.engine.privacy.redact(text, set) : text;
+const noteCommon = (tab, res, parsed, set) => {
   if (res.effort.status !== 'omitted' && res.effort.status !== 'sent') tab.notes.push(L('f1.effort', res.effort.message));
   if (parsed.ignoredKeys.length) tab.notes.push(L('f1.ignored', parsed.ignoredKeys.slice(0, 5).join(', ')));
   if (parsed.rejectedTargets) tab.notes.push(L('f1.crossFile', parsed.rejectedTargets));
-  if (map.length) tab.notes.push(L('f1.redacted', map.length));
+  if (set.count) tab.notes.push(L('f1.redacted', set.count));
 };
 async function runFull(s, r, gate) {
   const tab = s.tabs.full, snap = s.snapshot;
   const controller = s.controllers.full = new AbortController();
+  const set = rt.engine.privacy.redactionSet();
   try {
-    const sent = prepareText(snap.content, gate);
-    const prompt = aiMod.buildPrompt('full', {task: s.intent || 'suggest safe improvements around the cursor', language: s.profile, dialect: s.dialect, fileName: baseName(snap.file_name),
-      cursorOffsetUtf16: s.offsets.start, selectionText: snap.content.slice(s.offsets.start, s.offsets.end).slice(0, 4000), currentFile: sent.text});
-    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...withAnnotation(prompt, 'full', s), signal: controller.signal, grantId: r.grantId, grantScope: 'L3', allowSensitive: gate.mode === 'raw'});
-    const parsed = aiMod.parseModelResult(res.text, {task: 'full', baseline: sent.text, currentFile: snap.file_name});
-    noteCommon(tab, res, parsed, sent.map);
+    const sentText = await prepareText(snap.content, gate, set);
+    const prompt = await rt.engine.buildPrompt('full', {task: s.intent || 'suggest safe improvements around the cursor', language: s.profile, dialect: s.dialect, fileName: baseName(snap.file_name),
+      cursorOffsetUtf16: s.offsets.start, selectionText: snap.content.slice(s.offsets.start, s.offsets.end).slice(0, 4000), currentFile: sentText});
+    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...await withAnnotation(prompt, 'full', s), signal: controller.signal, grantId: r.grantId, grantScope: 'L3', allowSensitive: gate.mode === 'raw'});
+    const parsed = await rt.engine.parseModelResult(res.text, {task: 'full', baseline: sentText, currentFile: snap.file_name});
+    noteCommon(tab, res, parsed, set);
     let proposed = parsed.proposedText;
-    if (proposed !== undefined && sent.map.length) {
-      const restored = secrets.restore(proposed, sent.map);
+    if (proposed !== undefined && set.count) {
+      const restored = await rt.engine.privacy.restore(proposed, set);
       if (restored.unresolved) throw fail('OUTPUT_INVALID', 'redaction placeholder left in the proposal');
       proposed = restored.text;
     }
@@ -260,23 +257,23 @@ async function runFull(s, r, gate) {
     tab.hunks = []; tab.selected = new Set();
     if (codeOf(e) === 'AI_CANCELLED') { tab.status = 'idle'; tab.message = errorText(e); }
     else { tab.status = 'error'; tab.message = L('f1.error', errorText(e)); }
-  } finally { if (s.controllers.full === controller) s.controllers.full = null; }
+  } finally { if (s.controllers.full === controller) s.controllers.full = null; await rt.engine.privacy.release(set); }
 }
 async function runInsert(s, r, gate) {
   const tab = s.tabs.insert, snap = s.snapshot;
   const controller = s.controllers.insert = new AbortController();
+  const set = rt.engine.privacy.redactionSet();
   try {
     const ex = await rt.engine.excerpt(snap, s.offsets.start, {before: 1800, after: 900});
-    const before = prepareText(ex.text.slice(0, ex.cursorInExcerpt), gate), after = prepareText(ex.text.slice(ex.cursorInExcerpt), gate);
-    const selected = prepareText(snap.content.slice(s.offsets.start, s.offsets.end).slice(0, 4000), gate);
-    const map = [...before.map, ...after.map, ...selected.map];
-    const prompt = aiMod.buildPrompt('insert', {task: s.intent || 'suggest code for the cursor', language: s.profile, dialect: s.dialect, fileName: baseName(snap.file_name), before: before.text, after: after.text, selectionText: selected.text});
-    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...withAnnotation(prompt, 'insert', s), signal: controller.signal, grantId: r.grantId, grantScope: 'L1', allowSensitive: gate.mode === 'raw'});
-    const parsed = aiMod.parseModelResult(res.text, {task: 'insert'});
-    noteCommon(tab, res, parsed, map);
+    const before = await prepareText(ex.text.slice(0, ex.cursorInExcerpt), gate, set), after = await prepareText(ex.text.slice(ex.cursorInExcerpt), gate, set);
+    const selected = await prepareText(snap.content.slice(s.offsets.start, s.offsets.end).slice(0, 4000), gate, set);
+    const prompt = await rt.engine.buildPrompt('insert', {task: s.intent || 'suggest code for the cursor', language: s.profile, dialect: s.dialect, fileName: baseName(snap.file_name), before, after, selectionText: selected});
+    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...await withAnnotation(prompt, 'insert', s), signal: controller.signal, grantId: r.grantId, grantScope: 'L1', allowSensitive: gate.mode === 'raw'});
+    const parsed = await rt.engine.parseModelResult(res.text, {task: 'insert'});
+    noteCommon(tab, res, parsed, set);
     const seen = new Set(), out = [];
     for (const raw of parsed.insertCandidates) {
-      const restored = map.length ? secrets.restore(raw, map) : {text: raw, unresolved: 0};
+      const restored = await rt.engine.privacy.restore(raw, set);
       if (restored.unresolved || seen.has(restored.text)) continue;
       seen.add(restored.text);
       out.push({id: 'c' + (out.length + 1), text: restored.text});
@@ -286,7 +283,7 @@ async function runInsert(s, r, gate) {
     tab.candidates = [];
     if (codeOf(e) === 'AI_CANCELLED') { tab.status = 'idle'; tab.message = errorText(e); }
     else { tab.status = 'error'; tab.message = L('f1.error', errorText(e)); }
-  } finally { if (s.controllers.insert === controller) s.controllers.insert = null; }
+  } finally { if (s.controllers.insert === controller) s.controllers.insert = null; await rt.engine.privacy.release(set); }
 }
 
 // ------------------------------------------------------------------ preview and apply

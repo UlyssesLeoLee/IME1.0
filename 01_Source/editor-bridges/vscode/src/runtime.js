@@ -2,9 +2,8 @@
 // Shared mutable runtime for the VS Code bridge (settings, session, broker, AI client, coordinator).
 // Pure logic lives in ./core; this file is the only place that wires it to the VS Code API.
 const vscode = require('vscode');
-const {InputSession, RealtimeScheduler, CoreSupervisor} = require('./core/scheduler');
+const {InputSession, CoreSupervisor} = require('./core/scheduler');
 const {createEngine} = require('./engine');
-const {AiClient, Budget} = require('./core/ai');
 const {EditCoordinator} = require('./core/transaction');
 const {Diagnostics} = require('./core/diagnostics');
 const {t, describeError, resolveLocale} = require('./core/i18n');
@@ -14,7 +13,7 @@ const settingsMod = require('./core/settings');
 const cfg = () => vscode.workspace.getConfiguration('programmingIme');
 const rt = {
   ctx: null, settings: settingsMod.effective(), locale: 'en-US', session: new InputSession(), broker: null,
-  budget: new Budget(), diagnostics: new Diagnostics(), coordinator: new EditCoordinator(), ai: null, scheduler: null, engine: null, onEngineChange: () => {},
+  budget: null, diagnostics: new Diagnostics(), coordinator: new EditCoordinator(), ai: null, scheduler: null, engine: null, onEngineChange: () => {},
   supervisor: new CoreSupervisor(), output: null, aiCache: new Map(), cfg
 };
 const L = (key, ...args) => t(rt.locale, key, ...args);
@@ -53,11 +52,11 @@ async function authorizeRequest(req) {
 function init(ctx) {
   rt.ctx = ctx;
   rt.engine = createEngine(cfg().get('engine') === 'rust' ? 'rust' : 'js', {globalState: ctx.globalState, onChange: () => rt.onEngineChange()});
-  rt.broker = rt.engine.broker; rt.coordinator = rt.engine.coordinator;
+  rt.broker = rt.engine.broker; rt.coordinator = rt.engine.coordinator; rt.budget = rt.engine.budget;
   rt.output = vscode.window.createOutputChannel('Programming IME');
   ctx.subscriptions.push(rt.output);
   rt.diagnostics.sink = line => rt.output.appendLine(line);
-  rt.ai = new AiClient({budget: rt.budget, diagnostics: rt.diagnostics, isEnabled: aiEnabled, authorize: authorizeRequest});
+  rt.ai = rt.engine.createAi({diagnostics: rt.diagnostics, isEnabled: aiEnabled, authorize: authorizeRequest, isTrusted: () => vscode.workspace.isTrusted, workspace: workspaceId});
   refreshSettings();
 }
 module.exports = {rt, cfg, L, errorText, enabled, aiEnabled, workspaceId, refreshSettings, grantProviderId, init};
