@@ -3,3 +3,6 @@
 
 # sub-agent working copies created by the harness
 .claude/worktrees/
+
+# installer build output: scripts/build-installer.js and scripts/package-vsix.js write the installer, the .vsix, the payload and the staging folder here
+01_Source/dist/

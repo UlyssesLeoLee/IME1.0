@@ -1,0 +1,54 @@
+# The Windows installer of Programming IME (milestone M5 / plan phase P5): a self-contained Rust program, no Inno Setup / WiX / NSIS.
+# Deliberately NOT a member of the main workspace: it needs `unsafe` (registry, UAC elevation, message boxes) and the `windows`
+# crate, so it has its own Cargo.lock and `[workspace]` table. `windows` stays pinned to 0.58.0 for the reason given in
+# crates/pime-tsf/Cargo.toml and docs/VERSIONS.md (0.60+ import functions with raw-dylib, which needs a binutils `dlltool` that this
+# toolchain does not have). The payload is appended to the finished exe by scripts/build-installer.js; this crate builds and tests
+# without one.
+[package]
+name = "pime-setup"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+publish = false
+# all test scripts live in 01_Source/tests (see tests/README.md)
+autotests = false
+description = "Programming IME installer: verifies and copies the payload, registers the text service, writes an exact uninstall manifest"
+
+[lib]
+name = "pime_setup"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pime-setup"
+path = "src/main.rs"
+
+[[test]]
+name = "real_fs"
+path = "../../tests/setup/real_fs.rs"
+
+[dependencies]
+# Only for the audited SHA-256 and the strict JSON parser; the core itself is not part of what this installer executes.
+pime-core = { path = "../pime-core" }
+
+[dependencies.windows]
+version = "=0.58.0"
+features = [
+  "Win32_Foundation",
+  "Win32_Globalization",
+  "Win32_Security",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Console",
+  "Win32_System_Registry",
+  "Win32_System_Threading",
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[workspace]
