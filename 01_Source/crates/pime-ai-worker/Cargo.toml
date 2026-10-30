@@ -1,0 +1,40 @@
+# The AI worker: HTTPS sending (WinHTTP/SChannel) and Windows Credential Manager access, written in Rust (plan phase P2).
+# Deliberately NOT a member of the main workspace: it needs `unsafe` (FFI), it has its own Cargo.lock, and the `windows`
+# crate is pinned to 0.58 for the same reason as in pime-tsf (0.60+ import functions with raw-dylib, which needs a real
+# binutils `dlltool`/`as` on the x86_64-pc-windows-gnu toolchain). See docs/VERSIONS.md and docs/AI_WORKER.md.
+[package]
+name = "pime-ai-worker"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "Programming IME AI worker: JSON Lines over stdio, HTTPS via WinHTTP, API keys only in Windows Credential Manager"
+
+[lib]
+name = "pime_ai_worker"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pime-ai-worker"
+path = "src/main.rs"
+
+[dependencies]
+pime-core = { path = "../pime-core" }
+
+[dependencies.windows]
+version = "=0.58.0"
+features = [
+  "Win32_Foundation",
+  "Win32_Networking_WinHttp",
+  "Win32_Security_Credentials",
+  "Win32_Security_Cryptography",
+]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[workspace]
