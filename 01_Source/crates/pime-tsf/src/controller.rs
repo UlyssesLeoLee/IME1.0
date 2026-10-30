@@ -10,6 +10,12 @@
 //!   machine see it twice;
 //! * `on_key_down` performs eaten keys, and observes keys it has not seen yet (a host that skips the test).
 //!
+//! Default behaviour (DD 5.3, UT-009): the input method never eats a code character. Typing is observed and the window
+//! shows suggestions, but Space, Enter, Tab, Esc, digits and the arrows all reach the host untouched. The user enters a
+//! composition explicitly with Ctrl+Alt+Space while candidates show (the chord is eaten only then); inside it the
+//! mainstream keys work (digits pick within the page, PageUp/PageDown, Up/Down, Shift+Tab, Tab/Enter/Space confirm, Esc
+//! cancels) and the composition ends after a commit or a cancel. `TipConfig` can switch on the always-on variants.
+//!
 //! Safety rules enforced here: Direct and Observing never eat (the machine guarantees it); nothing is eaten while the
 //! candidate window is not visible; a failure of the host (edit session refused, text not where expected) hands the
 //! keyboard back to the host until the focus moves; a panic anywhere below is contained and also ends in pass-through.
@@ -18,12 +24,11 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use pime_core::candidate::{Candidate, Validation};
 use pime_core::input::{
-    CoreFault, Effect, InputMachine, Key, KeyEvent, KeyMap, KeyOutcome, LocalPredictor,
-    PredictPort, PredictRequest, State,
+    Effect, InputMachine, Key, KeyEvent, KeyMap, KeyOutcome, LocalPredictor, PredictPort, State,
 };
 use pime_core::pack::render_plain;
 
-use crate::keymap::{Modifiers, ShiftTapDetector, breaks_context, translate};
+use crate::keymap::{Modifiers, ShiftTapDetector, breaks_context, is_compose_chord, translate};
 use crate::ui::{Anchor, CandidateRow, CandidateUi, CandidateView};
 
 /// Why a host operation did not happen.
@@ -54,15 +59,21 @@ pub trait HostText {
 }
 
 /// Product choices that change which keys are eaten while the user types code. One place, no hidden defaults.
+///
+/// The defaults are non-destructive: with `candidate_capture` and `auto_compose` both off, no key is ever eaten except
+/// Ctrl+Alt+Space while candidates show (which starts an explicit composition). The two switches turn on the
+/// always-listening mainstream behaviour, at the price that code characters get eaten while suggestions are visible
+/// (digits in `i32`, Space after `fn`).
 #[derive(Clone, Debug)]
 pub struct TipConfig {
     /// Page size, Space and punctuation paging (see `pime_core::input::KeyMap`).
     pub keymap: KeyMap,
-    /// Tab/Enter/digits/arrows/Esc act on the visible candidates (plan section 11: the explicit opt-in that makes the
-    /// input method behave like the mainstream ones; selecting this input method is the opt-in).
+    /// OFF by default. On: Tab/Enter/digits/arrows/Esc/PageUp/PageDown act on the visible candidates without an
+    /// explicit composition (plan section 11: an explicit opt-in).
     pub candidate_capture: bool,
-    /// Open a TSF composition over the typed prefix when candidates appear, so that Space confirms (mainstream
-    /// behaviour). Needs a host that grants the composition; without it candidate capture still works.
+    /// OFF by default. On: open a TSF composition over the typed prefix as soon as candidates appear, so that Space
+    /// confirms too (the Sogou behaviour). Needs a host that grants the composition; without it `candidate_capture`
+    /// still works.
     pub auto_compose: bool,
     /// Language profile of the prediction engine.
     pub language: String,
@@ -72,8 +83,8 @@ impl Default for TipConfig {
     fn default() -> TipConfig {
         TipConfig {
             keymap: KeyMap::default(),
-            candidate_capture: true,
-            auto_compose: true,
+            candidate_capture: false,
+            auto_compose: false,
             language: "rust".to_string(),
         }
     }
@@ -91,20 +102,6 @@ pub struct KeyInput {
     pub mods: Modifiers,
     /// Monotonic milliseconds (bookkeeping of the machine's watchdog).
     pub now_ms: u64,
-}
-
-/// Wraps the prediction port to remember the prefix of the last request: when candidates exist, that is exactly the
-/// text the user typed that they replace (the machine keeps no accessor for it).
-pub struct PrefixRecorder<P: PredictPort> {
-    inner: P,
-    prefix: String,
-}
-
-impl<P: PredictPort> PredictPort for PrefixRecorder<P> {
-    fn predict(&mut self, request: &PredictRequest) -> Result<Vec<Candidate>, CoreFault> {
-        self.prefix.clone_from(&request.prefix);
-        self.inner.predict(request)
-    }
 }
 
 const PREVIEW_CHARS: usize = 48;
@@ -182,7 +179,7 @@ pub fn candidate_view<P: PredictPort>(machine: &InputMachine<P>) -> Option<Candi
 }
 
 pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPredictor> {
-    machine: InputMachine<PrefixRecorder<P>>,
+    machine: InputMachine<P>,
     ui: U,
     host: H,
     config: TipConfig,
@@ -206,15 +203,8 @@ pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPred
 
 impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     pub fn new(ui: U, host: H, port: P, config: TipConfig) -> TipController<U, H, P> {
-        let machine = InputMachine::new(
-            PrefixRecorder {
-                inner: port,
-                prefix: String::new(),
-            },
-            &config.language,
-        );
         TipController {
-            machine,
+            machine: InputMachine::new(port, &config.language),
             ui,
             host,
             config,
@@ -244,10 +234,10 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     }
 
     pub fn predictor(&self) -> &P {
-        &self.machine.port().inner
+        self.machine.port()
     }
 
-    pub fn machine(&self) -> &InputMachine<PrefixRecorder<P>> {
+    pub fn machine(&self) -> &InputMachine<P> {
         &self.machine
     }
 
@@ -355,6 +345,11 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             return false;
         }
         self.refresh_secure();
+        if is_compose_chord(key.code, key.mods) && self.can_compose() {
+            // the one chord that is ours: it starts an explicit composition, and only while candidates show
+            self.seen = None;
+            return test_only || self.begin_composition();
+        }
         let Some(ev) = translate(key.code, key.ch, key.mods) else {
             self.seen = None;
             if breaks_context(key.code, key.mods) {
@@ -416,23 +411,34 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     /// they appear is deliberate: the host inserts a typed character only after the key callback returned, so the text
     /// before the caret matches the prefix only at the next key event.
     fn prepare(&mut self) {
-        if !self.config.auto_compose
-            || self.composition_refused
-            || self.machine.state() != State::Candidates
-            || self.machine.candidates().is_empty()
-        {
-            return;
+        if self.config.auto_compose && !self.composition_refused && self.can_compose() {
+            self.begin_composition();
         }
-        let typed = self.machine.port().prefix.clone();
-        match self.host.begin_composition(&typed) {
-            Ok(()) => {
-                self.host_composing = true;
-                if self.machine.begin_composition(true).is_none() {
-                    self.end_host_composition();
-                }
-            }
-            Err(_) => self.composition_refused = true,
+    }
+
+    /// Candidates are showing and nothing stops a composition over them.
+    fn can_compose(&self) -> bool {
+        !self.degraded
+            && !self.secure
+            && self.visible
+            && self.machine.state() == State::Candidates
+            && !self.machine.candidates().is_empty()
+    }
+
+    /// Open the host composition over the typed prefix and move the machine to COMPOSING. A refusal is not a failure of
+    /// the host: the candidates stay as they are and the refusal is remembered until they go.
+    fn begin_composition(&mut self) -> bool {
+        let typed = self.machine.typed_prefix().to_string();
+        if self.host.begin_composition(&typed).is_err() {
+            self.composition_refused = true;
+            return false;
         }
+        self.host_composing = true;
+        if self.machine.begin_composition(true).is_none() {
+            self.end_host_composition();
+            return false;
+        }
+        true
     }
 
     fn refresh_secure(&mut self) {
@@ -452,11 +458,11 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             match effect {
                 Effect::ShowCandidates | Effect::SelectionMoved(_) => self.show_view(),
                 Effect::HideCandidates => self.hide(),
-                // the host side was opened by `prepare` before the machine moved to COMPOSING
+                // the host side was opened by `begin_composition` before the machine moved to COMPOSING
                 Effect::BeginComposition | Effect::ModeChanged { .. } => {}
                 Effect::EndComposition => self.end_host_composition(),
                 Effect::Commit { text, .. } => {
-                    let typed = self.machine.port().prefix.clone();
+                    let typed = self.machine.typed_prefix().to_string();
                     written &= self.host.commit(&typed, &render_plain(&text, "")).is_ok();
                 }
             }
@@ -494,7 +500,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     /// Invariants that must hold when control returns to the host.
     fn settle(&mut self) {
         if self.visible && self.machine.candidates().is_empty() {
-            // e.g. a failing predictor: the machine clears the list before asking, so its failure reports no HIDE
+            // the window never outlives the list it shows (belt and braces on top of the machine's HIDE effects)
             self.hide();
         }
         if self.machine.state() == State::Composing && self.machine.candidates().is_empty() {
@@ -548,6 +554,7 @@ mod tests {
     use crate::keymap::vk;
     use crate::ui::RecordingUi;
     use pime_core::candidate::CandidateSource;
+    use pime_core::input::{CoreFault, PredictRequest};
 
     const ANCHOR: Anchor = Anchor {
         x: 100,
@@ -687,6 +694,14 @@ mod tests {
         }
     }
 
+    fn sogou() -> TipConfig {
+        TipConfig {
+            candidate_capture: true,
+            auto_compose: true,
+            ..TipConfig::default()
+        }
+    }
+
     impl Rig {
         fn with(config: TipConfig) -> Rig {
             let host = FakeHost {
@@ -703,8 +718,24 @@ mod tests {
             Rig { ctl, t: 0 }
         }
 
+        /// The always-listening Sogou-style configuration (both switches on).
         fn new() -> Rig {
+            Rig::with(sogou())
+        }
+
+        /// The shipped defaults.
+        fn defaults() -> Rig {
             Rig::with(TipConfig::default())
+        }
+
+        /// The Ctrl+Alt+Space chord; returns whether it was eaten.
+        fn chord(&mut self, style: Host) -> bool {
+            let mods = Modifiers {
+                ctrl: true,
+                alt: true,
+                ..NONE
+            };
+            self.press(vk::SPACE, None, mods, style)
         }
 
         /// The host's own behaviour for a key the sink did not eat.
@@ -945,12 +976,7 @@ mod tests {
 
     #[test]
     fn with_capture_off_and_no_composition_nothing_is_ever_eaten() {
-        let config = TipConfig {
-            candidate_capture: false,
-            auto_compose: false,
-            ..TipConfig::default()
-        };
-        let mut rig = Rig::with(config);
+        let mut rig = Rig::defaults();
         rig.type_text("fn", Host::Contract);
         assert!(rig.ctl.ui().visible, "the window still shows");
         for code in [vk::TAB, vk::RETURN, vk::ESCAPE, vk::NEXT, vk::DOWN] {
@@ -1034,14 +1060,27 @@ mod tests {
                 (0x43, Some('\u{3}'), ctrl),
                 (vk::TAB, None, ctrl),
                 (0x70, None, NONE),
+                (
+                    vk::SPACE,
+                    None,
+                    Modifiers {
+                        ctrl: true,
+                        alt: true,
+                        ..NONE
+                    },
+                ),
             ];
             keys.extend("0123456789".chars().map(|d| (code_of(d), Some(d), NONE)));
             keys
         };
         type Setup = fn(&mut Rig);
-        let setups: [(&str, Setup); 8] = [
+        let setups: [(&str, Setup); 9] = [
             ("idle", |_| {}),
             ("candidates", |r| r.type_text("fn", Host::Contract)),
+            ("explicit composition", |r| {
+                r.type_text("fn", Host::Contract);
+                r.chord(Host::Contract);
+            }),
             ("second page", |r| {
                 r.type_text("fn", Host::Contract);
                 r.plain(vk::NEXT);
@@ -1061,42 +1100,206 @@ mod tests {
             }),
             ("degraded", |r| {
                 r.type_text("fn", Host::Contract);
-                r.ctl.host_mut().fail_commit = true;
-                r.digit('1');
+                r.ctl.degrade();
             }),
         ];
-        for (name, setup) in setups {
-            for &(code, ch, mods) in &keys {
-                let mut a = Rig::new();
-                setup(&mut a);
-                let mut b = Rig::new();
-                setup(&mut b);
-                let key = input(code, ch, mods, a.t + 1);
-                let test = a.ctl.on_test_key_down(key);
-                let down_after_test = test && a.ctl.on_key_down(key);
-                let down_alone = b.ctl.on_key_down(key);
-                assert_eq!(
-                    test, down_alone,
-                    "{name}: {code:#x} {mods:?}: test vs down alone"
-                );
-                assert_eq!(
-                    test, down_after_test,
-                    "{name}: {code:#x} {mods:?}: test vs down"
-                );
-                // and the observable result is the same whichever way the host asked
-                assert_eq!(a.ctl.host().doc, b.ctl.host().doc, "{name}: {code:#x}");
-                assert_eq!(
-                    a.ctl.host().commits,
-                    b.ctl.host().commits,
-                    "{name}: {code:#x}"
-                );
-                assert_eq!(
-                    a.ctl.machine().candidates().len(),
-                    b.ctl.machine().candidates().len(),
-                    "{name}: {code:#x}"
-                );
+        // the shipped defaults and the always-listening configuration
+        for config in [TipConfig::default(), sogou()] {
+            for (name, setup) in setups {
+                for &(code, ch, mods) in &keys {
+                    if name == "refused composition" && is_compose_chord(code, mods) {
+                        // the one intended disagreement besides a failed commit: the test cannot know whether the host
+                        // will grant the composition, so the chord is eaten there and handed back by OnKeyDown
+                        // (own test: the_chord_is_the_hosts_whenever_a_composition_is_impossible)
+                        continue;
+                    }
+                    let mut a = Rig::with(config.clone());
+                    setup(&mut a);
+                    let mut b = Rig::with(config.clone());
+                    setup(&mut b);
+                    let key = input(code, ch, mods, a.t + 1);
+                    let test = a.ctl.on_test_key_down(key);
+                    let down_after_test = test && a.ctl.on_key_down(key);
+                    let down_alone = b.ctl.on_key_down(key);
+                    let what = format!(
+                        "{name} (capture {}): {code:#x} {mods:?}",
+                        config.candidate_capture
+                    );
+                    assert_eq!(test, down_alone, "{what}: test vs down alone");
+                    assert_eq!(test, down_after_test, "{what}: test vs down");
+                    // and the observable result is the same whichever way the host asked
+                    assert_eq!(a.ctl.host().doc, b.ctl.host().doc, "{what}");
+                    assert_eq!(a.ctl.host().commits, b.ctl.host().commits, "{what}");
+                    assert_eq!(a.ctl.host().composing, b.ctl.host().composing, "{what}");
+                    assert_eq!(
+                        a.ctl.machine().candidates().len(),
+                        b.ctl.machine().candidates().len(),
+                        "{what}"
+                    );
+                }
             }
         }
+    }
+
+    #[test]
+    fn ctrl_alt_space_with_candidates_starts_an_explicit_composition() {
+        for style in [Host::Contract, Host::Always, Host::DownOnly] {
+            let mut rig = Rig::defaults();
+            rig.type_text("fn", style);
+            assert!(rig.ctl.ui().visible);
+            assert_eq!(rig.ctl.machine().state(), State::Candidates);
+            assert!(
+                rig.chord(style),
+                "{style:?}: the chord is eaten while candidates show"
+            );
+            assert_eq!(rig.ctl.machine().state(), State::Composing);
+            assert!(rig.ctl.host().composing);
+            assert_eq!(rig.ctl.host().begins, 1, "{style:?}: opened exactly once");
+            assert!(rig.ctl.ui().visible, "the window stays");
+            assert_eq!(rig.ctl.host().doc, "fn", "the chord wrote nothing");
+            assert!(rig.ctl.host().commits.is_empty());
+        }
+    }
+
+    #[test]
+    fn inside_the_explicit_composition_the_mainstream_keys_work() {
+        let enter = || {
+            let mut rig = Rig::defaults();
+            rig.type_text("fn", Host::Contract);
+            assert!(rig.chord(Host::Contract));
+            rig
+        };
+        // digits pick within the current page, and the composition ends with the commit
+        let mut rig = enter();
+        assert!(rig.plain(vk::NEXT), "PageDown");
+        assert_eq!(rig.view().page, 1);
+        assert!(rig.digit('2'));
+        assert_eq!(
+            rig.ctl.host().commits,
+            vec![("fn".to_string(), "T6:fn".to_string())],
+            "digit 2 on page 2 is the seventh candidate"
+        );
+        assert_eq!(rig.ctl.host().doc, "T6:fn");
+        assert!(!rig.ctl.host().composing && !rig.ctl.ui().visible);
+        assert_eq!(rig.ctl.machine().state(), State::Observing);
+        assert!(!rig.digit('2'), "and the next digit is typed again");
+        // paging and moving the highlight write nothing and keep the composition open
+        let mut rig = enter();
+        assert!(rig.plain(vk::NEXT));
+        assert_eq!(rig.view().page, 1);
+        assert!(rig.plain(vk::PRIOR));
+        assert_eq!(rig.view().page, 0);
+        assert!(rig.plain(vk::DOWN));
+        assert_eq!(rig.view().selected_in_page, 1);
+        assert!(rig.press(
+            vk::TAB,
+            None,
+            Modifiers {
+                shift: true,
+                ..NONE
+            },
+            Host::Contract
+        ));
+        assert_eq!(rig.view().selected_in_page, 0, "Shift+Tab goes back");
+        assert!(rig.plain(vk::UP));
+        assert!(rig.ctl.host().commits.is_empty() && rig.ctl.host().composing);
+        // Tab, Enter and Space confirm the highlighted candidate
+        for (code, name) in [
+            (vk::TAB, "Tab"),
+            (vk::RETURN, "Enter"),
+            (vk::SPACE, "Space"),
+        ] {
+            let mut rig = enter();
+            assert!(rig.press(code, Some(' '), NONE, Host::Contract), "{name}");
+            assert_eq!(rig.ctl.host().doc, "T0:fn", "{name}");
+            assert_eq!(rig.ctl.host().commits.len(), 1, "{name}");
+            assert!(!rig.ctl.host().composing, "{name}: the composition ended");
+        }
+        // Esc cancels and writes nothing
+        let mut rig = enter();
+        assert!(rig.plain(vk::ESCAPE));
+        assert_eq!(rig.ctl.host().doc, "fn");
+        assert!(rig.ctl.host().commits.is_empty());
+        assert!(!rig.ctl.host().composing && !rig.ctl.ui().visible);
+        // candidates vanishing (the user typed `(`) end the composition too
+        let mut rig = enter();
+        rig.type_text("(", Host::Contract);
+        assert!(!rig.ctl.host().composing);
+        assert_ne!(rig.ctl.machine().state(), State::Composing);
+    }
+
+    #[test]
+    fn ctrl_alt_space_without_candidates_passes_to_the_host() {
+        let mut rig = Rig::defaults();
+        assert!(!rig.chord(Host::Contract), "nothing is showing yet");
+        rig.type_text("zz", Host::Contract); // no candidates for this prefix
+        assert!(!rig.ctl.ui().visible);
+        assert!(!rig.chord(Host::Contract));
+        rig.type_text("fn(", Host::Contract); // candidates came and went
+        assert!(!rig.ctl.ui().visible);
+        assert!(!rig.chord(Host::Contract));
+        assert_eq!(rig.ctl.host().begins, 0);
+        assert!(!rig.ctl.host().composing);
+    }
+
+    #[test]
+    fn the_chord_is_the_hosts_whenever_a_composition_is_impossible() {
+        // already composing
+        let mut rig = Rig::defaults();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.chord(Host::Contract));
+        assert!(!rig.chord(Host::Contract), "a second chord is not ours");
+        assert_eq!(rig.ctl.host().begins, 1);
+        // the host refuses the composition: the key goes through and nothing else changes
+        let mut rig = Rig::defaults();
+        rig.ctl.host_mut().fail_begin = true;
+        rig.type_text("fn", Host::Contract);
+        assert!(!rig.chord(Host::Contract));
+        assert_eq!(rig.ctl.host().begins, 1);
+        assert!(
+            !rig.ctl.is_degraded(),
+            "a refused composition is not a host failure"
+        );
+        assert_eq!(rig.ctl.machine().state(), State::Candidates);
+        assert!(rig.ctl.ui().visible, "the suggestions stay");
+        assert!(!rig.digit('1'), "and digits are still typed");
+        // a secure field and a paused input method
+        let mut rig = Rig::defaults();
+        rig.ctl.host_mut().secure = true;
+        rig.type_text("fn", Host::Contract);
+        assert!(!rig.chord(Host::Contract));
+        assert_eq!(rig.ctl.host().begins, 0);
+        let mut rig = Rig::defaults();
+        rig.type_text("fn", Host::Contract);
+        rig.press(vk::SHIFT, None, NONE, Host::Contract);
+        assert!(rig.ctl.is_paused());
+        assert!(!rig.chord(Host::Contract));
+        assert_eq!(rig.ctl.host().begins, 0);
+    }
+
+    #[test]
+    fn after_esc_the_next_typed_characters_pass_through_again() {
+        let mut rig = Rig::defaults();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.chord(Host::Contract));
+        assert!(rig.plain(vk::ESCAPE), "Esc cancels the composition");
+        assert!(!rig.ctl.host().composing);
+        assert_ne!(rig.ctl.machine().state(), State::Composing);
+        rig.type_text("x1 y2", Host::Contract); // digits and Space included
+        assert!(!rig.plain(vk::ESCAPE), "Esc is the editor's again");
+        assert_eq!(rig.ctl.host().doc, "fnx1 y2");
+        assert!(rig.ctl.host().commits.is_empty());
+    }
+
+    #[test]
+    fn a_commit_that_fails_inside_the_explicit_composition_degrades_like_any_other() {
+        let mut rig = Rig::defaults();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.chord(Host::Contract));
+        rig.ctl.host_mut().fail_commit = true;
+        assert!(!rig.digit('1'), "the key goes to the host");
+        assert!(rig.ctl.is_degraded());
+        assert!(!rig.ctl.host().composing && !rig.ctl.ui().visible);
     }
 
     #[test]
@@ -1437,12 +1640,12 @@ mod tests {
     }
 
     #[test]
-    fn the_recorded_prefix_is_what_the_machine_asked_the_engine_about() {
+    fn the_typed_prefix_is_what_the_machine_asked_the_engine_about() {
         // the machine's rule: the trailing run of ASCII letters, digits, '_', '$' and '#' (at most 64)
         for (typed, prefix) in [("q(foo_bar", "foo_bar"), ("x.y$b#", "y$b#"), ("a-b", "b")] {
             let mut rig = Rig::new();
             rig.type_text(typed, Host::Contract);
-            assert_eq!(rig.ctl.machine().port().prefix, prefix, "{typed}");
+            assert_eq!(rig.ctl.machine().typed_prefix(), prefix, "{typed}");
             assert_eq!(
                 rig.ctl.predictor().calls.last().map(String::as_str),
                 Some(prefix)
@@ -1461,15 +1664,54 @@ mod tests {
     }
 
     #[test]
-    fn the_config_defaults_are_the_documented_product_choices() {
+    fn the_config_defaults_never_eat_code_characters() {
         let c = TipConfig::default();
-        assert!(c.candidate_capture && c.auto_compose);
+        assert!(
+            !c.candidate_capture && !c.auto_compose,
+            "non-destructive by default (DD 5.3, UT-009)"
+        );
         assert_eq!(c.keymap, KeyMap::default());
         assert_eq!(c.language, "rust");
     }
 
+    /// Every character of ordinary code, typed with the shipped defaults, reaches the host and nothing is committed,
+    /// although the window shows suggestions the whole time.
     #[test]
-    fn the_production_predictor_drives_the_controller_end_to_end() {
+    fn typing_code_with_the_defaults_eats_and_commits_nothing() {
+        for style in [Host::Contract, Host::Always, Host::DownOnly] {
+            for script in [
+                "fn main",
+                "i32",
+                "x - 1",
+                "a.b",
+                "vec2",
+                "let y = x1 + 2;\n",
+            ] {
+                let mut rig = Rig::defaults();
+                let mut shown = false;
+                for c in script.chars() {
+                    let (code, ch) = if c == '\n' {
+                        (vk::RETURN, None)
+                    } else {
+                        (code_of(c), Some(c))
+                    };
+                    assert!(
+                        !rig.press(code, ch, NONE, style),
+                        "{style:?} {script:?}: {c:?} was eaten"
+                    );
+                    shown |= rig.ctl.ui().visible;
+                }
+                assert_eq!(rig.ctl.host().doc, script, "the host got every character");
+                assert!(rig.ctl.host().commits.is_empty(), "{script:?}");
+                assert_eq!(rig.ctl.host().begins, 0, "{script:?}: no composition");
+                assert_eq!(rig.ctl.machine().stats.commits, 0, "{script:?}");
+                assert!(shown, "{script:?}: observation is on, suggestions show");
+            }
+        }
+    }
+
+    #[test]
+    fn the_real_engine_suggests_without_taking_a_key_under_the_defaults() {
         let host = FakeHost {
             anchor: Some(ANCHOR),
             ..FakeHost::default()
@@ -1480,6 +1722,33 @@ mod tests {
             LocalPredictor,
             TipConfig::default(),
         );
+        ctl.activate(false);
+        let mut t = 0;
+        let mut type_key =
+            |ctl: &mut TipController<RecordingUi, FakeHost>, code, ch: Option<char>| {
+                t += 1;
+                let key = input(code, ch, NONE, t);
+                assert!(!ctl.on_test_key_down(key), "{ch:?}");
+                ctl.host_mut().doc.extend(ch);
+            };
+        for c in "fn".chars() {
+            type_key(&mut ctl, code_of(c), Some(c));
+        }
+        assert!(ctl.ui().visible, "suggestions for `fn`");
+        for (code, ch) in [(vk::SPACE, Some(' ')), (code_of('m'), Some('m'))] {
+            type_key(&mut ctl, code, ch);
+        }
+        assert_eq!(ctl.host().doc, "fn m");
+        assert_eq!(ctl.machine().stats.commits, 0);
+    }
+
+    #[test]
+    fn the_production_predictor_drives_the_controller_end_to_end() {
+        let host = FakeHost {
+            anchor: Some(ANCHOR),
+            ..FakeHost::default()
+        };
+        let mut ctl = TipController::new(RecordingUi::default(), host, LocalPredictor, sogou());
         ctl.activate(false);
         for (i, c) in "fnm".chars().enumerate() {
             let key = input(code_of(c), Some(c), NONE, i as u64);

@@ -113,6 +113,12 @@ pub fn translate(code: u32, ch: Option<char>, mods: Modifiers) -> Option<KeyEven
     })
 }
 
+/// Ctrl+Alt+Space: the explicit "take these candidates" gesture (the same chord the VS Code bridge uses to show
+/// candidates). It is the only chord the input method may claim, and only while candidates are showing.
+pub fn is_compose_chord(code: u32, mods: Modifiers) -> bool {
+    code == vk::SPACE && mods.ctrl && mods.alt && !mods.shift && !mods.win
+}
+
 /// True for a key that moves the caret or edits the text behind the machine's back, so that what it observed (the typed
 /// prefix, the candidates) no longer describes the document: navigation keys, Delete, Tab and every Ctrl/Alt/Win chord
 /// (paste, undo, AltGr characters as well: losing a prefix is cheap, offering a stale candidate is not).
@@ -339,6 +345,35 @@ mod tests {
             None,
             "dead key: no character, no identity"
         );
+    }
+
+    #[test]
+    fn only_ctrl_alt_space_is_the_compose_chord() {
+        let both = Modifiers {
+            ctrl: true,
+            alt: true,
+            ..NONE
+        };
+        assert!(is_compose_chord(vk::SPACE, both));
+        assert!(
+            !is_compose_chord(vk::SPACE, NONE),
+            "plain Space is a character"
+        );
+        assert!(!is_compose_chord(vk::SPACE, CTRL));
+        assert!(!is_compose_chord(vk::SPACE, ALT));
+        assert!(!is_compose_chord(
+            vk::SPACE,
+            Modifiers {
+                shift: true,
+                ..both
+            }
+        ));
+        assert!(!is_compose_chord(
+            vk::SPACE,
+            Modifiers { win: true, ..both }
+        ));
+        assert!(!is_compose_chord(vk::RETURN, both));
+        assert!(!is_compose_chord(0x41, both));
     }
 
     #[test]

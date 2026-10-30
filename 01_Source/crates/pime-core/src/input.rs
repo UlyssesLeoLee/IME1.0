@@ -247,6 +247,13 @@ impl<P: PredictPort> InputMachine<P> {
         &self.context
     }
 
+    /// The identifier-like run the user just typed (the text a candidate replaces); empty when there is none. It is
+    /// exactly the prefix the last prediction was asked about, and stays readable while the effects of an accepted
+    /// candidate are performed (accepting does not clear the context).
+    pub fn typed_prefix(&self) -> &str {
+        prefix_split(&self.context).1
+    }
+
     pub fn candidates(&self) -> &[Candidate] {
         &self.candidates
     }
@@ -640,7 +647,14 @@ impl<P: PredictPort> InputMachine<P> {
             match result {
                 Ok(Ok(list)) => self.candidates = list,
                 // an error, a timeout or a panicking worker never reaches the host thread
-                Ok(Err(_)) | Err(_) => return self.report_core_failure(now_ms),
+                Ok(Err(_)) | Err(_) => {
+                    // the list was cleared above, so the failure report cannot see that a window is still showing it
+                    let mut effects = self.report_core_failure(now_ms);
+                    if had && !effects.contains(&Effect::HideCandidates) {
+                        effects.push(Effect::HideCandidates);
+                    }
+                    return effects;
+                }
             }
         }
         let mut effects = Vec::new();
@@ -750,7 +764,8 @@ mod tests {
     #[derive(Default)]
     struct Spy {
         calls: usize,
-        mode: u8, // 0 ok, 1 timeout, 2 disconnected, 3 panic, 4 twelve candidates, 5 mixed selectability
+        mode: u8, // 0 ok, 1 timeout, 2 disconnected, 3 panic, 4 twelve candidates, 5 mixed selectability,
+                  // 6 ok for a one-character prefix and a timeout for a longer one
     }
 
     impl PredictPort for Spy {
@@ -763,6 +778,7 @@ mod tests {
                 1 => Err(CoreFault::Timeout),
                 2 => Err(CoreFault::Disconnected),
                 3 => panic!("worker panicked (test)"),
+                6 if r.prefix.chars().count() > 1 => Err(CoreFault::Timeout),
                 4 => Ok((0..12)
                     .map(|i| {
                         let mut c = Candidate::new(&format!("c{i}"));
@@ -1092,6 +1108,94 @@ mod tests {
             m.on_key(KeyEvent::plain(Key::Tab), 60).outcome,
             KeyOutcome::PassThrough
         );
+    }
+
+    #[test]
+    fn ut_064_a_failure_while_candidates_show_hides_the_window() {
+        let mut m = InputMachine::new(Spy { calls: 0, mode: 6 }, "rust");
+        m.grant_observation(true);
+        let shown = m.on_key(KeyEvent::ch('a'), 0);
+        assert_eq!(shown.effects, vec![Effect::ShowCandidates]);
+        let failed = m.on_key(KeyEvent::ch('b'), 1);
+        assert_eq!(failed.outcome, KeyOutcome::PassThrough);
+        assert_eq!(m.state(), State::FaultFallback);
+        assert_eq!(
+            failed.effects,
+            vec![Effect::HideCandidates],
+            "the window that showed the old list must go"
+        );
+        // composing: the owned composition ends too, and the window still goes
+        let mut m = InputMachine::new(Spy { calls: 0, mode: 6 }, "rust");
+        m.grant_observation(true);
+        m.on_key(KeyEvent::ch('a'), 0);
+        m.begin_composition(true).unwrap();
+        let failed = m.on_key(KeyEvent::ch('b'), 1);
+        assert!(failed.effects.contains(&Effect::EndComposition));
+        assert!(failed.effects.contains(&Effect::HideCandidates));
+        assert_eq!(
+            failed
+                .effects
+                .iter()
+                .filter(|e| **e == Effect::HideCandidates)
+                .count(),
+            1
+        );
+        // nothing was showing: nothing to hide
+        let mut m = InputMachine::new(Spy { calls: 0, mode: 1 }, "rust");
+        m.grant_observation(true);
+        assert!(m.on_key(KeyEvent::ch('f'), 0).effects.is_empty());
+    }
+
+    #[test]
+    fn key_13_typed_prefix_is_what_the_last_prediction_was_asked_about() {
+        for (typed, prefix) in [
+            ("q(foo_bar", "foo_bar"),
+            ("x.y$b#", "y$b#"),
+            ("a-b", "b"),
+            ("fn ", ""),
+            ("", ""),
+        ] {
+            let mut m = machine();
+            m.grant_observation(true);
+            for c in typed.chars() {
+                m.on_key(KeyEvent::ch(c), 0);
+            }
+            assert_eq!(m.typed_prefix(), prefix, "{typed:?}");
+            if !prefix.is_empty() {
+                // the spy's first candidate echoes the prefix it was asked about
+                assert_eq!(
+                    m.candidates()[0].text.as_deref(),
+                    Some(format!("{prefix}!").as_str())
+                );
+            }
+        }
+        let mut m = machine();
+        m.grant_observation(true);
+        for _ in 0..70 {
+            m.on_key(KeyEvent::ch('a'), 0);
+        }
+        assert_eq!(m.typed_prefix().len(), MAX_PREFIX_CHARS);
+    }
+
+    #[test]
+    fn key_13_typed_prefix_survives_accepting_a_candidate_and_goes_with_the_context() {
+        let mut m = machine();
+        m.grant_observation(true);
+        m.set_candidate_capture(true);
+        type_text(&mut m, "fn", 0);
+        let step = m.on_key(KeyEvent::plain(Key::Tab), 1);
+        assert!(
+            step.effects
+                .iter()
+                .any(|e| matches!(e, Effect::Commit { .. }))
+        );
+        assert_eq!(
+            m.typed_prefix(),
+            "fn",
+            "the adapter replaces exactly this text while performing the commit"
+        );
+        m.set_secure_context(true);
+        assert_eq!(m.typed_prefix(), "", "cleared with the context");
     }
 
     #[test]
