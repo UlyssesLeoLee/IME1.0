@@ -14,7 +14,7 @@ use crate::ops::{OpError, OpResult, need_str};
 use crate::session::Session;
 use crate::settings::{self, Issue};
 use crate::settings_migrate as migration;
-use crate::uimodel::{self, Environment, Rect};
+use crate::uimodel::{self, Environment, Rect, Status};
 
 /// Operations of step 1.3 (the older 0.3 operations are in `ops::OPS` and `ops_ai::OPS`).
 pub const OPS: &[&str] = &[
@@ -34,6 +34,8 @@ pub const OPS: &[&str] = &[
     "ui.candidate_rows",
     "ui.place_overlay",
     "ui.check_env",
+    "ui.status_model",
+    "ui.menu_model",
 ];
 
 /// Operations that carry a settings file or rule packs and may use a long request line.
@@ -52,6 +54,13 @@ fn opt_str<'a>(req: &'a Json, key: &str) -> Result<Option<&'a str>, OpError> {
         None | Some(Json::Null) => Ok(None),
         Some(Json::Str(s)) => Ok(Some(s)),
         Some(_) => Err(OpError::invalid(key)),
+    }
+}
+
+fn need_bool(req: &Json, key: &str) -> Result<bool, OpError> {
+    match req.get(key) {
+        Some(Json::Bool(b)) => Ok(*b),
+        _ => Err(OpError::invalid(key)),
     }
 }
 
@@ -271,6 +280,53 @@ fn check_env(req: &Json) -> OpResult {
     ])
 }
 
+/// An optional object field (`null` and absent are `None`); `strings` names the members that must be strings if present.
+fn opt_object<'a>(req: &'a Json, key: &str, strings: &[&str]) -> Result<Option<&'a Json>, OpError> {
+    match req.get(key) {
+        None | Some(Json::Null) => Ok(None),
+        Some(o @ Json::Obj(_)) => {
+            for member in strings {
+                if o.get(member).is_some_and(|v| !matches!(v, Json::Str(_))) {
+                    return Err(OpError::invalid(&format!("{key}.{member}")));
+                }
+            }
+            Ok(Some(o))
+        }
+        Some(_) => Err(OpError::invalid(key)),
+    }
+}
+
+fn status_model(session: &Session, req: &Json) -> OpResult {
+    let info = opt_object(req, "info", &["language"])?;
+    if info.is_some_and(|i| i.get("language").is_none()) {
+        return Err(OpError::invalid("info.language"));
+    }
+    let scenario = opt_object(req, "scenario", &["model", "effort"])?;
+    let budget = match req.get("budget") {
+        Some(b @ Json::Obj(_)) => {
+            num(b.get("requests"), "budget.requests")?;
+            num(b.get("tokens"), "budget.tokens")?;
+            b
+        }
+        _ => return Err(OpError::invalid("budget")),
+    };
+    let model = uimodel::status_model(
+        locale_of(session, req)?,
+        &Status {
+            core_down: need_bool(req, "core_down")?,
+            reason: opt_str(req, "reason")?.unwrap_or(""),
+            enabled: need_bool(req, "enabled")?,
+            info,
+            session_language: need_str(req, "session_language")?,
+            paused: need_bool(req, "paused")?,
+            ai_enabled: need_bool(req, "ai_enabled")?,
+            scenario,
+            budget,
+        },
+    );
+    Ok(vec![("model", model)])
+}
+
 fn ui_text(session: &Session, req: &Json) -> OpResult {
     let locale = locale_of(session, req)?;
     let args = match req.get("args") {
@@ -362,6 +418,15 @@ pub fn run(session: &mut Session, now: u64, op: &str, req: &Json) -> OpResult {
         "ui.candidate_rows" => candidate_rows(session, req),
         "ui.place_overlay" => place_overlay(req),
         "ui.check_env" => check_env(req),
+        "ui.status_model" => status_model(session, req),
+        "ui.menu_model" => Ok(vec![(
+            "model",
+            uimodel::menu_model(
+                locale_of(session, req)?,
+                need_bool(req, "paused")?,
+                need_bool(req, "ai_enabled")?,
+            ),
+        )]),
         _ => Err(OpError::coded("UNKNOWN_OPERATION", op)),
     }
 }

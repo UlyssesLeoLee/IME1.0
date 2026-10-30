@@ -574,3 +574,68 @@ fn the_real_binary_serves_settings_diagnostics_and_texts() {
     assert!(out.status.success());
     assert!(out.stderr.is_empty(), "the core writes nothing to stderr");
 }
+
+#[test]
+fn the_status_bar_and_the_menu_are_rendered_from_the_state() {
+    let mut h = Harness::open();
+    let r = h.call(
+        r#"{"op":"ui.status_model","core_down":false,"enabled":true,"session_language":"typescript","paused":false,"ai_enabled":true,
+            "info":{"language":"c","locked":true,"uncertain":true,"suggestion":"cpp"},"scenario":{"model":"gpt-x","effort":"max"},
+            "budget":{"requests":12,"tokens":3456,"estimated":true}}"#,
+    );
+    let m = field(&r, "model");
+    assert_eq!(s(field(m, "lang"), "text"), "$(code) PIME c $(lock) ?");
+    assert_eq!(
+        s(field(m, "lang"), "tooltip"),
+        "Detected cpp (uncertain) - keeping c"
+    );
+    assert_eq!(s(field(m, "ai"), "text"), "$(sparkle) AI on");
+    assert_eq!(
+        s(field(m, "ai"), "tooltip"),
+        "Programming IME menu: language, pause, AI, usage, permissions, diagnostics\ngpt-x · effort max\nAI usage: 12 requests, ~3456 tokens (estimated)"
+    );
+    // the core being down is said in the language item, with the reason
+    let r = h.call(
+        r#"{"op":"ui.status_model","locale":"zh-CN","core_down":true,"reason":"the core process ended","enabled":false,"session_language":"rust","paused":true,"ai_enabled":false,
+            "budget":{"requests":0,"tokens":0,"estimated":false}}"#,
+    );
+    let m = field(&r, "model");
+    assert_eq!(s(field(m, "lang"), "text"), "$(error) PIME 核心不可用");
+    assert!(s(field(m, "lang"), "tooltip").contains("the core process ended"));
+    assert_eq!(s(field(m, "ai"), "text"), "$(sparkle) AI 关闭");
+    for bad in [
+        r#"{"op":"ui.status_model"}"#,
+        r#"{"op":"ui.status_model","core_down":false,"enabled":true,"session_language":"c","paused":false,"ai_enabled":true}"#,
+        r#"{"op":"ui.status_model","core_down":false,"enabled":true,"session_language":"c","paused":false,"ai_enabled":true,"budget":{"requests":1}}"#,
+        r#"{"op":"ui.status_model","core_down":false,"enabled":true,"session_language":"c","paused":false,"ai_enabled":true,"budget":{"requests":1,"tokens":2},"info":{"locked":true}}"#,
+        r#"{"op":"ui.status_model","core_down":"no","enabled":true,"session_language":"c","paused":false,"ai_enabled":true,"budget":{"requests":1,"tokens":2}}"#,
+    ] {
+        assert_eq!(err_code(&h.call(bad)), "INVALID_REQUEST", "{bad}");
+    }
+    let r = h.call(r#"{"op":"ui.menu_model","paused":true,"ai_enabled":true}"#);
+    let items = field(field(&r, "model"), "items").as_array().unwrap();
+    let ids: Vec<&str> = items.iter().map(|i| s(i, "id")).collect();
+    assert_eq!(
+        ids,
+        [
+            "language",
+            "pause",
+            "ai",
+            "usage",
+            "permissions",
+            "diagnostics",
+            "f1"
+        ]
+    );
+    assert_eq!(s(&items[1], "label"), "Resume suggestions");
+    assert_eq!(
+        s(&items[2], "label"),
+        "AI: off",
+        "the AI item names the action"
+    );
+    assert_eq!(s(field(&r, "model"), "title"), "Programming IME");
+    assert_eq!(
+        err_code(&h.call(r#"{"op":"ui.menu_model","paused":true}"#)),
+        "INVALID_REQUEST"
+    );
+}

@@ -10,7 +10,7 @@ const aiMod = require('./core/ai');
 const settingsMod = require('./core/settings');
 const {fail, codeOf} = require('./core/errors');
 const {sha256} = require('./core/context');
-const {candidateRow, checkEnvironment} = require('./core/uimodel');
+const {statusModel} = require('./core/uimodel');
 const {annotateInsertion} = require('./annotate');
 
 const status = {lang: null, ai: null};
@@ -22,16 +22,14 @@ function updateStatus() {
   if (!status.lang) return;
   const editor = vscode.window.activeTextEditor;
   const info = editor ? lang.infoFor(editor.document) : null;
-  const on = enabled();
-  const coreDown = cfg().get('enabled') === true && !rt.engine.available(); // Rust engine without a core: IME features are off
-  const name = coreDown ? L('engine.status') : !on ? L('status.off') : (info ? info.language : rt.session.language);
-  status.lang.text = `${coreDown ? '$(error)' : '$(code)'} PIME ${name}${on && info && info.locked ? ' $(lock)' : ''}${on && info && info.uncertain && info.suggestion ? ' ?' : ''}${on && rt.session.paused ? ` (${L('status.paused')})` : ''}`;
-  status.lang.tooltip = coreDown ? L('engine.unavailable', rt.engine.reason) : info && info.uncertain && info.suggestion ? L('lang.uncertain', info.suggestion, info.language) : L('lang.pick');
-  const sc = safeScenario('realtime');
-  const b = rt.budget.snapshot();
-  const aiState = !aiEnabled() ? L('ai.off') : (rt.session.paused ? L('ai.paused') : L('ai.on'));
-  status.ai.text = `$(sparkle) ${aiState}`;
-  status.ai.tooltip = `${L('status.tooltip')}\n${sc ? `${sc.model || '-'} · effort ${sc.effort}` : ''}\n${L('f1.usage', b.requests, b.tokens, b.estimated ? ' (estimated)' : '')}`;
+  // the texts come from one pure function (core/uimodel.js); the redraw is synchronous, so it stays on the JS side for both engines
+  const m = statusModel(rt.locale, {
+    coreDown: cfg().get('enabled') === true && !rt.engine.available(), // Rust engine without a core: IME features are off
+    reason: rt.engine.reason, enabled: enabled(), info, sessionLanguage: rt.session.language, paused: rt.session.paused,
+    aiEnabled: aiEnabled(), scenario: safeScenario('realtime'), budget: rt.budget.snapshot()
+  });
+  status.lang.text = m.lang.text; status.lang.tooltip = m.lang.tooltip;
+  status.ai.text = m.ai.text; status.ai.tooltip = m.ai.tooltip;
   status.lang.show(); status.ai.show();
 }
 function safeScenario(name) { try { return settingsMod.resolveScenario(rt.settings, name); } catch { return null; } }
@@ -168,7 +166,8 @@ async function showCandidates() {
   const {prefix, range, candidates} = await localCandidates(doc, editor.selection.active, info);
   const all = [...candidates, ...cachedAi(doc)];
   if (!all.length) { vscode.window.showInformationMessage(L('cand.none')); return; }
-  const items = all.map((c, i) => { const row = candidateRow(rt.locale, c, i + 1, all.length); return {label: row.label, description: row.description, detail: row.detail, accessibilityInformation: {label: row.ariaLabel}, c}; });
+  const rows = await rt.engine.candidateRows(rt.locale, all);
+  const items = all.map((c, i) => ({label: rows[i].label, description: rows[i].description, detail: rows[i].detail, accessibilityInformation: {label: rows[i].ariaLabel}, c}));
   const pick = await vscode.window.showQuickPick(items, {title: L('cand.pick', info.language, prefix), matchOnDescription: true, matchOnDetail: true});
   if (!pick) return; // Esc / dismiss: zero writes
   const c = pick.c;
@@ -197,17 +196,10 @@ async function chooseLanguage() {
   updateStatus();
 }
 async function menu() {
-  const items = [
-    {label: L('menu.language'), run: chooseLanguage},
-    {label: rt.session.paused ? L('menu.resume') : L('menu.pause'), run: async () => togglePause()},
-    {label: aiEnabled() ? 'AI: off' : 'AI: on', run: toggleAI},
-    {label: L('menu.usage'), run: showUsage},
-    {label: L('menu.permissions'), run: managePermissions},
-    {label: L('menu.diagnostics'), run: showDiagnostics},
-    {label: L('menu.f1'), run: () => f1.open()}
-  ];
-  const pick = await vscode.window.showQuickPick(items, {title: L('menu.title')});
-  if (pick) await pick.run();
+  const model = await rt.engine.menuModel(rt.locale, {paused: rt.session.paused, aiEnabled: aiEnabled()});
+  const actions = {language: chooseLanguage, pause: async () => togglePause(), ai: toggleAI, usage: showUsage, permissions: managePermissions, diagnostics: showDiagnostics, f1: () => f1.open()};
+  const pick = await vscode.window.showQuickPick(model.items.map(i => ({label: i.label, id: i.id})), {title: model.title});
+  if (pick) await actions[pick.id]();
 }
 function togglePause() {
   rt.session.paused = !rt.session.paused;
@@ -224,11 +216,12 @@ function showUsage() {
   const b = rt.budget.snapshot();
   vscode.window.showInformationMessage(L('f1.usage', b.requests, b.tokens, b.estimated ? ' (estimated)' : '') + (b.cost !== null ? ` ≈ ${b.cost}` : ''));
 }
-function showDiagnostics() {
+async function showDiagnostics() {
   rt.output.appendLine(L('diag.title'));
   rt.output.appendLine(JSON.stringify(rt.diagnostics.summary()));
   const build = Number((require('node:os').release().split('.')[2]) || 0);
-  rt.output.appendLine(JSON.stringify({environment: checkEnvironment({platform: process.platform, arch: process.arch, build}), core: rt.engine.describe(), engine: rt.engine.kind, direct: rt.supervisor.isDirect}));
+  const environment = await rt.engine.checkEnvironment({platform: process.platform, arch: process.arch, build});
+  rt.output.appendLine(JSON.stringify({environment, core: rt.engine.describe(), engine: rt.engine.kind, direct: rt.supervisor.isDirect}));
   rt.output.show(true);
 }
 async function managePermissions() {

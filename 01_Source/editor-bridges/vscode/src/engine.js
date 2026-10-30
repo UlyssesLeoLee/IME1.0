@@ -11,6 +11,7 @@
 //   engine.createAi / budget / buildPrompt / parseModelResult                  (steps 1.2: request logic; the HTTP call stays here in JS)
 //   engine.privacy / annotate / symbols                                        (outbound gate, annotations, symbol index)
 //   engine.createScheduler                                                     (step 1.3: the realtime scheduling decisions)
+//   engine.candidateRows / menuModel / checkEnvironment                        (step 1.3: presentation models; they fall back to the JS modules while the core is down)
 // Every method may return a Promise (Rust) or a plain value (JS): callers always `await`.
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -28,6 +29,7 @@ const annotateMod = require('./core/annotate');
 const symbolsMod = require('./core/symbols');
 const languagesMod = require('./core/languages');
 const {RealtimeScheduler} = require('./core/scheduler');
+const uimodel = require('./core/uimodel');
 
 const PROTOCOL_ANY = /^0\.[23]/;   // an optional core (js engine) may speak 0.2 or 0.3
 const PROTOCOL_RUST = /^0\.3/;     // session operations need 0.3
@@ -84,6 +86,10 @@ class JsEngine {
   buildPrompt(task, payload) { return aiMod.buildPrompt(task, payload); }
   parseModelResult(raw, options) { return aiMod.parseModelResult(raw, options); }
   createScheduler(options) { return new RealtimeScheduler(options); }
+  // presentation models (step 1.3): quick pick rows, status bar menu, environment check
+  candidateRows(locale, candidates) { return candidates.map((c, i) => uimodel.candidateRow(locale, c, i + 1, candidates.length)); }
+  menuModel(locale, state) { return uimodel.menuModel(locale, state); }
+  checkEnvironment(info) { return uimodel.checkEnvironment(info); }
   available() { return true; }
   predictClient() { return this.core && !this.core.dead ? this.core : null; }
   describe() { return this.core && !this.core.dead ? 'rust' : 'js-fallback'; }
@@ -350,6 +356,24 @@ class RustEngine {
   async buildPrompt(task, payload) { const r = await this.rpc({op: 'ai.prompt', task, payload}, EDIT_TIMEOUT_MS); return {instructions: r.instructions, input: r.input}; }
   async parseModelResult(raw, {task = 'full', baseline = '', currentFile = ''} = {}) { return (await this.rpc({op: 'ai.parse', raw, task, baseline, current_file: currentFile}, EDIT_TIMEOUT_MS)).result; }
   createScheduler(options) { return new RustScheduler({engine: this, ...options}); }
+  // Presentation models (step 1.3) come from the core. They are text only, and the menu and the diagnostics must stay usable
+  // while the core is down, so when it is unavailable or does not answer the JS modules (kept identical by the parity fixtures)
+  // render the same text. The status bar redraw is synchronous and stays on the JS function for both engines.
+  async _ui(body) { if (!this.available()) return null; try { return await this.rpc(body); } catch { return null; } }
+  async candidateRows(locale, candidates) {
+    // only what a row reads: the snippet text itself is not sent, just whether there is one
+    const slim = candidates.map(c => ({label: c.label, source: c.source, sources: c.sources, validation: c.validation, explain: c.explain, assumptions: c.assumptions, text: c.text == null ? null : ''}));
+    const r = await this._ui({op: 'ui.candidate_rows', locale, candidates: slim});
+    return r ? r.rows : candidates.map((c, i) => uimodel.candidateRow(locale, c, i + 1, candidates.length));
+  }
+  async menuModel(locale, state) {
+    const r = await this._ui({op: 'ui.menu_model', locale, paused: !!state.paused, ai_enabled: !!state.aiEnabled});
+    return r ? r.model : uimodel.menuModel(locale, state);
+  }
+  async checkEnvironment(info) {
+    const r = await this._ui({op: 'ui.check_env', ...info});
+    return r ? {supported: r.supported, reasons: r.reasons} : uimodel.checkEnvironment(info);
+  }
   available() { return this.state === 'ready' && !!this.core && !this.core.dead; }
   predictClient() { return this.available() ? this.core : null; }
   describe() { return this.available() ? 'rust' : 'unavailable'; }

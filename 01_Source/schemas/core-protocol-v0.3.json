@@ -89,7 +89,9 @@
     {"$ref": "#/$defs/uiErrorsRequest"},
     {"$ref": "#/$defs/uiCandidateRowsRequest"},
     {"$ref": "#/$defs/uiPlaceOverlayRequest"},
-    {"$ref": "#/$defs/uiCheckEnvRequest"}
+    {"$ref": "#/$defs/uiCheckEnvRequest"},
+    {"$ref": "#/$defs/uiStatusModelRequest"},
+    {"$ref": "#/$defs/uiMenuModelRequest"}
   ],
   "$defs": {
     "id": {"type": "integer", "description": "Optional correlation id, echoed verbatim as `id` in the response. A non-integer id is rejected with INVALID_REQUEST (field `id`)."},
@@ -780,6 +782,23 @@
       "properties": {"op": {"const": "ui.check_env"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "platform": {}, "arch": {}, "build": {}, "dpi": {}}
     },
 
+    "uiStatusModelRequest": {
+      "type": "object",
+      "description": "The two status bar items as plain text, from everything the extension knows when it redraws. The redraw itself is synchronous, so the bridge keeps its JS function; this operation is the ported, parity-tested equivalent.",
+      "required": ["op", "session", "core_down", "enabled", "session_language", "paused", "ai_enabled", "budget"],
+      "properties": {"op": {"const": "ui.status_model"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "core_down": {"type": "boolean", "description": "The Rust engine's core is unavailable."}, "reason": {"type": ["string", "null"]}, "enabled": {"type": "boolean"},
+        "info": {"type": ["object", "null"], "required": ["language"], "properties": {"language": {"type": "string"}, "locked": {"type": "boolean"}, "uncertain": {"type": "boolean"}, "suggestion": {"type": ["string", "null"]}}},
+        "session_language": {"type": "string"}, "paused": {"type": "boolean"}, "ai_enabled": {"type": "boolean"},
+        "scenario": {"type": ["object", "null"], "properties": {"model": {"type": "string"}, "effort": {"type": "string"}}},
+        "budget": {"type": "object", "required": ["requests", "tokens"], "properties": {"requests": {"type": "number"}, "tokens": {"type": "number"}, "estimated": {"type": "boolean"}}}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+    "uiMenuModelRequest": {
+      "type": "object",
+      "description": "The status bar menu: a title and the items in order; the id is what the extension maps to its action. The AI item names the action and is English in every locale.",
+      "required": ["op", "session", "paused", "ai_enabled"],
+      "properties": {"op": {"const": "ui.menu_model"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "paused": {"type": "boolean"}, "ai_enabled": {"type": "boolean"}, "locale": {"type": ["string", "null"], "description": "The interface locale; the session locale when omitted. Any other value reads English."}}
+    },
+
     "hunk": {
       "type": "object",
       "description": "Geometry in 1-based lines and UTF-16 offsets plus the display lines (kind ' ', '-' or '+'; two lines of context).",
@@ -1262,6 +1281,18 @@
           "type": "object",
           "required": ["ok","supported","reasons"],
           "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "supported": {"type": "boolean"}, "reasons": {"type": "array", "items": {"type": "string"}}}
+        },
+        {
+          "title": "ui.status_model",
+          "type": "object",
+          "required": ["ok", "model"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "model": {"type": "object", "required": ["lang", "ai"], "properties": {"lang": {"type": "object", "required": ["text", "tooltip"], "properties": {"text": {"type": "string"}, "tooltip": {"type": "string"}}}, "ai": {"type": "object", "required": ["text", "tooltip"], "properties": {"text": {"type": "string"}, "tooltip": {"type": "string"}}}}}}
+        },
+        {
+          "title": "ui.menu_model",
+          "type": "object",
+          "required": ["ok", "model"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "model": {"type": "object", "required": ["title", "items"], "properties": {"title": {"type": "string"}, "items": {"type": "array", "items": {"type": "object", "required": ["id", "label"], "properties": {"id": {"enum": ["language", "pause", "ai", "usage", "permissions", "diagnostics", "f1"]}, "label": {"type": "string"}}}}}}}
         },
         {
           "title": "success without data (session.close, grant.consume, budget.configure, budget.reset, edit.discard, edit.purge)",

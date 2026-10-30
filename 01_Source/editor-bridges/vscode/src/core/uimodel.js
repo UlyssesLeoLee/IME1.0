@@ -1,6 +1,7 @@
 'use strict';
-// UI models that are independent of VS Code: accessible candidate rows (UT-057), overlay placement (UT-055) and the
-// environment check (UT-077). Meaning is always carried by text (source, validation, position) - never by colour.
+// UI models that are independent of VS Code: accessible candidate rows (UT-057), overlay placement (UT-055), the
+// environment check (UT-077) and the status bar / menu texts (SCR-01). Meaning is always carried by text (source,
+// validation, position) - never by colour.
 const {t} = require('./i18n');
 
 // One row of the candidate list: name, position, source, validation and the available action, all as text.
@@ -41,4 +42,38 @@ function checkEnvironment({platform, arch, build, dpi}) {
   if (dpi !== undefined && (!Number.isFinite(dpi) || dpi < 100 || dpi > 250)) reasons.push('display scaling must be between 100% and 250%'); // dpi is unknown inside VS Code: skipped, not guessed
   return {supported: reasons.length === 0, reasons};
 }
-module.exports = {candidateRow, placeOverlay, checkEnvironment};
+
+// The two status bar items (SCR-01) as plain text, from everything the extension knows when it redraws: the language item
+// (language, lock, uncertainty, pause, or the reason the Rust core is unavailable) and the AI item (state, model, effort, usage).
+function statusModel(locale, {coreDown, reason, enabled, info, sessionLanguage, paused, aiEnabled, scenario, budget}) {
+  const name = coreDown ? t(locale, 'engine.status') : !enabled ? t(locale, 'status.off') : (info ? info.language : sessionLanguage);
+  const aiState = !aiEnabled ? t(locale, 'ai.off') : (paused ? t(locale, 'ai.paused') : t(locale, 'ai.on'));
+  return {
+    lang: {
+      text: `${coreDown ? '$(error)' : '$(code)'} PIME ${name}${enabled && info && info.locked ? ' $(lock)' : ''}${enabled && info && info.uncertain && info.suggestion ? ' ?' : ''}${enabled && paused ? ` (${t(locale, 'status.paused')})` : ''}`,
+      tooltip: coreDown ? t(locale, 'engine.unavailable', reason) : info && info.uncertain && info.suggestion ? t(locale, 'lang.uncertain', info.suggestion, info.language) : t(locale, 'lang.pick')
+    },
+    ai: {
+      text: `$(sparkle) ${aiState}`,
+      tooltip: `${t(locale, 'status.tooltip')}\n${scenario ? `${scenario.model || '-'} · effort ${scenario.effort}` : ''}\n${t(locale, 'f1.usage', budget.requests, budget.tokens, budget.estimated ? ' (estimated)' : '')}`
+    }
+  };
+}
+
+// The status bar menu: a title and the items in order; `id` is what the extension maps to its action. The AI item names the
+// action (it says "off" while AI is on), and its label is English in every locale, as it always was.
+function menuModel(locale, {paused, aiEnabled}) {
+  return {
+    title: t(locale, 'menu.title'),
+    items: [
+      {id: 'language', label: t(locale, 'menu.language')},
+      {id: 'pause', label: paused ? t(locale, 'menu.resume') : t(locale, 'menu.pause')},
+      {id: 'ai', label: aiEnabled ? 'AI: off' : 'AI: on'},
+      {id: 'usage', label: t(locale, 'menu.usage')},
+      {id: 'permissions', label: t(locale, 'menu.permissions')},
+      {id: 'diagnostics', label: t(locale, 'menu.diagnostics')},
+      {id: 'f1', label: t(locale, 'menu.f1')}
+    ]
+  };
+}
+module.exports = {candidateRow, placeOverlay, checkEnvironment, statusModel, menuModel};

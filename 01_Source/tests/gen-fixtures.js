@@ -421,7 +421,23 @@ write('secret-cases.json', {generated_by: 'tests/gen-fixtures.js', cases: secret
   for (const platform of ['win32', 'linux', 'darwin', null, 5]) for (const arch of ['x64', 'arm64', 'ia32', null]) for (const build of [22631, 22000, 21999, 0, 22000.5, '22631', null, -1, 26100]) envs.push({platform, arch, build});
   for (const dpi of [100, 150, 250, 99.9, 250.1, 300, 0, -5, null, '150', true]) envs.push({platform: 'win32', arch: 'x64', build: 26100, dpi});
   envs.push({platform: 'win32', arch: 'x64'}, {});
-  write('ui-cases.json', {generated_by: 'tests/gen-fixtures.js', rows, places, envs: envs.map(input => ({input, expect: ui.checkEnvironment(input)}))});
+  // status bar items and the menu (SCR-01)
+  const infos = [null, {language: 'rust', locked: false, uncertain: false}, {language: 'c', locked: true, uncertain: true, suggestion: 'cpp'}, {language: 'python', locked: false, uncertain: true}, {language: 'rust', uncertain: true, suggestion: ''}];
+  const scenarios = [null, {model: '', effort: 'auto'}, {model: 'gpt-x', effort: 'max'}];
+  const usage = {requests: 12, tokens: 3456, estimated: true};
+  const grid = [];
+  for (const coreDown of [false, true]) for (const enabled of [true, false]) for (const info of infos) for (const paused of [false, true]) for (const aiEnabled of [false, true]) for (const scenario of scenarios) {
+    grid.push({coreDown, reason: 'the core process ended', enabled, info, sessionLanguage: 'typescript', paused, aiEnabled, scenario, budget: usage});
+  }
+  const statuses = [];
+  for (const locale of [...i18n.LOCALES, 'fr-FR']) grid.forEach((state, i) => { if (locale === 'en-US' || i % 3 === 0) statuses.push({locale, state, expect: ui.statusModel(locale, state)}); });
+  for (const budget of [{requests: 0, tokens: 0, estimated: false}, {requests: 1, tokens: 1e21, estimated: false}, {requests: 200, tokens: 400000, estimated: true}]) {
+    const state = {...grid[0], enabled: true, coreDown: false, info: infos[2], budget};
+    statuses.push({locale: 'en-US', state, expect: ui.statusModel('en-US', state)});
+  }
+  const menus = [];
+  for (const locale of [...i18n.LOCALES, 'fr-FR']) for (const paused of [false, true]) for (const aiEnabled of [false, true]) menus.push({locale, paused, aiEnabled, expect: ui.menuModel(locale, {paused, aiEnabled})});
+  write('ui-cases.json', {generated_by: 'tests/gen-fixtures.js', rows, places, envs: envs.map(input => ({input, expect: ui.checkEnvironment(input)})), statuses, menus});
 }
 // ---------------------------------------------------------------- steps 1.2 / 1.3: AI request logic, privacy, annotations, symbols, scheduling
 // Oracles for crates/pime-core: ai.rs, ops_ai.rs (prepare/complete), secrets.rs (assess/redact/restore), annotate.rs, symbols.rs, scheduler.rs.

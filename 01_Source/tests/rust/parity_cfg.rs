@@ -12,7 +12,10 @@ use pime_core::settings_migrate::{
     SettingsStore, build_registry_with_user_rules, export_settings, import_settings, migrate,
     migrate_store, migrate_v0,
 };
-use pime_core::uimodel::{Environment, Rect, candidate_row, check_environment, place_overlay};
+use pime_core::uimodel::{
+    Environment, Rect, Status, candidate_row, check_environment, menu_model, place_overlay,
+    status_model,
+};
 
 fn load(name: &str) -> Json {
     let path = format!("{}/../../tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
@@ -616,6 +619,56 @@ fn parity_candidate_rows_overlay_placement_and_environment() {
     report(
         "ui models",
         list(&doc, "rows").len() + list(&doc, "places").len() + list(&doc, "envs").len(),
+        &failures,
+    );
+}
+
+#[test]
+fn parity_status_bar_items_and_menu() {
+    let doc = load("ui-cases.json");
+    let mut failures = Vec::new();
+    for (i, c) in list(&doc, "statuses").iter().enumerate() {
+        let st = c.get("state").unwrap();
+        let got = status_model(
+            s(c, "locale"),
+            &Status {
+                core_down: st.get("coreDown").and_then(Json::as_bool).unwrap(),
+                reason: s(st, "reason"),
+                enabled: st.get("enabled").and_then(Json::as_bool).unwrap(),
+                info: st.get("info").filter(|v| !v.is_null()),
+                session_language: s(st, "sessionLanguage"),
+                paused: st.get("paused").and_then(Json::as_bool).unwrap(),
+                ai_enabled: st.get("aiEnabled").and_then(Json::as_bool).unwrap(),
+                scenario: st.get("scenario").filter(|v| !v.is_null()),
+                budget: st.get("budget").unwrap(),
+            },
+        );
+        if text(&got) != text(c.get("expect").unwrap()) {
+            failures.push(format!(
+                "status #{i} {}: {} != {}",
+                text(st),
+                text(&got),
+                text(c.get("expect").unwrap())
+            ));
+        }
+    }
+    for (i, c) in list(&doc, "menus").iter().enumerate() {
+        let got = menu_model(
+            s(c, "locale"),
+            c.get("paused").and_then(Json::as_bool).unwrap(),
+            c.get("aiEnabled").and_then(Json::as_bool).unwrap(),
+        );
+        if text(&got) != text(c.get("expect").unwrap()) {
+            failures.push(format!(
+                "menu #{i}: {} != {}",
+                text(&got),
+                text(c.get("expect").unwrap())
+            ));
+        }
+    }
+    report(
+        "status bar and menu",
+        list(&doc, "statuses").len() + list(&doc, "menus").len(),
         &failures,
     );
 }

@@ -130,6 +130,157 @@ pub fn check_environment(env: &Environment) -> (bool, Vec<&'static str>) {
     (reasons.is_empty(), reasons)
 }
 
+/// Everything the extension knows when it redraws the status bar (SCR-01).
+pub struct Status<'a> {
+    /// The Rust engine's core is unavailable: the IME features are off.
+    pub core_down: bool,
+    pub reason: &'a str,
+    pub enabled: bool,
+    /// `{language, locked, uncertain, suggestion}` of the active document, if there is one.
+    pub info: Option<&'a Json>,
+    pub session_language: &'a str,
+    pub paused: bool,
+    pub ai_enabled: bool,
+    /// `{model, effort}` of the realtime scenario, if it resolves.
+    pub scenario: Option<&'a Json>,
+    /// `{requests, tokens, estimated}`.
+    pub budget: &'a Json,
+}
+
+/// The two status bar items as plain text: `{lang: {text, tooltip}, ai: {text, tooltip}}`.
+pub fn status_model(locale: &str, s: &Status) -> Json {
+    let flag = |key: &str| s.info.and_then(|i| i.get(key)).is_some_and(truthy);
+    let t = |key: &str| i18n::text(locale, key, &[]);
+    let language = s.info.map(|i| {
+        i.get("language")
+            .map_or_else(|| "undefined".to_string(), to_js_string)
+    });
+    let name = if s.core_down {
+        t("engine.status")
+    } else if !s.enabled {
+        t("status.off")
+    } else {
+        language
+            .clone()
+            .unwrap_or_else(|| s.session_language.to_string())
+    };
+    let uncertain = flag("uncertain") && flag("suggestion");
+    let mut text = format!(
+        "{} PIME {name}",
+        if s.core_down { "$(error)" } else { "$(code)" }
+    );
+    if s.enabled && flag("locked") {
+        text.push_str(" $(lock)");
+    }
+    if s.enabled && uncertain {
+        text.push_str(" ?");
+    }
+    if s.enabled && s.paused {
+        text.push_str(&format!(" ({})", t("status.paused")));
+    }
+    let tooltip = if s.core_down {
+        i18n::text(locale, "engine.unavailable", &[s.reason.to_string()])
+    } else if uncertain {
+        let suggestion = s
+            .info
+            .and_then(|i| i.get("suggestion"))
+            .map(to_js_string)
+            .unwrap_or_default();
+        i18n::text(
+            locale,
+            "lang.uncertain",
+            &[suggestion, language.unwrap_or_default()],
+        )
+    } else {
+        t("lang.pick")
+    };
+    let ai_state = if !s.ai_enabled {
+        t("ai.off")
+    } else if s.paused {
+        t("ai.paused")
+    } else {
+        t("ai.on")
+    };
+    let scenario = s.scenario.map_or_else(String::new, |sc| {
+        let model = match sc.get("model") {
+            Some(m) if truthy(m) => to_js_string(m),
+            _ => "-".to_string(),
+        };
+        let effort = sc
+            .get("effort")
+            .map_or_else(|| "undefined".to_string(), to_js_string);
+        format!("{model} · effort {effort}")
+    });
+    let arg = |key: &str| s.budget.get(key).map(to_js_string).unwrap_or_default();
+    let usage = i18n::text(
+        locale,
+        "f1.usage",
+        &[
+            arg("requests"),
+            arg("tokens"),
+            if s.budget.get("estimated").is_some_and(truthy) {
+                " (estimated)"
+            } else {
+                ""
+            }
+            .to_string(),
+        ],
+    );
+    Json::obj(vec![
+        (
+            "lang",
+            Json::obj(vec![
+                ("text", Json::Str(text)),
+                ("tooltip", Json::Str(tooltip)),
+            ]),
+        ),
+        (
+            "ai",
+            Json::obj(vec![
+                ("text", Json::Str(format!("$(sparkle) {ai_state}"))),
+                (
+                    "tooltip",
+                    Json::Str(format!("{}\n{scenario}\n{usage}", t("status.tooltip"))),
+                ),
+            ]),
+        ),
+    ])
+}
+
+/// The status bar menu: a title and the items in order. `id` is what the extension maps to its action. The AI item
+/// names the action (it says "off" while AI is on) and its label is English in every locale, as in the reference.
+pub fn menu_model(locale: &str, paused: bool, ai_enabled: bool) -> Json {
+    let t = |key: &str| i18n::text(locale, key, &[]);
+    let item = |id: &str, label: String| {
+        Json::obj(vec![("id", Json::str(id)), ("label", Json::Str(label))])
+    };
+    Json::obj(vec![
+        ("title", Json::Str(t("menu.title"))),
+        (
+            "items",
+            Json::Arr(vec![
+                item("language", t("menu.language")),
+                item(
+                    "pause",
+                    if paused {
+                        t("menu.resume")
+                    } else {
+                        t("menu.pause")
+                    },
+                ),
+                item(
+                    "ai",
+                    if ai_enabled { "AI: off" } else { "AI: on" }.to_string(),
+                ),
+                item("usage", t("menu.usage")),
+                item("permissions", t("menu.permissions")),
+                item("diagnostics", t("menu.diagnostics")),
+                item("f1", t("menu.f1")),
+            ]),
+        ),
+    ])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
