@@ -110,7 +110,10 @@ mod tests {
         let stored = v.read("ns/openai").unwrap().unwrap();
         assert_eq!(stored.secret.expose(), b"mock-key-test-123");
         assert_eq!(stored.origin, "api.openai.com:443");
-        assert_eq!(v.exists("ns/openai").unwrap().as_deref(), Some("api.openai.com:443"));
+        assert_eq!(
+            v.exists("ns/openai").unwrap().as_deref(),
+            Some("api.openai.com:443")
+        );
         assert_eq!(v.targets(), vec!["ns/openai".to_string()]);
         assert!(v.delete("ns/openai").unwrap());
         assert!(!v.delete("ns/openai").unwrap());
@@ -135,6 +138,9 @@ mod tests {
         let other = Secret::parse("another-key-value-9".to_string()).unwrap();
         v.set("ns/p", "b.example:443", &other).unwrap();
         let s = v.read("ns/p").unwrap().unwrap();
-        assert_eq!((s.secret.expose(), s.origin.as_str()), (b"another-key-value-9".as_slice(), "b.example:443"));
+        assert_eq!(
+            (s.secret.expose(), s.origin.as_str()),
+            (b"another-key-value-9".as_slice(), "b.example:443")
+        );
     }
 }

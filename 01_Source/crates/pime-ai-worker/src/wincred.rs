@@ -96,13 +96,11 @@ impl Drop for ReadCredential {
 
 /// The blob is UTF-16 text; a key is ASCII, so anything else is rejected by `Secret::parse` (which wipes what it got).
 fn secret_from_blob(blob: &[u8]) -> Result<Secret, VaultError> {
-    if blob.len() % 2 != 0 {
+    let (pairs, rest) = blob.as_chunks::<2>();
+    if !rest.is_empty() {
         return Err(VaultError(0));
     }
-    let mut units: Vec<u16> = blob
-        .chunks_exact(2)
-        .map(|b| u16::from_le_bytes([b[0], b[1]]))
-        .collect();
+    let mut units: Vec<u16> = pairs.iter().map(|b| u16::from_le_bytes(*b)).collect();
     while units.last() == Some(&0) {
         units.pop();
     }
@@ -201,16 +199,24 @@ mod tests {
         assert_eq!(s.expose(), b"mock-key-test-123");
         let mut with_nul = blob_of("mock-key-test-123");
         with_nul.extend_from_slice(&[0, 0]);
-        assert_eq!(secret_from_blob(&with_nul).unwrap().expose(), b"mock-key-test-123");
+        assert_eq!(
+            secret_from_blob(&with_nul).unwrap().expose(),
+            b"mock-key-test-123"
+        );
     }
 
     #[test]
     fn the_blob_decoder_refuses_everything_that_is_not_a_plausible_key() {
         assert!(secret_from_blob(&[]).is_err());
-        assert!(secret_from_blob(&[b'a']).is_err(), "odd length");
+        assert!(secret_from_blob(b"a").is_err(), "odd length");
         assert!(secret_from_blob(&blob_of("short")).is_err());
         assert!(secret_from_blob(&blob_of("caf\u{e9}-key-1234567")).is_err());
-        assert!(secret_from_blob(&blob_of("\u{3053}\u{3093}\u{306b}\u{3061}\u{306f}-key-1234")).is_err());
+        assert!(
+            secret_from_blob(&blob_of(
+                "\u{3053}\u{3093}\u{306b}\u{3061}\u{306f}-key-1234"
+            ))
+            .is_err()
+        );
         assert!(secret_from_blob(&blob_of("has space in key")).is_err());
         // ASCII bytes stored as plain bytes (not UTF-16) decode to CJK-looking units and are refused
         assert!(secret_from_blob(b"mock-key-test-123").is_err());

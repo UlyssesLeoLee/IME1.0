@@ -116,7 +116,10 @@ mod tests {
         let input = vec![b'z'; 1000];
         let mut r = Cursor::new(input);
         let mut buf = Vec::new();
-        assert_eq!(read_bounded_line(&mut r, &mut buf, 16).unwrap(), LineRead::TooLong);
+        assert_eq!(
+            read_bounded_line(&mut r, &mut buf, 16).unwrap(),
+            LineRead::TooLong
+        );
         assert!(buf.len() <= 17);
     }
 }

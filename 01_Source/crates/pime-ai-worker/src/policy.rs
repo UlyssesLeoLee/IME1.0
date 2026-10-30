@@ -76,7 +76,9 @@ fn valid_host(host: &str) -> bool {
             && label.len() <= 63
             && !label.starts_with('-')
             && !label.ends_with('-')
-            && label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
+            && label
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-')
     })
 }
 
@@ -117,8 +119,7 @@ fn valid_percent_escapes(text: &str) -> bool {
     let mut i = 0;
     while i < b.len() {
         if b[i] == b'%' {
-            if i + 2 >= b.len() || !(b[i + 1].is_ascii_hexdigit() && b[i + 2].is_ascii_hexdigit())
-            {
+            if i + 2 >= b.len() || !(b[i + 1].is_ascii_hexdigit() && b[i + 2].is_ascii_hexdigit()) {
                 return false;
             }
             i += 3;
@@ -341,7 +342,11 @@ mod tests {
             (t.https, t.host.as_str(), t.port, t.path_and_query.as_str()),
             (true, "api.openai.com", 443, "/v1/responses")
         );
-        let t = parse_url("HTTPS://API.Anthropic.COM:443/v1/messages?beta=1", https_only()).unwrap();
+        let t = parse_url(
+            "HTTPS://API.Anthropic.COM:443/v1/messages?beta=1",
+            https_only(),
+        )
+        .unwrap();
         assert_eq!(t.host, "api.anthropic.com");
         assert_eq!(t.origin(), "api.anthropic.com:443");
         assert_eq!(t.path_and_query, "/v1/messages?beta=1");
@@ -393,28 +398,48 @@ mod tests {
         }
         let long = format!("https://api.openai.com/{}", "a".repeat(MAX_URL_LEN));
         assert!(parse_url(&long, https_only()).is_err());
-        assert_eq!(parse_url("", https_only()).unwrap_err().code, Code::InvalidRequest);
+        assert_eq!(
+            parse_url("", https_only()).unwrap_err().code,
+            Code::InvalidRequest
+        );
     }
 
     #[test]
     fn plain_http_needs_the_test_policy_and_a_loopback_host() {
-        for url in ["http://127.0.0.1:9000/x", "http://localhost/x", "HTTP://127.5.5.5/"] {
+        for url in [
+            "http://127.0.0.1:9000/x",
+            "http://localhost/x",
+            "HTTP://127.5.5.5/",
+        ] {
             assert!(parse_url(url, https_only()).is_err(), "{url}");
             assert!(parse_url(url, test_http()).is_ok(), "{url}");
         }
-        for url in ["http://api.openai.com/x", "http://192.168.1.5/x", "http://10.0.0.1/"] {
+        for url in [
+            "http://api.openai.com/x",
+            "http://192.168.1.5/x",
+            "http://10.0.0.1/",
+        ] {
             let e = parse_url(url, test_http()).unwrap_err();
             assert_eq!(e.code, Code::UrlNotAllowed, "{url}");
         }
-        assert_eq!(parse_url("http://127.0.0.1/", test_http()).unwrap().port, 80);
+        assert_eq!(
+            parse_url("http://127.0.0.1/", test_http()).unwrap().port,
+            80
+        );
     }
 
     #[test]
     fn violations_are_url_not_allowed_and_malformed_input_is_invalid_request() {
         let e = parse_url("https://user@host.example/", https_only()).unwrap_err();
-        assert_eq!((e.code, e.field.as_deref()), (Code::UrlNotAllowed, Some("url")));
+        assert_eq!(
+            (e.code, e.field.as_deref()),
+            (Code::UrlNotAllowed, Some("url"))
+        );
         let e = parse_url("https://host.example/ x", https_only()).unwrap_err();
-        assert_eq!((e.code, e.field.as_deref()), (Code::InvalidRequest, Some("url")));
+        assert_eq!(
+            (e.code, e.field.as_deref()),
+            (Code::InvalidRequest, Some("url"))
+        );
     }
 
     #[test]
@@ -430,9 +455,18 @@ mod tests {
 
     #[test]
     fn origins_are_canonicalised_for_credential_binding() {
-        assert_eq!(parse_origin("API.OpenAI.com").as_deref(), Some("api.openai.com:443"));
-        assert_eq!(parse_origin("api.openai.com:443").as_deref(), Some("api.openai.com:443"));
-        assert_eq!(parse_origin("127.0.0.1:8443").as_deref(), Some("127.0.0.1:8443"));
+        assert_eq!(
+            parse_origin("API.OpenAI.com").as_deref(),
+            Some("api.openai.com:443")
+        );
+        assert_eq!(
+            parse_origin("api.openai.com:443").as_deref(),
+            Some("api.openai.com:443")
+        );
+        assert_eq!(
+            parse_origin("127.0.0.1:8443").as_deref(),
+            Some("127.0.0.1:8443")
+        );
         for bad in [
             "",
             "https://api.openai.com",
@@ -502,7 +536,10 @@ mod tests {
             assert_eq!(e.code, Code::InvalidRequest, "{name:?}={value:?}");
         }
         let dup = headers(&[("Content-Type", "a/b"), ("content-type", "a/b")]);
-        assert_eq!(validate_request_headers(&dup).unwrap_err().code, Code::InvalidRequest);
+        assert_eq!(
+            validate_request_headers(&dup).unwrap_err().code,
+            Code::InvalidRequest
+        );
         let many: Vec<(String, String)> = (0..=MAX_HEADERS)
             .map(|_| ("Accept".to_string(), "x".to_string()))
             .collect();
@@ -543,7 +580,17 @@ mod tests {
             assert!(valid_provider_ref(ok), "{ok}");
         }
         let long = "a".repeat(MAX_PROVIDER_LEN + 1);
-        for bad in ["", "a/b", "a\\b", "a b", "a*", "a:b", "..\\x", "caf\u{e9}", long.as_str()] {
+        for bad in [
+            "",
+            "a/b",
+            "a\\b",
+            "a b",
+            "a*",
+            "a:b",
+            "..\\x",
+            "caf\u{e9}",
+            long.as_str(),
+        ] {
             assert!(!valid_provider_ref(bad), "{bad}");
         }
     }
@@ -555,13 +602,19 @@ mod tests {
     #[test]
     fn templates_inject_the_key_into_the_two_credential_headers() {
         let t = AuthTemplate::parse("Authorization: Bearer {key}").unwrap();
-        assert_eq!(t.render(&key()).expose(), b"Authorization: Bearer mock-key-test-123");
+        assert_eq!(
+            t.render(&key()).expose(),
+            b"Authorization: Bearer mock-key-test-123"
+        );
         let t = AuthTemplate::parse("x-api-key: {key}").unwrap();
         assert_eq!(t.render(&key()).expose(), b"x-api-key: mock-key-test-123");
         let t = AuthTemplate::parse("X-API-Key:{key}").unwrap();
         assert_eq!(t.render(&key()).expose(), b"X-API-Key: mock-key-test-123");
         let t = AuthTemplate::parse("authorization: Token {key}").unwrap();
-        assert_eq!(t.render(&key()).expose(), b"authorization: Token mock-key-test-123");
+        assert_eq!(
+            t.render(&key()).expose(),
+            b"authorization: Token mock-key-test-123"
+        );
     }
 
     #[test]
@@ -583,7 +636,13 @@ mod tests {
             assert!(AuthTemplate::parse(bad).is_err(), "{bad:?}");
         }
         // the key can only ever go into a credential header
-        for name in ["Host", "Cookie", "Content-Type", "X-Custom", "Proxy-Authorization"] {
+        for name in [
+            "Host",
+            "Cookie",
+            "Content-Type",
+            "X-Custom",
+            "Proxy-Authorization",
+        ] {
             let e = AuthTemplate::parse(&format!("{name}: {{key}}")).unwrap_err();
             assert_eq!(e.code, Code::HeaderNotAllowed, "{name}");
         }
@@ -595,6 +654,10 @@ mod tests {
     fn a_rendered_line_has_exactly_the_capacity_it_needs() {
         let t = AuthTemplate::parse("Authorization: Bearer {key}").unwrap();
         let line = t.render(&key());
-        assert_eq!(line.capacity(), line.len(), "no spare capacity, so no stale copy");
+        assert_eq!(
+            line.capacity(),
+            line.len(),
+            "no spare capacity, so no stale copy"
+        );
     }
 }

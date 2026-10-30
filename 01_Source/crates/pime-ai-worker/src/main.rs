@@ -30,7 +30,10 @@ fn main() {
     let transport = match WinHttpTransport::new() {
         Ok(t) => t,
         Err(code) => {
-            eprintln!("{}", diagnostic(&format!("WinHTTP could not be opened (error {code})")));
+            eprintln!(
+                "{}",
+                diagnostic(&format!("WinHTTP could not be opened (error {code})"))
+            );
             exit(1);
         }
     };

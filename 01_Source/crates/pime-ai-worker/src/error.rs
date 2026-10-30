@@ -185,16 +185,17 @@ mod tests {
             Some("timeoutMs")
         );
         assert_eq!(
-            Failure::invalid("sk-proj-abcdefghijklmnop1234").field.as_deref(),
+            Failure::invalid("sk-proj-abcdefghijklmnop1234")
+                .field
+                .as_deref(),
             Some("?")
         );
-        assert_eq!(
-            Failure::invalid("has space").field.as_deref(),
-            Some("?")
-        );
+        assert_eq!(Failure::invalid("has space").field.as_deref(), Some("?"));
         assert_eq!(Failure::invalid("").field.as_deref(), Some("?"));
         assert_eq!(
-            Failure::invalid("A234567890123456789012345").field.as_deref(),
+            Failure::invalid("A234567890123456789012345")
+                .field
+                .as_deref(),
             Some("?"),
             "25 characters is too long to be a field name"
         );

@@ -242,7 +242,10 @@ mod tests {
         })));
         assert_eq!(flight.reason(), None);
         assert!(flight.abort(AbortReason::Timeout));
-        assert!(!flight.abort(AbortReason::Cancelled), "the second abort is a no-op");
+        assert!(
+            !flight.abort(AbortReason::Cancelled),
+            "the second abort is a no-op"
+        );
         assert_eq!(flight.reason(), Some(AbortReason::Timeout));
         assert_eq!(runs.load(Ordering::SeqCst), 1);
     }

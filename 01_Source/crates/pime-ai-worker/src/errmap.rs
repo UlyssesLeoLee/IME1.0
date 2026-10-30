@@ -157,15 +157,39 @@ mod tests {
     #[test]
     fn plain_transport_errors() {
         assert_eq!(code_of(ERROR_WINHTTP_TIMEOUT, None), Code::Timeout);
-        assert_eq!(code_of(ERROR_WINHTTP_OPERATION_CANCELLED, None), Code::Cancelled);
+        assert_eq!(
+            code_of(ERROR_WINHTTP_OPERATION_CANCELLED, None),
+            Code::Cancelled
+        );
         assert_eq!(code_of(ERROR_WINHTTP_NAME_NOT_RESOLVED, None), Code::Dns);
-        assert_eq!(code_of(ERROR_WINHTTP_CANNOT_CONNECT, None), Code::ConnectFailed);
-        assert_eq!(code_of(ERROR_WINHTTP_CONNECTION_ERROR, None), Code::ConnectionReset);
-        assert_eq!(code_of(ERROR_WINHTTP_AUTODETECTION_FAILED, None), Code::ProxyError);
-        assert_eq!(code_of(ERROR_WINHTTP_BAD_AUTO_PROXY_SCRIPT, None), Code::ProxyError);
-        assert_eq!(code_of(ERROR_WINHTTP_INVALID_SERVER_RESPONSE, None), Code::BadResponse);
-        assert_eq!(code_of(ERROR_WINHTTP_RESPONSE_DRAIN_OVERFLOW, None), Code::BadResponse);
-        assert_eq!(code_of(ERROR_WINHTTP_REDIRECT_FAILED, None), Code::RedirectBlocked);
+        assert_eq!(
+            code_of(ERROR_WINHTTP_CANNOT_CONNECT, None),
+            Code::ConnectFailed
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_CONNECTION_ERROR, None),
+            Code::ConnectionReset
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_AUTODETECTION_FAILED, None),
+            Code::ProxyError
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_BAD_AUTO_PROXY_SCRIPT, None),
+            Code::ProxyError
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_INVALID_SERVER_RESPONSE, None),
+            Code::BadResponse
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_RESPONSE_DRAIN_OVERFLOW, None),
+            Code::BadResponse
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_REDIRECT_FAILED, None),
+            Code::RedirectBlocked
+        );
     }
 
     #[test]
@@ -182,7 +206,10 @@ mod tests {
             flags: FLAG_INVALID_CA,
             self_issued: Some(true),
         };
-        assert_eq!(code_of(ERROR_WINHTTP_SECURE_FAILURE, Some(s)), Code::DepthZeroSelfSignedCert);
+        assert_eq!(
+            code_of(ERROR_WINHTTP_SECURE_FAILURE, Some(s)),
+            Code::DepthZeroSelfSignedCert
+        );
     }
 
     #[test]
@@ -192,9 +219,15 @@ mod tests {
                 flags: FLAG_INVALID_CA,
                 self_issued,
             };
-            assert_eq!(code_of(ERROR_WINHTTP_SECURE_FAILURE, Some(s)), Code::CertUntrusted);
+            assert_eq!(
+                code_of(ERROR_WINHTTP_SECURE_FAILURE, Some(s)),
+                Code::CertUntrusted
+            );
         }
-        assert_eq!(code_of(ERROR_WINHTTP_SECURE_INVALID_CA, None), Code::CertUntrusted);
+        assert_eq!(
+            code_of(ERROR_WINHTTP_SECURE_INVALID_CA, None),
+            Code::CertUntrusted
+        );
     }
 
     #[test]
@@ -213,13 +246,29 @@ mod tests {
                 flags,
                 self_issued: None,
             };
-            assert_eq!(code_of(ERROR_WINHTTP_SECURE_FAILURE, Some(s)), want, "{flags:#x}");
+            assert_eq!(
+                code_of(ERROR_WINHTTP_SECURE_FAILURE, Some(s)),
+                want,
+                "{flags:#x}"
+            );
         }
         assert_eq!(code_of(ERROR_WINHTTP_SECURE_FAILURE, None), Code::TlsFailed);
-        assert_eq!(code_of(ERROR_WINHTTP_SECURE_CERT_CN_INVALID, None), Code::CertHostnameMismatch);
-        assert_eq!(code_of(ERROR_WINHTTP_SECURE_CERT_DATE_INVALID, None), Code::CertExpired);
-        assert_eq!(code_of(ERROR_WINHTTP_SECURE_CERT_REVOKED, None), Code::CertRevoked);
-        assert_eq!(code_of(ERROR_WINHTTP_SECURE_CHANNEL_ERROR, None), Code::TlsFailed);
+        assert_eq!(
+            code_of(ERROR_WINHTTP_SECURE_CERT_CN_INVALID, None),
+            Code::CertHostnameMismatch
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_SECURE_CERT_DATE_INVALID, None),
+            Code::CertExpired
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_SECURE_CERT_REVOKED, None),
+            Code::CertRevoked
+        );
+        assert_eq!(
+            code_of(ERROR_WINHTTP_SECURE_CHANNEL_ERROR, None),
+            Code::TlsFailed
+        );
     }
 
     #[test]

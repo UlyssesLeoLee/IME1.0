@@ -195,6 +195,9 @@ mod tests {
     #[test]
     fn non_ascii_text_is_not_split_inside_a_character() {
         let text = "caf\u{e9} \u{3053}\u{3093}\u{306b}\u{3061}\u{306f} key=abc";
-        assert_eq!(redact_key_shaped(text), "caf\u{e9} \u{3053}\u{3093}\u{306b}\u{3061}\u{306f} key=abc");
+        assert_eq!(
+            redact_key_shaped(text),
+            "caf\u{e9} \u{3053}\u{3093}\u{306b}\u{3061}\u{306f} key=abc"
+        );
     }
 }

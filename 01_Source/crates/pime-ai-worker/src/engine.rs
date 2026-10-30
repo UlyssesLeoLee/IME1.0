@@ -16,14 +16,12 @@ use crate::config::Config;
 use crate::error::{Code, Failure};
 use crate::framing::{LineRead, read_bounded_line};
 use crate::policy::{
-    AuthTemplate, UrlPolicy, parse_origin, parse_url, response_header_allowed,
-    valid_provider_ref, validate_request_headers,
+    AuthTemplate, UrlPolicy, parse_origin, parse_url, response_header_allowed, valid_provider_ref,
+    validate_request_headers,
 };
 use crate::redact::scrub_exact;
 use crate::secret::{Secret, wipe_vec};
-use crate::transport::{
-    AbortReason, Flight, HttpResponse, Method, PreparedRequest, Transport,
-};
+use crate::transport::{AbortReason, Flight, HttpResponse, Method, PreparedRequest, Transport};
 use crate::vault::{Vault, VaultError};
 use pime_core::json::{self, Json, JsonErrorKind, Limits};
 use pime_core::{MAX_BULK_LINE_BYTES, MAX_LINE_BYTES};
@@ -241,10 +239,7 @@ impl Inner {
         )
     }
 
-    fn prepare_send(
-        &self,
-        req: &mut Json,
-    ) -> Result<(PreparedRequest, Option<Secret>), Failure> {
+    fn prepare_send(&self, req: &mut Json) -> Result<(PreparedRequest, Option<Secret>), Failure> {
         check_keys(
             req,
             &[
@@ -284,10 +279,7 @@ impl Inner {
         if body.len() > MAX_REQUEST_BODY_BYTES || (method == Method::Get && !body.is_empty()) {
             return Err(Failure::invalid("body"));
         }
-        let (auth_line, key) = match (
-            opt_str(req, "credentialRef")?,
-            opt_str(req, "authHeader")?,
-        ) {
+        let (auth_line, key) = match (opt_str(req, "credentialRef")?, opt_str(req, "authHeader")?) {
             (None, None) => (None, None),
             (Some(_), None) => return Err(Failure::invalid("authHeader")),
             (None, Some(_)) => return Err(Failure::invalid("credentialRef")),
@@ -303,10 +295,7 @@ impl Inner {
                     .ok_or_else(|| Failure::with_field(Code::NoCredential, "credentialRef"))?;
                 // the key may only go where it was stored for
                 if stored.origin != target.origin() {
-                    return Err(Failure::with_field(
-                        Code::CredentialOriginMismatch,
-                        "url",
-                    ));
+                    return Err(Failure::with_field(Code::CredentialOriginMismatch, "url"));
                 }
                 (Some(template.render(&stored.secret)), Some(stored.secret))
             }
@@ -446,8 +435,8 @@ impl Inner {
             if !valid_provider_ref(provider) {
                 return Err(Failure::invalid("credentialRef"));
             }
-            let origin = parse_origin(req_str(req, "host")?)
-                .ok_or_else(|| Failure::invalid("host"))?;
+            let origin =
+                parse_origin(req_str(req, "host")?).ok_or_else(|| Failure::invalid("host"))?;
             let secret = secret.as_ref().ok_or_else(|| Failure::invalid("secret"))?;
             self.vault
                 .set(&self.target_name(provider), &origin, secret)
@@ -543,7 +532,12 @@ fn response_fields(
         ("status", Json::int(i64::from(response.status))),
         (
             "headers",
-            Json::Obj(headers.into_iter().map(|(k, v)| (k, Json::Str(v))).collect()),
+            Json::Obj(
+                headers
+                    .into_iter()
+                    .map(|(k, v)| (k, Json::Str(v)))
+                    .collect(),
+            ),
         ),
         (
             "body",
@@ -622,7 +616,11 @@ impl Engine {
                 }
             },
         };
-        let op = req.get("op").and_then(Json::as_str).unwrap_or("").to_string();
+        let op = req
+            .get("op")
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .to_string();
         if big && op != "http.send" {
             inner.write(&reply_err(None, &Failure::new(Code::PayloadTooLarge)));
             return;
@@ -803,14 +801,20 @@ mod tests {
     impl Harness {
         fn new<F>(handler: F) -> Harness
         where
-            F: Fn(&PreparedRequest, &Flight) -> Result<HttpResponse, Failure> + Send + Sync + 'static,
+            F: Fn(&PreparedRequest, &Flight) -> Result<HttpResponse, Failure>
+                + Send
+                + Sync
+                + 'static,
         {
             Harness::with_config(Config::default(), handler)
         }
 
         fn with_config<F>(config: Config, handler: F) -> Harness
         where
-            F: Fn(&PreparedRequest, &Flight) -> Result<HttpResponse, Failure> + Send + Sync + 'static,
+            F: Fn(&PreparedRequest, &Flight) -> Result<HttpResponse, Failure>
+                + Send
+                + Sync
+                + 'static,
         {
             let fake = Arc::new(Fake {
                 handler: Box::new(handler),
@@ -832,7 +836,10 @@ mod tests {
         }
 
         fn wait(&self) {
-            assert!(self.engine.wait_idle(Duration::from_secs(10)), "senders did not finish");
+            assert!(
+                self.engine.wait_idle(Duration::from_secs(10)),
+                "senders did not finish"
+            );
         }
 
         fn raw(&self) -> String {
@@ -858,7 +865,11 @@ mod tests {
                 if let Some(r) = self.try_reply(id) {
                     return r;
                 }
-                assert!(t0.elapsed() < Duration::from_secs(10), "no reply for id {id}: {}", self.raw());
+                assert!(
+                    t0.elapsed() < Duration::from_secs(10),
+                    "no reply for id {id}: {}",
+                    self.raw()
+                );
                 sleep(Duration::from_millis(2));
             }
         }
@@ -870,7 +881,10 @@ mod tests {
         fn wait_for_requests(&self, n: usize) {
             let t0 = Instant::now();
             while self.seen_count() < n {
-                assert!(t0.elapsed() < Duration::from_secs(10), "the transport did not start");
+                assert!(
+                    t0.elapsed() < Duration::from_secs(10),
+                    "the transport did not start"
+                );
                 sleep(Duration::from_millis(2));
             }
         }
@@ -885,7 +899,12 @@ mod tests {
             ])
             .to_json_string();
             self.line(&line);
-            assert_eq!(self.reply(9000).get("ok"), Some(&Json::Bool(true)), "{}", self.raw());
+            assert_eq!(
+                self.reply(9000).get("ok"),
+                Some(&Json::Bool(true)),
+                "{}",
+                self.raw()
+            );
         }
     }
 
@@ -918,32 +937,62 @@ mod tests {
     #[test]
     fn ut_031_http_send_injects_the_key_and_no_output_line_contains_it() {
         let h = Harness::new(|_, _| {
-            Ok(response(200, &[("content-type", "application/json")], r#"{"output_text":"hi"}"#))
+            Ok(response(
+                200,
+                &[("content-type", "application/json")],
+                r#"{"output_text":"hi"}"#,
+            ))
         });
         h.store_key("openai", "api.openai.com");
         let mut extra = bearer("openai");
-        extra.push(("headers", Json::obj(vec![("Content-Type", Json::str("application/json"))])));
+        extra.push((
+            "headers",
+            Json::obj(vec![("Content-Type", Json::str("application/json"))]),
+        ));
         extra.push(("body", Json::str(r#"{"model":"m"}"#)));
-        h.line(&send_line(1, "POST", "https://api.openai.com/v1/responses", extra));
+        h.line(&send_line(
+            1,
+            "POST",
+            "https://api.openai.com/v1/responses",
+            extra,
+        ));
         h.wait();
         let r = h.reply(1);
         assert!(is_ok(&r), "{}", h.raw());
         assert_eq!(r.get("status").and_then(Json::as_i64), Some(200));
-        assert_eq!(r.get("body").and_then(Json::as_str), Some(r#"{"output_text":"hi"}"#));
         assert_eq!(
-            r.get("headers").and_then(|h| h.get("content-type")).and_then(Json::as_str),
+            r.get("body").and_then(Json::as_str),
+            Some(r#"{"output_text":"hi"}"#)
+        );
+        assert_eq!(
+            r.get("headers")
+                .and_then(|h| h.get("content-type"))
+                .and_then(Json::as_str),
             Some("application/json")
         );
         assert_eq!(h.seen_count(), 1);
         let seen = h.fake.seen.lock().unwrap();
-        assert_eq!(seen[0].auth_line.as_deref(), Some("Authorization: Bearer mock-key-test-123"));
+        assert_eq!(
+            seen[0].auth_line.as_deref(),
+            Some("Authorization: Bearer mock-key-test-123")
+        );
         assert_eq!(seen[0].method, Method::Post);
-        assert_eq!((seen[0].host.as_str(), seen[0].port), ("api.openai.com", 443));
+        assert_eq!(
+            (seen[0].host.as_str(), seen[0].port),
+            ("api.openai.com", 443)
+        );
         assert_eq!(seen[0].path, "/v1/responses");
         assert_eq!(seen[0].body, br#"{"model":"m"}"#);
-        assert_eq!(seen[0].headers, vec![("Content-Type".to_string(), "application/json".to_string())]);
+        assert_eq!(
+            seen[0].headers,
+            vec![("Content-Type".to_string(), "application/json".to_string())]
+        );
         // the positive control above proves the key reached the transport; now it must be absent from everything that left
-        assert!(!h.raw().contains(KEY), "the key appeared in a reply: {}", h.raw());
+        assert!(
+            !h.raw().contains(KEY),
+            "the key appeared in a reply: {}",
+            h.raw()
+        );
         assert_eq!(h.vault.targets(), vec!["ProgrammingIME/openai".to_string()]);
     }
 
@@ -954,9 +1003,17 @@ mod tests {
         let extra = vec![
             ("credentialRef", Json::str("anthropic")),
             ("authHeader", Json::str("x-api-key: {key}")),
-            ("headers", Json::obj(vec![("anthropic-version", Json::str("2026-10-21"))])),
+            (
+                "headers",
+                Json::obj(vec![("anthropic-version", Json::str("2026-10-21"))]),
+            ),
         ];
-        h.line(&send_line(2, "POST", "https://api.anthropic.com/v1/messages", extra));
+        h.line(&send_line(
+            2,
+            "POST",
+            "https://api.anthropic.com/v1/messages",
+            extra,
+        ));
         h.wait();
         assert!(is_ok(&h.reply(2)));
         assert_eq!(
@@ -969,7 +1026,12 @@ mod tests {
     #[test]
     fn a_request_without_a_credential_reference_carries_no_credential() {
         let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
-        h.line(&send_line(3, "GET", "https://models.example/v1/models", vec![]));
+        h.line(&send_line(
+            3,
+            "GET",
+            "https://models.example/v1/models",
+            vec![],
+        ));
         h.wait();
         assert!(is_ok(&h.reply(3)));
         assert_eq!(h.fake.seen.lock().unwrap()[0].auth_line, None);
@@ -979,7 +1041,11 @@ mod tests {
     #[test]
     fn ut_036_rate_limit_and_server_errors_pass_through_with_the_headers_the_product_reads() {
         let h = Harness::new(|r, _| {
-            let status = if r.target.path_and_query.ends_with("429") { 429 } else { 500 };
+            let status = if r.target.path_and_query.ends_with("429") {
+                429
+            } else {
+                500
+            };
             Ok(response(
                 status,
                 &[
@@ -992,15 +1058,33 @@ mod tests {
                 r#"{"error":"mock-error"}"#,
             ))
         });
-        h.line(&send_line(4, "POST", "https://api.example.com/limit/429", vec![]));
-        h.line(&send_line(5, "POST", "https://api.example.com/fail/500", vec![]));
+        h.line(&send_line(
+            4,
+            "POST",
+            "https://api.example.com/limit/429",
+            vec![],
+        ));
+        h.line(&send_line(
+            5,
+            "POST",
+            "https://api.example.com/fail/500",
+            vec![],
+        ));
         h.wait();
         let r = h.reply(4);
-        assert!(is_ok(&r), "a 429 is a normal reply: the caller maps the status");
+        assert!(
+            is_ok(&r),
+            "a 429 is a normal reply: the caller maps the status"
+        );
         assert_eq!(r.get("status").and_then(Json::as_i64), Some(429));
         let headers = r.get("headers").unwrap();
         assert_eq!(headers.get("retry-after").and_then(Json::as_str), Some("7"));
-        assert_eq!(headers.get("x-ratelimit-remaining-requests").and_then(Json::as_str), Some("0"));
+        assert_eq!(
+            headers
+                .get("x-ratelimit-remaining-requests")
+                .and_then(Json::as_str),
+            Some("0")
+        );
         assert!(headers.get("set-cookie").is_none() && headers.get("www-authenticate").is_none());
         assert!(headers.get("server").is_none());
         assert_eq!(h.reply(5).get("status").and_then(Json::as_i64), Some(500));
@@ -1017,7 +1101,12 @@ mod tests {
             ))
         });
         h.store_key("openai", "api.openai.com");
-        h.line(&send_line(6, "POST", "https://api.openai.com/v1/responses", bearer("openai")));
+        h.line(&send_line(
+            6,
+            "POST",
+            "https://api.openai.com/v1/responses",
+            bearer("openai"),
+        ));
         h.wait();
         let r = h.reply(6);
         assert!(is_ok(&r));
@@ -1027,7 +1116,9 @@ mod tests {
             Some(r#"{"error":"Incorrect API key provided: [redacted]. See [redacted]"}"#)
         );
         assert_eq!(
-            r.get("headers").and_then(|h| h.get("x-request-id")).and_then(Json::as_str),
+            r.get("headers")
+                .and_then(|h| h.get("x-request-id"))
+                .and_then(Json::as_str),
             Some("req-[redacted]-end")
         );
         assert!(!h.raw().contains(KEY));
@@ -1036,10 +1127,19 @@ mod tests {
     #[test]
     fn redirects_are_blocked_and_their_target_is_not_reported() {
         let h = Harness::new(|_, _| {
-            Ok(response(302, &[("location", "https://evil.example/steal")], ""))
+            Ok(response(
+                302,
+                &[("location", "https://evil.example/steal")],
+                "",
+            ))
         });
         h.store_key("openai", "api.openai.com");
-        h.line(&send_line(7, "POST", "https://api.openai.com/v1/responses", bearer("openai")));
+        h.line(&send_line(
+            7,
+            "POST",
+            "https://api.openai.com/v1/responses",
+            bearer("openai"),
+        ));
         h.wait();
         let r = h.reply(7);
         assert_eq!((code(&r), is_ok(&r)), ("REDIRECT_BLOCKED", false));
@@ -1065,7 +1165,12 @@ mod tests {
     #[test]
     fn http_cancel_aborts_the_request_in_flight_and_both_replies_are_correct() {
         let h = Harness::new(hang);
-        h.line(&send_line(10, "POST", "https://api.example.com/v1", vec![("timeoutMs", Json::int(30_000))]));
+        h.line(&send_line(
+            10,
+            "POST",
+            "https://api.example.com/v1",
+            vec![("timeoutMs", Json::int(30_000))],
+        ));
         h.wait_for_requests(1);
         h.line(r#"{"op":"http.cancel","id":11,"request":10}"#);
         let cancel = h.reply(11);
@@ -1080,7 +1185,12 @@ mod tests {
         assert_eq!(h.reply(12).get("cancelled"), Some(&Json::Bool(false)));
         assert_eq!(h.reply(13).get("cancelled"), Some(&Json::Bool(false)));
         // and the id can be used again
-        h.line(&send_line(10, "POST", "https://api.example.com/v1", vec![("timeoutMs", Json::int(40))]));
+        h.line(&send_line(
+            10,
+            "POST",
+            "https://api.example.com/v1",
+            vec![("timeoutMs", Json::int(40))],
+        ));
         h.wait();
     }
 
@@ -1092,7 +1202,10 @@ mod tests {
         h.line(r#"{"op":"http.cancel","id":3,"request":1,"extra":1}"#);
         for (id, field) in [(1, "request"), (2, "request"), (3, "extra")] {
             let r = h.reply(id);
-            assert_eq!((code(&r), r.get("field").and_then(Json::as_str)), ("INVALID_REQUEST", Some(field)));
+            assert_eq!(
+                (code(&r), r.get("field").and_then(Json::as_str)),
+                ("INVALID_REQUEST", Some(field))
+            );
         }
     }
 
@@ -1107,10 +1220,24 @@ mod tests {
             }
             Ok(response(200, &[], "{}"))
         });
-        h.line(&send_line(20, "POST", "https://api.example.com/a", vec![("body", Json::str("slow"))]));
-        h.line(&send_line(21, "POST", "https://api.example.com/b", vec![("body", Json::str("fast"))]));
+        h.line(&send_line(
+            20,
+            "POST",
+            "https://api.example.com/a",
+            vec![("body", Json::str("slow"))],
+        ));
+        h.line(&send_line(
+            21,
+            "POST",
+            "https://api.example.com/b",
+            vec![("body", Json::str("fast"))],
+        ));
         h.wait();
-        let ids: Vec<i64> = h.replies().iter().filter_map(|r| r.get("id").and_then(Json::as_i64)).collect();
+        let ids: Vec<i64> = h
+            .replies()
+            .iter()
+            .filter_map(|r| r.get("id").and_then(Json::as_i64))
+            .collect();
         assert_eq!(ids, vec![21, 20]);
     }
 
@@ -1121,7 +1248,10 @@ mod tests {
         h.wait_for_requests(1);
         h.line(&send_line(30, "POST", "https://api.example.com/b", vec![]));
         let dup = h.reply(30);
-        assert_eq!((code(&dup), dup.get("field").and_then(Json::as_str)), ("INVALID_REQUEST", Some("id")));
+        assert_eq!(
+            (code(&dup), dup.get("field").and_then(Json::as_str)),
+            ("INVALID_REQUEST", Some("id"))
+        );
         assert!(h.engine.shutdown(Duration::from_secs(5)));
     }
 
@@ -1129,7 +1259,12 @@ mod tests {
     fn too_many_requests_in_flight_are_refused_with_busy() {
         let h = Harness::new(hang);
         for id in 0..MAX_IN_FLIGHT as i64 {
-            h.line(&send_line(100 + id, "POST", "https://api.example.com/a", vec![]));
+            h.line(&send_line(
+                100 + id,
+                "POST",
+                "https://api.example.com/a",
+                vec![],
+            ));
         }
         h.wait_for_requests(MAX_IN_FLIGHT);
         h.line(&send_line(200, "POST", "https://api.example.com/a", vec![]));
@@ -1162,7 +1297,12 @@ mod tests {
         assert_eq!(code(&h.reply(43)), "URL_NOT_ALLOWED");
         assert_eq!(h.seen_count(), 0, "nothing was sent");
         // the right origin works, also spelled in upper case
-        h.line(&send_line(44, "POST", "https://API.OpenAI.com/v1/responses", bearer("openai")));
+        h.line(&send_line(
+            44,
+            "POST",
+            "https://API.OpenAI.com/v1/responses",
+            bearer("openai"),
+        ));
         h.wait();
         assert!(is_ok(&h.reply(44)));
     }
@@ -1170,11 +1310,24 @@ mod tests {
     #[test]
     fn a_missing_credential_or_a_failing_store_sends_nothing() {
         let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
-        h.line(&send_line(50, "POST", "https://api.openai.com/v1", bearer("openai")));
+        h.line(&send_line(
+            50,
+            "POST",
+            "https://api.openai.com/v1",
+            bearer("openai"),
+        ));
         let r = h.reply(50);
-        assert_eq!((code(&r), r.get("field").and_then(Json::as_str)), ("NO_CREDENTIAL", Some("credentialRef")));
+        assert_eq!(
+            (code(&r), r.get("field").and_then(Json::as_str)),
+            ("NO_CREDENTIAL", Some("credentialRef"))
+        );
         h.vault.set_failing(true);
-        h.line(&send_line(51, "POST", "https://api.openai.com/v1", bearer("openai")));
+        h.line(&send_line(
+            51,
+            "POST",
+            "https://api.openai.com/v1",
+            bearer("openai"),
+        ));
         assert_eq!(code(&h.reply(51)), "VAULT_ERROR");
         assert_eq!(h.seen_count(), 0);
     }
@@ -1182,35 +1335,153 @@ mod tests {
     #[test]
     fn invalid_http_send_requests_are_refused_before_anything_is_sent() {
         let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
-        let base = |id: i64, extra: Vec<(&str, Json)>| send_line(id, "POST", "https://api.example.com/v1", extra);
+        let base = |id: i64, extra: Vec<(&str, Json)>| {
+            send_line(id, "POST", "https://api.example.com/v1", extra)
+        };
         let cases: Vec<(i64, String, &str, &str)> = vec![
-            (60, send_line(60, "PUT", "https://api.example.com/v1", vec![]), "INVALID_REQUEST", "method"),
-            (61, send_line(61, "POST", "http://api.example.com/v1", vec![]), "URL_NOT_ALLOWED", "url"),
-            (62, send_line(62, "POST", "https://u:p@api.example.com/v1", vec![]), "URL_NOT_ALLOWED", "url"),
-            (63, send_line(63, "GET", "https://api.example.com/v1", vec![("body", Json::str("x"))]), "INVALID_REQUEST", "body"),
-            (64, base(64, vec![("headers", Json::obj(vec![("Authorization", Json::str("Bearer stolen"))]))]), "HEADER_NOT_ALLOWED", "headers"),
-            (65, base(65, vec![("headers", Json::obj(vec![("Content-Type", Json::int(1))]))]), "INVALID_REQUEST", "headers"),
-            (66, base(66, vec![("credentialRef", Json::str("openai"))]), "INVALID_REQUEST", "authHeader"),
-            (67, base(67, vec![("authHeader", Json::str("Authorization: Bearer {key}"))]), "INVALID_REQUEST", "credentialRef"),
-            (68, base(68, vec![("timeoutMs", Json::int(0))]), "INVALID_REQUEST", "timeoutMs"),
-            (69, base(69, vec![("timeoutMs", Json::int(MAX_TIMEOUT_MS + 1))]), "INVALID_REQUEST", "timeoutMs"),
-            (70, base(70, vec![("timeoutMs", Json::str("5"))]), "INVALID_REQUEST", "timeoutMs"),
-            (71, base(71, vec![("credentialREF", Json::str("openai"))]), "INVALID_REQUEST", "credentialREF"),
-            (75, base(75, vec![("sk-proj-AbCdEf0123456789", Json::int(1))]), "INVALID_REQUEST", "?"),
-            (72, base(72, vec![("credentialRef", Json::str("a/b")), ("authHeader", Json::str("Authorization: Bearer {key}"))]), "INVALID_REQUEST", "credentialRef"),
-            (73, base(73, vec![("credentialRef", Json::str("openai")), ("authHeader", Json::str("Host: {key}"))]), "HEADER_NOT_ALLOWED", "authHeader"),
-            (74, base(74, vec![("body", Json::int(5))]), "INVALID_REQUEST", "body"),
+            (
+                60,
+                send_line(60, "PUT", "https://api.example.com/v1", vec![]),
+                "INVALID_REQUEST",
+                "method",
+            ),
+            (
+                61,
+                send_line(61, "POST", "http://api.example.com/v1", vec![]),
+                "URL_NOT_ALLOWED",
+                "url",
+            ),
+            (
+                62,
+                send_line(62, "POST", "https://u:p@api.example.com/v1", vec![]),
+                "URL_NOT_ALLOWED",
+                "url",
+            ),
+            (
+                63,
+                send_line(
+                    63,
+                    "GET",
+                    "https://api.example.com/v1",
+                    vec![("body", Json::str("x"))],
+                ),
+                "INVALID_REQUEST",
+                "body",
+            ),
+            (
+                64,
+                base(
+                    64,
+                    vec![(
+                        "headers",
+                        Json::obj(vec![("Authorization", Json::str("Bearer stolen"))]),
+                    )],
+                ),
+                "HEADER_NOT_ALLOWED",
+                "headers",
+            ),
+            (
+                65,
+                base(
+                    65,
+                    vec![("headers", Json::obj(vec![("Content-Type", Json::int(1))]))],
+                ),
+                "INVALID_REQUEST",
+                "headers",
+            ),
+            (
+                66,
+                base(66, vec![("credentialRef", Json::str("openai"))]),
+                "INVALID_REQUEST",
+                "authHeader",
+            ),
+            (
+                67,
+                base(
+                    67,
+                    vec![("authHeader", Json::str("Authorization: Bearer {key}"))],
+                ),
+                "INVALID_REQUEST",
+                "credentialRef",
+            ),
+            (
+                68,
+                base(68, vec![("timeoutMs", Json::int(0))]),
+                "INVALID_REQUEST",
+                "timeoutMs",
+            ),
+            (
+                69,
+                base(69, vec![("timeoutMs", Json::int(MAX_TIMEOUT_MS + 1))]),
+                "INVALID_REQUEST",
+                "timeoutMs",
+            ),
+            (
+                70,
+                base(70, vec![("timeoutMs", Json::str("5"))]),
+                "INVALID_REQUEST",
+                "timeoutMs",
+            ),
+            (
+                71,
+                base(71, vec![("credentialREF", Json::str("openai"))]),
+                "INVALID_REQUEST",
+                "credentialREF",
+            ),
+            (
+                75,
+                base(75, vec![("sk-proj-AbCdEf0123456789", Json::int(1))]),
+                "INVALID_REQUEST",
+                "?",
+            ),
+            (
+                72,
+                base(
+                    72,
+                    vec![
+                        ("credentialRef", Json::str("a/b")),
+                        ("authHeader", Json::str("Authorization: Bearer {key}")),
+                    ],
+                ),
+                "INVALID_REQUEST",
+                "credentialRef",
+            ),
+            (
+                73,
+                base(
+                    73,
+                    vec![
+                        ("credentialRef", Json::str("openai")),
+                        ("authHeader", Json::str("Host: {key}")),
+                    ],
+                ),
+                "HEADER_NOT_ALLOWED",
+                "authHeader",
+            ),
+            (
+                74,
+                base(74, vec![("body", Json::int(5))]),
+                "INVALID_REQUEST",
+                "body",
+            ),
         ];
         for (id, line, want, field) in cases {
             h.line(&line);
             let r = h.reply(id);
             assert_eq!(code(&r), want, "id {id}: {}", h.raw());
-            assert_eq!(r.get("field").and_then(Json::as_str), Some(field), "id {id}");
+            assert_eq!(
+                r.get("field").and_then(Json::as_str),
+                Some(field),
+                "id {id}"
+            );
         }
         // a request without an id cannot be matched to its reply
         h.line(r#"{"op":"http.send","method":"GET","url":"https://api.example.com/"}"#);
         let last = h.replies().pop().unwrap();
-        assert_eq!((code(&last), last.get("field").and_then(Json::as_str)), ("INVALID_REQUEST", Some("id")));
+        assert_eq!(
+            (code(&last), last.get("field").and_then(Json::as_str)),
+            ("INVALID_REQUEST", Some("id"))
+        );
         assert_eq!(h.seen_count(), 0);
     }
 
@@ -1225,8 +1496,18 @@ mod tests {
                 Err(f)
             }
         });
-        h.line(&send_line(80, "POST", "https://api.example.com/tls", vec![]));
-        h.line(&send_line(81, "POST", "https://api.example.com/other", vec![]));
+        h.line(&send_line(
+            80,
+            "POST",
+            "https://api.example.com/tls",
+            vec![],
+        ));
+        h.line(&send_line(
+            81,
+            "POST",
+            "https://api.example.com/other",
+            vec![],
+        ));
         h.wait();
         assert_eq!(code(&h.reply(80)), "DEPTH_ZERO_SELF_SIGNED_CERT");
         let r = h.reply(81);
@@ -1255,7 +1536,10 @@ mod tests {
         });
         ok.line(&send_line(91, "POST", "https://api.example.com/v1", vec![]));
         ok.wait();
-        assert_eq!(ok.reply(91).get("bodyBytes").and_then(Json::as_i64), Some(MAX_RESPONSE_BYTES as i64));
+        assert_eq!(
+            ok.reply(91).get("bodyBytes").and_then(Json::as_i64),
+            Some(MAX_RESPONSE_BYTES as i64)
+        );
     }
 
     #[test]
@@ -1291,17 +1575,33 @@ mod tests {
         };
         let h = Harness::with_config(relaxed, |_, _| Ok(response(200, &[], "{}")));
         h.line(&send_line(110, "POST", "https://127.0.0.1:9/v1", vec![]));
-        h.line(&send_line(111, "POST", "https://api.example.com/v1", vec![]));
+        h.line(&send_line(
+            111,
+            "POST",
+            "https://api.example.com/v1",
+            vec![],
+        ));
         h.wait();
         let seen = h.fake.seen.lock().unwrap();
-        let flag_for = |host: &str| seen.iter().find(|s| s.host == host).unwrap().accept_untrusted_ca;
+        let flag_for = |host: &str| {
+            seen.iter()
+                .find(|s| s.host == host)
+                .unwrap()
+                .accept_untrusted_ca
+        };
         assert!(flag_for("127.0.0.1"));
-        assert!(!flag_for("api.example.com"), "a real host is always verified against the system store");
+        assert!(
+            !flag_for("api.example.com"),
+            "a real host is always verified against the system store"
+        );
         drop(seen);
         let strict = Harness::new(|_, _| Ok(response(200, &[], "{}")));
         strict.line(&send_line(112, "POST", "https://127.0.0.1:9/v1", vec![]));
         strict.wait();
-        assert!(!strict.fake.seen.lock().unwrap()[0].accept_untrusted_ca, "the default never relaxes");
+        assert!(
+            !strict.fake.seen.lock().unwrap()[0].accept_untrusted_ca,
+            "the default never relaxes"
+        );
     }
 
     #[test]
@@ -1330,11 +1630,17 @@ mod tests {
         h.store_key("openai", "API.OpenAI.com");
         let stored = h.reply(9000);
         assert_eq!(stored.get("stored"), Some(&Json::Bool(true)));
-        assert_eq!(stored.get("host").and_then(Json::as_str), Some("api.openai.com:443"));
+        assert_eq!(
+            stored.get("host").and_then(Json::as_str),
+            Some("api.openai.com:443")
+        );
         h.line(r#"{"op":"cred.exists","id":2,"credentialRef":"openai"}"#);
         let exists = h.reply(2);
         assert_eq!(exists.get("exists"), Some(&Json::Bool(true)));
-        assert_eq!(exists.get("host").and_then(Json::as_str), Some("api.openai.com:443"));
+        assert_eq!(
+            exists.get("host").and_then(Json::as_str),
+            Some("api.openai.com:443")
+        );
         assert_eq!(h.vault.targets(), vec!["ProgrammingIME/openai".to_string()]);
         h.line(r#"{"op":"cred.delete","id":3,"credentialRef":"openai"}"#);
         assert_eq!(h.reply(3).get("deleted"), Some(&Json::Bool(true)));
@@ -1343,7 +1649,12 @@ mod tests {
         h.line(r#"{"op":"cred.exists","id":5,"credentialRef":"openai"}"#);
         assert_eq!(h.reply(5).get("exists"), Some(&Json::Bool(false)));
         // a deleted key can no longer be used
-        h.line(&send_line(6, "POST", "https://api.openai.com/v1", bearer("openai")));
+        h.line(&send_line(
+            6,
+            "POST",
+            "https://api.openai.com/v1",
+            bearer("openai"),
+        ));
         assert_eq!(code(&h.reply(6)), "NO_CREDENTIAL");
         assert!(!h.raw().contains(KEY), "{}", h.raw());
     }
@@ -1374,7 +1685,12 @@ mod tests {
             ])
             .to_json_string()
         };
-        h.line(&line(1, "openai", "api.openai.com", "has spaces in the pasted key"));
+        h.line(&line(
+            1,
+            "openai",
+            "api.openai.com",
+            "has spaces in the pasted key",
+        ));
         h.line(&line(2, "openai", "api.openai.com", "short"));
         h.line(&line(3, "a/b", "api.openai.com", KEY));
         h.line(&line(4, "openai", "https://api.openai.com", KEY));
@@ -1382,7 +1698,16 @@ mod tests {
         h.line(r#"{"op":"cred.set","id":6,"credentialRef":"openai","host":"api.openai.com"}"#);
         h.line(r#"{"op":"cred.set","id":7,"credentialRef":"openai","host":"api.openai.com","secret":12345678}"#);
         h.line(r#"{"op":"cred.set","id":8,"credentialRef":"openai","host":"api.openai.com","secret":"mock-key-test-123","extra":1}"#);
-        for (id, field) in [(1, "secret"), (2, "secret"), (3, "credentialRef"), (4, "host"), (5, "host"), (6, "secret"), (7, "secret"), (8, "extra")] {
+        for (id, field) in [
+            (1, "secret"),
+            (2, "secret"),
+            (3, "credentialRef"),
+            (4, "host"),
+            (5, "host"),
+            (6, "secret"),
+            (7, "secret"),
+            (8, "extra"),
+        ] {
             let r = h.reply(id);
             assert_eq!(
                 (code(&r), r.get("field").and_then(Json::as_str)),
@@ -1418,7 +1743,10 @@ mod tests {
         h.line(r#"{"op":"health","id":"x"}"#);
         h.line("{}");
         h.engine.handle_line(&mut vec![0xff, 0xfe]);
-        let big = format!(r#"{{"op":"cred.exists","id":9,"credentialRef":"{}"}}"#, "a".repeat(70_000));
+        let big = format!(
+            r#"{{"op":"cred.exists","id":9,"credentialRef":"{}"}}"#,
+            "a".repeat(70_000)
+        );
         h.line(&big);
         h.engine.reject_too_long();
         let codes: Vec<(String, Option<i64>)> = h
@@ -1445,14 +1773,27 @@ mod tests {
     fn only_http_send_may_use_the_bulk_line_size() {
         let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
         let body = "b".repeat(200_000);
-        h.line(&send_line(1, "POST", "https://api.example.com/v1", vec![("body", Json::str(&body))]));
+        h.line(&send_line(
+            1,
+            "POST",
+            "https://api.example.com/v1",
+            vec![("body", Json::str(&body))],
+        ));
         h.wait();
         assert!(is_ok(&h.reply(1)));
         assert_eq!(h.fake.seen.lock().unwrap()[0].body.len(), 200_000);
         let too_big = "b".repeat(MAX_REQUEST_BODY_BYTES + 1);
-        h.line(&send_line(2, "POST", "https://api.example.com/v1", vec![("body", Json::str(&too_big))]));
+        h.line(&send_line(
+            2,
+            "POST",
+            "https://api.example.com/v1",
+            vec![("body", Json::str(&too_big))],
+        ));
         let r = h.reply(2);
-        assert_eq!((code(&r), r.get("field").and_then(Json::as_str)), ("INVALID_REQUEST", Some("body")));
+        assert_eq!(
+            (code(&r), r.get("field").and_then(Json::as_str)),
+            ("INVALID_REQUEST", Some("body"))
+        );
     }
 
     #[test]
@@ -1463,11 +1804,20 @@ mod tests {
         assert_eq!(r.get("name").and_then(Json::as_str), Some("pime-ai-worker"));
         assert_eq!(r.get("protocol").and_then(Json::as_str), Some("0.3"));
         assert_eq!(r.get("transport").and_then(Json::as_str), Some("fake"));
-        assert_eq!(r.get("namespace").and_then(Json::as_str), Some("ProgrammingIME"));
+        assert_eq!(
+            r.get("namespace").and_then(Json::as_str),
+            Some("ProgrammingIME")
+        );
         for flag in ["testMode", "insecureTestCa", "allowLoopbackHttp"] {
             assert_eq!(r.get(flag), Some(&Json::Bool(false)), "{flag}");
         }
-        let ops: Vec<&str> = r.get("ops").and_then(Json::as_array).unwrap().iter().filter_map(Json::as_str).collect();
+        let ops: Vec<&str> = r
+            .get("ops")
+            .and_then(Json::as_array)
+            .unwrap()
+            .iter()
+            .filter_map(Json::as_str)
+            .collect();
         assert_eq!(ops, OPS);
     }
 
@@ -1487,12 +1837,23 @@ mod tests {
     fn the_timeout_budget_reaches_the_transport() {
         let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
         h.line(&send_line(1, "POST", "https://api.example.com/v1", vec![]));
-        h.line(&send_line(2, "POST", "https://api.example.com/v1", vec![("timeoutMs", Json::int(1234))]));
+        h.line(&send_line(
+            2,
+            "POST",
+            "https://api.example.com/v1",
+            vec![("timeoutMs", Json::int(1234))],
+        ));
         h.wait();
         let seen = h.fake.seen.lock().unwrap();
         let mut timeouts: Vec<Duration> = seen.iter().map(|s| s.timeout).collect();
         timeouts.sort();
-        assert_eq!(timeouts, vec![Duration::from_millis(1234), Duration::from_millis(DEFAULT_TIMEOUT_MS as u64)]);
+        assert_eq!(
+            timeouts,
+            vec![
+                Duration::from_millis(1234),
+                Duration::from_millis(DEFAULT_TIMEOUT_MS as u64)
+            ]
+        );
     }
 
     #[test]
@@ -1501,11 +1862,19 @@ mod tests {
         let input = format!(
             "{}\n{}\nnot json\n",
             r#"{"op":"health","id":1}"#,
-            send_line(2, "POST", "https://api.example.com/v1", vec![("timeoutMs", Json::int(30_000))])
+            send_line(
+                2,
+                "POST",
+                "https://api.example.com/v1",
+                vec![("timeoutMs", Json::int(30_000))]
+            )
         );
         let t0 = Instant::now();
         serve(&h.engine, Cursor::new(input.into_bytes())).unwrap();
-        assert!(t0.elapsed() < Duration::from_secs(5), "end of input must not wait for the 30 s deadline");
+        assert!(
+            t0.elapsed() < Duration::from_secs(5),
+            "end of input must not wait for the 30 s deadline"
+        );
         assert!(is_ok(&h.reply(1)));
         assert_eq!(code(&h.reply(2)), "CANCELLED");
         assert!(h.replies().iter().any(|r| code(r) == "INVALID_JSON"));

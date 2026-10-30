@@ -136,7 +136,14 @@ mod tests {
             vec!["--test-credential-namespace", "PIME-TEST-abc"],
             vec!["--test-allow-loopback-http", "--insecure-test-ca"],
         ] {
-            for env in [None, Some(""), Some("0"), Some("true"), Some("yes"), Some("1 ")] {
+            for env in [
+                None,
+                Some(""),
+                Some("0"),
+                Some("true"),
+                Some("yes"),
+                Some("1 "),
+            ] {
                 assert!(parse(&args, env).is_err(), "{args:?} with {env:?}");
             }
         }
@@ -149,7 +156,11 @@ mod tests {
         let c = parse(&["--test-allow-loopback-http"], Some("1")).unwrap();
         assert!(c.allow_loopback_http && !c.insecure_test_ca);
         let c = parse(
-            &["--test-credential-namespace", "PIME-TEST-0a1b2c", "--insecure-test-ca"],
+            &[
+                "--test-credential-namespace",
+                "PIME-TEST-0a1b2c",
+                "--insecure-test-ca",
+            ],
             Some("1"),
         )
         .unwrap();
@@ -181,18 +192,28 @@ mod tests {
     fn unknown_options_and_help() {
         assert_eq!(parse(&["--help"], None), Err(ConfigError::Help));
         assert_eq!(parse(&["-h"], Some("1")), Err(ConfigError::Help));
-        assert!(matches!(parse(&["--frobnicate"], None), Err(ConfigError::Invalid(_))));
-        assert!(matches!(parse(&["positional"], Some("1")), Err(ConfigError::Invalid(_))));
+        assert!(matches!(
+            parse(&["--frobnicate"], None),
+            Err(ConfigError::Invalid(_))
+        ));
+        assert!(matches!(
+            parse(&["positional"], Some("1")),
+            Err(ConfigError::Invalid(_))
+        ));
     }
 
     #[test]
     fn error_messages_never_echo_arguments() {
         let secret = "sk-proj-AbCdEf0123456789AbCdEf";
         let e = parse(&[secret], None).unwrap_err();
-        let ConfigError::Invalid(msg) = e else { panic!() };
+        let ConfigError::Invalid(msg) = e else {
+            panic!()
+        };
         assert!(!msg.contains(secret));
         let e = parse(&["--test-credential-namespace", secret], Some("1")).unwrap_err();
-        let ConfigError::Invalid(msg) = e else { panic!() };
+        let ConfigError::Invalid(msg) = e else {
+            panic!()
+        };
         assert!(!msg.contains(secret));
     }
 }

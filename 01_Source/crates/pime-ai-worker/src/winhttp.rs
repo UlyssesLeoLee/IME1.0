@@ -13,8 +13,8 @@
 //! `SECURITY_FLAG_IGNORE_UNKNOWN_CA` and nothing else (host name and validity dates are still checked).
 #![allow(unsafe_code)]
 
-use crate::error::{Code, Failure};
 use crate::errmap::{SecureFailure, map_win32_error};
+use crate::error::{Code, Failure};
 use crate::transport::{Flight, HttpResponse, PreparedRequest, Transport, header_block};
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicU8, AtomicU32, Ordering};
@@ -93,7 +93,8 @@ fn open_session(access: WINHTTP_ACCESS_TYPE) -> Result<Handle, u32> {
 
 /// TLS 1.2 and 1.3 only; falls back to 1.2 on a system whose WinHTTP does not know the 1.3 flag.
 fn restrict_protocols(session: Handle) {
-    let both = (WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3).to_ne_bytes();
+    let both =
+        (WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3).to_ne_bytes();
     if set_option(session, WINHTTP_OPTION_SECURE_PROTOCOLS, &both).is_err() {
         let _ = set_option(
             session,
@@ -275,7 +276,8 @@ impl WinHttpTransport {
         };
         let host = wide(&req.target.host);
         // SAFETY: `session` is open for the life of the transport; `host` is NUL-terminated and outlives the call.
-        let connect = unsafe { WinHttpConnect(session.0, PCWSTR(host.as_ptr()), req.target.port, 0) };
+        let connect =
+            unsafe { WinHttpConnect(session.0, PCWSTR(host.as_ptr()), req.target.port, 0) };
         if connect.is_null() {
             return Err(fail(last_error()));
         }
@@ -345,8 +347,14 @@ impl WinHttpTransport {
             })?;
         }
         // Best effort: gzip/deflate bodies are decoded by WinHTTP, so the response cap applies to what we read.
-        let _ = set_option(request, WINHTTP_OPTION_DECOMPRESSION, &DECOMPRESSION_ALL.to_ne_bytes());
-        let ms = i32::try_from(req.timeout.as_millis()).unwrap_or(i32::MAX).max(1);
+        let _ = set_option(
+            request,
+            WINHTTP_OPTION_DECOMPRESSION,
+            &DECOMPRESSION_ALL.to_ne_bytes(),
+        );
+        let ms = i32::try_from(req.timeout.as_millis())
+            .unwrap_or(i32::MAX)
+            .max(1);
         // SAFETY: `request` is an open handle. The timeouts are a backstop behind the engine's own deadline.
         let _ = unsafe { WinHttpSetTimeouts(request.0, ms, ms, ms, ms) };
         // The callback only fills `ctx`, which outlives the request handle (closed by `_request_guard` before return).
@@ -364,7 +372,7 @@ impl WinHttpTransport {
 
         // Send: the header block holds the key, so it is wiped as soon as WinHTTP has taken it.
         let headers = header_block(req);
-        let body_ptr = (!req.body.is_empty()).then(|| req.body.as_ptr() as *const c_void);
+        let body_ptr = (!req.body.is_empty()).then_some(req.body.as_ptr() as *const c_void);
         let body_len = u32::try_from(req.body.len()).unwrap_or(u32::MAX);
         if flight.is_aborted() {
             return Err(aborted());
