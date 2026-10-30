@@ -59,6 +59,14 @@ path = "../../tests/rust/protocol_v03_ai.rs"
 name = "parity_cfg"
 path = "../../tests/rust/parity_cfg.rs"
 
+[[test]]
+name = "protocol_v03_cfg"
+path = "../../tests/rust/protocol_v03_cfg.rs"
+
+[[test]]
+name = "settings_io"
+path = "../../tests/rust/settings_io.rs"
+
 [[bin]]
 name = "pime-core"
 path = "src/main.rs"
