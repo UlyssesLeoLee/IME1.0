@@ -10,7 +10,8 @@ tests/
   golden-v0.2/             frozen behaviour of release v0.2 - read-only (SHA256SUMS.txt)
   js/                      node:test suites for the extension's pure logic and engine adapter (ut-*.test.js, parity.test.js, helpers.js)
   rust/                    integration tests of crates/pime-core (wired through [[test]] entries in its Cargo.toml)
-  smoke/                   core-binary-smoke.js: the real pime-core.exe over JSON Lines; tsf-dll-check.js: builds crates/pime-tsf and inspects the DLL
+  smoke/                   core-binary-smoke.js: the real pime-core.exe over JSON Lines; tsf-dll-check.js: builds crates/pime-tsf and inspects the DLL; ai-worker-smoke.js; ipc-smoke.js
+  ipc/, setup/              integration tests of crates/pime-ipc and crates/pime-setup (wired through [[test]] entries in their Cargo.toml)
   uat/                     Playwright user-acceptance tests on the real VS Code (+ HTTPS mock provider, helpers)
   experiments/             feasibility probes that are scripts, e.g. wasm-panel-probe (WASM inside a VS Code webview)
 ```
@@ -23,6 +24,10 @@ Unit tests that need private access stay inside the Rust modules (`#[cfg(test)]`
 node tests/run-all.js                    # fast set, no GUI: syntax, fixtures, golden, Rust, JS (+ engine differential tests), smoke, TSF DLL build + PE check
 node tests/run-all.js --all              # + UAT with the JavaScript engine and UAT with the Rust engine (about 8 minutes)
 node tests/run-all.js --js               # single steps: --syntax --fixtures --golden --js --rust --smoke --tsf --uat --uat-rust
+node tests/run-all.js --tsf              # crates/pime-tsf unit tests, then build the DLL and inspect it (in the fast set)
+node tests/run-all.js --worker           # crates/pime-ai-worker: unit tests + smoke test against the HTTPS mock (needs OpenSSL; PIME-TEST session credentials, removed afterwards)
+node tests/run-all.js --ipc              # crates/pime-ipc: unit + loopback tests on real named pipes (unique test pipe names)
+node tests/run-all.js --setup            # crates/pime-setup: unit + temp-folder integration tests (never touches Program Files, HKLM or regsvr32)
 node tests/run-all.js --uat --only-uat "UAT-23"
 node tests/run-all.js --report           # explicit: rewrite 02_Verification/test-execution-report.* from the last results
 ```

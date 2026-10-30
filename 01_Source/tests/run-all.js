@@ -4,7 +4,10 @@
 //
 //   node tests/run-all.js                 fast, no GUI: --syntax --fixtures --golden --js --rust --smoke --tsf
 //   node tests/run-all.js --all           the above + --uat + --uat-rust
-//   node tests/run-all.js --tsf           build crates/pime-tsf (GNU target) and inspect the DLL (x64, exports, imports); never registers it
+//   node tests/run-all.js --tsf           crates/pime-tsf: its unit tests, then build the DLL (GNU target) and inspect it (x64, exports, imports); never registers it
+//   node tests/run-all.js --worker        crates/pime-ai-worker: unit tests + the smoke test against the HTTPS mock (needs OpenSSL; writes PIME-TEST session credentials and removes them)
+//   node tests/run-all.js --ipc           crates/pime-ipc: unit + loopback tests on real named pipes (unique test pipe names)
+//   node tests/run-all.js --setup         crates/pime-setup: unit + temp-folder integration tests (never touches Program Files, HKLM or regsvr32)
 //   node tests/run-all.js --js            only the JavaScript unit/integration suite (add PIME_CORE_EXE to also run the engine differential tests)
 //   node tests/run-all.js --rust          cargo test --workspace (builds the debug core exe, which --smoke and --uat-rust reuse)
 //   node tests/run-all.js --uat           Playwright on the real VS Code, JavaScript engine
@@ -21,7 +24,7 @@ const tests = __dirname, src = path.resolve(tests, '..'), root = path.resolve(sr
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|worker|ipc|setup|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
 const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
@@ -65,7 +68,29 @@ if (want('rust')) {
 if (want('js')) step('JavaScript tests' + (fs.existsSync(coreExe) ? ' (+ engine differential tests, core exe found)' : ''), () =>
   sh(process.execPath, ['--test', '*.test.js'], {cwd: path.join(tests, 'js'), env: {...process.env, ...(fs.existsSync(coreExe) ? {PIME_CORE_EXE: coreExe} : {})}}));
 if (want('smoke')) step('real pime-core.exe smoke test (JSON Lines)', () => sh(process.execPath, [path.join(tests, 'smoke', 'core-binary-smoke.js')], {env: {...process.env, PIME_CORE_EXE: coreExe}}));
-if (want('tsf')) step('TSF DLL (crates/pime-tsf): builds on the GNU target, x64 PE, only system DLL imports (not registered or loaded)', () => sh(process.execPath, [path.join(tests, 'smoke', 'tsf-dll-check.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
+// cargo in one of the crates that live outside the main workspace; a freshly linked exe can fail once with os error 5
+const cargoRetry = (crate, cargoArgs) => {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const r = spawnSync('cargo', cargoArgs, {cwd: path.join(src, 'crates', crate), encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir}, shell: isWin});
+    process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
+    if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
+    if (!/os error 5/.test((r.stdout || '') + (r.stderr || ''))) break;
+  }
+  return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
+};
+if (want('tsf')) {
+  step('TSF crate (crates/pime-tsf): cargo test', () => cargoRetry('pime-tsf', ['test']));
+  step('TSF DLL (crates/pime-tsf): builds on the GNU target, x64 PE, only system DLL imports (not registered or loaded)', () => sh(process.execPath, [path.join(tests, 'smoke', 'tsf-dll-check.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
+}
+if (want('worker')) {
+  step('AI worker (crates/pime-ai-worker): cargo test', () => cargoRetry('pime-ai-worker', ['test']));
+  step('AI worker smoke test against the HTTPS mock (PIME-TEST session credentials, removed afterwards)', () => {
+    const b = cargoRetry('pime-ai-worker', ['build']);
+    return b.ok ? sh(process.execPath, [path.join(tests, 'smoke', 'ai-worker-smoke.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}) : b;
+  });
+}
+if (want('ipc')) step('IPC (crates/pime-ipc): unit + loopback tests on real named pipes', () => sh(process.execPath, [path.join(tests, 'smoke', 'ipc-smoke.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
+if (want('setup')) step('Installer (crates/pime-setup): cargo test (temp-folder integration tests only)', () => cargoRetry('pime-setup', ['test']));
 const uat = engine => {
   const env = {...process.env};
   const uatArgs = ['playwright', 'test', ...(onlyUat ? ['-g', onlyUat] : [])];
