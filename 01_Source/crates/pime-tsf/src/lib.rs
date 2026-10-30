@@ -7,7 +7,11 @@
 //! disposable Windows VM: nothing here may be registered on a real machine before that.
 //!
 //! Safety rules for this crate: every `unsafe` block is a COM/FFI boundary and carries a reason; a panic must never
-//! unwind into the host application (`panic = "abort"` in the release profile, and no `unwrap` on host input).
+//! unwind into the host application. The release profile therefore uses `panic = "unwind"` (an abort would kill the
+//! host process), every COM method of the text input processor catches panics and answers "not eaten"
+//! (`tip::guard`; so does `tip::create_instance`, which the class factory calls), and there is no `unwrap` on host
+//! input. The class factory and the four DLL exports themselves contain no logic beyond null checks, so they have
+//! nothing to catch.
 
 use std::ffi::c_void;
 
@@ -17,6 +21,7 @@ use windows::Win32::Foundation::{
 use windows::Win32::System::Com::{IClassFactory, IClassFactory_Impl};
 use windows::core::{GUID, HRESULT, IUnknown, Interface, Result, implement};
 
+pub mod controller;
 pub mod keymap;
 pub mod layout;
 pub mod popup;
