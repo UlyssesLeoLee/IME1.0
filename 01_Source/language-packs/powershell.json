@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "profile_id": "powershell",
+  "version": "1.0.0",
+  "display_name": "PowerShell",
+  "language_ids": ["powershell"],
+  "accepted_extensions": [".ps1", ".psm1", ".psd1"],
+  "validator": "powershell",
+  "dialects": {"version": {"values": ["5.1", "7"], "default": "7"}},
+  "keywords": ["Get-ChildItem", "Get-Content", "Get-Item", "Get-Process", "Get-Service", "Get-Command", "Get-Help", "Where-Object", "ForEach-Object", "Select-Object", "Sort-Object", "Group-Object", "Measure-Object", "Write-Host", "Write-Output", "Write-Error", "Set-Location", "Set-Content", "Test-Path", "Join-Path", "Out-File", "ConvertTo-Json", "ConvertFrom-Json", "Invoke-RestMethod", "param", "function", "foreach", "switch", "try", "catch", "finally", "throw", "return"],
+  "triggers": [
+    {"id": "ps.func", "pattern": "func", "kind": "syntax", "weight": 80, "contexts": ["statement"],
+     "candidates": [{"label": "function", "text": "function ${Verb-Noun} {\n    param(\n        ${param}\n    )\n    ${cursor}\n}"}]},
+    {"id": "ps.foreach", "pattern": "foreach", "kind": "syntax", "weight": 75, "contexts": ["statement", "expression", "unknown"],
+     "candidates": [{"label": "ForEach-Object pipeline (text only)", "text": "$${items} | ForEach-Object {\n    $_\n}"}]},
+    {"id": "ps.try", "pattern": "try", "kind": "syntax", "weight": 70, "contexts": ["statement"],
+     "candidates": [{"label": "try/catch", "text": "try {\n    ${cursor}\n} catch {\n    throw\n}"}]},
+    {"id": "ps.param", "pattern": "param", "kind": "syntax", "weight": 65, "contexts": ["statement"],
+     "candidates": [{"label": "parameter block", "text": "param(\n    [string]$${Name}\n)"}]},
+    {"id": "ps.cmdletbinding", "pattern": "cmdletbinding", "kind": "syntax", "weight": 55, "contexts": ["statement"],
+     "candidates": [{"label": "advanced function header", "text": "[CmdletBinding()]\nparam(\n    ${param}\n)"}]},
+    {"id": "ps.gci", "pattern": "gci", "kind": "syntax", "weight": 50, "contexts": ["statement", "expression", "unknown"],
+     "candidates": [{"label": "Get-ChildItem (text only, never executed)", "text": "Get-ChildItem -Path ${path} -Recurse"}]},
+    {"id": "ps.ternary.7", "pattern": "ternary", "kind": "syntax", "weight": 50, "when": {"version": ["7"]}, "contexts": ["expression", "unknown"],
+     "candidates": [{"label": "ternary operator (PowerShell 7+)", "text": "${cond} ? ${a} : ${b}"}]},
+    {"id": "ps.coalesce.7", "pattern": "coalesce", "kind": "syntax", "weight": 50, "when": {"version": ["7"]}, "contexts": ["expression", "unknown"],
+     "candidates": [{"label": "null-coalescing (PowerShell 7+)", "text": "${value} ?? ${default}"}]},
+    {"id": "ps.parallel.7", "pattern": "parallel", "kind": "syntax", "weight": 45, "when": {"version": ["7"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "ForEach-Object -Parallel (PowerShell 7+)", "text": "$${items} | ForEach-Object -Parallel {\n    $_\n} -ThrottleLimit 4"}]},
+    {"id": "ps.ifelse.5", "pattern": "ternary", "kind": "syntax", "weight": 50, "when": {"version": ["5.1"]}, "contexts": ["expression", "unknown"],
+     "candidates": [{"label": "if/else expression (PowerShell 5.1)", "text": "$(if (${cond}) { ${a} } else { ${b} })"}]}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "profile_id": "machine-code",
+  "version": "1.0.0",
+  "display_name": "Machine Code",
+  "language_ids": ["machine-code"],
+  "accepted_extensions": [".hex", ".bin"],
+  "validator": "hex",
+  "generated": "x86-64-encoder",
+  "dialects": {
+    "isa": {"values": ["x86-64"], "default": "x86-64"},
+    "mode": {"values": ["long64"], "default": "long64"},
+    "format": {"values": ["spaced", "compact"], "default": "spaced"}
+  },
+  "keywords": [],
+  "triggers": []
+}

@@ -1,0 +1,19 @@
+{
+  "cmd.enable": "Programming IME: Enable / Disable",
+  "cmd.chooseLanguage": "Programming IME: Choose Programming Language",
+  "cmd.showCandidates": "Programming IME: Show Code Candidates",
+  "cmd.menu": "Programming IME: Menu",
+  "cmd.togglePause": "Programming IME: Pause / Resume Suggestions",
+  "cmd.toggleAI": "Programming IME: Toggle AI (master switch)",
+  "cmd.configureAI": "Programming IME: Configure AI Provider / API Key",
+  "cmd.deleteKey": "Programming IME: Delete API Key",
+  "cmd.chooseModel": "Programming IME: Set Model and Effort",
+  "cmd.toggleRealtimeAI": "Programming IME: Toggle Realtime AI",
+  "cmd.managePermissions": "Programming IME: Manage AI Permissions",
+  "cmd.showUsage": "Programming IME: Show AI Usage",
+  "cmd.resetUsage": "Programming IME: Reset AI Usage",
+  "cmd.showDiagnostics": "Programming IME: Show Diagnostics",
+  "cmd.reloadRules": "Programming IME: Reload User Rules",
+  "cmd.openRulesFolder": "Programming IME: Open User Rules Folder",
+  "cmd.f1Edit": "Programming IME: F1 AI Edit (Whole File / Insert)"
+}

@@ -1,38 +1,30 @@
-# Programming IME — 全部设计文档与第一版源码合集
+# Programming IME — 设计文档与源码合集（v0.2.0）
 
-- 交付版本：**Code PoC v0.1.0**（2026-10-30）
-- 上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
-- 文档组织：参照日本 IPA 的要件定义、基本设计、详细设计和试验分层
-- 状态：**功能原型，不是 Windows 正式安装包，不宣称三语言 TSF 已通过测试**
+- 交付版本：**Code v0.2.0**（2026-10-30）。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
+- 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；不是 Windows 系统输入法安装包**。Windows TSF 未编译、未验证。
 
 ## 目录
 
-- `00_Documents/`：**9 个上版原始设计文件**（6 MD + 3 XLSX），内容未修改
-- `01_Source/`：第一版源码、自动化测试、VS Code 原型和 Windows TSF 实验性适配器
-- `02_Verification/`：实际运行的测试结果和明确的未执行项目
+- `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
+- `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
+- `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图
 - `MANIFEST_SHA256.txt`：文件完整性校验清单
 
-## 主要实现
+## v0.2 做了什么
 
-1. `01_Source/crates/pime-core`：Rust 本地引擎（七语言候选、自动识别、有限机器码验证、JSONL CLI）。
-2. `01_Source/editor-bridges/vscode`：VS Code 扩展（状态栏语言切换、输入建议、用户 API Key、模型/Effort、F1 全文 Diff 与光标插入）。
-3. `01_Source/windows/tsf`：三语言 Profile（zh-CN/en-US/ja-JP）的 C++ COM/TSF 注册**实验性源码**，当前按键直通，未与 Rust 或 AI 连接。
-4. `01_Source/docs/IMPLEMENTATION_MATRIX.md`：逐模块实现/未实现对照。
+1. 七语言声明式规则包 + 上下文感知的本地候选（JS 与 Rust 结果逐项一致）。
+2. VS Code 扩展：状态栏语言/AI、语言锁定、候选来源与校验状态、F1 双路径面板（整文件按块 Diff 勾选 / 光标处插入）、Prepare/Apply 事务（版本+哈希复核、读回校验、单步撤销）、BYOK（三类 API、模型/Effort/预算按场景独立、能力不明不发送）、实时 AI（去抖、取消、过期丢弃）、授权与撤销、敏感信息拦截/脱敏、脱敏诊断、三语界面。
+3. Rust 核心（零依赖）：同一套语言逻辑、输入状态机、安装计划、JSON Lines 协议 0.2。
+4. Playwright UAT：24 个场景在真实 VS Code 1.137.0 上通过。
 
-## 立即试用
+## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-在 VS Code 中打开 `01_Source/editor-bridges/vscode`，按 **F5** 运行扩展开发宿主。
-在命令面板执行 `Programming IME: Enable / Disable`，然后从右下角状态栏切换语言。
-用 `Ctrl+Alt+Space` 获取本地候选；配置自己的 API Key 后才可使用 F1 AI 编辑。
-详细步骤请阅读 `01_Source/README.md`。
-
-## 验证事实
-
-- JavaScript 的 **12 个单元测试已通过**；语法检查通过。
-- 当前环境没有 Rust Cargo，因此 Rust 14 项测试尚未执行。
-- Windows TSF、签名安装、VS Code 真实 E2E、IT/ST 尚未执行。
-- 设计书的 168 项 UT/IT/ST 是**计划用例**，不是 168 项已通过测试。
+- JavaScript **81 / 81** 通过；Rust **101 / 101** 通过；Playwright UAT **24 / 24** 通过。
+- 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
+- **未执行**：Windows TSF 编译/注册/三语言激活、签名安装器、命名管道 IPC、Credential Manager、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
+- 设计书的 168 项是计划用例，不是 168 项已通过测试。通过的测试不代表满足全部 64 条需求。
 
 ## 安全提醒
 
-AI 模式可能向用户指定的第三方 API 发送光标附近代码或当前文件全文，请仅在确认权限、内容与服务商后授权。F1 仅将用户确认的修改应用于编辑器缓冲区，不自动保存或运行。原型不应在生产工作站上注册未签名 TSF DLL；先在隔离 Windows 11 VM 内验证。
+AI 默认关闭；开启后按每次 F1 / 每个工作区授权，会把整文件或光标附近代码发送给用户指定的第三方 API。发送前有敏感信息扫描，但不能发现所有秘密。F1 只修改编辑器缓冲区（不自动保存或运行）。
+原型不应在生产工作站上注册未签名 TSF DLL；先在隔离 Windows 11 VM 内验证。

@@ -1,0 +1,1371 @@
+{
+  "config": {
+    "argv": [
+      "D:\\nodejs\\node.exe",
+      "D:\\IME1.0\\01_Source\\uat\\node_modules\\@playwright\\test\\cli.js",
+      "test"
+    ],
+    "configFile": "D:\\IME1.0\\01_Source\\uat\\playwright.config.js",
+    "rootDir": "D:/IME1.0/01_Source/uat/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/IME1.0/02_Verification/uat/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "D:/IME1.0/01_Source/uat/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\IME1.0\\02_Verification\\uat\\artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "D:\\IME1.0\\01_Source\\uat\\tests",
+        "snapshotDir": "D:\\IME1.0\\01_Source\\uat\\tests",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 120000,
+        "use": {},
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "D:\\IME1.0\\02_Verification\\uat\\uat-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "01-local.spec.js",
+      "file": "01-local.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "UAT-01 [FR-031/IT-026 F1 default] with the IME enabled the status bar shows the profile; F1 is taken by Programming IME only when AI is usable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1103,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:11:13.907Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-0748e0eda49f9d326f9a",
+          "file": "01-local.spec.js",
+          "line": 38,
+          "column": 1
+        },
+        {
+          "title": "UAT-02 [AT-010/ST-010] recognises .rs .py .tsx .ps1 .c; ambiguous .asm/.txt keep the current language and only hint",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5649,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:11:17.890Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-728d61323363f00a98c8",
+          "file": "01-local.spec.js",
+          "line": 45,
+          "column": 1
+        },
+        {
+          "title": "UAT-03 [AT-011/ST-010/IT-011] manual lock beats auto detection and is removable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5704,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:11:23.547Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-08c5610bd9f4f860c9d6",
+          "file": "01-local.spec.js",
+          "line": 59,
+          "column": 1
+        },
+        {
+          "title": "UAT-04 [ST-006/IT-007/AT-026] candidates: Esc writes nothing, accept inserts exactly at the prefix, Ctrl+Z restores",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4312,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:11:29.260Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-44d995c5d0be4451bae2",
+          "file": "01-local.spec.js",
+          "line": 77,
+          "column": 1
+        },
+        {
+          "title": "UAT-05 [ST-007/IT-009] every profile returns its own candidates",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15097,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:11:33.594Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-e9c035c262dd2e4213f6",
+          "file": "01-local.spec.js",
+          "line": 97,
+          "column": 1
+        },
+        {
+          "title": "UAT-06 [ST-043/AT-053/UT-024] machine code: verified bytes for known forms, no bytes for unresolved symbols, nothing executed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6673,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:11:48.703Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-73c824df74b664e43994",
+          "file": "01-local.spec.js",
+          "line": 112,
+          "column": 1
+        },
+        {
+          "title": "UAT-07 [FR-028/ST-021/IT-024] pause: no candidates, typed text never altered",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5898,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:11:55.388Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-6c1988f7c9a8401d60f1",
+          "file": "01-local.spec.js",
+          "line": 133,
+          "column": 1
+        },
+        {
+          "title": "UAT-08 [AT-023/IT-019/FR-022] with AI off, typing 100+ characters and pressing F1 sends zero requests",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4016,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:01.302Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\01-local.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "72109d4d374c047d37af-8a7f35aba4e101421453",
+          "file": "01-local.spec.js",
+          "line": 145,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "02-ai-f1.spec.js",
+      "file": "02-ai-f1.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "UAT-20 [FR-018/AT-018/ST-015] the key is stored only in SecretStorage: not in settings, files or logs; delete stops AI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8891,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:06.729Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-151c7d9d7b29eb5aecaa",
+          "file": "02-ai-f1.spec.js",
+          "line": 55,
+          "column": 1
+        },
+        {
+          "title": "UAT-21 [ST-014/AT-023/FR-016] consent is visible first: Cancel sends 0 requests; allowing sends exactly the authorised ones",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4071,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:22.138Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-7fc87c30e88838f73bd7",
+          "file": "02-ai-f1.spec.js",
+          "line": 76,
+          "column": 1
+        },
+        {
+          "title": "UAT-22 [AT-033/ST-024] F1 shows both candidates independently and writes nothing until Apply",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3172,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:26.221Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-7d0a6ba6c69c7bfa761e",
+          "file": "02-ai-f1.spec.js",
+          "line": 97,
+          "column": 1
+        },
+        {
+          "title": "UAT-23 [AT-034/AT-036/ST-025/ST-028/IT-032] hunk selection, preview, apply as one undoable unsaved change; closing without Apply writes nothing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8175,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:29.402Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-f9e748a4ca660d461ec4",
+          "file": "02-ai-f1.spec.js",
+          "line": 112,
+          "column": 1
+        },
+        {
+          "title": "UAT-24 [ST-012/IT-014/IT-028] the request carries the UNSAVED buffer, not the disk text",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3118,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:37.588Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-c2d3f289e04d73fbc74e",
+          "file": "02-ai-f1.spec.js",
+          "line": 146,
+          "column": 1
+        },
+        {
+          "title": "UAT-25 [AT-037/ST-027/IT-031] editing while the model works: the old proposal is refused and the newer text survives",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6564,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:40.717Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-e4c6a21024174ffa5f2f",
+          "file": "02-ai-f1.spec.js",
+          "line": 159,
+          "column": 1
+        },
+        {
+          "title": "UAT-26 [IT-027] a failing whole-file request does not block the insert path",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4406,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:47.299Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-7c8c144db43d4ac6ab5f",
+          "file": "02-ai-f1.spec.js",
+          "line": 175,
+          "column": 1
+        },
+        {
+          "title": "UAT-27 [AT-056/ST-042/UT-076] prompt injection in code and a malicious reply: nothing extra is read, sent, run or changed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3499,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:51.715Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-e12674b1eb49223fe2aa",
+          "file": "02-ai-f1.spec.js",
+          "line": 188,
+          "column": 1
+        },
+        {
+          "title": "UAT-28 [AT-050/ST-036/IT-040] secrets in the file: the user must choose; \"Redact\" sends no secret bytes and the proposal is restored locally",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10466,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:12:55.221Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-a9d00e333d8d085f32e3",
+          "file": "02-ai-f1.spec.js",
+          "line": 204,
+          "column": 1
+        },
+        {
+          "title": "UAT-29 [AT-032/ST-023/IT-026] with the key bound to Shift+F1, plain F1 keeps opening the Command Palette",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5093,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:13:05.694Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\02-ai-f1.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a670101a4ceda4289ea-4494dbbf50dccc387f1a",
+          "file": "02-ai-f1.spec.js",
+          "line": 243,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "03-policy.spec.js",
+      "file": "03-policy.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "UAT-30 [ST-016/IT-017/ST-017/IT-018/AT-021] scenarios route to their own provider and key; effort is sent only when verified",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 17747,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:13:12.088Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "821404ab2b87cb68ec5f-2f9e9ecef7c81ee9295b",
+          "file": "03-policy.spec.js",
+          "line": 25,
+          "column": 1
+        },
+        {
+          "title": "UAT-31 [ST-018/IT-020/FR-023/FR-024] budget stops AI before any request; a 429 pauses AI; local candidates keep working",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19558,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:13:29.848Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "821404ab2b87cb68ec5f-d809fd0c4b3324f5776a",
+          "file": "03-policy.spec.js",
+          "line": 57,
+          "column": 1
+        },
+        {
+          "title": "UAT-32 [ST-013/FR-015/FR-039] untrusted workspace: AI paths are unavailable and explained, nothing is sent, local candidates work",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9258,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:13:49.423Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "821404ab2b87cb68ec5f-edf8a7dcf886dea1fb54",
+          "file": "03-policy.spec.js",
+          "line": 93,
+          "column": 1
+        },
+        {
+          "title": "UAT-33 [ST-032/FR-044/UT-056] UI language is independent: zh-CN and ja-JP UI, the programming profile and code stay unchanged",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 14061,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:13:58.698Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "821404ab2b87cb68ec5f-a5ec807af8e11eeff8f0",
+          "file": "03-policy.spec.js",
+          "line": 113,
+          "column": 1
+        },
+        {
+          "title": "UAT-34 [FR-016/ST-014] workspace authorisation can be revoked at any time and the next request asks again",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13611,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:14:12.772Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "821404ab2b87cb68ec5f-723999fe99734f531bdf",
+          "file": "03-policy.spec.js",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "title": "UAT-35 [FR-025..027/ST-019/ST-020/IT-022/IT-023/UT-040] realtime AI: local first, AI marked as AI, stale/rapid typing never queues bursts, text never altered",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "serial",
+                  "location": {
+                    "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                    "line": 0,
+                    "column": 0
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 18434,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T07:14:26.397Z",
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "D:\\IME1.0\\01_Source\\uat\\tests\\03-policy.spec.js",
+                        "line": 0,
+                        "column": 0
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "821404ab2b87cb68ec5f-26e3a44e9e7ff09d20eb",
+          "file": "03-policy.spec.js",
+          "line": 166,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-30T07:11:13.285Z",
+    "duration": 211587.251,
+    "expected": 24,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

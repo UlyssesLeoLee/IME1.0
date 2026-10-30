@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/pime/core-protocol-v0.2.json",
+  "title": "Programming IME local core JSON Lines protocol 0.2",
+  "description": "stdin/stdout JSON Lines between a trusted local process and pime-core 0.2.0: one JSON object per line, at most 65536 bytes per line, exactly one response line per request line. Every request may carry an integer `id` that is echoed in the response as `id`. The core never executes anything, never opens files or the network and never echoes secret values. Not the secure PIME-IPC/1 named-pipe protocol of the detailed design.",
+  "oneOf": [
+    {"$ref": "#/$defs/healthRequest"},
+    {"$ref": "#/$defs/predictRequest"},
+    {"$ref": "#/$defs/resolveRequest"},
+    {"$ref": "#/$defs/validateRequest"},
+    {"$ref": "#/$defs/encodeRequest"},
+    {"$ref": "#/$defs/validateHexRequest"},
+    {"$ref": "#/$defs/scanRequest"}
+  ],
+  "$defs": {
+    "id": {"type": "integer", "description": "Optional correlation id, echoed verbatim as `id` in the response. A non-integer id is rejected with INVALID_REQUEST (field `id`)."},
+    "language": {"enum": ["rust", "python", "typescript", "powershell", "c", "assembly", "machine-code"]},
+    "dialect": {
+      "type": ["object", "null"],
+      "description": "Dialect axis -> value, for example {\"edition\":\"2021\"}, {\"syntax\":\"att\",\"assembler\":\"gas\"}, {\"mode\":\"tsx\"}, {\"version\":\"5.1\"}, {\"std\":\"c23\"}, {\"isa\":\"x86-64\",\"format\":\"compact\"}. Values must be strings (or null = default); an unsupported value yields an explain candidate instead of a guess.",
+      "additionalProperties": {"type": ["string", "null"]}
+    },
+    "healthRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "health"}, "id": {"$ref": "#/$defs/id"}}
+    },
+    "predictRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": {"const": "predict"},
+        "id": {"$ref": "#/$defs/id"},
+        "language": {"type": "string", "description": "Unknown or missing language -> empty candidate list."},
+        "prefix": {"type": "string", "description": "Trigger text; empty or longer than 128 UTF-16 units -> empty list."},
+        "before": {"type": "string", "description": "Text before the prefix (only the last 6000 / 12000 UTF-16 units are analysed)."},
+        "after": {"type": "string"},
+        "dialect": {"$ref": "#/$defs/dialect"},
+        "limit": {"type": "integer", "minimum": 0, "maximum": 200, "default": 6}
+      }
+    },
+    "resolveRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": {"const": "resolve"},
+        "id": {"$ref": "#/$defs/id"},
+        "languageId": {"type": ["string", "null"], "description": "Editor language id (for example typescriptreact)."},
+        "fileName": {"type": ["string", "null"]},
+        "text": {"type": ["string", "null"], "description": "Used only for the conservative lexical suggestion (first 20000 UTF-16 units)."},
+        "current": {"type": ["string", "null"], "default": "unknown"},
+        "locked": {"type": ["string", "null"], "description": "Manual lock; only the seven language ids are honoured."}
+      }
+    },
+    "validateRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": {"const": "validate"},
+        "id": {"$ref": "#/$defs/id"},
+        "language": {"type": "string"},
+        "text": {"type": "string", "description": "Missing or non-string text yields the NOT_TEXT issue, like the reference engine."},
+        "dialect": {"$ref": "#/$defs/dialect"}
+      }
+    },
+    "encodeRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "encode"}, "id": {"$ref": "#/$defs/id"}, "instruction": {"type": "string"}}
+    },
+    "validateHexRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "validate_hex"}, "id": {"$ref": "#/$defs/id"}, "hex": {"type": "string"}}
+    },
+    "scanRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "scan"}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}, "fileName": {"type": "string"}}
+    },
+
+    "candidate": {
+      "type": "object",
+      "required": ["id", "kind", "source", "sources", "profile_id", "label", "text", "explain", "validation", "assumptions", "match"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"enum": ["keyword", "syntax", "prefix", "identifier", "ai_inline", "full_file_patch", "byte_hex", "explain"]},
+        "source": {"enum": ["rule", "user_rule", "context", "ai"]},
+        "sources": {"type": "array", "items": {"enum": ["rule", "user_rule", "context", "ai"]}, "minItems": 1, "description": "Every source that produced this content after de-duplication."},
+        "profile_id": {"type": "string"},
+        "label": {"type": "string"},
+        "text": {"type": ["string", "null"], "description": "null for explanations that carry no insertable text; never present for unresolved byte encodings."},
+        "explain": {"type": "string"},
+        "validation": {"enum": ["valid", "verified", "unchecked", "invalid", "context_missing"]},
+        "assumptions": {"type": "array", "items": {"type": "string"}},
+        "match": {"enum": ["exact", "prefix", "keyword", "fuzzy", "context", null]}
+      }
+    },
+    "issue": {
+      "type": "object",
+      "required": ["line", "code", "message"],
+      "properties": {"line": {"type": "integer", "minimum": 0}, "code": {"type": "string"}, "message": {"type": "string"}}
+    },
+    "finding": {
+      "type": "object",
+      "description": "Kind, severity and line only. Matched values are never returned.",
+      "required": ["kind", "severity", "line"],
+      "additionalProperties": false,
+      "properties": {"kind": {"type": "string"}, "severity": {"enum": ["high", "medium"]}, "line": {"type": "integer", "minimum": 1}}
+    },
+
+    "responses": {
+      "oneOf": [
+        {
+          "title": "health",
+          "type": "object",
+          "required": ["ok", "name", "version", "protocol", "languages"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "name": {"const": "pime-core"}, "version": {"const": "0.2.0"}, "protocol": {"const": "0.2"},
+            "languages": {"type": "array", "items": {"$ref": "#/$defs/language"}, "minItems": 7, "maxItems": 7}
+          }
+        },
+        {
+          "title": "predict",
+          "type": "object",
+          "required": ["ok", "candidates"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "candidates": {"type": "array", "items": {"$ref": "#/$defs/candidate"}}}
+        },
+        {
+          "title": "resolve",
+          "type": "object",
+          "required": ["ok", "decision"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "decision": {
+              "type": "object",
+              "required": ["language", "reason", "changed", "uncertain", "suggestion", "confidence", "dialectHints"],
+              "properties": {
+                "language": {"type": "string"},
+                "reason": {"enum": ["manual-lock", "bridge-languageId", "extension", "ambiguous-extension", "lexical-suggestion", "kept"]},
+                "changed": {"type": "boolean"}, "uncertain": {"type": "boolean"},
+                "suggestion": {"type": ["string", "null"]},
+                "confidence": {"type": "integer", "minimum": 0, "maximum": 100},
+                "dialectHints": {"type": "object", "additionalProperties": {"type": "string"}}
+              }
+            }
+          }
+        },
+        {
+          "title": "validate",
+          "type": "object",
+          "required": ["ok", "result"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "result": {
+              "type": "object",
+              "required": ["ok", "level", "issues"],
+              "properties": {"ok": {"type": "boolean"}, "level": {"enum": ["valid", "invalid", "unchecked"]}, "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}}}
+            }
+          }
+        },
+        {
+          "title": "encode / validate_hex success",
+          "type": "object",
+          "required": ["ok", "hex"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "hex": {"type": "string", "description": "Upper-case space separated bytes, for example \"48 89 D8\"."}, "byte_count": {"type": "integer", "minimum": 1}}
+        },
+        {
+          "title": "encode / validate_hex refusal (no bytes are ever returned)",
+          "type": "object",
+          "required": ["ok", "code", "reason"],
+          "properties": {
+            "ok": {"const": false}, "id": {"$ref": "#/$defs/id"},
+            "code": {"enum": ["BYTE_ENCODING_UNRESOLVED", "UNSUPPORTED_ENCODING", "CONTEXT_MISSING", "INVALID_HEX", "ODD_HEX_LENGTH", "HEX_TOO_LARGE"]},
+            "reason": {"type": "string"}
+          }
+        },
+        {
+          "title": "scan",
+          "type": "object",
+          "required": ["ok", "result"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "result": {
+              "type": "object",
+              "required": ["highest", "sensitiveFile", "blocked", "truncated", "findings"],
+              "properties": {
+                "highest": {"enum": ["none", "medium", "high"]}, "sensitiveFile": {"type": "boolean"}, "blocked": {"type": "boolean"}, "truncated": {"type": "boolean"},
+                "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}}
+              }
+            }
+          }
+        },
+        {
+          "title": "error",
+          "type": "object",
+          "required": ["ok", "error"],
+          "properties": {
+            "ok": {"const": false}, "id": {"$ref": "#/$defs/id"},
+            "error": {"enum": ["INVALID_JSON", "PAYLOAD_TOO_LARGE", "UNKNOWN_OPERATION", "INVALID_REQUEST", "INTERNAL"]},
+            "field": {"type": "string", "description": "Name of the offending request field for INVALID_REQUEST."}
+          }
+        }
+      ]
+    }
+  }
+}

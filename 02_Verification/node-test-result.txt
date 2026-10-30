@@ -1,93 +1,427 @@
-SKIP: cargo unavailable (not a pass)
+# JavaScript tests (npm test) - raw output, 2026-10-30T15:17:23+08:00, node v22.12.0
+# command: npm test; npm run check
 
-> programming-ime-vscode-bridge@0.1.0 test
-> node --test test/*.test.js
+> programming-ime-vscode-bridge@0.2.0 test
+> node --test "test/**/*.test.js"
 
 TAP version 13
-# Subtest: seven local language profiles
-ok 1 - seven local language profiles
+# Subtest: PARITY predict fixtures (94 cases) match the JS engine
+ok 1 - PARITY predict fixtures (94 cases) match the JS engine
   ---
-  duration_ms: 5.64611
-  type: 'test'
+  duration_ms: 27.9976
   ...
-# Subtest: manual language lock wins
-ok 2 - manual language lock wins
+# Subtest: PARITY validate fixtures match the JS validators
+ok 2 - PARITY validate fixtures match the JS validators
   ---
-  duration_ms: 0.461581
-  type: 'test'
+  duration_ms: 2.0218
   ...
-# Subtest: typescriptreact detected
-ok 3 - typescriptreact detected
+# Subtest: PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes)
+ok 3 - PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes)
   ---
-  duration_ms: 0.145405
-  type: 'test'
+  duration_ms: 0.885
   ...
-# Subtest: unknown syntax conservatively unknown
-ok 4 - unknown syntax conservatively unknown
+# Subtest: PARITY resolve fixtures match the JS language resolver
+ok 4 - PARITY resolve fixtures match the JS language resolver
   ---
-  duration_ms: 0.341997
-  type: 'test'
+  duration_ms: 0.7879
   ...
-# Subtest: prefix result safe
-ok 5 - prefix result safe
+# Subtest: PARITY secret fixtures match the JS scanner
+ok 5 - PARITY secret fixtures match the JS scanner
   ---
-  duration_ms: 0.276397
-  type: 'test'
+  duration_ms: 2.765
   ...
-# Subtest: no candidate on empty input
-ok 6 - no candidate on empty input
+# Subtest: PARITY fixtures are exactly what the generator produces (no hand edits)
+ok 6 - PARITY fixtures are exactly what the generator produces (no hand edits)
   ---
-  duration_ms: 2.580839
-  type: 'test'
+  duration_ms: 109.7993
   ...
-# Subtest: AI result validated
-ok 7 - AI result validated
+# Subtest: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors
+ok 7 - UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors
   ---
-  duration_ms: 0.771458
-  type: 'test'
+  duration_ms: 5.4983
   ...
-# Subtest: invalid AI output rejected
-ok 8 - invalid AI output rejected
+# Subtest: UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only
+ok 8 - UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only
   ---
-  duration_ms: 1.096631
-  type: 'test'
+  duration_ms: 3.4205
   ...
-# Subtest: document hash version guards
-ok 9 - document hash version guards
+# Subtest: UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise
+ok 9 - UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise
   ---
-  duration_ms: 2.309801
-  type: 'test'
+  duration_ms: 1.343
   ...
-# Subtest: unknown model effort omitted
-ok 10 - unknown model effort omitted
+# Subtest: UT-072 / IT-046 a stale capability record is treated as unknown and never sent
+ok 10 - UT-072 / IT-046 a stale capability record is treated as unknown and never sent
   ---
-  duration_ms: 0.94702
-  type: 'test'
+  duration_ms: 0.1807
   ...
-# Subtest: capability effort emitted
-ok 11 - capability effort emitted
+# Subtest: UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work
+ok 11 - UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work
   ---
-  duration_ms: 0.520369
-  type: 'test'
+  duration_ms: 7.779
   ...
-# Subtest: last word
-ok 12 - last word
+# Subtest: UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded
+ok 12 - UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded
   ---
-  duration_ms: 0.416089
-  type: 'test'
+  duration_ms: 0.7769
   ...
-1..12
-# tests 12
+# Subtest: UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI
+ok 13 - UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI
+  ---
+  duration_ms: 1.571
+  ...
+# Subtest: UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens
+ok 14 - UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens
+  ---
+  duration_ms: 96.2563
+  ...
+# Subtest: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only
+ok 15 - UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only
+  ---
+  duration_ms: 0.9999
+  ...
+# Subtest: UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves
+ok 16 - UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves
+  ---
+  duration_ms: 1.2604
+  ...
+# Subtest: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed
+ok 17 - UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed
+  ---
+  duration_ms: 0.6425
+  ...
+# Subtest: IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal
+ok 18 - IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal
+  ---
+  duration_ms: 3.0429
+  ...
+# Subtest: UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled
+ok 19 - UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled
+  ---
+  duration_ms: 1.419
+  ...
+# Subtest: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight
+ok 20 - UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight
+  ---
+  duration_ms: 1.0807
+  ...
+# Subtest: UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely
+ok 21 - UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely
+  ---
+  duration_ms: 0.4672
+  ...
+# Subtest: UT-025 context level capability lattice
+ok 22 - UT-025 context level capability lattice
+  ---
+  duration_ms: 1.3008
+  ...
+# Subtest: UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected
+ok 23 - UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected
+  ---
+  duration_ms: 0.5837
+  ...
+# Subtest: UT-027 nearby excerpt is minimal and wider requests are refused
+ok 24 - UT-027 nearby excerpt is minimal and wider requests are refused
+  ---
+  duration_ms: 0.341
+  ...
+# Subtest: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk
+ok 25 - UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk
+  ---
+  duration_ms: 0.9556
+  ...
+# Subtest: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests
+ok 26 - UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests
+  ---
+  duration_ms: 0.8863
+  ...
+# Subtest: UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file
+ok 27 - UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file
+  ---
+  duration_ms: 0.4487
+  ...
+# Subtest: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only
+ok 28 - UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only
+  ---
+  duration_ms: 1.0049
+  ...
+# Subtest: UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline
+ok 29 - UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline
+  ---
+  duration_ms: 0.6456
+  ...
+# Subtest: UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range
+ok 30 - UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range
+  ---
+  duration_ms: 1.1345
+  ...
+# Subtest: UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)
+ok 31 - UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)
+  ---
+  duration_ms: 0.6932
+  ...
+# Subtest: UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result
+ok 32 - UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result
+  ---
+  duration_ms: 0.4331
+  ...
+# Subtest: UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token
+ok 33 - UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token
+  ---
+  duration_ms: 0.3032
+  ...
+# Subtest: UT-050 an apply token works once; replay writes nothing more
+ok 34 - UT-050 an apply token works once; replay writes nothing more
+  ---
+  duration_ms: 0.6177
+  ...
+# Subtest: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried
+ok 35 - UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried
+  ---
+  duration_ms: 84.6694
+  ...
+# Subtest: IT-032 a verified apply can be undone back to the original dirty buffer
+ok 36 - IT-032 a verified apply can be undone back to the original dirty buffer
+  ---
+  duration_ms: 0.4458
+  ...
+# Subtest: UT-054 / IT-036 / ST-030 only the current file can be changed
+ok 37 - UT-054 / IT-036 / ST-030 only the current file can be changed
+  ---
+  duration_ms: 0.2852
+  ...
+# Subtest: UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply
+ok 38 - UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply
+  ---
+  duration_ms: 0.3735
+  ...
+# Subtest: UT-052 a failed syntax check disables the default apply
+ok 39 - UT-052 a failed syntax check disables the default apply
+  ---
+  duration_ms: 0.1371
+  ...
+# Subtest: IT-029 insert is refused when the cursor moved after the proposal
+ok 40 - IT-029 insert is refused when the cursor moved after the proposal
+  ---
+  duration_ms: 0.1312
+  ...
+# Subtest: NFR-502 purge drops expired plans, used tokens and applied source fragments
+ok 41 - NFR-502 purge drops expired plans, used tokens and applied source fragments
+  ---
+  duration_ms: 0.338
+  ...
+# Subtest: static: the F1 flow writes only through the coordinator
+ok 42 - static: the F1 flow writes only through the coordinator
+  ---
+  duration_ms: 0.3618
+  ...
+# Subtest: UT-006 candidate kind/source/validation round-trip and invalid kind rejected
+ok 43 - UT-006 candidate kind/source/validation round-trip and invalid kind rejected
+  ---
+  duration_ms: 3.5534
+  ...
+# Subtest: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
+ok 44 - UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
+  ---
+  duration_ms: 0.4339
+  ...
+# Subtest: UT-008 de-duplication keeps one row and every source
+ok 45 - UT-008 de-duplication keeps one row and every source
+  ---
+  duration_ms: 0.2918
+  ...
+# Subtest: UT-010 placeholders become snippet tab stops, or plain text without a bridge
+ok 46 - UT-010 placeholders become snippet tab stops, or plain text without a bridge
+  ---
+  duration_ms: 0.2633
+  ...
+# Subtest: UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
+ok 47 - UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
+  ---
+  duration_ms: 17.7609
+  ...
+# Subtest: UT-012 bridge languageId beats extension and lexical hints
+ok 48 - UT-012 bridge languageId beats extension and lexical hints
+  ---
+  duration_ms: 0.2891
+  ...
+# Subtest: UT-013 / IT-010 ambiguous signals keep the current language and only suggest
+ok 49 - UT-013 / IT-010 ambiguous signals keep the current language and only suggest
+  ---
+  duration_ms: 0.374
+  ...
+# Subtest: UT-014 / IT-011 manual lock outranks automatic detection until unlocked
+ok 50 - UT-014 / IT-011 manual lock outranks automatic detection until unlocked
+  ---
+  duration_ms: 0.2402
+  ...
+# Subtest: UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
+ok 51 - UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
+  ---
+  duration_ms: 0.3275
+  ...
+# Subtest: UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
+ok 52 - UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
+  ---
+  duration_ms: 1.6392
+  ...
+# Subtest: UT-017 Rust: no semicolon is forced when the position is not provably a statement
+ok 53 - UT-017 Rust: no semicolon is forced when the position is not provably a statement
+  ---
+  duration_ms: 0.635
+  ...
+# Subtest: UT-018 Python templates follow the host indentation and EOL without mixing
+ok 54 - UT-018 Python templates follow the host indentation and EOL without mixing
+  ---
+  duration_ms: 0.4071
+  ...
+# Subtest: UT-019 TSX: a generic arrow is never offered as a bare <T>
+ok 55 - UT-019 TSX: a generic arrow is never offered as a bare <T>
+  ---
+  duration_ms: 0.3569
+  ...
+# Subtest: UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
+ok 56 - UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
+  ---
+  duration_ms: 0.6303
+  ...
+# Subtest: UT-037 nearby code feeds identifier candidates (no project-wide claims)
+ok 57 - UT-037 nearby code feeds identifier candidates (no project-wide claims)
+  ---
+  duration_ms: 0.285
+  ...
+# Subtest: UT-041 candidates carry source, language and explanation; unverified AI never looks verified
+ok 58 - UT-041 candidates carry source, language and explanation; unverified AI never looks verified
+  ---
+  duration_ms: 0.4264
+  ...
+# Subtest: UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
+ok 59 - UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
+  ---
+  duration_ms: 0.9206
+  ...
+# Subtest: UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
+ok 60 - UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
+  ---
+  duration_ms: 2.0342
+  ...
+# \# UT-068 P95=0.512ms max=2.931ms node=v22.12.0 platform=win32/x64
+# Subtest: UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded
+ok 61 - UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded
+  ---
+  duration_ms: 1.4673
+  ...
+# Subtest: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
+ok 62 - UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
+  ---
+  duration_ms: 4.5543
+  ...
+# Subtest: UT-057 every candidate row is described by text (source, validation, position, action), not colour
+ok 63 - UT-057 every candidate row is described by text (source, validation, position, action), not colour
+  ---
+  duration_ms: 0.4499
+  ...
+# Subtest: UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
+ok 64 - UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
+  ---
+  duration_ms: 0.2248
+  ...
+# Subtest: UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
+ok 65 - UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
+  ---
+  duration_ms: 0.2518
+  ...
+# Subtest: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
+ok 66 - UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
+  ---
+  duration_ms: 2.3819
+  ...
+# Subtest: UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
+ok 67 - UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
+  ---
+  duration_ms: 2.4901
+  ...
+# Subtest: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
+ok 68 - UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
+  ---
+  duration_ms: 2.7775
+  ...
+# Subtest: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
+ok 69 - UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
+  ---
+  duration_ms: 3.3073
+  ...
+# Subtest: UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
+ok 70 - UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
+  ---
+  duration_ms: 29.1142
+  ...
+# Subtest: UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
+ok 71 - UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
+  ---
+  duration_ms: 374.6799
+  ...
+# Subtest: UT-074 static: nothing in the source writes a key to settings, files or logs
+ok 72 - UT-074 static: nothing in the source writes a key to settings, files or logs
+  ---
+  duration_ms: 1.1981
+  ...
+# Subtest: FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
+ok 73 - FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
+  ---
+  duration_ms: 0.2091
+  ...
+# Subtest: UT-020 PowerShell candidates are plain text only (never executed)
+ok 74 - UT-020 PowerShell candidates are plain text only (never executed)
+  ---
+  duration_ms: 5.3587
+  ...
+# Subtest: UT-021 C declarations and standard versions
+ok 75 - UT-021 C declarations and standard versions
+  ---
+  duration_ms: 0.5743
+  ...
+# Subtest: UT-022 assembly dialect: Intel and AT&T are never silently mixed
+ok 76 - UT-022 assembly dialect: Intel and AT&T are never silently mixed
+  ---
+  duration_ms: 1.8332
+  ...
+# Subtest: UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
+ok 77 - UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
+  ---
+  duration_ms: 1.1009
+  ...
+# Subtest: UT-024 / ST-043 unresolved symbols never produce bytes
+ok 78 - UT-024 / ST-043 unresolved symbols never produce bytes
+  ---
+  duration_ms: 11.4775
+  ...
+# Subtest: ST-043 independent golden vectors for the verified x86-64 forms
+ok 79 - ST-043 independent golden vectors for the verified x86-64 forms
+  ---
+  duration_ms: 1.5989
+  ...
+# Subtest: UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
+ok 80 - UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
+  ---
+  duration_ms: 0.688
+  ...
+# Subtest: UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
+ok 81 - UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
+  ---
+  duration_ms: 2.4961
+  ...
+1..81
+# tests 81
 # suites 0
-# pass 12
+# pass 81
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 219.313587
+# duration_ms 570.9527
 
-> programming-ime-vscode-bridge@0.1.0 check
-> node --check src/extension.js && node --check src/logic.js
+# npm run check
+> node scripts/check-syntax.js
 
-
-Exit code: 0
+syntax check: 30/30 files OK

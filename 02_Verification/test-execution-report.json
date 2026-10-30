@@ -1,0 +1,2457 @@
+{
+ "summary": {
+  "generated": "2026-10-30T07:16:09.068Z",
+  "node": "v22.12.0",
+  "js": {
+   "total": 81,
+   "pass": 81
+  },
+  "rust": {
+   "total": 101,
+   "pass": 101
+  },
+  "uat": {
+   "total": 24,
+   "pass": 24
+  },
+  "cases": {
+   "UT": {
+    "total": 77,
+    "pass": 76,
+    "fail": 0,
+    "notRun": 1
+   },
+   "IT": {
+    "total": 48,
+    "pass": 38,
+    "fail": 0,
+    "notRun": 10
+   },
+   "ST": {
+    "total": 43,
+    "pass": 28,
+    "fail": 0,
+    "notRun": 15
+   }
+  }
+ },
+ "rows": [
+  {
+   "id": "UT-001",
+   "title": "语言 Profile 唯一性与映射",
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: profiles::tests::ut_001_duplicate_guid_is_rejected",
+    "profiles::tests::ut_001_duplicate_guid_is_rejected",
+    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
+    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
+    "rust: profiles::tests::ut_001_other_invalid_sets_are_rejected",
+    "profiles::tests::ut_001_other_invalid_sets_are_rejected"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-002",
+   "title": "OS 默认 IME 不可被安装计划改变",
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
+    "install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
+    "rust: install_plan::tests::ut_002_selection_errors_and_subsets",
+    "install_plan::tests::ut_002_selection_errors_and_subsets"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-003",
+   "title": "Direct 不消费常规按键",
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: input::tests::ut_003_direct_never_consumes_ascii",
+    "input::tests::ut_003_direct_never_consumes_ascii",
+    "rust: input::tests::ut_003_observing_does_not_consume_ordinary_characters_either",
+    "input::tests::ut_003_observing_does_not_consume_ordinary_characters_either"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-004",
+   "title": "Composition 取消不写入",
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: input::tests::ut_004_composition_cancel_writes_nothing",
+    "input::tests::ut_004_composition_cancel_writes_nothing",
+    "rust: input::tests::ut_004_composition_needs_candidates_and_a_permitted_host_range",
+    "input::tests::ut_004_composition_needs_candidates_and_a_permitted_host_range"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-005",
+   "title": "敏感输入不保留文本",
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: input::tests::ut_005_policy_disabled_behaves_like_secure_input",
+    "input::tests::ut_005_policy_disabled_behaves_like_secure_input",
+    "rust: input::tests::ut_005_secure_input_clears_context_and_never_predicts",
+    "input::tests::ut_005_secure_input_clears_context_and_never_predicts"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-006",
+   "title": "候选类型及 Schema 穷举",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-006 candidate kind/source/validation round-trip and invalid kind rejected",
+    "UT-006 candidate kind/source/validation round-trip and invalid kind rejected",
+    "rust: candidate::tests::ut_006_invalid_values_are_rejected",
+    "candidate::tests::ut_006_invalid_values_are_rejected",
+    "rust: candidate::tests::ut_006_all_kinds_sources_validations_round_trip",
+    "candidate::tests::ut_006_all_kinds_sources_validations_round_trip"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-007",
+   "title": "候选确定性排序",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
+    "UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
+    "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
+    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-008",
+   "title": "候选去重保留来源",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-008 de-duplication keeps one row and every source",
+    "UT-008 de-duplication keeps one row and every source",
+    "rust: candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row",
+    "candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row",
+    "rust: candidate::tests::ut_008_candidates_without_text_are_never_merged",
+    "candidate::tests::ut_008_candidates_without_text_are_never_merged"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-009",
+   "title": "Tab/Enter/数字键不默认吞键",
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: input::tests::ut_009_capture_without_candidates_consumes_nothing",
+    "input::tests::ut_009_capture_without_candidates_consumes_nothing",
+    "rust: input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode",
+    "input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-010",
+   "title": "占位参数结构安全回退",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-010 placeholders become snippet tab stops, or plain text without a bridge",
+    "UT-010 placeholders become snippet tab stops, or plain text without a bridge"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-011",
+   "title": "七语言 Profile 装载与索引",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected",
+    "UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-012",
+   "title": "语言识别可信度优先级",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-012 bridge languageId beats extension and lexical hints",
+    "UT-012 bridge languageId beats extension and lexical hints"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-013",
+   "title": "语言歧义不强切",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-013 / IT-010 ambiguous signals keep the current language and only suggest",
+    "UT-013 / IT-010 ambiguous signals keep the current language and only suggest"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-014",
+   "title": "手动语言锁高于自动识别",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-014 / IT-011 manual lock outranks automatic detection until unlocked",
+    "UT-014 / IT-011 manual lock outranks automatic detection until unlocked"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-015",
+   "title": "语言切换使旧候选失效",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys",
+    "UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-016",
+   "title": "方言/标准有效性校验",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged",
+    "UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-017",
+   "title": "Rust 表达式分号安全性",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-017 Rust: no semicolon is forced when the position is not provably a statement",
+    "UT-017 Rust: no semicolon is forced when the position is not provably a statement"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-018",
+   "title": "Python 缩进和 EOL 保真",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-018 Python templates follow the host indentation and EOL without mixing",
+    "UT-018 Python templates follow the host indentation and EOL without mixing"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-019",
+   "title": "TSX 泛型与 JSX 歧义",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-019 TSX: a generic arrow is never offered as a bare <T>",
+    "UT-019 TSX: a generic arrow is never offered as a bare <T>"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-020",
+   "title": "PowerShell 语法作为文本处理",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-020 PowerShell candidates are plain text only (never executed)",
+    "UT-020 PowerShell candidates are plain text only (never executed)",
+    "js: UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything",
+    "UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-021",
+   "title": "C 声明/标准版本校验",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-021 C declarations and standard versions",
+    "UT-021 C declarations and standard versions"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-022",
+   "title": "汇编方言与寻址约束",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-022 assembly dialect: Intel and AT&T are never silently mixed",
+    "UT-022 assembly dialect: Intel and AT&T are never silently mixed"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-023",
+   "title": "机器码 Hex 编码与字节范围",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-023 machine code hex: valid round-trip, incomplete/invalid rejected",
+    "UT-023 machine code hex: valid round-trip, incomplete/invalid rejected"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-024",
+   "title": "机器码不确定重定位",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-024 / ST-043 unresolved symbols never produce bytes",
+    "UT-024 / ST-043 unresolved symbols never produce bytes",
+    "uat: UAT-06",
+    "UAT-06"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-025",
+   "title": "上下文等级权限格",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-025 context level capability lattice",
+    "UT-025 context level capability lattice",
+    "rust: scope::tests::ut_025_capability_lattice",
+    "scope::tests::ut_025_capability_lattice"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-026",
+   "title": "UTF-16 代理项范围校验",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
+    "UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
+    "rust: textrange::tests::ut_026_crlf_is_not_split",
+    "textrange::tests::ut_026_crlf_is_not_split",
+    "rust: textrange::tests::ut_026_offset_round_trip",
+    "textrange::tests::ut_026_offset_round_trip",
+    "rust: textrange::tests::ut_026_out_of_range_is_rejected",
+    "textrange::tests::ut_026_out_of_range_is_rejected",
+    "rust: textrange::tests::ut_026_positions_never_split_surrogates",
+    "textrange::tests::ut_026_positions_never_split_surrogates"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-027",
+   "title": "Scope 最小化截取",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-027 nearby excerpt is minimal and wider requests are refused",
+    "UT-027 nearby excerpt is minimal and wider requests are refused",
+    "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
+    "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
+    "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
+    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
+    "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
+    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-028",
+   "title": "未保存缓冲区优先于磁盘",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
+    "UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-029",
+   "title": "Grant 正确作用域和撤销",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
+    "UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-030",
+   "title": "禁止误把磁盘文件当活动 buffer",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file",
+    "UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file",
+    "rust: scope::tests::ut_030_disk_content_is_preview_only",
+    "scope::tests::ut_030_disk_content_is_preview_only"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-031",
+   "title": "Vault 非明文序列化",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
+    "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-032",
+   "title": "不同 Provider/模型独立选择",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only",
+    "UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-033",
+   "title": "Effort 能力矩阵",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise",
+    "UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-034",
+   "title": "AI 关断短路",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work",
+    "UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-035",
+   "title": "预算预留与结算",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded",
+    "UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-036",
+   "title": "AI 错误分类映射",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI",
+    "UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-037",
+   "title": "输入任意字符触发语言前缀",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger",
+    "UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger",
+    "js: UT-037 nearby code feeds identifier candidates (no project-wide claims)",
+    "UT-037 nearby code feeds identifier candidates (no project-wide claims)"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-038",
+   "title": "输入防抖模拟时钟",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled",
+    "UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-039",
+   "title": "旧 seq 与 doc epoch 淘汰",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
+    "UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-040",
+   "title": "AI 不覆盖已输入 Direct 文本",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
+    "UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
+    "uat: UAT-35",
+    "UAT-35"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-041",
+   "title": "候选来源、语言和解释",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-041 candidates carry source, language and explanation; unverified AI never looks verified",
+    "UT-041 candidates carry source, language and explanation; unverified AI never looks verified"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-042",
+   "title": "上下文缺失不幻觉全文能力",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable",
+    "UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-043",
+   "title": "F1 默认与用户快捷键冲突",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded",
+    "UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-044",
+   "title": "F1 双路径独立状态",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
+    "UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
+    "js: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
+    "UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-045",
+   "title": "全量文本到 Diff 及反向重放",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline",
+    "UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-046",
+   "title": "当前光标处零长插入",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range",
+    "UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-047",
+   "title": "无用户确认零写入",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)",
+    "UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-048",
+   "title": "按 Hunk 选择后的冲突验证",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result",
+    "UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-049",
+   "title": "版本哈希精确比较",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token",
+    "UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-050",
+   "title": "Apply token 单次使用防重放",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-050 an apply token works once; replay writes nothing more",
+    "UT-050 an apply token works once; replay writes nothing more"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-051",
+   "title": "编辑结果未知绝不自动重试",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
+    "UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-052",
+   "title": "语法检查失败禁默认应用",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-052 a failed syntax check disables the default apply",
+    "UT-052 a failed syntax check disables the default apply",
+    "js: UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation",
+    "UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-053",
+   "title": "无 Bridge 时全文编辑降级",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
+    "UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-054",
+   "title": "单文件禁止跨文件计划",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
+    "UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
+    "js: UT-054 / IT-036 / ST-030 only the current file can be changed",
+    "UT-054 / IT-036 / ST-030 only the current file can be changed"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-055",
+   "title": "候选浮层尺寸与越界回退",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-055 overlay placement stays on the caret monitor and hides when it cannot be located",
+    "UT-055 overlay placement stays on the caret monitor and hides when it cannot be located"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-056",
+   "title": "语言切换后保留独立 UI locale",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
+    "UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
+    "uat: UAT-33",
+    "UAT-33"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-057",
+   "title": "无障碍候选播报属性",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-057 every candidate row is described by text (source, validation, position, action), not colour",
+    "UT-057 every candidate row is described by text (source, validation, position, action), not colour"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-058",
+   "title": "规则包 Schema 与资源边界",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions",
+    "UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions",
+    "js: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working",
+    "UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-059",
+   "title": "配置迁移/回退版本",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
+    "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-060",
+   "title": "插件沙盒能力限制",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "P1 plugin host not implemented"
+  },
+  {
+   "id": "UT-061",
+   "title": "安装器仅登记本产品 GUID",
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
+    "install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
+    "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
+    "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
+    "rust: install_plan::tests::ut_061_uninstall_removes_only_own_guids",
+    "install_plan::tests::ut_061_uninstall_removes_only_own_guids",
+    "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
+    "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-062",
+   "title": "Secret 扫描阻断外送",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
+    "UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
+    "rust: secrets::tests::ut_062_env_files_are_sensitive_by_name",
+    "secrets::tests::ut_062_env_files_are_sensitive_by_name",
+    "rust: secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values",
+    "secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-063",
+   "title": "日志白名单与隐私审计",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only",
+    "UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-064",
+   "title": "异常恢复 Direct",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
+    "UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
+    "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
+    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
+    "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
+    "input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
+    "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
+    "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-065",
+   "title": "危险内容不可执行",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything",
+    "UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-066",
+   "title": "断网本地可用",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working",
+    "UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-067",
+   "title": "故障降级 2 秒内",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
+    "UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
+    "rust: input::tests::ut_067_an_answered_request_never_triggers_the_watchdog",
+    "input::tests::ut_067_an_answered_request_never_triggers_the_watchdog",
+    "rust: input::tests::ut_067_direct_is_in_force_within_two_seconds_on_a_virtual_clock",
+    "input::tests::ut_067_direct_is_in_force_within_two_seconds_on_a_virtual_clock"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-068",
+   "title": "本地候选计算基准",
+   "status": "PASS",
+   "via": [
+    "js",
+    "rust"
+   ],
+   "tests": [
+    "js: UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)",
+    "UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)",
+    "rust: ut_068_local_candidate_p95_within_20ms",
+    "ut_068_local_candidate_p95_within_20ms"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-069",
+   "title": "同会话 AI 并发上限",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
+    "UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-070",
+   "title": "F1 超时可取消",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens",
+    "UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-071",
+   "title": "错误诊断去敏",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only",
+    "UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-072",
+   "title": "模型能力表失效刷新",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-072 / IT-046 a stale capability record is treated as unknown and never sent",
+    "UT-072 / IT-046 a stale capability record is treated as unknown and never sent"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-073",
+   "title": "迁移中断不损用户配置",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
+    "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
+    "js: UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption",
+    "UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-074",
+   "title": "密钥禁止普通文件落盘",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
+    "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
+    "js: UT-074 static: nothing in the source writes a key to settings, files or logs",
+    "UT-074 static: nothing in the source writes a key to settings, files or logs"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-075",
+   "title": "补丁不允许未授权或过期",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply",
+    "UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-076",
+   "title": "提示注入被当数据",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
+    "UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
+    "js: UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything",
+    "UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything",
+    "uat: UAT-27",
+    "UAT-27"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "UT-077",
+   "title": "环境与 DPI 配置校验",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained",
+    "UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-001",
+   "title": "TSF 三 Profile 注册/枚举 API",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+  },
+  {
+   "id": "IT-002",
+   "title": "系统切换不破坏其它 IME",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+  },
+  {
+   "id": "IT-003",
+   "title": "TSF 与 Core Hello/身份认证",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+  },
+  {
+   "id": "IT-004",
+   "title": "IPC 超时与原始输入兜底",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
+    "UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-005",
+   "title": "安全框禁止 Context/AI",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+  },
+  {
+   "id": "IT-006",
+   "title": "规则候选到悬浮窗展示",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "IT-007",
+   "title": "候选接受与 Bridge 精准编辑",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-04",
+    "UAT-04"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-008",
+   "title": "候选取消和语言变更清空",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys",
+    "UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-009",
+   "title": "七语言 pack 接口兼容",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected",
+    "UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected",
+    "uat: UAT-05",
+    "UAT-05"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-010",
+   "title": "语言识别与 VS Code languageId",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-013 / IT-010 ambiguous signals keep the current language and only suggest",
+    "UT-013 / IT-010 ambiguous signals keep the current language and only suggest"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-011",
+   "title": "人工锁定跨编辑器事件",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-014 / IT-011 manual lock outranks automatic detection until unlocked",
+    "UT-014 / IT-011 manual lock outranks automatic detection until unlocked",
+    "uat: UAT-03",
+    "UAT-03"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-012",
+   "title": "方言配置动态重装",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged",
+    "UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-013",
+   "title": "TSF L1 与 Bridge L3 权限区别",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "IT-014",
+   "title": "VS Code dirty buffer 与光标快照",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
+    "UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
+    "uat: UAT-24",
+    "UAT-24"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-015",
+   "title": "上下文授权隔离与撤销",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
+    "UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
+    "js: UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply",
+    "UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-016",
+   "title": "AI Worker Windows Vault 回合",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
+    "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-017",
+   "title": "多个 Provider 与场景路由",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only",
+    "UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only",
+    "uat: UAT-30",
+    "UAT-30"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-018",
+   "title": "模型 Effort 失败协商",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise",
+    "UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise",
+    "uat: UAT-30",
+    "UAT-30"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-019",
+   "title": "AI Disabled 零请求",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work",
+    "UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work",
+    "uat: UAT-08",
+    "UAT-08"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-020",
+   "title": "预算限额与429退避",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI",
+    "UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI",
+    "uat: UAT-31",
+    "UAT-31"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-021",
+   "title": "非法模型 JSON 返回拒绝",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal",
+    "IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-022",
+   "title": "实时预测 local-first",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)",
+    "UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)",
+    "uat: UAT-35",
+    "UAT-35"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-023",
+   "title": "输入 debounce/cancel 跨 Worker",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled",
+    "UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled",
+    "js: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
+    "UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
+    "uat: UAT-35",
+    "UAT-35"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-024",
+   "title": "候选浮层隐藏与用户暂停",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
+    "UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
+    "uat: UAT-07",
+    "UAT-07"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-025",
+   "title": "缺少全文不产生跨文件建议",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable",
+    "UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-026",
+   "title": "F1 主机快捷键选择",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded",
+    "UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded",
+    "uat: UAT-01",
+    "UAT-01",
+    "uat: UAT-29",
+    "UAT-29"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-027",
+   "title": "F1 两候选独立调用",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-26",
+    "UAT-26"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-028",
+   "title": "全文 Diff 与最新 Buffer 集成",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
+    "UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
+    "uat: UAT-24",
+    "UAT-24"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-029",
+   "title": "Insert 精准光标/选区定位",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range",
+    "UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range",
+    "js: IT-029 insert is refused when the cursor moved after the proposal",
+    "IT-029 insert is refused when the cursor moved after the proposal"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-030",
+   "title": "取消/未审核禁止 Apply",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)",
+    "UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-031",
+   "title": "并发文档修改阻断 Apply",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token",
+    "UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token",
+    "uat: UAT-25",
+    "UAT-25"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-032",
+   "title": "Apply 结果校核与 Undo",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: IT-032 a verified apply can be undone back to the original dirty buffer",
+    "IT-032 a verified apply can be undone back to the original dirty buffer",
+    "uat: UAT-23",
+    "UAT-23"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-033",
+   "title": "Apply 回包丢失的未知状态",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried",
+    "UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-034",
+   "title": "语法 Validator 影响 Apply",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation",
+    "UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-035",
+   "title": "无 Bridge FullFile 禁用",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
+    "UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-036",
+   "title": "单文件允许列表",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-054 / IT-036 / ST-030 only the current file can be changed",
+    "UT-054 / IT-036 / ST-030 only the current file can be changed"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-037",
+   "title": "DPI + UI 语言互操作",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+  },
+  {
+   "id": "IT-038",
+   "title": "插件越权/崩溃保护",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs Windows Credential Manager worker, plugin host, installer or multi-process log merge (not built)"
+  },
+  {
+   "id": "IT-039",
+   "title": "配置升级与回退安装器",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
+    "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-040",
+   "title": "敏感文本过滤到实际出站字节",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
+    "UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
+    "uat: UAT-28",
+    "UAT-28"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-041",
+   "title": "脱敏日志多进程汇聚",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only",
+    "UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-042",
+   "title": "Worker 卡死不阻塞 TSF",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+  },
+  {
+   "id": "IT-043",
+   "title": "Assembly 与 Machine Code 输出不执行",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "IT-044",
+   "title": "UI/Bridge 断开时可用性恢复",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working",
+    "UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-045",
+   "title": "F1 超时与取消传播",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens",
+    "UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-046",
+   "title": "静态更新模型能力缓存",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-072 / IT-046 a stale capability record is treated as unknown and never sent",
+    "UT-072 / IT-046 a stale capability record is treated as unknown and never sent"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-047",
+   "title": "Prompt 注入不可扩大上下文",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
+    "UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "IT-048",
+   "title": "安装环境与 GUI 高缩放",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained",
+    "UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-001",
+   "title": "中文系统语言激活并返回原输入法",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs a Windows 11 VM with the TSF DLL / signed installer (not built)"
+  },
+  {
+   "id": "ST-002",
+   "title": "英文系统语言激活并返回原输入法",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs a Windows 11 VM with the TSF DLL / signed installer (not built)"
+  },
+  {
+   "id": "ST-003",
+   "title": "日文系统语言激活并返回原输入法",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs a Windows 11 VM with the TSF DLL / signed installer (not built)"
+  },
+  {
+   "id": "ST-004",
+   "title": "三系统语言共享同一七语言引擎",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs a Windows 11 VM with the TSF DLL / signed installer (not built)"
+  },
+  {
+   "id": "ST-005",
+   "title": "普通记事本 Direct 长文本输入",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs a Windows 11 VM with the TSF DLL / signed installer (not built)"
+  },
+  {
+   "id": "ST-006",
+   "title": "候选选择、取消、撤销",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-04",
+    "UAT-04"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-007",
+   "title": "七语言编程输入金样本",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-05",
+    "UAT-05"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-008",
+   "title": "Rust/TypeScript/Python 语法上下文",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "ST-009",
+   "title": "PowerShell 与机器码不执行",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "ST-010",
+   "title": "自动识别与人工锁定",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-02",
+    "UAT-02",
+    "uat: UAT-03",
+    "UAT-03"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-011",
+   "title": "方言和架构切换",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "ST-012",
+   "title": "未保存文件上下文 L3",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-24",
+    "UAT-24"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-013",
+   "title": "无 Bridge/不可信工程降级",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-32",
+    "UAT-32"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-014",
+   "title": "首次 AI 发外前可见授权",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-21",
+    "UAT-21",
+    "uat: UAT-34",
+    "UAT-34"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-015",
+   "title": "自带 API Key 完整生命周期",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-20",
+    "UAT-20"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-016",
+   "title": "实时和 F1 不同 Provider 模型",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only",
+    "UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only",
+    "uat: UAT-30",
+    "UAT-30"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-017",
+   "title": "Effort 兼容性反馈",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise",
+    "UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise",
+    "uat: UAT-30",
+    "UAT-30"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-018",
+   "title": "预算与限流全流程",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-31",
+    "UAT-31"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-019",
+   "title": "字母输入实时预测与来源区分",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-35",
+    "UAT-35"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-020",
+   "title": "快速连打过期回复清除",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
+    "UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
+    "uat: UAT-35",
+    "UAT-35"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-021",
+   "title": "暂停/隐藏候选不改变原输入",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
+    "UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely",
+    "uat: UAT-07",
+    "UAT-07"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-022",
+   "title": "无完整上下文禁止虚构跨文件",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "ST-023",
+   "title": "F1 默认键冲突与自定义绑定",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded",
+    "UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded",
+    "uat: UAT-29",
+    "UAT-29"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-024",
+   "title": "F1 双标签独立预览",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-22",
+    "UAT-22"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-025",
+   "title": "整文件 Diff 与 Hunk 选择",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-23",
+    "UAT-23"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-026",
+   "title": "当前位置插入/替换 Unicode",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "ST-027",
+   "title": "并发编辑阻断旧 Diff",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token",
+    "UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token",
+    "uat: UAT-25",
+    "UAT-25"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-028",
+   "title": "修改后 Undo 保留原未保存状态",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-23",
+    "UAT-23"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-029",
+   "title": "语法错误醒目标示且不上机执行",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "ST-030",
+   "title": "仅当前文件变更",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-054 / IT-036 / ST-030 only the current file can be changed",
+    "UT-054 / IT-036 / ST-030 only the current file can be changed"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-031",
+   "title": "悬浮下拉七语言 UI",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "no automated test mapped to this id in this delivery"
+  },
+  {
+   "id": "ST-032",
+   "title": "DPI、多屏、读屏与本地化",
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-33",
+    "UAT-33"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-033",
+   "title": "内置规则版本变更与用户规则",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
+    "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
+    "js: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working",
+    "UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-034",
+   "title": "扩展崩溃隔离（P1）",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "P1 plugin isolation not implemented"
+  },
+  {
+   "id": "ST-035",
+   "title": "签名安装/修复/卸载与重启",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "needs a Windows 11 VM with the TSF DLL / signed installer (not built)"
+  },
+  {
+   "id": "ST-036",
+   "title": "隐私过滤、无授权外发与诊断",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
+    "UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
+    "uat: UAT-28",
+    "UAT-28"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-037",
+   "title": "Core/Worker/UI 意外终止",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
+    "UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-038",
+   "title": "离线30分钟连续使用",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working",
+    "UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-039",
+   "title": "性能 P95 和 CPU 基准",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)",
+    "UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-040",
+   "title": "F1 P95 延迟与进度反馈",
+   "status": "NOT RUN",
+   "via": [],
+   "tests": [],
+   "failed": [],
+   "reason": "long-run / benchmark-machine / multi-monitor DPI measurement not run"
+  },
+  {
+   "id": "ST-041",
+   "title": "模型与网络故障可诊断",
+   "status": "PASS",
+   "via": [
+    "js"
+   ],
+   "tests": [
+    "js: UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI",
+    "UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-042",
+   "title": "提示注入和未授权工具攻击",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
+    "UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
+    "uat: UAT-27",
+    "UAT-27"
+   ],
+   "failed": [],
+   "reason": ""
+  },
+  {
+   "id": "ST-043",
+   "title": "机器码独立金样本与不确定提示",
+   "status": "PASS",
+   "via": [
+    "js",
+    "uat"
+   ],
+   "tests": [
+    "js: UT-024 / ST-043 unresolved symbols never produce bytes",
+    "UT-024 / ST-043 unresolved symbols never produce bytes",
+    "js: ST-043 independent golden vectors for the verified x86-64 forms",
+    "ST-043 independent golden vectors for the verified x86-64 forms",
+    "uat: UAT-06",
+    "UAT-06"
+   ],
+   "failed": [],
+   "reason": ""
+  }
+ ]
+}

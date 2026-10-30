@@ -1,10 +1,16 @@
 [package]
 name = "pime-core"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
-description = "Programming IME local deterministic candidate engine prototype"
+description = "Programming IME local deterministic core: pure logic, JSON Lines protocol 0.2 (zero third-party dependencies)"
 
-[dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# Deliberately NO [dependencies]: the core handles untrusted text and must stay auditable.
+
+[lib]
+name = "pime_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pime-core"
+path = "src/main.rs"

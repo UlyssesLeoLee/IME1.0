@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "profile_id": "assembly",
+  "version": "1.0.0",
+  "display_name": "Assembly",
+  "language_ids": ["asm", "nasm", "assembly"],
+  "accepted_extensions": [".asm", ".s", ".nasm"],
+  "validator": "assembly",
+  "dialects": {
+    "isa": {"values": ["x86-64"], "default": "x86-64"},
+    "syntax": {"values": ["intel", "att"], "default": "intel"},
+    "assembler": {"values": ["nasm", "gas", "masm"], "default": "nasm"}
+  },
+  "keywords": ["mov", "push", "pop", "lea", "add", "sub", "xor", "and", "or", "cmp", "jmp", "je", "jne", "call", "ret", "nop", "syscall", "int3", "leave"],
+  "triggers": [
+    {"id": "asm.mov.intel", "pattern": "mov", "kind": "syntax", "weight": 85, "when": {"syntax": ["intel"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "mov (Intel: destination, source)", "text": "mov ${rax}, ${rbx}"}]},
+    {"id": "asm.mov.att", "pattern": "mov", "kind": "syntax", "weight": 85, "when": {"syntax": ["att"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "movq (AT&T: source, destination)", "text": "movq %${rbx}, %${rax}"}]},
+    {"id": "asm.prologue.intel", "pattern": "prologue", "kind": "syntax", "weight": 80, "when": {"syntax": ["intel"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "frame prologue (Intel, x86-64)", "text": "push rbp\nmov rbp, rsp"}]},
+    {"id": "asm.prologue.att", "pattern": "prologue", "kind": "syntax", "weight": 80, "when": {"syntax": ["att"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "frame prologue (AT&T, x86-64)", "text": "pushq %rbp\nmovq %rsp, %rbp"}]},
+    {"id": "asm.epilogue.intel", "pattern": "epilogue", "kind": "syntax", "weight": 70, "when": {"syntax": ["intel"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "frame epilogue (Intel)", "text": "pop rbp\nret"}]},
+    {"id": "asm.epilogue.att", "pattern": "epilogue", "kind": "syntax", "weight": 70, "when": {"syntax": ["att"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "frame epilogue (AT&T)", "text": "popq %rbp\nret"}]},
+    {"id": "asm.section.nasm", "pattern": "section", "kind": "syntax", "weight": 60, "when": {"assembler": ["nasm"], "syntax": ["intel"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "NASM text section", "text": "section .text\nglobal _start\n_start:\n    ${cursor}"}]},
+    {"id": "asm.section.gas", "pattern": "section", "kind": "syntax", "weight": 60, "when": {"assembler": ["gas"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "GAS text section", "text": ".text\n.globl _start\n_start:\n    ${cursor}"}]},
+    {"id": "asm.section.masm", "pattern": "section", "kind": "syntax", "weight": 60, "when": {"assembler": ["masm"], "syntax": ["intel"]}, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "MASM code segment", "text": ".code\nmain PROC\n    ${cursor}\nmain ENDP\nEND"}]},
+    {"id": "asm.ret", "pattern": "ret", "kind": "syntax", "weight": 70, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "return", "text": "ret"}]},
+    {"id": "asm.nop", "pattern": "nop", "kind": "syntax", "weight": 60, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "no operation", "text": "nop"}]},
+    {"id": "asm.syscall", "pattern": "syscall", "kind": "syntax", "weight": 60, "contexts": ["statement", "unknown"],
+     "candidates": [{"label": "syscall (x86-64; ABI/number depends on the OS)", "text": "syscall", "assumptions": ["Syscall numbers are OS specific; none is filled in"]}]}
+  ]
+}

@@ -1,41 +1,71 @@
 {
   "name": "programming-ime-vscode-bridge",
-  "displayName": "Programming IME (Prototype Bridge)",
-  "description": "Prototype: seven-language local suggestions and reviewed AI edits (BYOK). Not a replacement for a system TSF IME.",
-  "version": "0.1.0",
+  "displayName": "Programming IME (VS Code Bridge)",
+  "description": "Seven-language local suggestions, per-hunk reviewed F1 AI edits and BYOK AI for Programming IME. The editor-side bridge of the system IME design; not a TSF input method.",
+  "version": "0.2.0",
   "publisher": "pime-local-prototype",
   "license": "MIT",
   "engines": {"vscode": "^1.94.0"},
   "categories": ["Programming Languages", "Snippets", "Other"],
   "main": "./src/extension.js",
   "activationEvents": ["onStartupFinished"],
+  "capabilities": {
+    "untrustedWorkspaces": {"supported": "limited", "description": "In an untrusted workspace AI is disabled; local candidates keep working."},
+    "virtualWorkspaces": {"supported": "limited", "description": "Whole-file F1 edits need a real file or untitled buffer."}
+  },
   "contributes": {
     "commands": [
-      {"command":"programmingIme.enable", "title":"Programming IME: Enable / Disable"},
-      {"command":"programmingIme.chooseLanguage", "title":"Programming IME: Choose Programming Language"},
-      {"command":"programmingIme.showCandidates", "title":"Programming IME: Show Code Candidates"},
-      {"command":"programmingIme.configureAI", "title":"Programming IME: Configure AI Provider / API Key"},
-      {"command":"programmingIme.chooseModel", "title":"Programming IME: Set Model and Effort"},
-      {"command":"programmingIme.toggleRealtimeAI", "title":"Programming IME: Toggle Realtime AI"},
-      {"command":"programmingIme.f1Edit", "title":"Programming IME: F1 AI Edit (Full File / Insert)"}
+      {"command": "programmingIme.enable", "title": "%cmd.enable%"},
+      {"command": "programmingIme.chooseLanguage", "title": "%cmd.chooseLanguage%"},
+      {"command": "programmingIme.showCandidates", "title": "%cmd.showCandidates%"},
+      {"command": "programmingIme.menu", "title": "%cmd.menu%"},
+      {"command": "programmingIme.togglePause", "title": "%cmd.togglePause%"},
+      {"command": "programmingIme.toggleAI", "title": "%cmd.toggleAI%"},
+      {"command": "programmingIme.configureAI", "title": "%cmd.configureAI%"},
+      {"command": "programmingIme.deleteKey", "title": "%cmd.deleteKey%"},
+      {"command": "programmingIme.chooseModel", "title": "%cmd.chooseModel%"},
+      {"command": "programmingIme.toggleRealtimeAI", "title": "%cmd.toggleRealtimeAI%"},
+      {"command": "programmingIme.managePermissions", "title": "%cmd.managePermissions%"},
+      {"command": "programmingIme.showUsage", "title": "%cmd.showUsage%"},
+      {"command": "programmingIme.resetUsage", "title": "%cmd.resetUsage%"},
+      {"command": "programmingIme.showDiagnostics", "title": "%cmd.showDiagnostics%"},
+      {"command": "programmingIme.reloadRules", "title": "%cmd.reloadRules%"},
+      {"command": "programmingIme.openRulesFolder", "title": "%cmd.openRulesFolder%"},
+      {"command": "programmingIme.f1Edit", "title": "%cmd.f1Edit%"}
     ],
     "keybindings": [
-      {"command":"programmingIme.f1Edit", "key":"f1", "when":"editorTextFocus && programmingIme.enabled"},
-      {"command":"programmingIme.showCandidates", "key":"ctrl+alt+space", "when":"editorTextFocus && programmingIme.enabled"}
+      {"command": "programmingIme.f1Edit", "key": "f1", "when": "editorTextFocus && programmingIme.f1Key.f1"},
+      {"command": "programmingIme.f1Edit", "key": "shift+f1", "when": "editorTextFocus && programmingIme.f1Key.shiftF1"},
+      {"command": "programmingIme.showCandidates", "key": "ctrl+alt+space", "when": "editorTextFocus && programmingIme.enabled"}
     ],
     "configuration": {
-      "title": "Programming IME Prototype",
+      "title": "Programming IME",
       "properties": {
-        "programmingIme.enabled": {"type":"boolean","default":false,"description":"Enable editor candidate provider and the F1 keybinding; can override editor F1 Help."},
-        "programmingIme.coreExecutable": {"type":"string","default":"","description":"Absolute path of a trusted, locally built pime-core executable. Empty uses JavaScript fallback."},
-        "programmingIme.realtimeAI": {"type":"boolean","default":false,"description":"Send authorized context to selected provider for AI suggestions. Requires explicit opt-in."},
-        "programmingIme.provider": {"type":"string","enum":["openai","openai-compatible"],"default":"openai"},
-        "programmingIme.endpoint": {"type":"string","default":"https://api.openai.com/v1/responses","description":"HTTPS endpoint. For openai-compatible use the chat/completions endpoint."},
-        "programmingIme.model": {"type":"string","default":"","description":"Explicit model identifier selected by the user; never silently selected."},
-        "programmingIme.effort": {"type":"string","enum":["auto","low","medium","high"],"default":"auto"},
-        "programmingIme.effortCapability": {"type":"string","enum":["unknown","supported","unsupported"],"default":"unknown","description":"Set supported only when provider/model documentation confirms a reasoning effort argument."}
+        "programmingIme.enabled": {"type": "boolean", "default": false, "description": "Enable candidates and the F1 binding. While off, F1 keeps opening the Command Palette."},
+        "programmingIme.uiLocale": {"type": "string", "enum": ["auto", "zh-CN", "en-US", "ja-JP"], "default": "auto", "description": "UI language of Programming IME. Independent of the Windows input language and of the programming profile."},
+        "programmingIme.suggestMode": {"type": "string", "enum": ["auto", "explicit"], "default": "auto", "description": "auto: inline suggestions while typing. explicit: only when you press Ctrl+Alt+Space."},
+        "programmingIme.maxVisibleCandidates": {"type": "integer", "minimum": 1, "maximum": 20, "default": 6},
+        "programmingIme.pinnedCandidates": {"type": "array", "items": {"type": "string"}, "default": [], "description": "Candidate ids that always rank first."},
+        "programmingIme.dialects": {"type": "object", "default": {}, "description": "Per profile dialect, e.g. {\"rust\":{\"edition\":\"2021\"},\"c\":{\"std\":\"c23\"},\"powershell\":{\"version\":\"5.1\"},\"assembly\":{\"syntax\":\"att\",\"assembler\":\"gas\"},\"machine-code\":{\"format\":\"compact\"}}"},
+        "programmingIme.f1Binding": {"type": "string", "enum": ["f1", "shift+f1", "none"], "default": "f1", "description": "Key that opens the F1 AI edit panel when Programming IME is enabled. Use shift+f1 or none to keep F1 for the Command Palette."},
+        "programmingIme.f1ExcludedLanguages": {"type": "array", "items": {"type": "string"}, "default": [], "description": "Language ids in which the F1 binding is never taken over."},
+        "programmingIme.coreExecutable": {"type": "string", "default": "", "description": "Absolute path of a trusted, locally built pime-core executable (protocol 0.2). Empty uses the built-in JavaScript engine."},
+        "programmingIme.aiEnabled": {"type": "boolean", "default": false, "description": "Master switch. While off, no AI request is ever sent, whatever else is configured."},
+        "programmingIme.realtimeAI": {"type": "boolean", "default": false, "description": "Send authorised nearby code to the realtime provider for suggestions. Needs aiEnabled and a workspace authorisation."},
+        "programmingIme.debounceMs": {"type": "integer", "minimum": 150, "maximum": 1000, "default": 350},
+        "programmingIme.providers": {"type": "object", "default": {}, "description": "Provider profiles: id -> {api, endpoint}. api is openai-responses, openai-chat or anthropic-messages. Keys are stored in SecretStorage, never here."},
+        "programmingIme.scenarios": {"type": "object", "default": {}, "description": "Independent settings for realtime, f1Full and f1Insert: provider, model, effort, effortCapability, maxOutputTokens, timeoutMs."},
+        "programmingIme.budget": {"type": "object", "default": {}, "description": "{maxRequests, maxTokens, pricePer1kTokens}. 0 means unlimited. When reached, AI stops; local input is unaffected."},
+        "programmingIme.provider": {"type": "string", "default": "openai", "deprecationMessage": "Replaced by programmingIme.providers / programmingIme.scenarios (migrated automatically)."},
+        "programmingIme.endpoint": {"type": "string", "default": "https://api.openai.com/v1/responses", "deprecationMessage": "Replaced by programmingIme.providers."},
+        "programmingIme.model": {"type": "string", "default": "", "deprecationMessage": "Replaced by programmingIme.scenarios."},
+        "programmingIme.effort": {"type": "string", "default": "auto", "deprecationMessage": "Replaced by programmingIme.scenarios."},
+        "programmingIme.effortCapability": {"type": "string", "default": "unknown", "deprecationMessage": "Replaced by programmingIme.scenarios."}
       }
     }
   },
-  "scripts": {"test":"node --test test/*.test.js", "check":"node --check src/extension.js && node --check src/logic.js"}
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "check": "node scripts/check-syntax.js"
+  }
 }

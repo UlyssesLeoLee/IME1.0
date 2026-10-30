@@ -1,0 +1,19 @@
+{
+  "cmd.enable": "Programming IME：启用 / 停用",
+  "cmd.chooseLanguage": "Programming IME：选择编程语言",
+  "cmd.showCandidates": "Programming IME：显示代码候选",
+  "cmd.menu": "Programming IME：菜单",
+  "cmd.togglePause": "Programming IME：暂停 / 恢复建议",
+  "cmd.toggleAI": "Programming IME：开关 AI（总开关）",
+  "cmd.configureAI": "Programming IME：配置 AI 服务商 / API Key",
+  "cmd.deleteKey": "Programming IME：删除 API Key",
+  "cmd.chooseModel": "Programming IME：设置模型与 Effort",
+  "cmd.toggleRealtimeAI": "Programming IME：开关实时 AI",
+  "cmd.managePermissions": "Programming IME：管理 AI 授权",
+  "cmd.showUsage": "Programming IME：查看 AI 用量",
+  "cmd.resetUsage": "Programming IME：重置 AI 用量",
+  "cmd.showDiagnostics": "Programming IME：查看诊断",
+  "cmd.reloadRules": "Programming IME：重新加载用户规则",
+  "cmd.openRulesFolder": "Programming IME：打开用户规则文件夹",
+  "cmd.f1Edit": "Programming IME：F1 AI 编辑（整文件 / 光标插入）"
+}

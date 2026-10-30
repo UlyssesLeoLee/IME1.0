@@ -1,38 +1,42 @@
-# Implementation matrix — Design baseline vs. code v0.1
+# Implementation matrix — design baseline vs. code v0.2
 
-**Important:** 52 functional and 12 non-functional requirements are DESIGN-traced
-in the supplied spreadsheets. That does NOT mean they are implemented or test-passed.
+**Read this first:** "implemented" means code exists and the listed evidence passed in *this* environment
+(Windows 11, VS Code 1.137.0, Node 22.12, Rust 1.99.1 gnu). It does not mean the 64 requirements are accepted.
+Evidence is in `02_Verification/` (`STATUS.md`, `test-execution-report.md`). Windows-specific parts were not built or run.
 
-| DD module | Code delivered | Actual v0.1 status | Gap before production |
-|---|---|---|---|
-| DD-01 TSF | `windows/tsf` COM prototype | Source only, Windows build unverified, keys pass through | Full TSF composition, system activation tests, candidate UI, signing, installer |
-| DD-02 Core | `crates/pime-core` | Rust deterministic candidates with local JSONL | Full composition state, FFI/IPC, rule cache, performance |
-| DD-03 Languages | Rust core and JS fallback | Seven simple snippet sets, file-name detection | Syntax AST parsing, language versions, accurate machine-code assembler |
-| DD-04 Context | VS Code extension | Active `TextDocument.getText`, selection, version | Multi-editor bridge, explicit scope grants, 2MiB IPC framing |
-| DD-05 BYOK AI | VS Code extension | OpenAI Responses + compatible Chat Completions; SecretStorage; model/effort | Separate worker/Vault, vendor capability discovery, quota/cost, exhaustive providers |
-| DD-06 Realtime | VS Code inline completion | Local suggestions and optional AI (350ms debounce) | System-level candidate UI; consistent cross-app preview; concurrency metrics |
-| DD-07 F1 | VS Code command | Dual result, full Diff, user confirmation, stale document and cursor checks, apply edit | Prepare/Apply token transaction, per-hunk Diff, readback and Undo E2E |
-| DD-08 UI | VS Code QuickPick/status | Language dropdown, simple candidate picker | Native floating TSF UI, settings panel, local accessibility testing |
-| DD-09 Rules | Static arrays | Built-in templates | Declarative rule packs, marketplace, custom language plug-ins |
-| DD-10 Ops | Scripts and docs | Build/test commands, no signed installer | Binary signing, MSI/WiX, real install/uninstall, secure migration |
-| DD-11 Contracts | JSONL schema | Local stdio, no privileged IPC | Secure named-pipe authentication, ACL, handshake, message IDs |
-| DD-12 Testkit | Rust unit tests, node:test, fixtures | 14 Rust tests authored (not runnable in packaging container); 12 JS tests PASS | IT/ST execution on Windows 11 and VS Code, automation/evidence |
+| DD module | Code | v0.2 status | Evidence | Not done / limits |
+|---|---|---|---|---|
+| DD-01 TSF | `windows/tsf` (unchanged v0.1 C++) | Source only. Not compiled, not registered, keys pass through | none | Everything: build, register 3 profiles, composition, candidate window, IPC, signing |
+| DD-02 Input core | `crates/pime-core/src/input.rs` | Pure state machine (DIRECT/OBSERVING/CANDIDATES/COMPOSING/SUSPENDED/FAULT_FALLBACK), key-consumption rules, secure-input suspend, Direct fallback on a virtual clock | Rust UT-003/004/005/009/064/067 | Not wired to a real TSF; 2 s fallback is a design-state test, the system measurement (ST-037) is not run |
+| DD-03 Languages | `language-packs/*.json` + `src/core/languages.js` + `validators.js` + `x86.js`; Rust `pack.rs`, `predict.rs`, `resolve.rs`, `validators.rs`, `x86.rs` | Seven declarative packs; dialect axes; context-aware ranked candidates (statement/expression/type, enclosing impl/class, nearby identifiers); language resolution that never switches on weak evidence; a small x86-64 table whose encodings are checked against known vectors, anything else refused | JS 81 tests; Rust 101 tests; JS and Rust agree on 100 predict / 51 validate / 59 x86 / 18 resolve / 11 secret fixtures | Validators are structural checks (brackets, Python indentation, dialect tokens), **not** parsers or compilers. No AST, no type checking, no general assembler/disassembler |
+| DD-04 Context | `src/core/context.js`, `f1.js`, `languageState.js` | L1 nearby excerpt, L3 live-buffer snapshot (version, sha256, EOL, selection, UTF-16 ranges); L4 is preview-only by construction | JS UT-025..030; UAT-24 (request carries the unsaved buffer) | VS Code only. No TSF text ranges, no other IDE bridge, no 2 MiB chunked transfer (larger files disable the whole-file path instead of truncating) |
+| DD-05 BYOK AI | `src/core/ai.js`, `settings.js`, `extension.js` | Three API families (OpenAI Responses, OpenAI-compatible Chat, Anthropic Messages); keys in VS Code SecretStorage; per-scenario provider/model/effort/limits/timeout; effort negotiation with explicit reasons; budget with reserve/settle; error mapping; 429 pause; last-gate secret scan; strict output validation | JS UT-031..036, 070..072, 074, 076; UAT-20, 27, 28, 30, 31 | Keys are **not** in Windows Credential Manager and there is no separate worker process. No model-list discovery; capability table is user-maintained. Pricing is a user-entered number |
+| DD-06 Realtime | `src/core/scheduler.js`, inline provider | Local suggestions return immediately; AI is asynchronous (debounce 150-1000 ms, one in flight, stale results dropped by seq/profile/document epoch) and arrives through a cache | JS UT-038/039/069; UAT-35 | Suggestions appear as VS Code ghost text / list, not a native floating layer |
+| DD-07 F1 | `src/f1.js`, `ui/f1panel.js`, `core/transaction.js`, `core/diff.js` | Two independent paths (whole file / insert), separate requests, grants and errors; line Diff with per-hunk selection and re-verified preview; structural validation blocks Apply on regressions; Prepare/Apply with one-use token, version+hash re-check, read-back, EDIT_UNKNOWN never retried; one WorkspaceEdit = one Undo | JS UT-044..054, 075; UAT-22..27 (incl. real Ctrl+Z) | Insert Apply cannot verify the cursor when the document is not visible in any editor. Hunks are line based (no intra-line diff) |
+| DD-08 UI | status bar (language + AI), QuickPick, webview panel, `core/uimodel.js` | zh-CN/en-US/ja-JP UI independent of profile; text (not colour) markers; keyboard operable | JS UT-056/057; UAT-33 | Not a native TSF window. `placeOverlay` (DPI/negative monitors) is a tested function, not UI. No screen-reader test, no multi-monitor/DPI run |
+| DD-09 Rules | `language-packs`, `settings.js` | Built-in packs and user packs validated as data (size, unknown fields, placeholders, id collisions); user rules rank first | JS UT-058; `settings.buildRegistryWithUserRules` | No plugin sandbox/host (P1), no rule marketplace, no signed rule updates |
+| DD-10 Ops | `settings.js`, `diagnostics.js` | Versioned settings, v0.1 -> v1 migration with rollback, atomic file writes with `.bak` recovery, redacted diagnostics (whitelist) | JS UT-059/063/071/073 | No installer, no signing, no uninstall plan execution; settings export/import exist as functions only (no UI command) |
+| DD-11 Contracts | `schemas/core-protocol-v0.2.json`, `crates/pime-core/src/protocol.rs` | JSON Lines over stdio, protocol 0.2, ids echoed, 64 KiB frames | Rust `tests/protocol.rs` (in process and real binary) | The designed named-pipe `PIME-IPC/1` (ACL, challenge/response, tokens) is **not** implemented; stdio is for a trusted local child process only |
+| DD-12 Testkit | `test/helpers.js`, `tests/gen-fixtures.js`, `uat/` | Fake provider/fetch, virtual clock, fake editor, fault-injecting fs; golden fixtures; Playwright on real VS Code with an HTTPS mock provider | see `STATUS.md` | No fault injection of a real TSF host |
 
-## Security and compatibility design changes in this PoC
+## Direction
 
-1. No global keyboard interception in Windows. The TSF DLL observes but consumes nothing.
-2. AI requires a user-entered API key in VS Code SecretStorage, a trusted workspace,
-   a separately enabled realtime permission per workspace/endpoint, or an explicit F1 approval.
-3. AI output is always preview-only until deliberate user confirmation. Never executes code.
-4. F1 editing operates on current editor buffer, not arbitrary disk files or paths.
-5. Both version and SHA-256 text hash are checked before applying. Insert also checks selection.
-6. Machine-code input has only five exact x86-64 examples. It is NOT an assembler/disassembler.
-7. Direct local candidate engine continues functioning with no model/key/network.
-8. TSF code is not signed, built or tested on Windows, so no claim of deployment readiness.
+The target is a pure-Rust product. `docs/RUST_MIGRATION_PLAN.md` (draft) defines what "pure" can mean for a VS Code bridge,
+the phases P0-P6, the first step already tentatively agreed (move all pure logic into the Rust core, JavaScript reduced to glue,
+HTTP still sent by JS) and the decisions still open. Nothing in that plan is implemented yet.
 
-## Need-to-verify gates
+## Behaviour that deliberately differs from the design text
 
-- G0: Build TSF on Windows 11 x64, sign test DLL, register and remove 3 profiles, type in Notepad.
-- G1: Verify editor dirty buffer / Diff / undo / stale version / concurrent edits in VS Code.
-- G2: Verify authorized model requests, key isolation, cancellation and budget controls.
-- G3: Verify seven language grammars, NFR performance, Windows Terminal and additional IDEs.
+1. The core is **zero-dependency Rust** (no serde). Reason: build scripts of dependencies cannot run on the verification host; it also keeps the in-process core auditable.
+2. F1 sends **two** model requests (whole file, insert) so that the paths fail and succeed independently (FR-032). It doubles the cost of one F1.
+3. `programmingIme.aiEnabled` is a master switch (default off): with it off no request is ever sent (FR-022).
+4. Grants are bound to provider **and endpoint host**; changing the endpoint never inherits an authorisation.
+5. Redaction (PIME_REDACTED_n) is applied before sending and restored locally in proposals; a proposal that keeps an unresolved marker is rejected.
+6. UAT trust: the mock provider has a self-signed certificate; the test VS Code process runs with `NODE_TLS_REJECT_UNAUTHORIZED=0` (test process only). The product still insists on HTTPS.
+
+## Gates (DD §14)
+
+- G0 (Windows profiles, TSF): **not attempted** (no MSVC, no VM).
+- G1 (VS Code dirty buffer, conflicts, Undo): exercised by UAT-23/24/25 on VS Code 1.137.0 - dirty buffer, stale refusal, single Ctrl+Z restore. Other VS Code versions and other extensions editing the same buffer were not tested.
+- G2 (BYOK, capability, authorisation): exercised against a **mock** provider only. No real provider API was called (no real key was used).
+- G3 (seven-language accuracy, installer, DPI): partial - golden samples pass; installer/DPI not run.

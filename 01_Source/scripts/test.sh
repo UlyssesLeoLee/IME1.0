@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
+# Runs the automated suites that do not need a GUI. UAT (Playwright + VS Code) is run separately: see uat/README.md
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if command -v cargo >/dev/null 2>&1; then cargo test --workspace; else echo 'SKIP: cargo unavailable (not a pass)'; fi
 (cd editor-bridges/vscode && npm test && npm run check)
+node tests/gen-fixtures.js --check

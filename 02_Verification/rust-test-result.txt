@@ -1,0 +1,210 @@
+# Rust core (pime-core 0.2.0) verification record
+# date: 2026-10-30T15:00:38+08:00
+# host: host: x86_64-pc-windows-gnu  rustc: rustc 1.99.1 (58cf8f9c3 2026-10-13)  cargo: cargo 1.99.1 (5f94df478 2026-08-27)
+# Raw output of the commands below, in order. Build outputs went to a scratch CARGO_TARGET_DIR outside the repo.
+
+==================== 1. cargo test --workspace (debug / unoptimized test profile) ====================
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src\lib.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\pime_core-0a94412c8e05fc50.exe)
+
+running 90 tests
+test analysis::tests::enclosing_blocks ... ok
+test analysis::tests::typescript_and_powershell_new_lines_start_statements ... ok
+test analysis::tests::statement_expression_and_type_positions ... ok
+test candidate::tests::ut_006_invalid_values_are_rejected ... ok
+test candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row ... ok
+test input::tests::ut_003_direct_never_consumes_ascii ... ok
+test candidate::tests::ut_008_candidates_without_text_are_never_merged ... ok
+test candidate::tests::ut_007_usage_breaks_ties_before_weight ... ok
+test input::tests::ut_003_observing_does_not_consume_ordinary_characters_either ... ok
+test input::tests::ut_004_composition_cancel_writes_nothing ... ok
+test analysis::tests::literal_positions_are_detected ... ok
+test candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable ... ok
+test input::tests::ut_004_composition_needs_candidates_and_a_permitted_host_range ... ok
+test input::tests::ut_005_policy_disabled_behaves_like_secure_input ... ok
+test input::tests::ut_005_secure_input_clears_context_and_never_predicts ... ok
+test input::tests::ut_009_capture_without_candidates_consumes_nothing ... ok
+test input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode ... ok
+test input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating ... ok
+test input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing ... ok
+test input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes ... ok
+test input::tests::ut_067_an_answered_request_never_triggers_the_watchdog ... ok
+test install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles ... ok
+test install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned ... ok
+test install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused ... ok
+test install_plan::tests::ut_002_selection_errors_and_subsets ... ok
+test json::tests::lone_surrogate_becomes_replacement_character ... ok
+test install_plan::tests::ut_061_uninstall_removes_only_own_guids ... ok
+test json::tests::enforces_limits ... ok
+test install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent ... ok
+test analysis::tests::nearby_identifiers_rank_by_frequency ... ok
+test json::tests::rejects_malformed_input ... ok
+test json::tests::serializer_escapes_control_characters ... ok
+test input::tests::local_predictor_drives_the_real_engine ... ok
+test json::tests::parses_and_round_trips ... ok
+test input::tests::ut_067_direct_is_in_force_within_two_seconds_on_a_virtual_clock ... ok
+test pack::tests::unknown_keys_are_rejected_in_every_position ... ok
+test candidate::tests::ut_006_all_kinds_sources_validations_round_trip ... ok
+test pack::tests::limits_and_placeholders_are_enforced ... ok
+test predict::tests::literal_positions_yield_nothing ... ok
+test predict::tests::identifiers_come_from_nearby_text ... ok
+test predict::tests::rust_prefix_candidates ... ok
+test predict::tests::unsupported_dialect_is_explained_not_guessed ... ok
+test profiles::tests::ut_001_duplicate_guid_is_rejected ... ok
+test profiles::tests::guid_text_round_trip ... ok
+test profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids ... ok
+test profiles::tests::ut_001_other_invalid_sets_are_rejected ... ok
+test protocol::tests::framing_errors ... ok
+test protocol::tests::health_reports_protocol_0_2_and_seven_languages ... ok
+test resolve::tests::ext_of_matches_the_reference ... ok
+test protocol::tests::resolve_validate_encode_and_hex ... ok
+test protocol::tests::scan_never_echoes_secret_values ... ok
+test scope::tests::ut_025_capability_lattice ... ok
+test pack::tests::dialect_resolution_defaults_and_reports_unsupported ... ok
+test scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf ... ok
+test scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned ... ok
+test pack::tests::builtin_packs_load_and_cover_seven_languages ... ok
+test protocol::tests::serve_answers_one_line_per_request_and_bounds_line_size ... ok
+test scope::tests::ut_027_wider_requests_are_refused_not_trimmed ... ok
+test scope::tests::ut_030_disk_content_is_preview_only ... ok
+test secrets::tests::placeholders_and_env_lookups_are_not_findings ... ok
+test pack::tests::schema_version_profile_and_semver_checks ... ok
+test secrets::tests::token_shapes ... ok
+test secrets::tests::ut_062_env_files_are_sensitive_by_name ... ok
+test textrange::tests::edits_validate_and_apply ... ok
+test textrange::tests::eol_detection ... ok
+test secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values ... ok
+test textrange::tests::ut_026_crlf_is_not_split ... ok
+test textrange::tests::ut_026_offset_round_trip ... ok
+test textrange::tests::ut_026_out_of_range_is_rejected ... ok
+test pack::tests::user_packs_cannot_use_builtin_only_fields_or_collide ... ok
+test textrange::tests::ut_026_positions_never_split_surrogates ... ok
+test util::tests::boundary_and_words ... ok
+test util::tests::locale_compare_orders_like_icu ... ok
+test util::tests::split_lines_matches_js ... ok
+test util::tests::utf16_helpers_do_not_split_pairs ... ok
+test validators::tests::assembly_syntax_mix_and_hex ... ok
+test validators::tests::dialect_gated_features ... ok
+test validators::tests::python_indentation_rules ... ok
+test validators::tests::masking_hides_strings_and_comments ... ok
+test validators::tests::unknown_profile_has_no_validator ... ok
+test x86::tests::normalize_matches_js ... ok
+test x86::tests::documented_forms ... ok
+test x86::tests::unresolved_and_unsupported_never_yield_bytes ... ok
+test x86::tests::validate_hex_cases ... ok
+test protocol::tests::a_line_of_exactly_the_limit_is_accepted ... ok
+test resolve::tests::manual_lock_beats_everything_and_bridge_id_beats_extension ... ok
+test resolve::tests::tsx_hint_and_weak_evidence ... ok
+test predict::tests::machine_code_is_verified_or_explained ... ok
+test protocol::tests::predict_returns_the_same_candidates_as_the_engine ... ok
+test x86::tests::catalogue_and_reverse_lookup ... ok
+
+test result: ok. 90 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src\main.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\pime_core-b784c093135fe5b6.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\benchmark-ebcdd26c4f104207.exe)
+
+running 1 test
+test ut_068_local_candidate_p95_within_20ms ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests\parity.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\parity-6d56db748acb50c7.exe)
+
+running 5 tests
+test parity_resolve_cases ... ok
+test parity_validate_cases ... ok
+test parity_x86_vectors ... ok
+test parity_secret_cases ... ok
+test parity_predict_cases ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\protocol.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\protocol-dd36d86b9c8020e2.exe)
+
+running 5 tests
+test oversized_and_invalid_lines_do_not_stop_the_server ... ok
+test schema_file_is_valid_json_and_describes_every_op ... ok
+test sample_requests_via_handle_line ... ok
+test sample_requests_via_serve ... ok
+test sample_requests_via_the_real_binary ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+   Doc-tests pime_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+==================== 2. cargo test --test parity -- --nocapture --test-threads=1 (golden fixtures vs JS engine) ====================
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running tests\parity.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\parity-6d56db748acb50c7.exe)
+
+running 5 tests
+test parity_predict_cases ... parity predict-cases: 100/100 cases match
+ok
+test parity_resolve_cases ... parity resolve-cases: 18/18 cases match
+ok
+test parity_secret_cases ... parity secret-cases: 11/11 cases match
+ok
+test parity_validate_cases ... parity validate-cases: 51/51 cases match
+ok
+test parity_x86_vectors ... parity x86-vectors: 59/59 cases match
+ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+==================== 3. UT-068 benchmark, DEBUG build: cargo test --test benchmark -- --nocapture ====================
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\debug\deps\benchmark-ebcdd26c4f104207.exe)
+
+running 1 test
+UT-068 BENCHMARK: events=1000 candidates_produced=2055 P50=0.159 ms P95=0.271 ms max=11.844 ms build=debug (unoptimized)
+test ut_068_local_candidate_p95_within_20ms ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+
+==================== 4. UT-068 benchmark, RELEASE build: cargo test --release --test benchmark -- --nocapture ====================
+   Compiling pime-core v0.2.0 (D:\IME1.0\01_Source\crates\pime-core)
+    Finished `release` profile [optimized] target(s) in 2.81s
+     Running tests\benchmark.rs (C:/Users/pc000/AppData/Local/Temp/claude/D--IME1-0/4c736064-a356-4905-87c7-8512001f656e/scratchpad/cargo-target-core\release\deps\benchmark-b4658273e850ffe0.exe)
+
+running 1 test
+UT-068 BENCHMARK: events=1000 candidates_produced=2055 P50=0.025 ms P95=0.036 ms max=4.124 ms build=release
+test ut_068_local_candidate_p95_within_20ms ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+==================== 5. cargo clippy --workspace --all-targets -- -D warnings ====================
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
+(clippy exit status: 0)
+
+==================== 6. cargo fmt --all -- --check ====================
+(fmt exit status: 0)
+
+==================== 7. Differential fuzz, JS reference engine vs Rust binary (not part of the repo; script kept in the session scratchpad) ====================
+# node fuzz-diff.js <pime-core.exe> <seed> <cases-per-area>; areas: validate, predict, scan, encode, validate_hex, resolve; 'nontrivial' = expected output is not an empty list/trivial refusal
+--- seed/count: 1 4000
+{"validate":{"total":4000,"diff":0,"nontrivial":2027},"predict":{"total":4000,"diff":0,"nontrivial":1564},"scan":{"total":4000,"diff":0,"nontrivial":2179},"encode":{"total":4000,"diff":0,"nontrivial":361},"validate_hex":{"total":4000,"diff":0,"nontrivial":4000},"resolve":{"total":4000,"diff":0,"nontrivial":4000}}
+ALL MATCH
+--- seed/count: 777 4000
+{"validate":{"total":4000,"diff":0,"nontrivial":2113},"predict":{"total":4000,"diff":0,"nontrivial":1591},"scan":{"total":4000,"diff":0,"nontrivial":2154},"encode":{"total":4000,"diff":0,"nontrivial":331},"validate_hex":{"total":4000,"diff":0,"nontrivial":4000},"resolve":{"total":4000,"diff":0,"nontrivial":4000}}
+ALL MATCH
+--- seed/count: 5 6000
+{"validate":{"total":6000,"diff":0,"nontrivial":3032},"predict":{"total":6000,"diff":0,"nontrivial":2364},"scan":{"total":6000,"diff":0,"nontrivial":3286},"encode":{"total":6000,"diff":0,"nontrivial":512},"validate_hex":{"total":6000,"diff":0,"nontrivial":6000},"resolve":{"total":6000,"diff":0,"nontrivial":6000}}
+ALL MATCH
+--- seed/count: 99 6000
+{"validate":{"total":6000,"diff":0,"nontrivial":3049},"predict":{"total":6000,"diff":0,"nontrivial":2334},"scan":{"total":6000,"diff":0,"nontrivial":3273},"encode":{"total":6000,"diff":0,"nontrivial":497},"validate_hex":{"total":6000,"diff":0,"nontrivial":6000},"resolve":{"total":6000,"diff":0,"nontrivial":6000}}
+ALL MATCH
+--- identifier tie-order (localeCompare) check
+LOCALE ORDER: ALL MATCH (3000 cases)

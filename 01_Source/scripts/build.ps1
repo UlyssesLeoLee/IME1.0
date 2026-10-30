@@ -1,18 +1,15 @@
 $ErrorActionPreference='Stop'
 $Repo=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $Repo
-if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
-    throw 'Rust cargo 未安装。请安装 Rust stable 后执行本脚本。'
-}
-Write-Host 'Building Rust input core...'
+if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { throw 'Rust cargo is not installed. Install Rust stable and run this script again.' }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js 20+ is required for the JavaScript tests.' }
+Write-Host 'Building the Rust core (zero dependencies)...'
 cargo build --workspace --release
-Write-Host 'Running Rust unit tests...'
+Write-Host 'Rust tests...'
 cargo test --workspace
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    throw 'Node.js 未安装。需要 Node.js 20+ 运行 VS Code 逻辑测试。'
-}
 Push-Location (Join-Path $Repo 'editor-bridges/vscode')
 try { npm test; npm run check } finally { Pop-Location }
-Write-Host "核心可执行文件：$Repo\target\release\pime-core.exe"
-Write-Host '可在 VS Code 开发扩展宿主中按 F5 运行 editor-bridges/vscode。'
-Write-Host 'TSF 注册原型需单独 Visual Studio SDK 编译；本脚本不安装或注册输入法。'
+node (Join-Path $Repo 'tests/gen-fixtures.js') --check
+Write-Host "Core executable: $Repo\target\release\pime-core.exe  (set programmingIme.coreExecutable to use it)"
+Write-Host 'UAT: cd uat; npm install; npx playwright test'
+Write-Host 'The TSF adapter needs a separate Visual Studio / Windows SDK build; this script neither builds nor registers it.'

@@ -1,0 +1,19 @@
+{
+  "cmd.enable": "Programming IME: 有効 / 無効",
+  "cmd.chooseLanguage": "Programming IME: プログラミング言語を選択",
+  "cmd.showCandidates": "Programming IME: コード候補を表示",
+  "cmd.menu": "Programming IME: メニュー",
+  "cmd.togglePause": "Programming IME: 候補の一時停止 / 再開",
+  "cmd.toggleAI": "Programming IME: AI の切り替え（マスタースイッチ）",
+  "cmd.configureAI": "Programming IME: AI プロバイダー / API キーを設定",
+  "cmd.deleteKey": "Programming IME: API キーを削除",
+  "cmd.chooseModel": "Programming IME: モデルと Effort を設定",
+  "cmd.toggleRealtimeAI": "Programming IME: リアルタイム AI の切り替え",
+  "cmd.managePermissions": "Programming IME: AI 権限の管理",
+  "cmd.showUsage": "Programming IME: AI 使用量を表示",
+  "cmd.resetUsage": "Programming IME: AI 使用量をリセット",
+  "cmd.showDiagnostics": "Programming IME: 診断を表示",
+  "cmd.reloadRules": "Programming IME: ユーザー規則を再読み込み",
+  "cmd.openRulesFolder": "Programming IME: ユーザー規則フォルダーを開く",
+  "cmd.f1Edit": "Programming IME: F1 AI 編集（ファイル全体 / カーソル位置に挿入）"
+}

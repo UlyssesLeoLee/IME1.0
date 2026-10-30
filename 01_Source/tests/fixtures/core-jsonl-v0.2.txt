@@ -1,0 +1,17 @@
+{"op":"health","id":1}
+{"op":"predict","id":2,"language":"rust","prefix":"fnm","before":"","after":"","dialect":{},"limit":6}
+{"op":"predict","id":3,"language":"python","prefix":"def","before":"class A:\n    ","after":"","dialect":{},"limit":3}
+{"op":"predict","id":4,"language":"typescript","prefix":"garrow","before":"","after":"","dialect":{"mode":"tsx"},"limit":6}
+{"op":"predict","id":5,"language":"machine-code","prefix":"mov rax, rbx","limit":6}
+{"op":"predict","id":6,"language":"assembly","prefix":"mov","dialect":{"isa":"arm64"}}
+{"op":"resolve","id":7,"languageId":"plaintext","fileName":"a.h","text":"","current":"rust","locked":null}
+{"op":"validate","id":8,"language":"rust","text":"fn main() {\n","dialect":{}}
+{"op":"validate","id":9,"language":"powershell","text":"$a ?? 1","dialect":{"version":"5.1"}}
+{"op":"encode","id":10,"instruction":"nop"}
+{"op":"encode","id":11,"instruction":"jmp unresolved_label"}
+{"op":"validate_hex","id":12,"hex":"90 C3"}
+{"op":"validate_hex","id":13,"hex":"GG"}
+{"op":"scan","id":14,"text":"api_key = \"mock-key-test-123\"","fileName":""}
+{"op":"scan","id":15,"text":"x","fileName":"config/.env"}
+{"op":"bogus","id":16}
+this line is not json
