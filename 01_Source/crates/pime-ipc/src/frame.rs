@@ -92,6 +92,13 @@ pub struct Frame {
     pub text: String,
 }
 
+/// `now + timeout` without the panic of `Instant + Duration` on overflow: a caller-supplied `Duration::MAX` means "very long", not a crash.
+pub fn deadline_after(timeout: std::time::Duration) -> Instant {
+    let now = Instant::now();
+    now.checked_add(timeout)
+        .unwrap_or_else(|| now + std::time::Duration::from_secs(365 * 24 * 3600))
+}
+
 /// A byte stream with deadlines: implemented by the named pipe and by the in-memory pair of the tests.
 pub trait Transport {
     /// Reads at least one and at most `buf.len()` bytes. End of stream is `Err(Closed)`, never `Ok(0)`.

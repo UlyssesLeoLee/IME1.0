@@ -147,9 +147,11 @@ Server (`Listener::bind` / `bind_current_user`):
 Client (`connect`): `CreateFileW` with `SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION` (a squatting server cannot impersonate the client), overlapped, only the access
 rights it needs; `ERROR_PIPE_BUSY` waits (`WaitNamedPipeW`, steps of at most 100 ms) until the connect deadline; `ERROR_ACCESS_DENIED` is `IdentityRejected`.
 
-Shutdown: `Listener::stop_handle()` returns a `StopHandle` (an event) that wakes a blocked `accept` with `Stopped` and ends `serve`. `serve` runs one thread per
-authenticated connection, at most `max_connections` (over the cap the client is closed at once), catches panics of the handler (`catch_unwind`: only that
-connection ends) and joins its threads on exit. Closing is `CloseHandle` without `DisconnectNamedPipe` and without `FlushFileBuffers`: disconnecting discards data the
+Shutdown: `Listener::stop_handle()` returns a `StopHandle` (an event). Signalling it wakes a blocked `accept` with `Stopped`, ends `serve`, **and aborts every pending and later read/write of every
+connection accepted by that listener with `Stopped`**, so shutdown does not depend on the handler watching the handle: a handler that returns on any error other than an idle `Timeout` ends at
+once (the test handler is deliberately naive and a client is stuck in an unanswered request; `serve` returns in well under 1.5 s). A handler that swallows every error and loops would keep `serve` waiting; that is a bug in the handler.
+`serve` runs one thread per authenticated connection, at most `max_connections` (over the cap, or if no thread can be created, the client is closed at once; the slot is a drop guard, so a panic anywhere in the
+worker cannot leak it), catches panics of the handler (`catch_unwind`: only that connection ends) and joins its threads on exit. Closing is `CloseHandle` without `DisconnectNamedPipe` and without `FlushFileBuffers`: disconnecting discards data the
 peer has not read yet (the error frame before a close would be lost), flushing blocks while the peer is stuck. Test: the `PAYLOAD_TOO_LARGE` frame is read after the server closed.
 
 ## 6. Threat model
@@ -221,7 +223,13 @@ Minimal use:
 let policy = ServerPolicy::new(master_key, vec![RolePolicy { role: "tsf".into(), capabilities: vec!["predict.local".into()] }])?;
 let mut listener = Listener::bind_current_user(ServerConfig::new(policy))?;
 let role_key = listener.role_key("tsf");                       // what the installer would hand to the TSF DLL
-listener.serve(16, |mut conn| { /* recv_within / send */ })?;  // returns after stop_handle().signal()
+listener.serve(16, |mut conn| loop {                            // returns after stop_handle().signal()
+    match conn.recv_within(Duration::from_millis(250)) {
+        Ok(frame) => { /* dispatch frame.text, conn.send(..) */ }
+        Err(IpcError::Timeout) => continue,                     // idle only; everything else, including Stopped, ends the handler
+        Err(_) => return,
+    }
+})?;
 
 let creds = ClientCredentials::new("tsf", role_key, &["predict.local"]);
 let mut c = connect(&PipeName::for_sid(&current_user_sid_string()?)?, &creds, &ClientConfig::default())?;
@@ -238,7 +246,11 @@ cd crates/pime-ipc && cargo fmt --check && cargo clippy --all-targets -- -D warn
 cargo test --workspace                       # from 01_Source: unchanged, 220 tests (the crate is outside the workspace)
 ```
 
-Results: 60 unit tests + 30 loopback tests per run, 0 failed, identical in every run; also stable with 32 test threads, with one test thread and with 8 busy-loop processes hogging the CPU.
+Results: 61 unit tests + 30 loopback tests per run, 0 failed, identical in every run (`ipc-smoke.js --repeat=3`: 91 tests x 3). Also run with 32 test threads (3 runs), with one test thread, and with 8 busy-loop processes hogging the CPU (3 runs
+of the loopback suite plus the unit tests), all green.
+**Naming caveat.** Tests whose names carry `it_003` or `it_004` (design-case ids, as the project convention asks) are the parts of those cases that can run on one machine without TSF. They do **not** make IT-003 or IT-004 passed:
+the rows below stay NOT RUN. `scripts/traceability-report.js` maps Rust tests only by `ut_NNN` today, so nothing here is counted; if it is ever extended to `it_NNN`, exclude `crates/pime-ipc` or rename these tests.
+
 Unit tests: frame encode/decode (truncated at every cut point, oversized from the header alone, zero length, bad magic/class/reserved, chunked reads, pseudo-random input);
 HMAC RFC 4231 cases 1, 2, 3, 4, 6, 7 (including keys longer than the block); constant-time compare; transcript unambiguity; proof binding of every input;
 role-key independence; nonce window (replay, expiry, full table, clock stepping back); version negotiation (UT-ipc: different major, lower minor); SID validation and SDDL

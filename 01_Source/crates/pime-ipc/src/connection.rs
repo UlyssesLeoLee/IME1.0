@@ -97,7 +97,10 @@ impl<T: Transport> Connection<T> {
             return Err(IpcError::Broken);
         }
         let buf = frame::encode(class, text.as_bytes(), &self.limits)?;
-        match self.transport.write_all(&buf, Instant::now() + timeout) {
+        match self
+            .transport
+            .write_all(&buf, frame::deadline_after(timeout))
+        {
             Ok(()) => Ok(()),
             Err(e) => self.poison(e),
         }
@@ -117,7 +120,7 @@ impl<T: Transport> Connection<T> {
         let read = frame::read_frame(
             &mut self.transport,
             &self.limits,
-            Instant::now() + timeout,
+            frame::deadline_after(timeout),
             &mut consumed,
         );
         let (class, payload) = match read {
@@ -148,7 +151,7 @@ impl<T: Transport> Connection<T> {
     }
 
     pub fn request_within(&mut self, text: &str, timeout: Duration) -> Result<Frame, IpcError> {
-        let deadline = Instant::now() + timeout;
+        let deadline = frame::deadline_after(timeout);
         self.send_within(FrameClass::Control, text, timeout)?;
         let remaining = deadline.saturating_duration_since(Instant::now());
         match self.recv_within(remaining) {

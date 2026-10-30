@@ -424,7 +424,7 @@ fn server_exchange<T: Transport + ?Sized>(
         session,
         capabilities: granted,
         token,
-        token_expires: Instant::now() + Duration::from_millis(ttl_ms),
+        token_expires: frame::deadline_after(Duration::from_millis(ttl_ms)),
     })
 }
 
@@ -506,6 +506,7 @@ pub fn client_handshake<T: Transport + ?Sized>(
         .get("ttl_ms")
         .and_then(Json::as_i64)
         .and_then(|n| u64::try_from(n).ok())
+        .filter(|&n| n <= u64::from(u32::MAX))
         .ok_or(IpcError::Malformed("handshake ttl invalid"))?;
     let mac: [u8; 32] = hex_field(&ready, "mac")?;
     if session.len() != TOKEN_BYTES * 2 || token.len() != TOKEN_BYTES * 2 {
@@ -530,7 +531,7 @@ pub fn client_handshake<T: Transport + ?Sized>(
         session,
         capabilities: caps,
         token,
-        token_expires: Instant::now() + Duration::from_millis(ttl_ms),
+        token_expires: frame::deadline_after(Duration::from_millis(ttl_ms)),
     })
 }
 

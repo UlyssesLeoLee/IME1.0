@@ -48,11 +48,11 @@ fn wait_until(what: &str, mut cond: impl FnMut() -> bool) {
 }
 
 /// The per-connection behaviour of the test server: a tiny request/response protocol.
-fn handle(mut conn: PipeConnection, stop: &StopHandle, events: &Events) {
+fn handle(mut conn: PipeConnection, events: &Events) {
     loop {
         let frame = match conn.recv_within(Duration::from_millis(200)) {
             Ok(f) => f,
-            Err(IpcError::Timeout) if !stop.is_signalled() => continue,
+            Err(IpcError::Timeout) => continue,
             Err(e) => {
                 events.lock().unwrap().push(format!("{e:?}"));
                 return;
@@ -84,12 +84,13 @@ fn handle(mut conn: PipeConnection, stop: &StopHandle, events: &Events) {
             ]),
             // keep the connection but never answer, until the client goes away
             Some("silent") => {
-                while conn.recv_within(Duration::from_millis(100)).is_ok() || !stop.is_signalled() {
-                    if conn.is_broken() {
-                        break;
+                // a naive handler on purpose: it only returns on a real error, never looks at the stop handle
+                loop {
+                    match conn.recv_within(Duration::from_millis(100)) {
+                        Ok(_) | Err(IpcError::Timeout) => continue,
+                        Err(_) => return,
                     }
                 }
-                return;
             }
             // stop reading for a while: the peer's writes pile up
             Some("stall") => {
@@ -158,10 +159,9 @@ impl Server {
         let mut listener = Listener::bind(name.clone(), cfg).expect("bind");
         let stop = listener.stop_handle();
         let events: Events = Arc::default();
-        let (h_stop, h_events) = (stop.clone(), Arc::clone(&events));
-        let join = thread::spawn(move || {
-            listener.serve(max_connections, move |c| handle(c, &h_stop, &h_events))
-        });
+        let h_events = Arc::clone(&events);
+        let join =
+            thread::spawn(move || listener.serve(max_connections, move |c| handle(c, &h_events)));
         Server {
             name,
             stop,
@@ -183,9 +183,18 @@ impl Server {
         )
     }
 
+    /// Signals the stop handle and waits for `serve` to return. A server that does not stop is a test failure, not a hang.
     fn shutdown(&mut self) {
         self.stop.signal();
         if let Some(j) = self.join.take() {
+            let end = Instant::now() + Duration::from_secs(5);
+            while !j.is_finished() && Instant::now() < end {
+                thread::sleep(Duration::from_millis(10));
+            }
+            assert!(
+                j.is_finished(),
+                "serve did not return within 5 s of the stop signal"
+            );
             j.join().expect("serve thread").expect("serve ends cleanly");
         }
     }
@@ -195,7 +204,13 @@ impl Drop for Server {
     fn drop(&mut self) {
         self.stop.signal();
         if let Some(j) = self.join.take() {
-            let _ = j.join();
+            let end = Instant::now() + Duration::from_secs(5);
+            while !j.is_finished() && Instant::now() < end {
+                thread::sleep(Duration::from_millis(10));
+            }
+            if j.is_finished() {
+                let _ = j.join();
+            } // else: leave the thread behind; the shutdown test reports the failure
         }
     }
 }
@@ -1125,16 +1140,32 @@ fn it_004_handler_panic_does_not_take_the_server_down() {
     );
 }
 
+/// Shutdown must not depend on the handler: the test handler is naive (returns only on a real error, never looks at the
+/// stop handle) and one client sits in a request the server never answers.
 #[test]
 fn it_004_clean_shutdown_closes_clients_and_returns_ok() {
     let mut server = Server::start();
+    let mut stuck = server.connect("bridge", &[]).unwrap();
+    stuck
+        .send(FrameClass::Control, r#"{"op":"silent"}"#)
+        .unwrap();
     let mut c = server.connect("tsf", &[]).unwrap();
     assert_eq!(
         server.ask(&mut c, r#"{"op":"health","id":1}"#).get("ok"),
         Some(&Json::Bool(true))
     );
     let name = server.name.clone();
+    let started = Instant::now();
     server.shutdown();
+    assert!(
+        started.elapsed() < Duration::from_millis(1500),
+        "shutdown took {:?}",
+        started.elapsed()
+    );
+    assert!(matches!(
+        stuck.recv_within(Duration::from_secs(2)),
+        Err(IpcError::Closed) | Err(IpcError::Truncated)
+    ));
     assert!(matches!(
         c.recv_within(Duration::from_secs(2)),
         Err(IpcError::Closed) | Err(IpcError::Truncated)

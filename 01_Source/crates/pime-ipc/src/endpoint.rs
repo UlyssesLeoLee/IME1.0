@@ -9,7 +9,7 @@
 use crate::auth::PipeName;
 use crate::connection::{Connection, Timeouts};
 use crate::error::IpcError;
-use crate::frame::Limits;
+use crate::frame::{Limits, deadline_after};
 use crate::handshake::{
     ClientCredentials, ServerPolicy, ServerState, client_handshake, server_handshake,
 };
@@ -21,7 +21,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::{self, JoinHandle};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 pub type PipeConnection = Connection<Pipe>;
 
@@ -126,7 +126,7 @@ impl Listener {
             // an earlier replacement could not be created (instance limit): try again now
             None => Pipe::create_server_instance(&self.name, false, &self.sd, self.max_instances)?,
         };
-        match listening.wait_for_client(Instant::now() + timeout, Some(&self.stop)) {
+        match listening.wait_for_client(deadline_after(timeout), Some(&self.stop)) {
             Ok(()) => {}
             Err(e @ (IpcError::Timeout | IpcError::Stopped)) => {
                 // nothing happened: the instance keeps listening
@@ -141,7 +141,7 @@ impl Listener {
         }
         // the connected instance leaves; its replacement is created first so the listening set is never empty
         self.next = self.fresh_instance();
-        let connected = listening;
+        let connected = listening.with_stop(self.stop.clone());
         if let Some(own) = self.shared.own_session {
             match connected.client_session_id() {
                 Ok(s) if s == own => {}
@@ -164,6 +164,10 @@ impl Listener {
     /// Runs an accept loop until the stop handle is signalled: one thread per authenticated connection, at most
     /// `max_connections` at a time (further clients are dropped at once), a panic in `handler` ends only that
     /// connection. Returns after all connection threads have finished.
+    ///
+    /// Shutdown does not depend on the handler: signalling the stop handle makes every pending and later read/write of
+    /// every connection of this listener fail with `Stopped`, so a handler that returns on errors other than an idle
+    /// `Timeout` ends at once. (A handler that ignores errors and loops would keep `serve` waiting; that is a bug in the handler.)
     pub fn serve<H>(&mut self, max_connections: usize, handler: H) -> Result<(), IpcError>
     where
         H: Fn(PipeConnection) + Send + Sync + 'static,
@@ -181,15 +185,22 @@ impl Listener {
                     if active.load(Ordering::SeqCst) >= max_connections {
                         continue; // dropped: the client sees a closed pipe
                     }
-                    active.fetch_add(1, Ordering::SeqCst);
-                    let (handler, active) = (Arc::clone(&handler), Arc::clone(&active));
-                    workers.push(thread::spawn(move || {
-                        if let Ok(conn) = pending.authenticate() {
-                            // a panicking handler must not take the process (or the listener) down with it
-                            let _ = catch_unwind(AssertUnwindSafe(|| handler(conn)));
-                        }
-                        active.fetch_sub(1, Ordering::SeqCst);
-                    }));
+                    let slot = ActiveSlot::take(&active);
+                    let handler = Arc::clone(&handler);
+                    let spawned =
+                        thread::Builder::new()
+                            .name("pime-ipc-conn".into())
+                            .spawn(move || {
+                                let _slot = slot; // released on every exit path, including a panic in `authenticate`
+                                if let Ok(conn) = pending.authenticate() {
+                                    // a panicking handler must not take the process (or the listener) down with it
+                                    let _ = catch_unwind(AssertUnwindSafe(|| handler(conn)));
+                                }
+                            });
+                    // if no thread could be created the closure was dropped with the connection and the slot: the client sees a closed pipe
+                    if let Ok(worker) = spawned {
+                        workers.push(worker);
+                    }
                 }
                 Err(IpcError::Timeout) => {}
                 Err(IpcError::Stopped) => break Ok(()),
@@ -209,6 +220,22 @@ impl Listener {
     }
 }
 
+/// One of the `max_connections` slots of `serve`: counted while alive, released by `Drop` on every path.
+struct ActiveSlot(Arc<AtomicUsize>);
+
+impl ActiveSlot {
+    fn take(counter: &Arc<AtomicUsize>) -> ActiveSlot {
+        counter.fetch_add(1, Ordering::SeqCst);
+        ActiveSlot(Arc::clone(counter))
+    }
+}
+
+impl Drop for ActiveSlot {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
 /// A connected, not yet authenticated client.
 pub struct PendingConnection {
     pipe: Pipe,
@@ -219,7 +246,7 @@ impl PendingConnection {
     /// Runs the handshake under the handshake deadline. Any failure drops (closes) the connection.
     pub fn authenticate(mut self) -> Result<PipeConnection, IpcError> {
         let shared = Arc::clone(&self.shared);
-        let deadline = Instant::now() + shared.timeouts.handshake;
+        let deadline = deadline_after(shared.timeouts.handshake);
         let info = server_handshake(&mut self.pipe, &shared.state, &mut SystemEntropy, deadline)?;
         Ok(Connection::new(
             self.pipe,
@@ -250,8 +277,8 @@ pub fn connect(
     creds: &ClientCredentials,
     cfg: &ClientConfig,
 ) -> Result<PipeConnection, IpcError> {
-    let mut pipe = Pipe::connect_client(name, Instant::now() + cfg.timeouts.connect)?;
-    let deadline = Instant::now() + cfg.timeouts.handshake;
+    let mut pipe = Pipe::connect_client(name, deadline_after(cfg.timeouts.connect))?;
+    let deadline = deadline_after(cfg.timeouts.handshake);
     let info = client_handshake(&mut pipe, creds, &mut SystemEntropy, deadline)?;
     Ok(Connection::new(pipe, info, cfg.limits, cfg.timeouts))
 }
@@ -260,4 +287,26 @@ pub fn connect(
 pub fn unique_test_pipe_name() -> Result<PipeName, IpcError> {
     let suffix = crate::auth::random_hex(&mut SystemEntropy, 8)?;
     PipeName::for_test(&suffix)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_004_connection_slot_is_released_even_when_the_worker_panics() {
+        let counter = Arc::new(AtomicUsize::new(0));
+        let slot = ActiveSlot::take(&counter);
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+        let worker = thread::spawn(move || {
+            let _slot = slot;
+            panic!("a worker panics before its handler runs");
+        });
+        assert!(worker.join().is_err());
+        assert_eq!(
+            counter.load(Ordering::SeqCst),
+            0,
+            "a leaked slot would shrink the server by one connection for good"
+        );
+    }
 }

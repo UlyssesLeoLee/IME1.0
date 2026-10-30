@@ -104,6 +104,8 @@ impl StopHandle {
 pub struct Pipe {
     handle: OwnedHandle,
     event: OwnedHandle,
+    /// When set and signalled, every pending and later read/write ends with `Stopped` (a server shutting down).
+    stop: Option<StopHandle>,
 }
 
 impl Pipe {
@@ -112,7 +114,19 @@ impl Pipe {
         Ok(Pipe {
             handle,
             event: new_event()?,
+            stop: None,
         })
+    }
+
+    /// Ties this connection to a listener's stop handle: signalling it aborts the connection's I/O at once, so a
+    /// handler that returns on errors cannot keep a shutting-down server waiting.
+    pub fn with_stop(mut self, stop: StopHandle) -> Pipe {
+        self.stop = Some(stop);
+        self
+    }
+
+    fn stop_raw(&self) -> Option<HANDLE> {
+        self.stop.as_ref().map(StopHandle::raw)
     }
 
     pub fn raw(&self) -> HANDLE {
@@ -302,7 +316,8 @@ impl Pipe {
 impl Transport for Pipe {
     fn read_some(&mut self, buf: &mut [u8], deadline: Instant) -> Result<usize, IpcError> {
         let h = self.handle.raw();
-        let n = self.overlapped(deadline, None, "ReadFile", None, |ov| {
+        let stop = self.stop_raw();
+        let n = self.overlapped(deadline, stop, "ReadFile", None, |ov| {
             // SAFETY: `buf` and `ov` stay alive until `overlapped` returns, and it never returns before the I/O is done.
             unsafe { ReadFile(h, Some(buf), None, Some(ov)) }
         })?;
@@ -315,10 +330,11 @@ impl Transport for Pipe {
 
     fn write_all(&mut self, data: &[u8], deadline: Instant) -> Result<(), IpcError> {
         let h = self.handle.raw();
+        let stop = self.stop_raw();
         let mut done = 0usize;
         while done < data.len() {
             let chunk = &data[done..];
-            let n = self.overlapped(deadline, None, "WriteFile", None, |ov| {
+            let n = self.overlapped(deadline, stop, "WriteFile", None, |ov| {
                 // SAFETY: as for ReadFile.
                 unsafe { WriteFile(h, Some(chunk), None, Some(ov)) }
             })?;
