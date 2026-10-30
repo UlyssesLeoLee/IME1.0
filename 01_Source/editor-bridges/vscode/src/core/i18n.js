@@ -94,6 +94,18 @@ const S = {
   'ai.realtimeOn': ['Realtime AI enabled for this workspace and provider host (nearby code may be sent while typing).', '已为当前工作区和服务商主机启用实时 AI（键入时可能发送附近代码）。', 'このワークスペースとプロバイダーでリアルタイム AI を有効にしました（入力中に近くのコードが送信される場合があります）。'],
   'ai.realtimeOff': ['Realtime AI disabled', '实时 AI 已关闭', 'リアルタイム AI を無効にしました'],
   'err.fallback': ['Local candidates keep working.', '本地候选仍可使用。', 'ローカル候補は引き続き使えます。'],
+  'annotate.progress': ['AI is writing comments for the inserted code (Cancel inserts it as is)…', 'AI 正在为插入的代码生成注释（取消则原样插入）…', 'AI が挿入コードのコメントを作成中です（キャンセルでそのまま挿入）…'],
+  'annotate.rejected': ['The AI changed the code itself, so its comments were discarded and the original snippet was inserted.', 'AI 改动了代码本身，已丢弃它的注释，插入的是原始片段。', 'AI がコード自体を変更したため、そのコメントを破棄し、元のスニペットを挿入しました。'],
+  'annotate.failed': ['Comments could not be added ({0}); the snippet was inserted as is.', '无法添加注释（{0}），已原样插入。', 'コメントを追加できませんでした（{0}）。そのまま挿入しました。'],
+  'annotate.skipSensitive': ['This file looks sensitive ({0}); nothing was sent and the snippet was inserted without annotations.', '此文件疑似敏感（{0}），未发送任何内容，已不带注释插入。', 'このファイルは機密の可能性があります（{0}）。何も送信せず、注釈なしで挿入しました。'],
+  'annotate.consent.file': ['Send the COMPLETE current file to {0} so the AI can annotate the inserted code?', '把【整个当前文件】发送到 {0}，让 AI 为插入的代码添加注释？', '挿入コードに注釈を付けるため、【現在のファイル全体】を {0} に送信しますか？'],
+  'annotate.consent.graph': ['Also send the NAMES (not the code) of symbols found in the other files of this folder, for the Cypher relation comment.', '同时发送本文件夹其他文件中的符号【名称】（不含代码），用于生成 Cypher 关系注释。', 'Cypher 関係コメントのため、このフォルダー内の他のファイルのシンボル【名前】（コードは含まない）も送信します。'],
+  'annotate.done': ['Inserted with {0}.', '已插入，并附带{0}。', '{0} 付きで挿入しました。'],
+  'annotate.kind.comment': ['detailed comments', '详细注释', '詳細コメント'],
+  'annotate.kind.graph': ['a Cypher relation comment', 'Cypher 关系注释', 'Cypher 関係コメント'],
+  'engine.status': ['core unavailable', '核心不可用', 'コア利用不可'],
+  'engine.unavailable': ['The Programming IME core is not available ({0}). IME suggestions and F1 are turned off; typing in VS Code is not affected. Set programmingIme.coreExecutable to a built pime-core and reload the window, or set programmingIme.engine to "js".', 'Programming IME 核心不可用（{0}）。输入建议和 F1 已停用，VS Code 自身输入不受影响。请把 programmingIme.coreExecutable 设为已构建的 pime-core 并重新加载窗口，或把 programmingIme.engine 设为 "js"。', 'Programming IME のコアを利用できません（{0}）。入力候補と F1 は無効です（VS Code 自体の入力には影響しません）。programmingIme.coreExecutable にビルド済みの pime-core を設定してウィンドウを再読み込みするか、programmingIme.engine を "js" にしてください。'],
+  'engine.reload': ['Reload the window to apply the new Programming IME engine setting.', '请重新加载窗口以应用新的 Programming IME 引擎设置。', '新しい Programming IME エンジン設定を適用するにはウィンドウを再読み込みしてください。'],
   'diag.title': ['Programming IME diagnostics (no source code, prompts or keys are recorded)', 'Programming IME 诊断（不记录源码、提示词或密钥）', 'Programming IME 診断（ソースコード、プロンプト、キーは記録されません）']
 };
 const ERR = {

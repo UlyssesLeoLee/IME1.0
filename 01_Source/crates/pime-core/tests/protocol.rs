@@ -33,7 +33,7 @@ fn check_answers(lines: &[String]) {
     // health
     assert_eq!(
         (s(&r[0], "name"), s(&r[0], "version"), s(&r[0], "protocol")),
-        ("pime-core", "0.2.0", "0.2")
+        ("pime-core", "0.2.0", "0.3")
     );
     assert_eq!(
         r[0].get("languages").and_then(Json::as_array).map(Vec::len),

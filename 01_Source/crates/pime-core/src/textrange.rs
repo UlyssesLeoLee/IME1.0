@@ -212,6 +212,19 @@ pub enum Eol {
     Mixed,
 }
 
+impl Eol {
+    /// The labels of the JS engine (`NONE`, `LF`, `CRLF`, `CR`, `MIXED`).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Eol::None => "NONE",
+            Eol::Lf => "LF",
+            Eol::Crlf => "CRLF",
+            Eol::Cr => "CR",
+            Eol::Mixed => "MIXED",
+        }
+    }
+}
+
 pub fn eol_of(text: &str) -> Eol {
     let t = units(text);
     let (mut crlf, mut lf, mut cr) = (false, false, false);

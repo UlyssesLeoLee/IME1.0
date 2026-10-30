@@ -1,0 +1,22 @@
+{"op":"health","id":1}
+{"op":"session.open","id":2,"locale":"en-US","entropy":"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","settings":{"budget":{"maxRequests":3}}}
+{"op":"settings.apply","id":3,"session":"$SESSION","values":{"providers":{"mockA":{"api":"openai-responses","endpoint":"https://127.0.0.1:9/v1/responses"}},"scenarios":{"f1Full":{"provider":"mockA","model":"m-1"}},"budget":{"maxRequests":3}}}
+{"op":"settings.resolve","id":4,"session":"$SESSION","scenario":"f1Full"}
+{"op":"ctx.snapshot","id":5,"session":"$SESSION","uri":"file:///w/a.rs","version":7,"text":"fn a() {}\n\nfn b() {}\n\nfn c() {}\n","languageId":"rust","selection":{"start":{"line":0,"character":0},"end":{"line":0,"character":0}},"isDirty":true,"fileName":"a.rs"}
+{"op":"ctx.excerpt","id":6,"session":"$SESSION","snapshot_id":"$SNAPSHOT","cursor":14,"before":4,"after":6}
+{"op":"ctx.validate","id":7,"session":"$SESSION","snapshot_id":"$SNAPSHOT","language":"rust","dialect":{"edition":"2021"}}
+{"op":"edit.propose","id":8,"session":"$SESSION","snapshot_id":"$SNAPSHOT","proposed_text":"fn a() { 1 }\n\nfn b() {}\n\nfn c() { 3 }\n","language":"rust"}
+{"op":"edit.select","id":9,"session":"$SESSION","proposal":"$PROPOSAL","hunk_ids":["h1"]}
+{"op":"grant.authorize","id":10,"session":"$SESSION","provider_id":"mockA:127.0.0.1:9","workspace_uris":["file:///w"],"scope":"L3"}
+{"op":"edit.plan","id":11,"session":"$SESSION","kind":"full","proposal":"$PROPOSAL","hunk_ids":["h1"]}
+{"op":"edit.prepare","id":12,"session":"$SESSION","plan":"$PLAN","grant_id":"$GRANT","state":{"uri":"file:///w/a.rs","version":7,"text":"fn a() {}\n\nfn b() {}\n\nfn c() {}\n"}}
+{"op":"edit.prepare","id":13,"session":"$SESSION","plan":"$PLAN","confirmed":true,"grant_id":"$GRANT","state":{"uri":"file:///w/a.rs","version":7,"text":"fn a() {}\n\nfn b() {}\n\nfn c() {}\n"}}
+{"op":"edit.begin_apply","id":14,"session":"$SESSION","token":"$TOKEN","state":{"uri":"file:///w/a.rs","version":7,"text":"fn a() {}\n\nfn b() {}\n\nfn c() {}\n"}}
+{"op":"edit.finish_apply","id":15,"session":"$SESSION","token":"$TOKEN","outcome":"accepted","state":{"uri":"file:///w/a.rs","version":8,"text":"fn a() { 1 }\n\nfn b() {}\n\nfn c() {}\n"}}
+{"op":"edit.begin_apply","id":16,"session":"$SESSION","token":"$TOKEN","state":{"uri":"file:///w/a.rs","version":8,"text":"fn a() { 1 }\n\nfn b() {}\n\nfn c() {}\n"}}
+{"op":"budget.configure","id":17,"session":"$SESSION","max_requests":3,"max_tokens":0,"price_per_1k_tokens":2}
+{"op":"budget.reserve","id":18,"session":"$SESSION","estimate":80}
+{"op":"budget.snapshot","id":19,"session":"$SESSION"}
+{"op":"grant.list","id":20,"session":"$SESSION"}
+{"op":"grant.revoke_all","id":21,"session":"$SESSION"}
+{"op":"edit.prepare","id":22,"session":"00000000000000000000000000000000","plan":"x","confirmed":true,"state":null}

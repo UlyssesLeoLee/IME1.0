@@ -13,6 +13,14 @@ const CODE_EXE = process.env.VSCODE_EXE || path.join(process.env.LOCALAPPDATA ||
 const EXTENSION_DIR = path.resolve(__dirname, '..', '..', 'editor-bridges', 'vscode');
 const EVIDENCE_DIR = process.env.UAT_EVIDENCE_DIR || path.resolve(__dirname, '..', '..', '..', '02_Verification', 'uat');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// PIME_ENGINE=rust PIME_CORE_EXE=<path to pime-core.exe> runs the whole suite against the Rust engine (programmingIme.engine=rust).
+// Without PIME_ENGINE the profile is exactly what it always was (engine js, no core).
+function engineSettings() {
+  if (process.env.PIME_ENGINE !== 'rust') return {};
+  const exe = process.env.PIME_CORE_EXE || '';
+  if (!exe || !fs.existsSync(exe)) throw new Error(`PIME_ENGINE=rust needs PIME_CORE_EXE to point at a built pime-core executable (got "${exe}")`);
+  return {'programmingIme.engine': 'rust', 'programmingIme.coreExecutable': exe};
+}
 
 const freePort = () => new Promise((resolve, reject) => {
   const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); s.on('error', reject);
@@ -40,7 +48,7 @@ class VsCode {
     const app = new VsCode();
     Object.assign(app, {root, userDir: path.join(root, 'user'), extDir: path.join(root, 'ext'), ws: path.join(root, 'ws'), keepProfile, shots: 0});
     for (const d of [path.join(app.userDir, 'User'), app.extDir, app.ws]) fs.mkdirSync(d, {recursive: true});
-    fs.writeFileSync(path.join(app.userDir, 'User', 'settings.json'), JSON.stringify({...BASE_SETTINGS, ...settings}, null, 2));
+    fs.writeFileSync(path.join(app.userDir, 'User', 'settings.json'), JSON.stringify({...BASE_SETTINGS, ...engineSettings(), ...settings}, null, 2));
     for (const [name, content] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(app.ws, name)), {recursive: true}); fs.writeFileSync(path.join(app.ws, name), content); }
     app.port = await freePort();
     const childEnv = {...process.env, ...env};

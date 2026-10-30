@@ -1,0 +1,301 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "note": "encodings are the documented x86-64 forms; unsupported/unresolved cases must NOT yield bytes",
+ "cases": [
+  {
+   "asm": "nop",
+   "ok": true,
+   "hex": "90"
+  },
+  {
+   "asm": "ret",
+   "ok": true,
+   "hex": "C3"
+  },
+  {
+   "asm": "int3",
+   "ok": true,
+   "hex": "CC"
+  },
+  {
+   "asm": "syscall",
+   "ok": true,
+   "hex": "0F 05"
+  },
+  {
+   "asm": "leave",
+   "ok": true,
+   "hex": "C9"
+  },
+  {
+   "asm": "cpuid",
+   "ok": true,
+   "hex": "0F A2"
+  },
+  {
+   "asm": "hlt",
+   "ok": true,
+   "hex": "F4"
+  },
+  {
+   "asm": "ud2",
+   "ok": true,
+   "hex": "0F 0B"
+  },
+  {
+   "asm": "pause",
+   "ok": true,
+   "hex": "F3 90"
+  },
+  {
+   "asm": "cdq",
+   "ok": true,
+   "hex": "99"
+  },
+  {
+   "asm": "cqo",
+   "ok": true,
+   "hex": "48 99"
+  },
+  {
+   "asm": "push rbp",
+   "ok": true,
+   "hex": "55"
+  },
+  {
+   "asm": "push rax",
+   "ok": true,
+   "hex": "50"
+  },
+  {
+   "asm": "push r8",
+   "ok": true,
+   "hex": "41 50"
+  },
+  {
+   "asm": "push r15",
+   "ok": true,
+   "hex": "41 57"
+  },
+  {
+   "asm": "pop rbp",
+   "ok": true,
+   "hex": "5D"
+  },
+  {
+   "asm": "pop r12",
+   "ok": true,
+   "hex": "41 5C"
+  },
+  {
+   "asm": "pop rax",
+   "ok": true,
+   "hex": "58"
+  },
+  {
+   "asm": "mov rbp, rsp",
+   "ok": true,
+   "hex": "48 89 E5"
+  },
+  {
+   "asm": "mov rax, rbx",
+   "ok": true,
+   "hex": "48 89 D8"
+  },
+  {
+   "asm": "mov rax, r8",
+   "ok": true,
+   "hex": "4C 89 C0"
+  },
+  {
+   "asm": "mov r8, rax",
+   "ok": true,
+   "hex": "49 89 C0"
+  },
+  {
+   "asm": "mov r15, r14",
+   "ok": true,
+   "hex": "4D 89 F7"
+  },
+  {
+   "asm": "mov ecx, edx",
+   "ok": true,
+   "hex": "89 D1"
+  },
+  {
+   "asm": "mov r8d, r9d",
+   "ok": true,
+   "hex": "45 89 C8"
+  },
+  {
+   "asm": "xor eax, eax",
+   "ok": true,
+   "hex": "31 C0"
+  },
+  {
+   "asm": "xor edi, edi",
+   "ok": true,
+   "hex": "31 FF"
+  },
+  {
+   "asm": "xor r10d, r11d",
+   "ok": true,
+   "hex": "45 31 DA"
+  },
+  {
+   "asm": "mov eax, 1",
+   "ok": true,
+   "hex": "B8 01 00 00 00"
+  },
+  {
+   "asm": "mov r9d, 5",
+   "ok": true,
+   "hex": "41 B9 05 00 00 00"
+  },
+  {
+   "asm": "mov ebx, 0xdeadbeef",
+   "ok": true,
+   "hex": "BB EF BE AD DE"
+  },
+  {
+   "asm": "sub rsp, 0x20",
+   "ok": true,
+   "hex": "48 83 EC 20"
+  },
+  {
+   "asm": "add rsp, 0x20",
+   "ok": true,
+   "hex": "48 83 C4 20"
+  },
+  {
+   "asm": "sub rsp, 8",
+   "ok": true,
+   "hex": "48 83 EC 08"
+  },
+  {
+   "asm": "add rsp, -8",
+   "ok": true,
+   "hex": "48 83 C4 F8"
+  },
+  {
+   "asm": "sub rsp, 0x100",
+   "ok": true,
+   "hex": "48 81 EC 00 01 00 00"
+  },
+  {
+   "asm": "add r12, 1",
+   "ok": true,
+   "hex": "49 83 C4 01"
+  },
+  {
+   "asm": "add rax, rbx",
+   "ok": true,
+   "hex": "48 01 D8"
+  },
+  {
+   "asm": "sub rax, rbx",
+   "ok": true,
+   "hex": "48 29 D8"
+  },
+  {
+   "asm": "cmp rax, rbx",
+   "ok": true,
+   "hex": "48 39 D8"
+  },
+  {
+   "asm": "and rax, rbx",
+   "ok": true,
+   "hex": "48 21 D8"
+  },
+  {
+   "asm": "or rax, rbx",
+   "ok": true,
+   "hex": "48 09 D8"
+  },
+  {
+   "asm": "xor rax, rax",
+   "ok": true,
+   "hex": "48 31 C0"
+  },
+  {
+   "asm": "cmp r8d, r9d",
+   "ok": true,
+   "hex": "45 39 C8"
+  },
+  {
+   "asm": "MOV  RAX ,RBX",
+   "ok": true,
+   "hex": "48 89 D8"
+  },
+  {
+   "asm": "  nop  ",
+   "ok": true,
+   "hex": "90"
+  },
+  {
+   "asm": "jmp external_symbol",
+   "ok": false,
+   "code": "BYTE_ENCODING_UNRESOLVED"
+  },
+  {
+   "asm": "call foo",
+   "ok": false,
+   "code": "BYTE_ENCODING_UNRESOLVED"
+  },
+  {
+   "asm": "je loop_start",
+   "ok": false,
+   "code": "BYTE_ENCODING_UNRESOLVED"
+  },
+  {
+   "asm": "jmp rax",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "mov rax, 1",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "mov rax, [rbx]",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "lea rax, [rbx]",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "push 5",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "push eax",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "add rsp",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "xyz",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  },
+  {
+   "asm": "mov eax, 0x1ffffffff",
+   "ok": false,
+   "code": "UNSUPPORTED_ENCODING"
+  }
+ ]
+}

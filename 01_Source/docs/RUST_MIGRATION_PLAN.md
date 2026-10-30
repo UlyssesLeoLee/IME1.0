@@ -1,5 +1,7 @@
 # 纯 Rust 化路线图（RUST-MIG-001，草案 v0.1，2026-10-30）
 
+> 进度：**步骤 1.0/1.1 已实现，见第 13 节**。
+>
 > 状态：**设计草案**。第 1 阶段方案（逻辑迁入 Rust，JS 退化为胶水）已由项目负责人**暂定同意**；第 2 阶段起的方案是设计，尚未实现，
 > 其中带「待决策」标记的事项需要确认后才能开工。本文不修改 `00_Documents/` 的原始设计文件；需要改动设计书的地方见第 11 节。
 >
@@ -329,3 +331,84 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 | P6 VS Code 壳最小化 + WASM 页面（B 档）| L | wasm 工具链（P0 验证）|
 
 执行顺序：P0 → P1 → （P2 可与 P3 并行）→ P4 → P5 → P6。P1 完成后即可发布「JS 仅胶水」的版本，P4/P5 完成才是真正的系统输入法。
+
+## 13. 进度记录（Progress）
+
+> 最近更新：2026-10-30。**步骤 1.0 与 1.1 已实现**（工作区未提交）；1.2 及以后**未开始**。本节只记录事实；设计正文（第 5 节）未改。
+
+### 13.1 1.0 交付：协议 0.3 骨架与引擎开关
+
+- `pime-core` 协议升为 **0.3（0.2 的超集）**：7 个 0.2 操作行为不变（仍受 64 KiB 行限制）；`health` 现报告 `"protocol":"0.3"`（`version` 仍是 `0.2.0`）。
+  唯一的 0.2 操作变化是 `predict` 新增**可选**字段 `pins`、`usage`（JS 桥此前没有把它们传给核心，Rust 引擎下排序会丢失置顶/使用频率）。
+- 新增有状态会话：`session.open {locale, entropy, settings}`、`settings.apply {values, locale?}`、`settings.resolve {scenario}`、`session.close`；
+  除 `health` 与 `session.open` 外，所有 0.3 操作都必须带 `session`，缺失/未知/淘汰/过期（空闲 24 h；最多 16 个会话，LRU 淘汰）→ `{"ok":false,"error":"NO_SESSION"}`。
+- `settings.rs`：`effective`/`validate`/`resolveScenario` 的移植（JSON 形状与键顺序与 JS 一致，包含 `apiVersion`、`maxTokensParam` 与 `none/minimal/xhigh` 努力等级；
+  端点校验是 WHATWG `new URL` 的子集，对 37 个边界样例（含 `https:host`、大写 scheme、`user@`、反斜杠、百分号编码主机、端口越界）与 JS 一致）。
+- 扩展：新设置 `programmingIme.engine`（`js`｜`rust`，默认 `js`）。`rust` 下**必须**有可用的 `coreExecutable`（健康检查要求协议 0.3；`js` 下可选加速器接受 0.2 或 0.3），
+  核心缺失/中途死亡 → 状态栏显示 `core unavailable` + 一次性错误通知 + IME 功能停用（F1 键回到命令面板），**没有静默回退到 JS 引擎**，VS Code 自身输入不受影响。
+- `src/engine.js`（新）是适配层：`engine.coordinator` / `engine.broker` 与 JS 的 `EditCoordinator` / `PermissionBroker` 方法同名，其余边路径调用（`snapshot/excerpt/validateSnapshot/propose/select/resultText/hunkEdits`）二选一实现；
+  `f1.js` 不含 `if (rust)`。`coreprocess.js`：用 `StringDecoder` 修复了多字节字符跨块被截断的问题，可配置最大行、逐请求超时。
+- UAT 工具：环境变量 `PIME_ENGINE=rust` + `PIME_CORE_EXE=<pime-core.exe>` 把 `programmingIme.engine`/`coreExecutable` 写入测试配置；不设置时与以前完全一致。
+
+### 13.2 1.1 交付：编辑路径进入 Rust
+
+新模块（零第三方依赖，`#![forbid(unsafe_code)]` 不变）：`sha256.rs`（手写 SHA-256 + HMAC；NIST 向量含空串、448/896 位消息、100 万个 `a`；RFC 4231 HMAC 向量）、`clock.rs`（可注入的墙钟）、`ids.rs`（见 13.5）、
+`context.rs`（L0–L4、`makeSnapshot`、`assertFullFileWritable`、`excerpt`、`requireWithinPolicy`）、`edit/diff.rs`、`edit/transaction.rs`、`grants.rs`、`budget.rs`、`settings.rs`、`session.rs`、`ops.rs`。
+
+协议 0.3 操作表（**按实现**；请求字段 snake_case，嵌套对象沿用 JS 形状；偏离建议名的见 13.4）：
+
+| 操作 | 请求要点 | 响应要点 |
+|---|---|---|
+| `session.open` / `session.close` | `locale`、`entropy`（32–512 字节十六进制）、`settings` | `session`、`protocol:"0.3"`、`issues` |
+| `settings.apply` / `settings.resolve` | `values`、`locale?` / `scenario` | `settings`（有效设置）、`issues` / `scenario`（JS 形状） |
+| `ctx.snapshot` | `uri,version,text,languageId,selection,isDirty,fileName,level,editorInstanceId`（**大行**） | `snapshot{snapshot_id,sha256,eol,…,length}`（不含文本；文本留在核心） |
+| `ctx.excerpt` | `snapshot_id,cursor,before,after,policy?` | `excerpt{text,start,end,cursorInExcerpt,truncated}` |
+| `ctx.validate` | `snapshot_id,language,dialect,edits?`（**大行**） | `result{ok,level,issues}`（可预览插入后的结果，不创建任何东西） |
+| `ctx.release` | `snapshot_id` | `released`（同时丢弃该快照的全部 proposal） |
+| `edit.propose` | `snapshot_id,proposed_text,language?,dialect?`（**大行**） | `proposal`、`hunks[]`（几何+显示行）、`stats`、`after_hash`、`result{length,hash,preview,truncated,validation}` |
+| `edit.select` / `edit.result` | `proposal,hunk_ids[]` | `result{…}` / `text`（整段结果，用于只读 Diff） |
+| `edit.plan` | `kind` + (`proposal`+`hunk_ids` 或 `snapshot_id`+`edits[]`)、`targets`、`selection` | `plan{id,status,proposedHash,expiresAt,…}`（EditCoordinator.createPlan） |
+| `edit.prepare` | `plan,state{uri,version,text,isClosed?,editable?,selection?},confirmed,grant_id\|grant_ok,validation_ok`（**大行**） | `token` |
+| `edit.begin_apply` / `edit.finish_apply` | `token,state` / `token,outcome:accepted\|rejected\|error,state?`（**大行**） | `edits[]`,`apply_timeout_ms` / `state:"APPLIED"`,`newVersion`,`newHash` |
+| `edit.invalidate/discard/purge/status` | `uri` / `plan` / – / `plan` | `invalidated` / – / – / `status` |
+| `grant.authorize/check/find/require/consume/revoke/revoke_provider/revoke_provider_prefix/revoke_all/still_valid/list/export/import/workspace_token` | `provider_id`、`workspace`\|`workspace_uris`、`scope`、`ttl_ms`、`once`、`grant_id` … | JS 形状的 grant 对象；修改类操作附带 `persist`（可持久化的可复用授权，供 JS 写入 `pime.grants.v1`） |
+| `budget.configure/reserve/settle/release/snapshot/reset` | `max_requests,max_tokens,price_per_1k_tokens` / `estimate` / `ticket,usage?` … | `ticket` / `budget{requests,tokens,estimated,cost}` |
+
+“大行”的操作可以使用最长 16 MiB 的请求行（2 MiB 文档在最坏转义下约 12 MiB）；其余操作仍是 64 KiB，超过则 `PAYLOAD_TOO_LARGE`（与 0.2 相同，含不带 `id` 的应答格式）。
+机器可读契约：`schemas/core-protocol-v0.3.json`（0.2 的 schema 保留）；样例：`tests/fixtures/core-jsonl-v0.3.txt`（22 行，由 `handle_line` 与真实二进制各跑一遍）。
+
+扩展接线（仅 `engine=rust`；`engine=js` 行为不变）：`f1.js` 的快照、摘录、Hunk 构建/选择/结果文本、语法校验、计划创建、Prepare/Apply/Finish、失效与清理、授权代理全部经核心；
+`WorkspaceEdit`、对话框、面板仍在 JS。同一个授权代理服务**所有**调用方（F1、实时 AI、权限菜单、删除密钥、`annotate.js`、`authorizeRequest`），避免两个代理各持一半状态。
+实时调度的 `isAllowed` 必须同步，Rust 引擎下用 `broker.findNow`：返回最近一次 `find` 的结论（授权成功时即预热、任何撤销即清空、5 s 过期后台刷新）；它只决定“是否尝试”，真正发送前 `authorizeRequest` 仍向核心 `require`。
+
+### 13.3 验证（本机实测，见最终报告）
+
+- `cargo test --workspace`：**209** 个测试（开始时 101）；`cargo clippy --workspace --all-targets -- -D warnings`、`cargo fmt --all -- --check` 干净。
+- JS：`npm test` 90 项 + 10 项引擎差分测试（`test/ut-engine.test.js`，需要 `PIME_CORE_EXE`，未设置时**跳过**而不是通过）；`npm run check` 通过；`node tests/gen-fixtures.js --check` 最新（新增 `edit-cases.json`：SHA-256、diff/hunk/render/选择、摘录、设置、端点、工作区令牌，全部由 JS 生成、Rust 逐项一致）。
+- UAT（2026-10-30，真实 VS Code 1.137.0，每次一个实例）：**js 引擎 31 通过 + 1 跳过**（24 项原有 + 6 项注释 + ENG-01；ENG-02 需要核心，故跳过）；**rust 引擎 32/32 通过**（核心为 debug 构建的 `pime-core.exe`）。
+  新增 `uat/tests/05-engine.spec.js`：ENG-01（`engine=rust` 且核心不存在 → 状态栏 `core unavailable`、一次性通知、F1 仍打开命令面板、无 JS 回退、输入不受影响）、ENG-02（运行中强杀核心 → 同样降级）。
+  复现：`cargo build` → `$env:PIME_ENGINE='rust'; $env:PIME_CORE_EXE='<pime-core.exe 路径>'; $env:UAT_EVIDENCE_DIR='<证据目录>'; cd uat; npx playwright test`（默认引擎：不设这三个变量；约 4.3 分钟）。
+- 移植到 Rust 的 UT/IT 编号（函数名带同样的编号，如 `ut_045_hunks_replay_to_the_exact_after_hash_with_crlf_and_a_changed_trailing_newline`）：UT-025/027/028/029/030、UT-035、UT-044/045/046/047/048/049/050/051/052/053/054、UT-075，IT-015/029/030/031/032/033/035/036，ST-027/030，NFR-502（UT-026 此前已在 `textrange.rs`）。
+
+### 13.4 与计划/任务书的偏离及原因
+
+1. **proposal 与 plan 分开**：`edit.propose` 返回 `proposal`（持有提案文本和 Hunk），`edit.select` 作用于 proposal；EditCoordinator 的 plan 在应用时由 `edit.plan` 创建（与 JS 一致：10 分钟计划寿命从点击“应用”算起，而不是从提案算起）。插入路径不经过 `propose`，直接 `edit.plan` + 显式 `edits`。
+2. **新增操作**（计划表里没有）：`edit.plan`、`edit.result`、`edit.purge/discard/status`、`ctx.validate`（校验结果文本不必把大文本回传）、`ctx.release`（NFR-502：F1 会话关闭即丢弃文档副本）、`settings.resolve`、`session.close`、`grant.find`、`grant.workspace_token`、`grant.revoke_provider_prefix`（删除密钥须撤销该提供方所有主机的授权，含已用/过期的）。
+3. `edit.prepare` 接受 `grant_id`（核心用自己的代理判断 `stillValid`）；只有没有 `grant_id` 时才接受字面量 `grant_ok:true`。`confirmed` 只认字面量 `true`。
+4. **比 JS 更严格的地方**：同一计划的 EDIT_UNKNOWN 之后不能再 `prepare`（JS 允许对同一 plan 再签发令牌）；一个文档的写入在等待 `finish_apply` 时，第二个 `begin_apply` 返回 `EDIT_REJECTED` 且不消耗令牌（JS 靠队列串行）；
+   `grant.import` 跳过字段不合法的条目（JS 全盘信任）；会话数/快照数/提案数/凭据数有上限。
+5. **apply 拆分**的时间语义：`begin_apply` 启动 5 s 期限；超过期限的 `finish_apply` 一律 `EDIT_UNKNOWN`（绝不 `APPLIED`）；期限过后任何触及该 plan 的调用（`prepare`/`status`/`invalidate`…）都会把它置为 `UNKNOWN`；`purge` 保留未完成写入的记录 60 s，使迟到的 `finish_apply` 仍得到 `EDIT_UNKNOWN`。
+6. **预算只做了核心模块与操作**（含 UT-035），**没有接入扩展**：`AiClient` 同步调用 `reserve`、`viewState`/状态栏同步读 `snapshot`，且任务书的 f1.js 接线清单不含预算；随 1.2（AI 客户端）一起接。
+7. **设置**：核心持有有效设置并可 `resolve`，但扩展运行时仍用 JS 的 `effective()`（两者由夹具保证逐项一致）；把运行时切到核心属于 1.3。
+8. JS 仍持有文档文本副本（AI 提示、秘密闸门、Diff 预览需要），只在打开 F1 时向核心发送一次；`prepare/begin_apply/finish_apply` 必须携带当前文本，因为 JS 不能算哈希。
+9. 本机文件系统限制：首次运行刚链接的测试可执行文件偶发 `os error 5`（Windows Defender 扫描），重试即可；`scratchpad/ct.sh` 是重试封装（不在仓库中）。
+
+### 13.5 随机数（必须如实记录的限制）
+
+核心没有熵源（无依赖、`std` 无可移植 CSPRNG）。`session.open` 的 `entropy`（≥ 32 字节，由 JS 的 `crypto.randomBytes` 提供）经 `key = SHA-256("pime-id-v1" ‖ entropy)`、`id(n) = HMAC-SHA-256(key, domain ‖ 0x00 ‖ n)` 的计数器构造派生会话/快照/proposal/计划/令牌/授权/预算票据 id：
+同一会话内唯一（计数器 + 域分隔），对其他进程不可预测（不知道 `entropy` 就算不出下一个 id）。强度**恰好等于**所给熵的强度；弱熵（少于 8 个不同字节值）与同一熵重复开会话会被拒绝。P2 起改用操作系统随机数。
+
+### 13.6 未做 / 未验证
+
+步骤 1.2–1.6 全部未做（AI 请求构造/解析、调度与历元、设置迁移、i18n、F1 状态机、删除 JS 核心、`glue-check` 上限）；JS 核心模块与 JS 单测仍在；默认引擎仍是 `js`。
+Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug 构建下的耗时只作了功能验证。

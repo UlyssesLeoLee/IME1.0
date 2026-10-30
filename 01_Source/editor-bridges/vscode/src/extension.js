@@ -5,7 +5,6 @@ const path = require('node:path');
 const {rt, cfg, L, errorText, enabled, aiEnabled, workspaceId, refreshSettings, grantProviderId, init} = require('./runtime');
 const lang = require('./languageState');
 const f1 = require('./f1');
-const {CoreProcess} = require('./coreprocess');
 const {RealtimeScheduler} = require('./core/scheduler');
 const languages = require('./core/languages');
 const aiMod = require('./core/ai');
@@ -14,10 +13,11 @@ const settingsMod = require('./core/settings');
 const {fail, codeOf} = require('./core/errors');
 const {sha256} = require('./core/context');
 const {candidateRow, checkEnvironment} = require('./core/uimodel');
+const {annotateInsertion} = require('./annotate');
 
 const status = {lang: null, ai: null};
-let core = null;
 let lastScheduled = null;
+let engineNotified = false;
 
 // ------------------------------------------------------------------ status bar (SCR-01: language + AI state + usage entry)
 function updateStatus() {
@@ -25,9 +25,10 @@ function updateStatus() {
   const editor = vscode.window.activeTextEditor;
   const info = editor ? lang.infoFor(editor.document) : null;
   const on = enabled();
-  const name = !on ? L('status.off') : (info ? info.language : rt.session.language);
-  status.lang.text = `$(code) PIME ${name}${on && info && info.locked ? ' $(lock)' : ''}${on && info && info.uncertain && info.suggestion ? ' ?' : ''}${on && rt.session.paused ? ` (${L('status.paused')})` : ''}`;
-  status.lang.tooltip = info && info.uncertain && info.suggestion ? L('lang.uncertain', info.suggestion, info.language) : L('lang.pick');
+  const coreDown = cfg().get('enabled') === true && !rt.engine.available(); // Rust engine without a core: IME features are off
+  const name = coreDown ? L('engine.status') : !on ? L('status.off') : (info ? info.language : rt.session.language);
+  status.lang.text = `${coreDown ? '$(error)' : '$(code)'} PIME ${name}${on && info && info.locked ? ' $(lock)' : ''}${on && info && info.uncertain && info.suggestion ? ' ?' : ''}${on && rt.session.paused ? ` (${L('status.paused')})` : ''}`;
+  status.lang.tooltip = coreDown ? L('engine.unavailable', rt.engine.reason) : info && info.uncertain && info.suggestion ? L('lang.uncertain', info.suggestion, info.language) : L('lang.pick');
   const sc = safeScenario('realtime');
   const b = rt.budget.snapshot();
   const aiState = !aiEnabled() ? L('ai.off') : (rt.session.paused ? L('ai.paused') : L('ai.on'));
@@ -64,13 +65,16 @@ async function localCandidates(doc, position, info) {
   const after = doc.getText(new vscode.Range(position, doc.positionAt(Math.min(doc.getText().length, offset + 2000))));
   const limit = cfg().get('maxVisibleCandidates') || 6;
   const request = {profile: info.language, prefix, before: beforePrefix, after, dialect: info.dialect, limit, pins: new Set(cfg().get('pinnedCandidates') || []), usage: usageMap()};
-  if (core && !core.dead) {
+  const client = rt.engine.predictClient();
+  if (client) {
     try {
-      const out = await core.request({op: 'predict', language: info.language, prefix, before: beforePrefix, after, dialect: info.dialect, limit});
+      const out = await client.request({op: 'predict', language: info.language, prefix, before: beforePrefix, after, dialect: info.dialect, limit, pins: [...request.pins], usage: Object.fromEntries(request.usage)}, {timeoutMs: rt.engine.predictTimeoutMs});
       if (out.ok && Array.isArray(out.candidates)) return {prefix, range: toRange(position, prefix), candidates: out.candidates};
       throw new Error('CORE_BAD_REPLY');
     } catch { rt.supervisor.reportFailure(); /* Direct fallback: the JS engine below always works */ }
   }
+  // the Rust engine never falls back to the JS implementation: no candidates for this keystroke (a dead core is reported by the engine)
+  if (!rt.engine.fallbackAllowed) return {prefix, range: toRange(position, ''), candidates: []};
   return {prefix, range: toRange(position, prefix), candidates: languages.predict(request)};
 }
 const snippetFor = c => new vscode.SnippetString(languages.toSnippet(c.text));
@@ -80,7 +84,7 @@ const escapePlain = s => s.replace(/[\\$}]/g, '\\$&');
 function realtimeAllowed() {
   if (!enabled() || rt.session.paused || !aiEnabled() || cfg().get('realtimeAI') !== true || !vscode.workspace.isTrusted) return false;
   const sc = safeScenario('realtime');
-  return !!sc && !!sc.model && !!rt.broker.find({providerId: grantProviderId(sc), workspace: workspaceId(), scope: 'L1'});
+  return !!sc && !!sc.model && !!rt.broker.findNow({providerId: grantProviderId(sc), workspace: workspaceId(), scope: 'L1'});
 }
 async function runRealtime(payload, signal) {
   const sc = settingsMod.resolveScenario(rt.settings, 'realtime');
@@ -173,11 +177,17 @@ async function showCandidates() {
   if (!pick) return; // Esc / dismiss: zero writes
   const c = pick.c;
   if (c.text == null) { vscode.window.showInformationMessage(`${c.label}: ${c.explain || ''}`); return; }
+  // autoComment / graphComment: the user's AI adds comments to the chosen snippet; null = insert it unchanged
+  const annotated = (c.kind === 'syntax' || c.kind === 'ai_inline') ? await annotateInsertion({doc, info, template: c.text, position: editor.selection.active}) : null;
+  const text = annotated ? annotated.text : c.text;
   if (vscode.window.activeTextEditor !== editor || doc.version !== version0 || !editor.selection.isEqual(selection0)) {
-    vscode.window.showWarningMessage(L('cand.stale')); return; // never insert at an old position
+    vscode.window.showWarningMessage(L('cand.stale')); return; // never insert at an old position (also after waiting for the AI)
   }
-  const ok = await editor.insertSnippet(c.plain ? new vscode.SnippetString(escapePlain(c.text)) : snippetFor(c), range);
-  if (ok) { bumpUsage(c.id); vscode.window.setStatusBarMessage(L('cand.inserted'), 4000); }
+  const ok = await editor.insertSnippet(c.plain ? new vscode.SnippetString(escapePlain(text)) : new vscode.SnippetString(languages.toSnippet(text)), range);
+  if (ok) {
+    bumpUsage(c.id);
+    vscode.window.setStatusBarMessage(annotated ? L('annotate.done', annotated.kinds.join(' + ')) : L('cand.inserted'), 4000);
+  }
 }
 async function chooseLanguage() {
   const editor = vscode.window.activeTextEditor;
@@ -222,16 +232,16 @@ function showDiagnostics() {
   rt.output.appendLine(L('diag.title'));
   rt.output.appendLine(JSON.stringify(rt.diagnostics.summary()));
   const build = Number((require('node:os').release().split('.')[2]) || 0);
-  rt.output.appendLine(JSON.stringify({environment: checkEnvironment({platform: process.platform, arch: process.arch, build}), core: core && !core.dead ? 'rust' : 'js-fallback', direct: rt.supervisor.isDirect}));
+  rt.output.appendLine(JSON.stringify({environment: checkEnvironment({platform: process.platform, arch: process.arch, build}), core: rt.engine.describe(), engine: rt.engine.kind, direct: rt.supervisor.isDirect}));
   rt.output.show(true);
 }
 async function managePermissions() {
-  const grants = rt.broker.list();
+  const grants = await rt.broker.list();
   if (!grants.length) { vscode.window.showInformationMessage(L('perm.none')); return; }
   const items = [{label: L('perm.revokeAll'), all: true}, ...grants.map(g => ({label: g.providerId, description: `${g.scope} · ${g.once ? 'this request' : 'workspace'} · until ${new Date(g.expiresAt).toLocaleString()}`, id: g.id}))];
   const pick = await vscode.window.showQuickPick(items, {title: L('perm.title')});
   if (!pick) return;
-  if (pick.all) { rt.broker.revokeAll(); vscode.window.showInformationMessage(L('perm.revokedAll')); } else rt.broker.revoke(pick.id);
+  if (pick.all) { await rt.broker.revokeAll(); vscode.window.showInformationMessage(L('perm.revokedAll')); } else await rt.broker.revoke(pick.id);
   if (rt.scheduler) rt.scheduler.cancel();
   updateStatus();
 }
@@ -263,7 +273,7 @@ async function configureAI() {
   await setObject('providers', o => { o[id] = {api, endpoint}; });
   await setObject('scenarios', o => { for (const n of settingsMod.SCENARIOS) o[n] = {...(o[n] || {}), provider: id, model}; });
   await cfg().update('aiEnabled', true, vscode.ConfigurationTarget.Global);
-  rt.broker.revokeProvider(`${id}:${new URL(endpoint).host}`);
+  await rt.broker.revokeProvider(`${id}:${new URL(endpoint).host}`);
   vscode.window.showInformationMessage(L('ai.configured'));
   updateStatus();
 }
@@ -271,7 +281,7 @@ async function deleteKey() {
   const id = await vscode.window.showQuickPick(Object.keys(rt.settings.providers), {title: 'Delete API key of provider'});
   if (!id) return;
   await rt.ctx.secrets.delete('pime-key:' + id);
-  for (const g of rt.broker.grants.values()) if (g.providerId.startsWith(id + ':')) rt.broker.revoke(g.id); // key gone -> no authorisation survives
+  await rt.broker.revokeProviderPrefix(id + ':'); // key gone -> no authorisation survives
   if (rt.scheduler) rt.scheduler.cancel();
   vscode.window.showInformationMessage(L('ai.keyDeleted'));
 }
@@ -286,6 +296,7 @@ async function chooseModel() {
   const cap = await vscode.window.showQuickPick([
     {label: 'Unknown - do not send effort', v: {state: 'unknown'}},
     {label: 'Supported: low, medium, high (verified against provider docs)', v: {state: 'supported', supported: ['low', 'medium', 'high'], checkedAt: new Date().toISOString()}},
+    {label: 'Supported: none, minimal, low, medium, high, xhigh, max (OpenAI list; real support varies by model - verify yours)', v: {state: 'supported', supported: ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'], checkedAt: new Date().toISOString()}},
     {label: 'Not supported', v: {state: 'unsupported'}}], {title: 'Model capability - do not guess'});
   if (!cap) return;
   await setObject('scenarios', o => { for (const n of scope.v) o[n] = {...(o[n] || {}), model, effort, effortCapability: cap.v}; });
@@ -298,10 +309,10 @@ async function toggleRealtimeAI() {
     const sc = safeScenario('realtime');
     if (!aiEnabled() || !sc || !sc.model || !await rt.ctx.secrets.get('pime-key:' + sc.providerId)) { vscode.window.showWarningMessage(L('consent.noKey')); return; }
     const gk = grantProviderId(sc);
-    if (!rt.broker.find({providerId: gk, workspace: workspaceId(), scope: 'L1'})) {
+    if (!await rt.broker.find({providerId: gk, workspace: workspaceId(), scope: 'L1'})) {
       const choice = await vscode.window.showWarningMessage(L('consent.nearby', gk.slice(gk.indexOf(':') + 1)), {modal: true, detail: L('consent.risk')}, L('consent.workspace'));
       if (!choice) return;
-      rt.broker.authorize({providerId: gk, workspace: workspaceId(), scope: 'L1', ttlMs: 24 * 3600 * 1000});
+      await rt.broker.authorize({providerId: gk, workspace: workspaceId(), scope: 'L1', ttlMs: 24 * 3600 * 1000});
     }
   } else if (rt.scheduler) rt.scheduler.cancel();
   await cfg().update('realtimeAI', next, vscode.ConfigurationTarget.Global);
@@ -332,14 +343,18 @@ async function migrateOldSettings() {
     await rt.ctx.globalState.update('pime.settingsSchema', settingsMod.SCHEMA_VERSION);
   } catch { /* the old keys are untouched: migration is retried at the next start */ }
 }
+// js engine: the configured core is an optional accelerator; rust engine: it is required (see engine.js)
 function startCore() {
-  if (core) { core.stop(); core = null; }
   const binary = cfg().get('coreExecutable');
-  if (!binary || !fs.existsSync(binary)) return;
-  try {
-    core = new CoreProcess(binary);
-    core.request({op: 'health'}).then(r => { if (!r.ok || !String(r.protocol).startsWith('0.2')) { core.stop(); core = null; } }).catch(() => { if (core) { core.stop(); core = null; } });
-  } catch { core = null; }
+  const c = cfg();
+  return rt.engine.start({binary, locale: rt.locale, values: {providers: c.get('providers'), scenarios: c.get('scenarios'), budget: c.get('budget')}});
+}
+// the Rust engine lost (or never had) its core: say so once, switch the IME features off, leave typing alone
+function onEngineChange() {
+  updateStatus(); updateContextKeys();
+  if (rt.engine.available() || engineNotified) return;
+  engineNotified = true;
+  vscode.window.showErrorMessage(L('engine.unavailable', rt.engine.reason));
 }
 
 // ------------------------------------------------------------------ activation
@@ -356,7 +371,8 @@ async function activate(ctx) {
   status.ai.command = 'programmingIme.menu'; status.ai.name = 'Programming IME AI';
   ctx.subscriptions.push(status.lang, status.ai);
   f1.registerPreviewProvider(ctx);
-  startCore();
+  rt.onEngineChange = onEngineChange;
+  await startCore();
   await reloadRules().catch(() => {});
   await updateContextKeys();
   updateStatus();
@@ -391,7 +407,8 @@ async function activate(ctx) {
     vscode.workspace.onDidChangeConfiguration(e => {
       if (!e.affectsConfiguration('programmingIme')) return;
       refreshSettings(); lang.invalidate();
-      if (e.affectsConfiguration('programmingIme.coreExecutable')) startCore();
+      if (e.affectsConfiguration('programmingIme.engine')) vscode.window.showInformationMessage(L('engine.reload'));
+      else if (e.affectsConfiguration('programmingIme.coreExecutable')) { engineNotified = false; startCore(); }
       if (!aiEnabled() || cfg().get('realtimeAI') !== true) rt.scheduler.cancel();
       updateContextKeys(); updateStatus();
     })
@@ -400,6 +417,6 @@ async function activate(ctx) {
 function deactivate() {
   if (rt.scheduler) rt.scheduler.cancel();
   f1.closeSession();
-  if (core) core.stop();
+  rt.engine.stop();
 }
 module.exports = {activate, deactivate};

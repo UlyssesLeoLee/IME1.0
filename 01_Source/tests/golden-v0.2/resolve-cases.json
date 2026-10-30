@@ -1,0 +1,301 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "cases": [
+  {
+   "ctx": {
+    "languageId": "rust",
+    "fileName": "x.py"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "rust",
+    "reason": "bridge-languageId",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "a.h"
+   },
+   "current": "rust",
+   "lock": null,
+   "expect": {
+    "language": "rust",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": "c",
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "a.asm"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "unknown",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": "assembly",
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "python",
+    "fileName": "x.py"
+   },
+   "current": "python",
+   "lock": "typescript",
+   "expect": {
+    "language": "typescript",
+    "reason": "manual-lock",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "typescriptreact",
+    "fileName": "App.tsx"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "typescript",
+    "reason": "bridge-languageId",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {
+     "mode": "tsx"
+    }
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "main.ts"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "typescript",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {
+     "mode": "ts"
+    }
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "run.ps1"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "powershell",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.c"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "c",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "blob.bin"
+   },
+   "current": "c",
+   "lock": null,
+   "expect": {
+    "language": "c",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": "machine-code",
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "Makefile"
+   },
+   "current": "rust",
+   "lock": null,
+   "expect": {
+    "language": "rust",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "notes.txt",
+    "text": "if x then for y"
+   },
+   "current": "python",
+   "lock": null,
+   "expect": {
+    "language": "python",
+    "reason": "kept",
+    "changed": false,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "Untitled-1",
+    "text": "fn main() {\n    let mut x = 1;\n}\n"
+   },
+   "current": "python",
+   "lock": null,
+   "expect": {
+    "language": "python",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": "rust",
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "Untitled-2",
+    "text": "def f(self):\n    import os\n"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "unknown",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": "python",
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "asm",
+    "fileName": "x.asm"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "assembly",
+    "reason": "bridge-languageId",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "nasm",
+    "fileName": "x.nasm"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "assembly",
+    "reason": "bridge-languageId",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "cpp",
+    "fileName": "x.cpp"
+   },
+   "current": "c",
+   "lock": null,
+   "expect": {
+    "language": "c",
+    "reason": "kept",
+    "changed": false,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.hex"
+   },
+   "current": "rust",
+   "lock": null,
+   "expect": {
+    "language": "rust",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": "machine-code",
+    "dialectHints": {}
+   }
+  },
+  {
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "mixed.txt",
+    "text": "fn main() { } def f(self):"
+   },
+   "current": "rust",
+   "lock": null,
+   "expect": {
+    "language": "rust",
+    "reason": "kept",
+    "changed": false,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  }
+ ]
+}

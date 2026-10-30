@@ -6,7 +6,14 @@ const {fail} = require('./errors');
 const secrets = require('./secrets');
 const {rangeToOffsets, applyEdits, eolOf} = require('./textrange');
 
-const EFFORT_LEVELS = Object.freeze(['auto', 'low', 'medium', 'high', 'extended']);
+// OpenAI documents none | minimal | low | medium | high | xhigh | max (API reference, checked via Context7 on 2026-10-30; support varies
+// per model, so a level is only ever sent when the capability record says the model supports it). `extended` is the older alias that
+// a capability `map` can point to a vendor value.
+const EFFORT_LEVELS = Object.freeze(['auto', 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'extended']);
+// Chat Completions: OpenAI reasoning models only accept max_completion_tokens; most compatible servers only know max_tokens.
+const MAX_TOKENS_PARAMS = Object.freeze(['max_tokens', 'max_completion_tokens']);
+// Anthropic: 2026-10-21 is the current API version (2023-06-01 is still honoured). A provider profile may pin another one.
+const ANTHROPIC_VERSION = '2026-10-21';
 const CAPABILITY_MAX_AGE_MS = 30 * 24 * 3600 * 1000;
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 
@@ -52,8 +59,9 @@ const FAMILIES = Object.freeze({
   }),
   'openai-chat': Object.freeze({
     label: 'OpenAI-compatible Chat Completions', supportsEffort: true,
-    build: ({key, model, instructions, input, maxOutputTokens, effort}) => {
-      const body = {model, messages: [{role: 'system', content: instructions}, {role: 'user', content: input}], max_tokens: maxOutputTokens};
+    build: ({key, model, instructions, input, maxOutputTokens, effort, maxTokensParam}) => {
+      const body = {model, messages: [{role: 'system', content: instructions}, {role: 'user', content: input}]};
+      body[MAX_TOKENS_PARAMS.includes(maxTokensParam) ? maxTokensParam : 'max_tokens'] = maxOutputTokens;
       if (effort) body.reasoning_effort = effort;
       return {headers: {Authorization: `Bearer ${key}`, 'Content-Type': 'application/json'}, body};
     },
@@ -64,8 +72,8 @@ const FAMILIES = Object.freeze({
   }),
   'anthropic-messages': Object.freeze({
     label: 'Anthropic Messages', supportsEffort: false,
-    build: ({key, model, instructions, input, maxOutputTokens}) => ({
-      headers: {'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json'},
+    build: ({key, model, instructions, input, maxOutputTokens, apiVersion}) => ({
+      headers: {'x-api-key': key, 'anthropic-version': /^\d{4}-\d{2}-\d{2}$/.test(apiVersion || '') ? apiVersion : ANTHROPIC_VERSION, 'Content-Type': 'application/json'},
       body: {model, max_tokens: maxOutputTokens, system: instructions, messages: [{role: 'user', content: input}]}
     }),
     parse: json => {
@@ -89,7 +97,7 @@ function mapHttpStatus(status, retryAfterSec) {
   if (status === 408 || status === 504) return fail('AI_TIMEOUT', `provider timed out (HTTP ${status})`, {retryable: true});
   if (status === 429) { const e = fail('AI_RATE_LIMIT', 'provider rate limit reached', {retryable: true, userAction: 'AI is paused for a while; local candidates keep working'}); e.retryAfterSec = retryAfterSec; return e; }
   if (status >= 500) return fail('AI_SERVER_ERROR', `provider error (HTTP ${status})`, {retryable: true});
-  return fail('AI_BAD_REQUEST', `provider refused the request (HTTP ${status})`, {userAction: 'Check model id and endpoint'});
+  return fail('AI_BAD_REQUEST', `provider refused the request (HTTP ${status})`, {userAction: 'Check model id and endpoint; for OpenAI reasoning models on Chat Completions set the provider\'s maxTokensParam to max_completion_tokens'});
 }
 function mapFetchError(e, userSignal) {
   if (userSignal && userSignal.aborted) return fail('AI_CANCELLED', 'request cancelled');
@@ -147,7 +155,7 @@ class AiClient {
       if (!req.allowSensitive && secrets.scan(outbound).blocked) throw fail('SENSITIVE_BLOCKED', 'payload still contains high-risk secrets; nothing was sent');
       const ticket = this.budget.reserve(estimateTokens(outbound) + (req.maxOutputTokens || 0));
       const effort = negotiateEffort(req.effort, req.capability, {family, now: this.now()});
-      const built = family.build({key: req.key, model: req.model, instructions: req.instructions, input: req.input, maxOutputTokens: req.maxOutputTokens || 800, effort: effort.status === 'sent' ? effort.value : undefined});
+      const built = family.build({key: req.key, model: req.model, instructions: req.instructions, input: req.input, maxOutputTokens: req.maxOutputTokens || 800, effort: effort.status === 'sent' ? effort.value : undefined, apiVersion: req.apiVersion, maxTokensParam: req.maxTokensParam});
       // own (ref'd) timer instead of AbortSignal.timeout: the deadline must hold even if nothing else keeps the loop alive
       const deadline = new AbortController();
       const timer = setTimeout(() => deadline.abort(Object.assign(new Error('request timed out'), {name: 'TimeoutError'})), req.timeoutMs || 30000);
@@ -245,6 +253,6 @@ function parseModelResult(raw, {task = 'full', baseline = '', currentFile = ''} 
 }
 
 module.exports = {
-  EFFORT_LEVELS, FAMILIES, effectiveCapability, negotiateEffort, checkEndpoint, mapHttpStatus, mapFetchError, Budget, estimateTokens,
+  EFFORT_LEVELS, MAX_TOKENS_PARAMS, ANTHROPIC_VERSION, FAMILIES, effectiveCapability, negotiateEffort, checkEndpoint, mapHttpStatus, mapFetchError, Budget, estimateTokens,
   AiClient, INSTRUCTIONS, buildPrompt, parseModelResult, LIMIT
 };

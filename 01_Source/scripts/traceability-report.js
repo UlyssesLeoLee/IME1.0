@@ -20,14 +20,20 @@ const all = [
   ...cases('Programming_IME_UT_Test_Design_v1.0.md', 'UT'), ...cases('Programming_IME_IT_Test_Design_v1.0.md', 'IT'), ...cases('Programming_IME_ST_Test_Design_v1.0.md', 'ST')
 ];
 const evidence = new Map(all.map(c => [c.id, {js: [], rust: [], uat: [], failed: []}]));
+// Tests for requirements added after the design baseline (ANN-xx annotations, API-xx provider compatibility): no design-case ids exist for them.
+const EXTRA = /\b(?:ANN|API)-\d{2}[a-z]?\b/g;
+const extras = [];
+const noteExtra = (title, kind, ok) => { for (const id of title.match(EXTRA) || []) extras.push({id, kind, title: title.replace(/\s*\[.*$/, ''), ok}); };
 const note = (id, kind, title, ok) => { const e = evidence.get(id); if (!e) return; (ok ? e[kind] : e.failed).push(`${kind}: ${title}`); if (ok && !e[kind].includes(title)) e[kind].push(title); };
 
 // ---- JS (node:test, TAP)
 const js = spawnSync(process.execPath, ['--test', '--test-reporter=tap', 'test/**/*.test.js'], {cwd: path.join(root, '01_Source', 'editor-bridges', 'vscode'), encoding: 'utf8'});
 let jsTotal = 0, jsPass = 0;
 for (const m of js.stdout.matchAll(/^(not ok|ok) \d+ - (.+)$/gm)) {
+  if (/ # (SKIP|TODO)\b/i.test(m[2])) continue; // a skipped test is not evidence (the engine tests skip without PIME_CORE_EXE)
   jsTotal++; const ok = m[1] === 'ok'; if (ok) jsPass++;
   for (const id of m[2].match(ID) || []) note(id, 'js', m[2], ok);
+  noteExtra(m[2], 'JS', ok);
 }
 // ---- Rust (raw cargo test output saved by the Rust run)
 let rustTotal = 0, rustPass = 0;
@@ -45,7 +51,7 @@ if (fs.existsSync(rustFile)) {
 let uatTotal = 0, uatPass = 0;
 const uatFile = path.join(verification, 'uat', 'uat-results.json');
 if (fs.existsSync(uatFile)) {
-  const walk = suite => { for (const s of suite.specs || []) { uatTotal++; const ok = s.ok === true; if (ok) uatPass++; for (const id of s.title.match(ID) || []) note(id, 'uat', s.title.replace(/\s*\[.*$/, ''), ok); } (suite.suites || []).forEach(walk); };
+  const walk = suite => { for (const s of suite.specs || []) { uatTotal++; const ok = s.ok === true; if (ok) uatPass++; for (const id of s.title.match(ID) || []) note(id, 'uat', s.title.replace(/\s*\[.*$/, ''), ok); noteExtra(s.title, 'UAT', ok); } (suite.suites || []).forEach(walk); };
   (JSON.parse(fs.readFileSync(uatFile, 'utf8')).suites || []).forEach(walk);
 }
 
@@ -81,5 +87,9 @@ for (const p of ['UT', 'IT', 'ST']) { const c = summary.cases[p]; md.push(`| ${p
 md.push('', 'Not run does NOT mean passed. Windows TSF, installer, named-pipe IPC, Credential Manager, DPI/multi-monitor, 30-minute soak and plugin cases need environments that were not available.', '');
 md.push('| ID | Title | Status | Evidence / reason |', '|---|---|---|---|');
 for (const r of rows) md.push(`| ${r.id} | ${r.title.replace(/\|/g, '/')} | ${r.status} | ${r.status === 'NOT RUN' ? r.reason : [...new Set(r.via)].join(' + ') + (r.failed.length ? ' ; FAILED: ' + r.failed.join('; ') : '')} |`);
+md.push('', '## Requirements added after the design baseline (no UT/IT/ST ids; see docs/ANNOTATIONS.md and docs/VERSIONS.md)', '', '| ID | Suite | Test | Result |', '|---|---|---|---|');
+for (const x of extras.sort((a, b) => a.id.localeCompare(b.id))) md.push(`| ${x.id} | ${x.kind} | ${x.title.replace(/\|/g, '/')} | ${x.ok ? 'PASS' : 'FAIL'} |`);
+summary.extras = {total: extras.length, pass: extras.filter(x => x.ok).length};
+fs.writeFileSync(path.join(verification, 'test-execution-report.json'), JSON.stringify({summary, rows, extras}, null, 1) + '\n');
 fs.writeFileSync(path.join(verification, 'test-execution-report.md'), md.join('\n') + '\n');
 console.log(JSON.stringify(summary, null, 1));

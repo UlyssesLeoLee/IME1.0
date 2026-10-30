@@ -1,4 +1,4 @@
-//! `pime-core` JSON Lines CLI (protocol 0.2): one JSON object per line on stdin, one response line on stdout.
+//! `pime-core` JSON Lines CLI (protocol 0.3): one JSON object per line on stdin, one response line on stdout.
 //! It never executes anything, never opens files or the network, and discards its own panic messages so
 //! that input text can never leak through diagnostics.
 #![forbid(unsafe_code)]

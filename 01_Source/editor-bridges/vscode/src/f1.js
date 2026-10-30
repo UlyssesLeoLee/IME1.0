@@ -6,16 +6,14 @@ const vscode = require('vscode');
 const crypto = require('node:crypto');
 const {rt, L, errorText, enabled, aiEnabled, workspaceId, grantProviderId} = require('./runtime');
 const {fail, codeOf} = require('./core/errors');
-const ctxMod = require('./core/context');
-const diffMod = require('./core/diff');
 const secrets = require('./core/secrets');
 const aiMod = require('./core/ai');
 const settingsMod = require('./core/settings');
-const {validateSource} = require('./core/validators');
-const {applyEdits} = require('./core/textrange');
 const {F1Panel, I18N_KEYS} = require('./ui/f1panel');
 const {bundle} = require('./core/i18n');
 const lang = require('./languageState');
+const annotate = require('./core/annotate');
+const annotation = require('./annotate');
 
 const PREVIEW_SCHEME = 'pime-preview';
 const MAX_FULL_BYTES = 2 * 1024 * 1024;
@@ -26,6 +24,12 @@ const toSel = s => ({start: {line: s.start.line, character: s.start.character}, 
 const short = h => h.slice(0, 12);
 const visibleEditorFor = doc => vscode.window.visibleTextEditors.find(e => e.document === doc);
 const baseName = p => String(p || '').split(/[\\/]/).pop();
+// autoComment / graphComment: the proposal is reviewed in the panel, so the settings only extend the model instructions
+function withAnnotation(prompt, task, s) {
+  const w = annotation.wanted();
+  const add = annotate.f1Addendum({task, comment: w.comment, graph: w.graph, locale: rt.locale, language: s.profile, dialect: s.dialect});
+  return add ? {...prompt, instructions: prompt.instructions + add} : prompt;
+}
 
 function registerPreviewProvider(ctx) {
   ctx.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(PREVIEW_SCHEME, {provideTextDocumentContent: uri => previews.get(uri.path.slice(1)) || ''}));
@@ -42,7 +46,7 @@ function unavailableReason(doc, snapshot, tab) {
   return null;
 }
 function newTabs(doc, snapshot) {
-  const full = {status: 'idle', message: '', notes: [], hunks: [], selected: new Set(), proposed: '', grantId: null, validation: {level: 'none', text: '', issues: []}};
+  const full = {status: 'idle', message: '', notes: [], hunks: [], review: null, selected: new Set(), proposed: '', result: null, grantId: null, validation: {level: 'none', text: '', issues: []}};
   const insert = {status: 'idle', message: '', notes: [], candidates: [], grantId: null, stale: false};
   for (const [name, tab] of [['full', full], ['insert', insert]]) {
     const reason = unavailableReason(doc, snapshot, name);
@@ -52,12 +56,12 @@ function newTabs(doc, snapshot) {
 }
 
 // ------------------------------------------------------------------ state for the webview
-function resultText(s) { const t = s.tabs.full; return diffMod.applyHunks(s.snapshot.content, t.hunks, [...t.selected]); }
-function recomputeFull(s) {
+// The engine (js or rust) builds hunks, applies a selection and checks the syntax of the result; `result` is
+// {length, hash, preview, truncated, validation}. Without `result` the selection is evaluated now.
+async function recomputeFull(s, result) {
   const t = s.tabs.full;
-  const out = resultText(s);
-  const after = validateSource(s.profile, out, s.dialect);
-  t.resultText = out; t.resultHash = ctxMod.sha256(out);
+  const r = t.result = result || await rt.engine.select(s.snapshot, t.review, [...t.selected], {language: s.profile, dialect: s.dialect});
+  const after = r.validation;
   if (after.ok) t.validation = {level: 'ok', text: L('f1.validation.ok'), issues: []};
   else if (s.baselineValid) t.validation = {level: 'bad', text: L('f1.validation.bad'), issues: after.issues.slice(0, 5).map(i => `${i.line ? 'L' + i.line + ': ' : ''}${i.message}`)};
   else t.validation = {level: 'warn', text: L('f1.validation.warn'), issues: after.issues.slice(0, 3).map(i => `${i.line ? 'L' + i.line + ': ' : ''}${i.message}`)};
@@ -78,8 +82,8 @@ function viewState() {
         status: full.status, message: full.message, notes: full.notes,
         scopeText: L('f1.scope.full', baseName(snap.file_name), snap.document_version, short(snap.sha256)),
         hunksText: L('f1.hunks', full.hunks.length),
-        hunks: full.hunks.map((h, i) => ({...diffMod.renderHunk(snap.content, h), title: L('f1.hunk', i + 1, h.oldStartLine, h.oldLineCount, h.newLineCount), selected: full.selected.has(h.id)})),
-        preview: {title: L('f1.preview', (full.resultText || '').length, short(full.resultHash || '')), text: (full.resultText || '').slice(0, 4000) + ((full.resultText || '').length > 4000 ? '\n…' : '')},
+        hunks: full.hunks.map((h, i) => ({id: h.id, header: h.header, lines: h.lines, title: L('f1.hunk', i + 1, h.oldStartLine, h.oldLineCount, h.newLineCount), selected: full.selected.has(h.id)})),
+        preview: {title: L('f1.preview', full.result ? full.result.length : 0, short(full.result ? full.result.hash : '')), text: full.result ? full.result.preview + (full.result.truncated ? '\n…' : '') : ''},
         validation: full.validation, canApply: canActFull
       },
       insert: {
@@ -93,25 +97,34 @@ function viewState() {
 const render = () => { if (session && session.panel) session.panel.update(viewState()); };
 
 // ------------------------------------------------------------------ opening
+let opening = false;
 async function open(editorOverride) {
   if (!enabled()) { vscode.window.showWarningMessage(L('f1.disabledHere')); return; }
   const editor = editorOverride || vscode.window.activeTextEditor;
   if (!editor) { vscode.window.showInformationMessage(L('f1.noEditor')); return; }
+  if (opening) return; // the engine call below is asynchronous: a second F1 must not start a second session
+  opening = true;
+  try { await openSession(editor); } catch (e) { vscode.window.showErrorMessage(L('f1.error', errorText(e))); } finally { opening = false; }
+}
+async function openSession(editor) {
   closeSession();
   const doc = editor.document;
   const text = doc.getText();
   const sel = toSel(editor.selection);
-  const snapshot = ctxMod.makeSnapshot({uri: doc.uri.toString(), version: doc.version, text, languageId: doc.languageId, selection: sel, isDirty: doc.isDirty, fileName: doc.fileName});
+  const version = doc.version;
   const info = lang.infoFor(doc);
   const selStart = doc.offsetAt(editor.selection.start), selEnd = doc.offsetAt(editor.selection.end);
   const replaced = selEnd - selStart;
+  const snapshot = await rt.engine.snapshot({uri: doc.uri.toString(), version, text, languageId: doc.languageId, selection: sel, isDirty: doc.isDirty, fileName: doc.fileName});
+  const baselineValid = (await rt.engine.validateSnapshot(snapshot, info.language, info.dialect)).ok;
   const s = session = {
     doc, snapshot, profile: info.language, dialect: info.dialect, intent: '', active: 'full', banner: null, busy: false, stale: false, applying: false, done: false,
     offsets: {start: selStart, end: selEnd}, controllers: {full: null, insert: null}, models: {full: '', insert: ''},
-    baselineValid: validateSource(info.language, text, info.dialect).ok,
+    baselineValid,
     targetText: L('f1.target', sel.start.line + 1, sel.start.character + 1, replaced ? L('f1.replaces', replaced) : L('f1.zeroLength')),
     tabs: newTabs(doc, snapshot)
   };
+  if (doc.version !== version) { s.stale = true; s.banner = {kind: 'warn', text: L('f1.stale')}; } // typed while the snapshot was being taken
   for (const [name, sc] of [['full', 'f1Full'], ['insert', 'f1Insert']]) { try { s.models[name] = settingsMod.resolveScenario(rt.settings, sc).model; } catch { /* shown on generate */ } }
   s.panel = new F1Panel(vscode, {onMessage: m => onMessage(m).catch(e => fatal(e)), onDispose: () => { if (session === s) closeSession(true); }});
   s.panel.setTitle(L('f1.title'));
@@ -130,6 +143,7 @@ function closeSession(fromPanel = false) {
   for (const c of Object.values(s.controllers)) if (c) c.abort();
   rt.coordinator.invalidate(s.snapshot.document_uri);
   rt.coordinator.purge();
+  rt.engine.release(s.snapshot); // the engine forgets the document text of this session
   if (!fromPanel && s.panel) s.panel.dispose();
 }
 
@@ -140,7 +154,7 @@ async function onMessage(m) {
     case 'generate': s.intent = String(m.intent || '').slice(0, 2000); if (s.stale || s.done) { await reopen(['full', 'insert']); return; } await generate(['full', 'insert']); return;
     case 'regenerate': if (s.stale || s.done) { await reopen([m.tab === 'insert' ? 'insert' : 'full']); return; } await generate([m.tab === 'insert' ? 'insert' : 'full']); return;
     case 'cancel': for (const c of Object.values(s.controllers)) if (c) c.abort(); break;
-    case 'toggleHunk': { const t = s.tabs.full; if (m.on) t.selected.add(m.id); else t.selected.delete(m.id); recomputeFull(s); break; }
+    case 'toggleHunk': { const t = s.tabs.full; if (m.on) t.selected.add(m.id); else t.selected.delete(m.id); await recomputeFull(s); break; }
     case 'openDiff': await openDiff(); return;
     case 'applyFull': await applyFull(); return;
     case 'applyInsert': await applyInsert(m.id); return;
@@ -155,7 +169,7 @@ async function obtainGrants(s, runnable) {
   const workspace = workspaceId();
   const missing = [];
   for (const r of runnable) {
-    const found = rt.broker.find({providerId: r.grantKey, workspace, scope: r.scope});
+    const found = await rt.broker.find({providerId: r.grantKey, workspace, scope: r.scope});
     if (found) r.grantId = found.id; else missing.push(r);
   }
   const byHost = new Map();
@@ -167,7 +181,7 @@ async function obtainGrants(s, runnable) {
     const choice = await vscode.window.showWarningMessage(msg, {modal: true, detail: L('consent.risk')}, L('consent.once'), L('consent.workspace'));
     if (!choice) return false;
     for (const r of list) {
-      const g = rt.broker.authorize({providerId: grantKey, workspace, scope: r.scope, once: choice === L('consent.once'), ttlMs: choice === L('consent.once') ? 10 * 60 * 1000 : 24 * 3600 * 1000});
+      const g = await rt.broker.authorize({providerId: grantKey, workspace, scope: r.scope, once: choice === L('consent.once'), ttlMs: choice === L('consent.once') ? 10 * 60 * 1000 : 24 * 3600 * 1000});
       r.grantId = g.id;
     }
   }
@@ -227,7 +241,7 @@ async function runFull(s, r, gate) {
     const sent = prepareText(snap.content, gate);
     const prompt = aiMod.buildPrompt('full', {task: s.intent || 'suggest safe improvements around the cursor', language: s.profile, dialect: s.dialect, fileName: baseName(snap.file_name),
       cursorOffsetUtf16: s.offsets.start, selectionText: snap.content.slice(s.offsets.start, s.offsets.end).slice(0, 4000), currentFile: sent.text});
-    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...prompt, signal: controller.signal, grantId: r.grantId, grantScope: 'L3', allowSensitive: gate.mode === 'raw'});
+    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...withAnnotation(prompt, 'full', s), signal: controller.signal, grantId: r.grantId, grantScope: 'L3', allowSensitive: gate.mode === 'raw'});
     const parsed = aiMod.parseModelResult(res.text, {task: 'full', baseline: sent.text, currentFile: snap.file_name});
     noteCommon(tab, res, parsed, sent.map);
     let proposed = parsed.proposedText;
@@ -237,10 +251,11 @@ async function runFull(s, r, gate) {
       proposed = restored.text;
     }
     if (proposed === undefined || proposed === snap.content) { tab.status = 'ready'; tab.hunks = []; tab.selected = new Set(); tab.message = L('f1.noChange') + (parsed.explanation ? ` ${parsed.explanation}` : ''); return; }
-    tab.proposed = proposed; tab.hunks = diffMod.buildHunks(snap.content, proposed); tab.selected = new Set(tab.hunks.map(h => h.id));
+    const prop = await rt.engine.propose(snap, proposed, {language: s.profile, dialect: s.dialect});
+    tab.proposed = proposed; tab.review = prop.review; tab.hunks = prop.hunks; tab.selected = new Set(tab.hunks.map(h => h.id));
     tab.status = 'ready'; tab.message = parsed.explanation || '';
     for (const a of parsed.assumptions) tab.notes.push(a);
-    recomputeFull(s);
+    await recomputeFull(s, prop.result);
   } catch (e) {
     tab.hunks = []; tab.selected = new Set();
     if (codeOf(e) === 'AI_CANCELLED') { tab.status = 'idle'; tab.message = errorText(e); }
@@ -251,12 +266,12 @@ async function runInsert(s, r, gate) {
   const tab = s.tabs.insert, snap = s.snapshot;
   const controller = s.controllers.insert = new AbortController();
   try {
-    const ex = ctxMod.excerpt(snap.content, s.offsets.start, {before: 1800, after: 900});
+    const ex = await rt.engine.excerpt(snap, s.offsets.start, {before: 1800, after: 900});
     const before = prepareText(ex.text.slice(0, ex.cursorInExcerpt), gate), after = prepareText(ex.text.slice(ex.cursorInExcerpt), gate);
     const selected = prepareText(snap.content.slice(s.offsets.start, s.offsets.end).slice(0, 4000), gate);
     const map = [...before.map, ...after.map, ...selected.map];
     const prompt = aiMod.buildPrompt('insert', {task: s.intent || 'suggest code for the cursor', language: s.profile, dialect: s.dialect, fileName: baseName(snap.file_name), before: before.text, after: after.text, selectionText: selected.text});
-    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...prompt, signal: controller.signal, grantId: r.grantId, grantScope: 'L1', allowSensitive: gate.mode === 'raw'});
+    const res = await rt.ai.infer({...r.sc, providerId: r.grantKey, key: r.key, ...withAnnotation(prompt, 'insert', s), signal: controller.signal, grantId: r.grantId, grantScope: 'L1', allowSensitive: gate.mode === 'raw'});
     const parsed = aiMod.parseModelResult(res.text, {task: 'insert'});
     noteCommon(tab, res, parsed, map);
     const seen = new Set(), out = [];
@@ -278,7 +293,7 @@ async function runInsert(s, r, gate) {
 async function openDiff() {
   const s = session; if (!s || s.tabs.full.status !== 'ready') return;
   const id = crypto.randomBytes(8).toString('hex');
-  previews.set(id, resultText(s));
+  previews.set(id, await rt.engine.resultText(s.snapshot, s.tabs.full.review, [...s.tabs.full.selected]));
   if (previews.size > 20) previews.delete(previews.keys().next().value);
   await vscode.commands.executeCommand('vscode.diff', s.doc.uri, vscode.Uri.from({scheme: PREVIEW_SCHEME, path: `/${id}`}), `${L('f1.title')} - READ-ONLY preview`);
 }
@@ -297,8 +312,8 @@ const adapterFor = s => ({
 async function commit(s, kind, edits, grantId, validationOk) {
   s.applying = true; render();
   try {
-    const plan = rt.coordinator.createPlan({kind, snapshot: s.snapshot, edits, targets: [s.snapshot.document_uri], selection: s.snapshot.selection});
-    const token = rt.coordinator.prepare(plan.id, {state: stateOf(s), confirmed: true, grantOk: rt.broker.stillValid(grantId), validationOk});
+    const plan = await rt.coordinator.createPlan({kind, snapshot: s.snapshot, edits, targets: [s.snapshot.document_uri], selection: s.snapshot.selection});
+    const token = await rt.coordinator.prepare(plan.id, {state: stateOf(s), confirmed: true, grantId, grantOk: await rt.broker.stillValid(grantId), validationOk});
     const outcome = await rt.coordinator.apply(token, adapterFor(s));
     rt.diagnostics.record({component: 'edit', error_code: 'OK', request_type: kind});
     s.done = true; s.banner = {kind: 'info', text: L('f1.applied')};
@@ -315,7 +330,7 @@ async function applyFull() {
   const s = session; if (!s || s.applying) return;
   const t = s.tabs.full;
   if (t.status !== 'ready' || !t.selected.size) return;
-  const edits = diffMod.hunkEdits(t.hunks, [...t.selected]);
+  const edits = rt.engine.hunkEdits(t.review, [...t.selected]);
   await commit(s, 'full', edits, t.grantId, t.validation.level !== 'bad');
 }
 async function applyInsert(id) {
@@ -324,7 +339,7 @@ async function applyInsert(id) {
   const cand = t.candidates.find(c => c.id === id);
   if (!cand || t.status !== 'ready') return;
   const edits = [{start: s.offsets.start, end: s.offsets.end, text: cand.text}];
-  const resulting = validateSource(s.profile, applyEdits(s.snapshot.content, edits), s.dialect);
+  const resulting = await rt.engine.validateSnapshot(s.snapshot, s.profile, s.dialect, edits);
   await commit(s, 'insert', edits, t.grantId, !(s.baselineValid && !resulting.ok));
 }
 

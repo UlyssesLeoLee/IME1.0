@@ -1,23 +1,36 @@
-//! JSON Lines protocol 0.2 (one JSON object per line, at most 64 KiB per line).
+//! JSON Lines protocol 0.3 (one JSON object per line).
+//!
+//! Protocol 0.3 is a superset of 0.2: the seven stateless 0.2 operations behave exactly as before (at most
+//! 64 KiB per request line), and the stateful session operations of `ops.rs` are added. Operations that carry
+//! document text (`ctx.snapshot`, `edit.propose`, `edit.prepare`, `edit.begin_apply`, `edit.finish_apply`) may use
+//! lines up to [`MAX_BULK_LINE_BYTES`]; every other operation keeps the 64 KiB limit.
 //!
 //! Every request may carry an integer `id` that is echoed as `id` in the response. The core never executes
 //! anything, never opens files or the network, and never echoes secret values (`scan` returns kind, severity
 //! and line only).
 
+use crate::clock::{Clock, SystemClock};
 use crate::json::{self, Json, JsonErrorKind, Limits};
+use crate::ops;
 use crate::pack::LANGUAGES;
 use crate::predict::{engine, PredictOptions, DEFAULT_LIMIT};
 use crate::resolve::{resolve_language, ResolveContext};
 use crate::secrets;
+use crate::session::SessionStore;
 use crate::validators::{self, Dialect};
 use crate::x86;
-use crate::{MAX_LINE_BYTES, PROTOCOL, VERSION};
+use crate::{MAX_BULK_LINE_BYTES, MAX_LINE_BYTES, PROTOCOL, VERSION};
+use std::cell::RefCell;
 use std::io::{self, BufRead, Write};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 pub const MAX_PREDICT_LIMIT: i64 = 200;
 const REQUEST_LIMITS: Limits = Limits {
     max_bytes: MAX_LINE_BYTES,
+    max_depth: 16,
+};
+const BULK_LIMITS: Limits = Limits {
+    max_bytes: MAX_BULK_LINE_BYTES,
     max_depth: 16,
 };
 
@@ -51,7 +64,7 @@ fn opt_str<'a>(req: &'a Json, key: &str) -> Result<Option<&'a str>, String> {
     }
 }
 
-fn dialect_of(req: &Json) -> Result<Dialect, String> {
+pub(crate) fn dialect_of(req: &Json) -> Result<Dialect, String> {
     let mut d = Dialect::new();
     match req.get("dialect") {
         None | Some(Json::Null) => {}
@@ -99,6 +112,27 @@ fn predict_op(id: Option<i64>, req: &Json) -> Result<Json, String> {
     .after(opt_str(req, "after")?.unwrap_or(""))
     .limit(limit);
     o.dialect = dialect_of(req)?;
+    // optional ranking inputs of the bridge (additive in 0.3): pinned candidate ids and local usage counts
+    match req.get("pins") {
+        None | Some(Json::Null) => {}
+        Some(Json::Arr(a)) => {
+            for p in a {
+                o.pins
+                    .insert(p.as_str().ok_or_else(|| "pins".to_string())?.to_string());
+            }
+        }
+        Some(_) => return Err("pins".to_string()),
+    }
+    match req.get("usage") {
+        None | Some(Json::Null) => {}
+        Some(Json::Obj(u)) => {
+            for (k, v) in u {
+                o.usage
+                    .insert(k.clone(), v.as_i64().ok_or_else(|| "usage".to_string())?);
+            }
+        }
+        Some(_) => return Err("usage".to_string()),
+    }
     let list = engine().predict(&o).map_err(|_| "predict".to_string())?;
     Ok(ok_json(
         id,
@@ -229,44 +263,106 @@ fn scan_op(id: Option<i64>, req: &Json) -> Result<Json, String> {
     Ok(ok_json(id, vec![("result", body)]))
 }
 
-/// Handles one parsed request object.
-pub fn dispatch(req: &Json) -> Json {
-    if req.as_object().is_none() {
-        return error_json(None, "INVALID_REQUEST", None);
-    }
-    let id = match req.get("id") {
-        None | Some(Json::Null) => None,
-        Some(v) => match v.as_i64() {
-            Some(i) => Some(i),
-            None => return error_json(None, "INVALID_REQUEST", Some("id")),
-        },
-    };
-    let op = req.get("op").and_then(Json::as_str).unwrap_or("");
-    let outcome = match op {
-        "health" => Ok(health(id)),
-        "predict" => predict_op(id, req),
-        "resolve" => resolve_op(id, req),
-        "validate" => validate_op(id, req),
-        "encode" => encode_op(id, req),
-        "validate_hex" => validate_hex_op(id, req),
-        "scan" => scan_op(id, req),
-        _ => return error_json(id, "UNKNOWN_OPERATION", None),
-    };
-    outcome.unwrap_or_else(|field| error_json(id, "INVALID_REQUEST", Some(&field)))
+/// The state of one running core: the open sessions and the clock every time-dependent rule reads.
+pub struct Core {
+    sessions: SessionStore,
+    clock: Box<dyn Clock>,
 }
 
-/// One request line -> one response line (no trailing newline). Never panics out, never echoes input text.
-pub fn handle_line(line: &str) -> String {
-    if line.len() > MAX_LINE_BYTES {
-        return error_json(None, "PAYLOAD_TOO_LARGE", None).to_json_string();
+impl Default for Core {
+    fn default() -> Self {
+        Self::new()
     }
-    let response = match json::parse(line, REQUEST_LIMITS) {
-        Err(e) if e.kind == JsonErrorKind::TooLarge => error_json(None, "PAYLOAD_TOO_LARGE", None),
-        Err(_) => error_json(None, "INVALID_JSON", None),
-        Ok(req) => catch_unwind(AssertUnwindSafe(|| dispatch(&req)))
-            .unwrap_or_else(|_| error_json(None, "INTERNAL", None)),
-    };
-    response.to_json_string()
+}
+
+impl Core {
+    /// A core on the real (wall) clock.
+    pub fn new() -> Core {
+        Core::with_clock(Box::new(SystemClock))
+    }
+
+    /// A core with an injected clock (tests move time explicitly).
+    pub fn with_clock(clock: Box<dyn Clock>) -> Core {
+        Core {
+            sessions: SessionStore::new(),
+            clock,
+        }
+    }
+
+    pub fn open_sessions(&self) -> usize {
+        self.sessions.len()
+    }
+
+    /// Handles one parsed request object.
+    pub fn dispatch(&mut self, req: &Json) -> Json {
+        if req.as_object().is_none() {
+            return error_json(None, "INVALID_REQUEST", None);
+        }
+        let id = match req.get("id") {
+            None | Some(Json::Null) => None,
+            Some(v) => match v.as_i64() {
+                Some(i) => Some(i),
+                None => return error_json(None, "INVALID_REQUEST", Some("id")),
+            },
+        };
+        let op = req.get("op").and_then(Json::as_str).unwrap_or("");
+        let outcome = match op {
+            "health" => Ok(health(id)),
+            "predict" => predict_op(id, req),
+            "resolve" => resolve_op(id, req),
+            "validate" => validate_op(id, req),
+            "encode" => encode_op(id, req),
+            "validate_hex" => validate_hex_op(id, req),
+            "scan" => scan_op(id, req),
+            _ if ops::OPS.contains(&op) => {
+                return ops::handle(&mut self.sessions, self.clock.now_ms(), op, id, req)
+            }
+            _ => return error_json(id, "UNKNOWN_OPERATION", None),
+        };
+        outcome.unwrap_or_else(|field| error_json(id, "INVALID_REQUEST", Some(&field)))
+    }
+
+    /// One request line -> one response line (no trailing newline). Never panics out, never echoes input text.
+    pub fn handle_line(&mut self, line: &str) -> String {
+        if line.len() > MAX_BULK_LINE_BYTES {
+            return error_json(None, "PAYLOAD_TOO_LARGE", None).to_json_string();
+        }
+        let big = line.len() > MAX_LINE_BYTES;
+        let limits = if big { BULK_LIMITS } else { REQUEST_LIMITS };
+        let response = match json::parse(line, limits) {
+            Err(e) if e.kind == JsonErrorKind::TooLarge => {
+                error_json(None, "PAYLOAD_TOO_LARGE", None)
+            }
+            // a line over the 64 KiB limit that is not a well-formed bulk request is "too large", as in 0.2
+            Err(_) if big => error_json(None, "PAYLOAD_TOO_LARGE", None),
+            Err(_) => error_json(None, "INVALID_JSON", None),
+            Ok(req) => {
+                let op = req.get("op").and_then(Json::as_str).unwrap_or("");
+                if big && !ops::BULK_OPS.contains(&op) {
+                    error_json(None, "PAYLOAD_TOO_LARGE", None)
+                } else {
+                    catch_unwind(AssertUnwindSafe(|| self.dispatch(&req)))
+                        .unwrap_or_else(|_| error_json(None, "INTERNAL", None))
+                }
+            }
+        };
+        response.to_json_string()
+    }
+}
+
+thread_local! {
+    // The stateless convenience entry points below share one core per thread (state survives between calls).
+    static DEFAULT_CORE: RefCell<Core> = RefCell::new(Core::new());
+}
+
+/// Handles one parsed request on this thread's default core.
+pub fn dispatch(req: &Json) -> Json {
+    DEFAULT_CORE.with(|c| c.borrow_mut().dispatch(req))
+}
+
+/// One request line -> one response line on this thread's default core.
+pub fn handle_line(line: &str) -> String {
+    DEFAULT_CORE.with(|c| c.borrow_mut().handle_line(line))
 }
 
 enum LineRead {
@@ -321,15 +417,25 @@ fn read_bounded_line<R: BufRead>(r: &mut R, buf: &mut Vec<u8>, max: usize) -> io
     }
 }
 
-/// Serves requests until end of input: exactly one response line per request line.
-pub fn serve<R: BufRead, W: Write>(mut input: R, mut output: W) -> io::Result<()> {
+/// Serves requests until end of input on a fresh core: exactly one response line per request line.
+pub fn serve<R: BufRead, W: Write>(input: R, output: W) -> io::Result<()> {
+    serve_with(&mut Core::new(), input, output)
+}
+
+/// [`serve`] on a given core (so tests can inject the clock and inspect the state afterwards).
+pub fn serve_with<R: BufRead, W: Write>(
+    core: &mut Core,
+    mut input: R,
+    mut output: W,
+) -> io::Result<()> {
     let mut buf = Vec::new();
     loop {
-        let reply = match read_bounded_line(&mut input, &mut buf, MAX_LINE_BYTES)? {
+        // a line is buffered up to the bulk limit; `handle_line` applies the per-operation limit
+        let reply = match read_bounded_line(&mut input, &mut buf, MAX_BULK_LINE_BYTES)? {
             LineRead::Eof => return Ok(()),
             LineRead::TooLong => error_json(None, "PAYLOAD_TOO_LARGE", None).to_json_string(),
             LineRead::Line => match std::str::from_utf8(&buf) {
-                Ok(line) => handle_line(line),
+                Ok(line) => core.handle_line(line),
                 Err(_) => error_json(None, "INVALID_JSON", None).to_json_string(),
             },
         };
@@ -348,13 +454,13 @@ mod tests {
     }
 
     #[test]
-    fn health_reports_protocol_0_2_and_seven_languages() {
+    fn health_reports_protocol_0_3_and_seven_languages() {
         let r = call(r#"{"op":"health","id":7}"#);
         assert_eq!(r.get("ok"), Some(&Json::Bool(true)));
         assert_eq!(r.get("id").and_then(Json::as_i64), Some(7));
         assert_eq!(r.get("name").and_then(Json::as_str), Some("pime-core"));
         assert_eq!(r.get("version").and_then(Json::as_str), Some("0.2.0"));
-        assert_eq!(r.get("protocol").and_then(Json::as_str), Some("0.2"));
+        assert_eq!(r.get("protocol").and_then(Json::as_str), Some("0.3"));
         assert_eq!(
             r.get("languages").and_then(Json::as_array).map(Vec::len),
             Some(7)
@@ -435,6 +541,50 @@ mod tests {
         let none = call(r#"{"op":"predict","language":"machine-code","prefix":"jmp foo"}"#);
         let m = &none.get("candidates").and_then(Json::as_array).unwrap()[0];
         assert!(m.get("text").unwrap().is_null());
+    }
+
+    #[test]
+    fn predict_accepts_the_bridges_pins_and_usage_counts() {
+        let ids = |r: &Json| -> Vec<String> {
+            r.get("candidates")
+                .and_then(Json::as_array)
+                .unwrap()
+                .iter()
+                .map(|c| c.get("id").and_then(Json::as_str).unwrap().to_string())
+                .collect()
+        };
+        let plain = ids(&call(
+            r#"{"op":"predict","language":"rust","prefix":"fn","limit":6}"#,
+        ));
+        assert!(plain.len() >= 2, "{plain:?}");
+        let last = plain.last().unwrap().clone();
+        let pinned = ids(&call(&format!(
+            r#"{{"op":"predict","language":"rust","prefix":"fn","limit":6,"pins":["{last}"]}}"#
+        )));
+        assert_eq!(pinned[0], last, "a pinned candidate ranks first");
+        let used = ids(&call(&format!(
+            r#"{{"op":"predict","language":"rust","prefix":"fn","limit":6,"usage":{{"{last}":50}}}}"#
+        )));
+        // usage only breaks ties between equally good candidates; the set of candidates never changes
+        let (mut used_sorted, mut plain_sorted) = (used.clone(), plain.clone());
+        used_sorted.sort();
+        plain_sorted.sort();
+        assert_eq!(used_sorted, plain_sorted);
+        for bad in [
+            r#""pins":"x""#,
+            r#""pins":[1]"#,
+            r#""usage":[]"#,
+            r#""usage":{"a":"b"}"#,
+        ] {
+            let r = call(&format!(
+                r#"{{"op":"predict","language":"rust","prefix":"fn",{bad}}}"#
+            ));
+            assert_eq!(
+                r.get("error").and_then(Json::as_str),
+                Some("INVALID_REQUEST"),
+                "{bad}"
+            );
+        }
     }
 
     #[test]
@@ -532,7 +682,7 @@ mod tests {
         serve(io::Cursor::new(input), &mut out).unwrap();
         let lines: Vec<&str> = std::str::from_utf8(&out).unwrap().lines().collect();
         assert_eq!(lines.len(), 5);
-        assert!(lines[0].contains("\"id\":1") && lines[0].contains("\"protocol\":\"0.2\""));
+        assert!(lines[0].contains("\"id\":1") && lines[0].contains("\"protocol\":\"0.3\""));
         assert!(lines[1].contains("INVALID_JSON"));
         assert_eq!(lines[2], r#"{"ok":false,"error":"PAYLOAD_TOO_LARGE"}"#);
         assert!(lines[3].contains("INVALID_JSON"));

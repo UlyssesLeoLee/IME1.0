@@ -1,0 +1,714 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "cases": [
+  {
+   "profile": "rust",
+   "text": "fn main() {\n    println!(\"}\");\n}\n",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "rust",
+   "text": "fn main() {\n    let c = '}';\n    let x: &'a str = \"\";\n}\n",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "rust",
+   "text": "fn main() {\n",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "BRACKET_UNCLOSED"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "rust",
+   "text": "fn f() { ( ] }",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "BRACKET_MISMATCH"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "rust",
+   "text": "/* a /* nested */ still */ fn f() {}",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "rust",
+   "text": "let s = r#\"raw } text\"#;",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "python",
+   "text": "def f():\n    pass\n",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "python",
+   "text": "def f():\n",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "EXPECTED_INDENT"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "python",
+   "text": "def f():\n\n",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "EXPECTED_INDENT"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "python",
+   "text": "def f():\n\treturn 1\n    x=1\n",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "UNEXPECTED_INDENT",
+     "TAB_SPACE_MIX"
+    ],
+    "lines": [
+     3,
+     0
+    ]
+   }
+  },
+  {
+   "profile": "python",
+   "text": "class A:\n    def g(self):\n        return {\n  1: 2,\n  }\n\nx = 1\n",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "python",
+   "text": "if x:\n    y = 1\n  z = 2\n",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "UNINDENT_MISMATCH"
+    ],
+    "lines": [
+     3
+    ]
+   }
+  },
+  {
+   "profile": "python",
+   "text": "x = \"\"\"\ndef f():\n\"\"\"\n",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "python",
+   "text": "try:\n    pass\nexcept Exception:\n    raise\n",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "python",
+   "text": "x = (1,\n  2)\ny = 3\n",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "powershell",
+   "text": "$a ?? 1",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "PS7_NULL_COALESCING"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "powershell",
+   "text": "$a ?? 1",
+   "dialect": {
+    "version": "7"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "powershell",
+   "text": "Get-ChildItem | ? { $_.X }",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "powershell",
+   "text": "$x = $c ? 1 : 2",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "PS7_TERNARY"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "powershell",
+   "text": "a && b",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "PS7_PIPELINE_CHAIN"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "powershell",
+   "text": "Write-Host 'a ?? b'",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "powershell",
+   "text": "function f {\n  param($a)\n}\n",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "c",
+   "text": "int main(void){ return 0; }",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "c",
+   "text": "constexpr int a = 1;",
+   "dialect": {
+    "std": "c11"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "C23_CONSTEXPR"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "c",
+   "text": "constexpr int a = 1;",
+   "dialect": {
+    "std": "c23"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "c",
+   "text": "char (*fn)(void);",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "c",
+   "text": "int x[ ;",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "BRACKET_UNCLOSED"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "c",
+   "text": "int a = 0b101;",
+   "dialect": {
+    "std": "c17"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "C23_BINARY_LITERAL"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "c",
+   "text": "int a = 0b101;",
+   "dialect": {
+    "std": "c23"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "c",
+   "text": "[[nodiscard]] int f(void);",
+   "dialect": {
+    "std": "c11"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "C23_ATTRIBUTE"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "c",
+   "text": "char *s = \"}\";",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "typescript",
+   "text": "const f = <T>(v: T) => v;",
+   "dialect": {
+    "mode": "tsx"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "TSX_GENERIC_AMBIGUOUS"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "typescript",
+   "text": "const f = <T,>(v: T) => v;",
+   "dialect": {
+    "mode": "tsx"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "typescript",
+   "text": "const f = <T>(v: T) => v;",
+   "dialect": {
+    "mode": "ts"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "typescript",
+   "text": "const t = `a ${b} }`;",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "typescript",
+   "text": "function f() {\n",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "BRACKET_UNCLOSED"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "mov rax, rbx\npush rbp\nret\n",
+   "dialect": {
+    "syntax": "intel"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "movq %rbx, %rax\n",
+   "dialect": {
+    "syntax": "intel"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "ASM_SYNTAX_MIX"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "movq %rbx, %rax\n",
+   "dialect": {
+    "syntax": "att",
+    "assembler": "gas"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "mov rax, rbx\n",
+   "dialect": {
+    "syntax": "att",
+    "assembler": "gas"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "ASM_SYNTAX_MIX"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "mov rax, rbx\nmovq %rbx, %rax\n",
+   "dialect": {
+    "syntax": "intel"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "ASM_SYNTAX_MIX"
+    ],
+    "lines": [
+     2
+    ]
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": ".intel_syntax noprefix\nmov rax, rbx\n",
+   "dialect": {
+    "syntax": "att",
+    "assembler": "gas"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "section .text\nglobal _start\n_start:\n  ret\n",
+   "dialect": {
+    "assembler": "nasm"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": ".globl _start\n",
+   "dialect": {
+    "assembler": "nasm"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "ASM_DIRECTIVE_MISMATCH"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "section .text\n",
+   "dialect": {
+    "assembler": "gas",
+    "syntax": "att"
+   },
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "ASM_DIRECTIVE_MISMATCH"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "assembly",
+   "text": "mov rax, [rbx] ; load\n",
+   "dialect": {
+    "syntax": "intel"
+   },
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "machine-code",
+   "text": "48 89 D8",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "machine-code",
+   "text": "F",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "ODD_HEX_LENGTH"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "machine-code",
+   "text": "GG",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "INVALID_HEX"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "machine-code",
+   "text": "0x90, 0xC3\n// comment\n48 89 d8",
+   "dialect": {},
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "machine-code",
+   "text": "90 C",
+   "dialect": {},
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "ODD_HEX_LENGTH"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  }
+ ]
+}

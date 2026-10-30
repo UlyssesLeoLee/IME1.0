@@ -77,6 +77,30 @@ test('UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason
   assert.equal(res.effort.status, 'unsupported', 'the caller can show why the level was not sent');
 });
 
+test('API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels', async () => {
+  const sent = async (req) => { const f = makeFetch(() => okJson(req.family === 'anthropic-messages' ? {content: [{type: 'text', text: '{}'}], usage: {input_tokens: 1, output_tokens: 1}} : chatBody('{}'))); await new ai.AiClient({fetchImpl: f}).infer(base(req)); return f.calls[0]; };
+  const a1 = await sent({family: 'anthropic-messages', endpoint: 'https://api.anthropic.example/v1/messages'});
+  assert.equal(a1.headers['anthropic-version'], '2026-10-21'); assert.equal(a1.headers['x-api-key'], KEY);
+  assert.deepEqual(Object.keys(a1.body).sort(), ['max_tokens', 'messages', 'model', 'system'], 'no removed sampling parameters are ever sent');
+  assert.equal((await sent({family: 'anthropic-messages', endpoint: 'https://api.anthropic.example/v1/messages', apiVersion: '2023-06-01'})).headers['anthropic-version'], '2023-06-01');
+  assert.equal((await sent({family: 'anthropic-messages', endpoint: 'https://api.anthropic.example/v1/messages', apiVersion: 'latest; drop table'})).headers['anthropic-version'], '2026-10-21', 'a malformed value never reaches the header');
+  const c1 = await sent({family: 'openai-chat', endpoint: 'https://x.example/v1/chat/completions'});
+  assert.equal(c1.body.max_tokens, 100); assert.equal('max_completion_tokens' in c1.body, false);
+  const c2 = await sent({family: 'openai-chat', endpoint: 'https://x.example/v1/chat/completions', maxTokensParam: 'max_completion_tokens'});
+  assert.equal(c2.body.max_completion_tokens, 100); assert.equal('max_tokens' in c2.body, false);
+  assert.equal((await sent({family: 'openai-chat', endpoint: 'https://x.example/v1/chat/completions', maxTokensParam: 'max_everything'})).body.max_tokens, 100);
+  for (const level of ['none', 'minimal', 'xhigh', 'max']) {
+    assert.ok(ai.EFFORT_LEVELS.includes(level));
+    assert.equal(ai.negotiateEffort(level, fresh({supported: [level]}), {family: ai.FAMILIES['openai-responses']}).value, level);
+    assert.equal(ai.negotiateEffort(level, fresh({supported: ['low']}), {family: ai.FAMILIES['openai-responses']}).status, 'unsupported', `${level} is never sent unless verified`);
+  }
+  const resolved = S.resolveScenario(S.effective({providers: {mine: {api: 'openai-chat', endpoint: 'https://x.example/v1/chat/completions', maxTokensParam: 'max_completion_tokens'}}, scenarios: {f1Full: {provider: 'mine', model: 'm'}}}), 'f1Full');
+  assert.equal(resolved.maxTokensParam, 'max_completion_tokens');
+  const bad = S.effective({providers: {mine: {api: 'openai-chat', endpoint: 'https://x.example/x', maxTokensParam: 'nope', apiVersion: 'tomorrow'}}});
+  assert.deepEqual(S.validateSettings(bad).map(i => i.path).sort(), ['providers.mine.apiVersion', 'providers.mine.maxTokensParam']);
+  assert.match(ai.mapHttpStatus(400).userAction, /max_completion_tokens/);
+});
+
 test('UT-072 / IT-046 a stale capability record is treated as unknown and never sent', () => {
   const old = fresh({checkedAt: new Date(Date.now() - 31 * 24 * 3600 * 1000).toISOString()});
   assert.equal(ai.negotiateEffort('high', old, {family: ai.FAMILIES['openai-responses']}).status, 'stale');

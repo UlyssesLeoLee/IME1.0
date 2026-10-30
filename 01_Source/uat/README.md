@@ -10,6 +10,18 @@ npx playwright test                       # all 24 scenarios (about 4 minutes)
 npx playwright test tests/02-ai-f1.spec.js -g "UAT-23"
 ```
 
+Against the Rust engine (migration step 1.0/1.1; the default stays the JavaScript engine):
+
+```powershell
+cargo build                               # builds targetdebugpime-core.exe (keep CARGO_TARGET_DIR outside the repo)
+$env:PIME_ENGINE = 'rust'; $env:PIME_CORE_EXE = '<path to pime-core.exe>'
+$env:UAT_EVIDENCE_DIR = '<a folder>'      # optional: keep the js-engine evidence in 02_Verification untouched
+npx playwright test
+```
+
+`PIME_ENGINE=rust` writes `programmingIme.engine=rust` and `programmingIme.coreExecutable` into the test profile; it fails fast when
+`PIME_CORE_EXE` does not exist. Without these variables the profile is exactly the v0.2 one. Copy the exe first if you rebuild while a run is active.
+
 Requirements: Windows, VS Code stable (set `VSCODE_EXE` if not in the default location), OpenSSL on PATH or
 `OPENSSL_PATH` (Git for Windows ships `mingw64/bin/openssl.exe`).
 

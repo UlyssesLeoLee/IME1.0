@@ -115,5 +115,86 @@ write('secret-cases.json', {generated_by: 'tests/gen-fixtures.js', cases: secret
   const r = secrets.scan(input.text, {fileName: input.fileName});
   return {...input, expect: {highest: r.highest, sensitiveFile: r.sensitiveFile, findings: r.findings.map(f => ({kind: f.kind, severity: f.severity, line: f.line}))}};
 })});
+// ---------------------------------------------------------------- edit path: sha256, diff/hunks, excerpts, settings, workspace tokens
+// The Rust core (crates/pime-core: sha256, edit::diff, context, settings, grants) must reproduce all of this exactly.
+{
+  const ctxMod = require(path.join(core, 'context'));
+  const diffMod = require(path.join(core, 'diff'));
+  const settingsMod = require(path.join(core, 'settings'));
+  const aiMod = require(path.join(core, 'ai'));
+  const grantsMod = require(path.join(core, 'grants'));
+  const lines = (n, f) => Array.from({length: n}, (_, i) => f(i)).join('');
+
+  const shaTexts = ['', 'abc', 'é😀', 'a\u0000b\r\n', 'x'.repeat(1000), '中文テキスト\n', 'line1\nline2\r\nline3\r'];
+  const diffPairs = [
+    ['line1\r\nline2\r\nline3\r\nline4\r\nline5\r\nline6\r\nline7\r\nline8\r\n', 'line1\r\nLINE2\r\nline3\r\nline4\r\nL5a\r\nL5b\r\nline6\r\nline7\r\nline8'],
+    ['a\rb\rc', 'a\rb\rc\n'], ['a😀\nb\nc\n', 'a😀\nB\nc\n'], ['', 'abc\n'], ['abc\n', ''], ['same\n', 'same\n'], ['', ''],
+    ['a\nb\n', 'a\nb\nc\n'], ['a\nb\nc\n', 'a\nc\n'], ['a\nb\nc\nd\n', 'd\nc\nb\na\n'], ['x\ny\nz\n', 'y\nz\nx\n'], ['a\na\nb\na\n', 'a\nb\na\na\n'],
+    ['a\nb\n', 'a\r\nb\r\n'], ['a\n\nb\r\n\rc', 'a\n\nB\r\n\rc\n'], ['\n\n\n', '\n\n'], ['no newline', 'no newline\nsecond'],
+    ['fn a() {}\n\nfn b() {}\n\nfn c() {}\n', 'fn a() { 1 }\n\nfn b() {}\n\nfn c() { 3 }\n'],
+    ['😀\n😀😀\n', '😀😀\n😀\n'], ['\u{1F600}x\n'.repeat(3), '\u{1F600}x\n\u{1F600}y\n\u{1F600}x\n'],
+    [lines(60, i => `line ${i}\n`), lines(60, i => (i % 5 === 0 ? `LINE ${i}\n` : `line ${i}\n`))],
+    [lines(30, i => `row ${i}\n`), lines(30, i => `row ${i}\n`).split('\n').reverse().join('\n')]
+  ];
+  // too large for the LCS table (n * m > 4M): one replace hunk; stored as generators, not as 40 KB texts
+  const synthetic = [
+    {head: 1, tail: 1, lines: 2001}, {head: 0, tail: 0, lines: 2001}, {head: 0, tail: 0, lines: 2000}, {head: 5, tail: 2, lines: 1500}
+  ];
+  const buildSynthetic = ({head, tail, lines: n}) => {
+    const keepHead = lines(head, i => `head ${i}\n`), keepTail = lines(tail, i => `tail ${i}\n`);
+    return [keepHead + lines(n, i => `old ${i}\n`) + keepTail, keepHead + lines(n, i => `new ${i}\n`) + keepTail];
+  };
+  const diffCase = (before, after) => {
+    const hunks = diffMod.buildHunks(before, after);
+    const ids = hunks.map(h => h.id);
+    const picks = [ids, [], ids.slice(0, 1), ids.slice(-1), ids.filter((_, i) => i % 2 === 0)];
+    return {
+      hunks, stats: diffMod.stats(hunks), render: hunks.map(h => diffMod.renderHunk(before, h)),
+      selections: picks.map(sel => ({ids: sel, edits: diffMod.hunkEdits(hunks, sel), resultHash: ctxMod.sha256(diffMod.applyHunks(before, hunks, sel))})),
+      afterHash: ctxMod.sha256(after)
+    };
+  };
+  const excerptInputs = [
+    {text: 'x'.repeat(500) + '😀' + 'y'.repeat(500), cursor: 500, before: 80, after: 80}, {text: 'x'.repeat(500) + '😀' + 'y'.repeat(500), cursor: 502, before: 1, after: 1},
+    {text: 'x'.repeat(500) + '😀' + 'y'.repeat(500), cursor: 500, before: 1, after: 1}, {text: 'abc', cursor: 99, before: 10, after: 10}, {text: 'abc', cursor: -5, before: 10, after: 10},
+    {text: 'aaaa\r\nbbbb', cursor: 7, before: 2, after: 3}, {text: 'aaaa\r\nbbbb', cursor: 6, before: 2, after: 0}, {text: '', cursor: 0, before: 5, after: 5},
+    {text: 'one\ntwo\nthree 😀 four\nfive\n', cursor: 14, before: 5, after: 5}, {text: 'a'.repeat(5000), cursor: 2500, before: 1800, after: 900}
+  ];
+  const providersWithExtras = {oa: {api: 'openai-chat', endpoint: 'https://a.example/v1', maxTokensParam: 'max_completion_tokens'}, an: {api: 'anthropic-messages', endpoint: 'https://b.example/v1', apiVersion: '2026-10-21'}};
+  const settingsInputs = [
+    {}, {providers: {}, scenarios: {}, budget: {}}, {budget: {maxRequests: 3}},
+    {providers: {mockA: {api: 'openai-responses', endpoint: 'https://127.0.0.1:9/v1/responses'}}, scenarios: {f1Full: {provider: 'mockA', model: 'm-1', effort: 'high'}, other: {model: 'z'}}, budget: {maxRequests: 3, extra: 1}},
+    {providers: {openai: {endpoint: 'https://proxy.example/v1/responses'}, 'bad id': {api: 'x'}, nul: null, b: {api: 'openai-chat', endpoint: 'https://b.example/'}, 10: {api: 'openai-chat', endpoint: 'https://x.example/'}, 2: {api: 'openai-chat', endpoint: 'https://y.example/'}}},
+    {providers: providersWithExtras, scenarios: {f1Full: {provider: 'oa', effort: 'xhigh'}, f1Insert: {provider: 'an', effort: 'none'}, realtime: {provider: 'oa', effort: 'minimal'}}},
+    {providers: {...providersWithExtras, bad1: {api: 'openai-chat', endpoint: 'https://c.example/v1', maxTokensParam: 'max_new_tokens'}, bad2: {api: 'anthropic-messages', endpoint: 'https://d.example/v1', apiVersion: 'latest'}}},
+    {providers: {p: {api: 'nope', endpoint: 'http://insecure.example'}}, scenarios: {realtime: {provider: 'ghost', effort: 'turbo', maxOutputTokens: 0, timeoutMs: 999}, f1Full: {maxOutputTokens: 64001, timeoutMs: 300001}, f1Insert: {maxOutputTokens: 1.5}}},
+    {scenarios: {f1Insert: {provider: 'ghost'}, realtime: {effortCapability: {state: 'supported', supported: ['low'], checkedAt: '2026-01-01T00:00:00.000Z'}}}}
+  ];
+  const endpoints = [
+    'https://api.openai.com/v1/responses', 'HTTPS://Example.COM/x', 'https:example.com', 'https:\\\\example.com\\x', 'https:///example.com', 'https://127.0.0.1:8443/v1', 'https://[::1]:8443/v1',
+    'https://@example.com', 'https://:@example.com', 'https://example.com:/x', '  https://example.com/x \n', 'ht\ttps://example.com', 'https://user@example.com', 'https://user:pw@example.com',
+    'https://:pw@example.com', 'https://example.com:99999', 'https://example.com:80a', 'https://exa mple.com', 'https://exa<mple.com', 'https://a@', 'http://example.com', 'ftp://example.com',
+    'https://', 'https:///', '', 'example.com', '//example.com', 'https://example.com:65535', 'https://example.com:65536', 'https://a.b.c.d.example.com/path?query=1#frag', 'https://exa%6Dple.com/',
+    'https://exa%25mple.com', 'https://exa%zzmple.com', 'https://exa%2', 'https://exämple.com/', 'https://localhost:8080/x', 'https://1.2.3.4/x'
+  ];
+  const workspaces = [['file:///w'], ['file:///b', 'file:///a'], ['file:///a', 'file:///b'], ['￿', '\u{1F600}'], [], ['no-folder'], ['file:///w/ü', 'file:///w/中']];
+  const settle = values => {
+    const e = settingsMod.effective(values);
+    const resolved = {};
+    for (const name of settingsMod.SCENARIOS) { try { resolved[name] = settingsMod.resolveScenario(e, name); } catch (err) { resolved[name] = {error: err.code}; } }
+    let nope; try { settingsMod.resolveScenario(e, 'nope'); } catch (err) { nope = err.code; }
+    return {values, effective: e, issues: settingsMod.validateSettings(e), resolved, unknownScenario: nope};
+  };
+  write('edit-cases.json', {
+    generated_by: 'tests/gen-fixtures.js',
+    sha256: shaTexts.map(text => ({text, sha256: ctxMod.sha256(text)})),
+    diff: diffPairs.map(([before, after]) => ({before, after, expect: diffCase(before, after)})),
+    syntheticDiff: synthetic.map(spec => { const [before, after] = buildSynthetic(spec); const e = diffCase(before, after); return {...spec, expect: {hunks: e.hunks.map(({oldText, newText, ...geometry}) => geometry), stats: e.stats, selections: e.selections.map(({edits, ...rest}) => ({...rest, edits: edits.map(x => ({start: x.start, end: x.end}))})), afterHash: e.afterHash}}; }),
+    excerpt: excerptInputs.map(i => ({...i, expect: ctxMod.excerpt(i.text, i.cursor, {before: i.before, after: i.after})})),
+    settings: settingsInputs.map(settle),
+    endpoints: endpoints.map(endpoint => { let ok = true; try { aiMod.checkEndpoint(endpoint); } catch { ok = false; } return {endpoint, ok}; }),
+    workspaceTokens: workspaces.map(uris => ({uris, token: grantsMod.workspaceToken(uris)}))
+  });
+}
 if (CHECK) { console.log(drift ? `${drift} fixture file(s) differ` : 'fixtures are up to date'); process.exit(drift ? 1 : 0); }
 console.log('fixtures written to', out);

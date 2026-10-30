@@ -36,12 +36,14 @@ function resolveScenario(settings, name) {
   if (!s) throw fail('SETTINGS_INVALID', `unknown scenario ${name}`);
   const p = settings.providers[s.provider];
   if (!p) throw fail('MODEL_UNSUPPORTED', `provider "${s.provider}" is not defined`);
-  return {scenario: name, providerId: s.provider, family: p.api, endpoint: p.endpoint, model: s.model, effort: s.effort, capability: s.effortCapability, maxOutputTokens: s.maxOutputTokens, timeoutMs: s.timeoutMs};
+  return {scenario: name, providerId: s.provider, family: p.api, endpoint: p.endpoint, apiVersion: p.apiVersion, maxTokensParam: p.maxTokensParam, model: s.model, effort: s.effort, capability: s.effortCapability, maxOutputTokens: s.maxOutputTokens, timeoutMs: s.timeoutMs};
 }
 function validateSettings(settings) {
   const issues = [];
   for (const [id, p] of Object.entries(settings.providers || {})) {
     if (!ai.FAMILIES[p.api]) issues.push({path: `providers.${id}.api`, message: 'unknown API family'});
+    if (p.maxTokensParam !== undefined && !ai.MAX_TOKENS_PARAMS.includes(p.maxTokensParam)) issues.push({path: `providers.${id}.maxTokensParam`, message: 'must be max_tokens or max_completion_tokens'});
+    if (p.apiVersion !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(p.apiVersion))) issues.push({path: `providers.${id}.apiVersion`, message: 'expected YYYY-MM-DD'});
     try { ai.checkEndpoint(p.endpoint); } catch { issues.push({path: `providers.${id}.endpoint`, message: 'HTTPS endpoint required'}); }
   }
   for (const [name, s] of Object.entries(settings.scenarios || {})) {

@@ -1,0 +1,10 @@
+{
+  "name": "pime-wasm-panel-probe",
+  "displayName": "PIME WASM panel probe (experiment, not product)",
+  "version": "0.0.1",
+  "publisher": "pime-local-prototype",
+  "engines": {"vscode": "^1.94.0"},
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {"commands": [{"command": "pimeProbe.open", "title": "PIME Probe: Open WASM Panel"}]}
+}

@@ -24,31 +24,33 @@ function scanQuoted(text, i, quote, escape) {
 const lineEnd = (text, i) => { const n = text.indexOf('\n', i); return n < 0 ? text.length : n; };
 
 // Replace comments and literals by blanks (newlines kept) so that bracket/indent logic only sees code.
-function maskSource(text, style) {
+// Optional `spans` receives {start, end, kind: 'comment' | 'string'} for every blanked region (behaviour is unchanged).
+function maskSource(text, style, spans) {
   const out = text.split('');
   const blank = (a, b) => { for (let k = a; k < b && k < out.length; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '; };
   const n = text.length;
   let i = 0;
   while (i < n) {
     const c = text[i], d = text[i + 1];
-    let end = -1;
+    let end = -1, kind = 'string';
     if (style === 'python') {
-      if (c === '#') end = lineEnd(text, i);
+      if (c === '#') { end = lineEnd(text, i); kind = 'comment'; }
       else if (c === '"' || c === "'") {
         if (text.startsWith(c.repeat(3), i)) { const e = text.indexOf(c.repeat(3), i + 3); end = e < 0 ? n : e + 3; }
         else end = scanQuoted(text, i, c, 'backslash');
       }
     } else if (style === 'powershell') {
-      if (c === '<' && d === '#') { const e = text.indexOf('#>', i + 2); end = e < 0 ? n : e + 2; }
-      else if (c === '#') end = lineEnd(text, i);
+      if (c === '<' && d === '#') { const e = text.indexOf('#>', i + 2); end = e < 0 ? n : e + 2; kind = 'comment'; }
+      else if (c === '#') { end = lineEnd(text, i); kind = 'comment'; }
       else if (c === '@' && (d === '"' || d === "'") && /^[ \t]*\r?$/.test(text.slice(i + 2, lineEnd(text, i)))) {
         const closer = new RegExp(`\\n${d}@`); const m = closer.exec(text.slice(i)); end = m ? i + m.index + 3 : n;
       }
       else if (c === "'") end = scanQuoted(text, i, "'", 'doubling');
       else if (c === '"') end = scanQuoted(text, i, '"', 'backtick');
     } else { // rust | c | typescript
-      if (c === '/' && d === '/') end = lineEnd(text, i);
+      if (c === '/' && d === '/') { end = lineEnd(text, i); kind = 'comment'; }
       else if (c === '/' && d === '*') {
+        kind = 'comment';
         let depth = 1, j = i + 2;
         while (j < n && depth > 0) {
           if (style === 'rust' && text[j] === '/' && text[j + 1] === '*') { depth++; j += 2; }
@@ -69,7 +71,7 @@ function maskSource(text, style) {
         } else end = scanQuoted(text, i, "'", 'backslash');
       }
     }
-    if (end > i) { blank(i, end); i = end; } else i++;
+    if (end > i) { if (spans) spans.push({start: i, end, kind}); blank(i, end); i = end; } else i++;
   }
   return out.join('');
 }

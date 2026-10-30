@@ -14,7 +14,7 @@ Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credent
 | `language-packs/` | 七种语言的声明式规则包（JSON 数据，JS 与 Rust 共用） |
 | `editor-bridges/vscode/` | VS Code 扩展：本地候选、语言锁定/识别、F1 双路径面板、Diff/Hunk、事务应用、BYOK AI、实时 AI、授权/预算/诊断 |
 | `editor-bridges/vscode/src/core/` | 与 VS Code 无关的纯逻辑（可单测） |
-| `crates/pime-core/` | Rust 核心（零第三方依赖）：同一套语言逻辑 + 输入状态机 + 安装计划 + JSON Lines 协议 0.2 |
+| `crates/pime-core/` | Rust 核心（零第三方依赖）：同一套语言逻辑 + 输入状态机 + 安装计划 + JSON Lines 协议 0.3（0.2 的超集）；编辑路径（SHA-256/上下文/Diff/事务/授权/预算记账）已进入核心 |
 | `tests/` | `gen-fixtures.js` 与 JS/Rust 共用的金样本夹具 |
 | `uat/` | Playwright 驱动真实 VS Code 的用户验收脚本（24 个场景） |
 | `windows/tsf/` | v0.1 的 TSF 实验源码，**未编译、未验证** |
@@ -46,20 +46,23 @@ Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credent
 ## 4. 测试
 
 ```powershell
-# JavaScript 单元/集成（81 项）
+# JavaScript 单元/集成（90 项；另有 10 项引擎差分测试，设置 PIME_CORE_EXE 才运行，否则跳过）
 cd editor-bridges\vscode ; npm test ; npm run check
 
-# Rust 核心（101 项）。若项目目录阻止运行新编译的 exe，把输出放到别处：
+# Rust 核心（209 项）。若项目目录阻止运行新编译的 exe，把输出放到别处：
 $env:CARGO_TARGET_DIR="$env:TEMP\pime-target" ; cd .. ; cargo test --workspace
 
-# 用户验收（真实 VS Code + 本地 HTTPS Mock 供应商，24 项）。需要 VS Code 和 OpenSSL（Git for Windows 自带）
+# 用户验收（真实 VS Code + 本地 HTTPS Mock 供应商，32 项：24 项原有 + 6 项注释 + 2 项引擎开关；Rust 引擎下 ENG-02 才运行）。需要 VS Code 和 OpenSSL（Git for Windows 自带）
 cd uat ; npm install ; npx playwright test
 
 # 重新生成 UT/IT/ST 追踪报告
 cd .. ; node scripts/traceability-report.js
 ```
 
-Rust 核心可选接入扩展：构建 `pime-core`，把 `programmingIme.coreExecutable` 指向它（只配置可信二进制）；扩展用协议 0.2 的 `predict`，任何故障自动回退到内置 JS 引擎。
+Rust 核心可选接入扩展：构建 `pime-core`，把 `programmingIme.coreExecutable` 指向它（只配置可信二进制）。
+`programmingIme.engine`：`js`（默认）= 内置 JS 引擎，核心只加速本地候选（协议 0.2 或 0.3 的 `predict`），任何故障自动回退到 JS；
+`rust` = **必须**有可用的核心（协议 0.3），核心缺失或中途停止时显示“core unavailable”并停用 IME 功能（不回退到 JS，VS Code 自身输入不受影响）。修改后需重新加载窗口。
+用 Rust 引擎跑用户验收：`$env:PIME_ENGINE='rust'; $env:PIME_CORE_EXE='<pime-core.exe>'; npx playwright test`（见 `uat/README.md`）。迁移进度见 `docs/RUST_MIGRATION_PLAN.md` 第 13 节。
 
 ## 5. Windows TSF 工程
 

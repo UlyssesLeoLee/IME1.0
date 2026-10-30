@@ -1,0 +1,5027 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "sha256": [
+  {
+   "text": "",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "text": "abc",
+   "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+  },
+  {
+   "text": "é😀",
+   "sha256": "1184d1f608158eea09d297565575892231550c403aaa913008d867a97cfd5c76"
+  },
+  {
+   "text": "a\u0000b\r\n",
+   "sha256": "eee4d3a83335b4ab5ef32addb24ce2f696624d7c6c64e8a3c4d1eaf48b0dc5de"
+  },
+  {
+   "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "sha256": "44f8354494a5ba03ba1792a8d3e9c534c47a9181980fde7a3f44b06ef2ae7c7f"
+  },
+  {
+   "text": "中文テキスト\n",
+   "sha256": "b19bf22509d3e9b7eb92147245e3160106c84943cf6d1b6a3cd687d56452d3b7"
+  },
+  {
+   "text": "line1\nline2\r\nline3\r",
+   "sha256": "efb800ebe3224ad490b9f4f22ee3d40cc59f7f6b1d76ac5ff6768071fe15cd74"
+  }
+ ],
+ "diff": [
+  {
+   "before": "line1\r\nline2\r\nline3\r\nline4\r\nline5\r\nline6\r\nline7\r\nline8\r\n",
+   "after": "line1\r\nLINE2\r\nline3\r\nline4\r\nL5a\r\nL5b\r\nline6\r\nline7\r\nline8",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 7,
+      "endOffset": 14,
+      "oldText": "line2\r\n",
+      "newText": "LINE2\r\n",
+      "oldStartLine": 2,
+      "oldLineCount": 1,
+      "newStartLine": 2,
+      "newLineCount": 1
+     },
+     {
+      "id": "h2",
+      "startOffset": 28,
+      "endOffset": 35,
+      "oldText": "line5\r\n",
+      "newText": "L5a\r\nL5b\r\n",
+      "oldStartLine": 5,
+      "oldLineCount": 1,
+      "newStartLine": 5,
+      "newLineCount": 2
+     },
+     {
+      "id": "h3",
+      "startOffset": 49,
+      "endOffset": 56,
+      "oldText": "line8\r\n",
+      "newText": "line8",
+      "oldStartLine": 8,
+      "oldLineCount": 1,
+      "newStartLine": 9,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 3,
+     "added": 4,
+     "removed": 3
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -2,1 +2,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line1"
+       },
+       {
+        "kind": "-",
+        "text": "line2"
+       },
+       {
+        "kind": "+",
+        "text": "LINE2"
+       },
+       {
+        "kind": " ",
+        "text": "line3"
+       },
+       {
+        "kind": " ",
+        "text": "line4"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -5,1 +5,2 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line3"
+       },
+       {
+        "kind": " ",
+        "text": "line4"
+       },
+       {
+        "kind": "-",
+        "text": "line5"
+       },
+       {
+        "kind": "+",
+        "text": "L5a"
+       },
+       {
+        "kind": "+",
+        "text": "L5b"
+       },
+       {
+        "kind": " ",
+        "text": "line6"
+       },
+       {
+        "kind": " ",
+        "text": "line7"
+       }
+      ]
+     },
+     {
+      "id": "h3",
+      "header": "@@ -8,1 +9,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line6"
+       },
+       {
+        "kind": " ",
+        "text": "line7"
+       },
+       {
+        "kind": "-",
+        "text": "line8"
+       },
+       {
+        "kind": "+",
+        "text": "line8"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2",
+       "h3"
+      ],
+      "edits": [
+       {
+        "start": 7,
+        "end": 14,
+        "text": "LINE2\r\n"
+       },
+       {
+        "start": 28,
+        "end": 35,
+        "text": "L5a\r\nL5b\r\n"
+       },
+       {
+        "start": 49,
+        "end": 56,
+        "text": "line8"
+       }
+      ],
+      "resultHash": "de0d7573f3c07135dc4f8ea19c34bf5888453956d3e0dd71d6b5d3bddb0f1e28"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "120953aea799962dc7628ecbfeb81b01fbea286e30ee5f7029b75c4e7f1a24d1"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 7,
+        "end": 14,
+        "text": "LINE2\r\n"
+       }
+      ],
+      "resultHash": "276c5040177dc5469a55a7800ed7c9d1f71c9341a1035ed7328887b47cce6ebc"
+     },
+     {
+      "ids": [
+       "h3"
+      ],
+      "edits": [
+       {
+        "start": 49,
+        "end": 56,
+        "text": "line8"
+       }
+      ],
+      "resultHash": "6cc3fc2ed4bdeb595303fda09753916742989fcf547d208c4df392939d9d698e"
+     },
+     {
+      "ids": [
+       "h1",
+       "h3"
+      ],
+      "edits": [
+       {
+        "start": 7,
+        "end": 14,
+        "text": "LINE2\r\n"
+       },
+       {
+        "start": 49,
+        "end": 56,
+        "text": "line8"
+       }
+      ],
+      "resultHash": "9ac451bb42e2a676598f14f04ce3b2cd2cb500c96fcdddfb111487ce746450d5"
+     }
+    ],
+    "afterHash": "de0d7573f3c07135dc4f8ea19c34bf5888453956d3e0dd71d6b5d3bddb0f1e28"
+   }
+  },
+  {
+   "before": "a\rb\rc",
+   "after": "a\rb\rc\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 4,
+      "endOffset": 5,
+      "oldText": "c",
+      "newText": "c\n",
+      "oldStartLine": 3,
+      "oldLineCount": 1,
+      "newStartLine": 3,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 1,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -3,1 +3,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "a"
+       },
+       {
+        "kind": " ",
+        "text": "b"
+       },
+       {
+        "kind": "-",
+        "text": "c"
+       },
+       {
+        "kind": "+",
+        "text": "c"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 5,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "c796a8dc7dc1f6851be2b062447aa4cface1678310ed29bbd0816f917df38178"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "d6979e20541ecf0014f4ed8464eeaac3413a1c0e03b34ac1b08afd89eb09abcd"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 5,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "c796a8dc7dc1f6851be2b062447aa4cface1678310ed29bbd0816f917df38178"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 5,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "c796a8dc7dc1f6851be2b062447aa4cface1678310ed29bbd0816f917df38178"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 5,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "c796a8dc7dc1f6851be2b062447aa4cface1678310ed29bbd0816f917df38178"
+     }
+    ],
+    "afterHash": "c796a8dc7dc1f6851be2b062447aa4cface1678310ed29bbd0816f917df38178"
+   }
+  },
+  {
+   "before": "a😀\nb\nc\n",
+   "after": "a😀\nB\nc\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 4,
+      "endOffset": 6,
+      "oldText": "b\n",
+      "newText": "B\n",
+      "oldStartLine": 2,
+      "oldLineCount": 1,
+      "newStartLine": 2,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 1,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -2,1 +2,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "a😀"
+       },
+       {
+        "kind": "-",
+        "text": "b"
+       },
+       {
+        "kind": "+",
+        "text": "B"
+       },
+       {
+        "kind": " ",
+        "text": "c"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 6,
+        "text": "B\n"
+       }
+      ],
+      "resultHash": "faebda3f3324a8bf9c7d195abe766f2692e6cea5e5d474c0f81b8916423260c5"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "0fa4e498e4eb7b78a70a2e9a5d1e047cd83a0b3d28a10fee63b5ceaa2aa2285c"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 6,
+        "text": "B\n"
+       }
+      ],
+      "resultHash": "faebda3f3324a8bf9c7d195abe766f2692e6cea5e5d474c0f81b8916423260c5"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 6,
+        "text": "B\n"
+       }
+      ],
+      "resultHash": "faebda3f3324a8bf9c7d195abe766f2692e6cea5e5d474c0f81b8916423260c5"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 6,
+        "text": "B\n"
+       }
+      ],
+      "resultHash": "faebda3f3324a8bf9c7d195abe766f2692e6cea5e5d474c0f81b8916423260c5"
+     }
+    ],
+    "afterHash": "faebda3f3324a8bf9c7d195abe766f2692e6cea5e5d474c0f81b8916423260c5"
+   }
+  },
+  {
+   "before": "",
+   "after": "abc\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 0,
+      "oldText": "",
+      "newText": "abc\n",
+      "oldStartLine": 1,
+      "oldLineCount": 0,
+      "newStartLine": 1,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 1,
+     "removed": 0
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,0 +1,1 @@",
+      "lines": [
+       {
+        "kind": "+",
+        "text": "abc"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 0,
+        "text": "abc\n"
+       }
+      ],
+      "resultHash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 0,
+        "text": "abc\n"
+       }
+      ],
+      "resultHash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 0,
+        "text": "abc\n"
+       }
+      ],
+      "resultHash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 0,
+        "text": "abc\n"
+       }
+      ],
+      "resultHash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+     }
+    ],
+    "afterHash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+   }
+  },
+  {
+   "before": "abc\n",
+   "after": "",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 4,
+      "oldText": "abc\n",
+      "newText": "",
+      "oldStartLine": 1,
+      "oldLineCount": 1,
+      "newStartLine": 1,
+      "newLineCount": 0
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 0,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,1 +1,0 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "abc"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     }
+    ],
+    "afterHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   }
+  },
+  {
+   "before": "same\n",
+   "after": "same\n",
+   "expect": {
+    "hunks": [],
+    "stats": {
+     "hunks": 0,
+     "added": 0,
+     "removed": 0
+    },
+    "render": [],
+    "selections": [
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "a6328afc76e9db71da297ebff4b0d3e7a7eb3b01d917c05a6573fef121b6ecb6"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "a6328afc76e9db71da297ebff4b0d3e7a7eb3b01d917c05a6573fef121b6ecb6"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "a6328afc76e9db71da297ebff4b0d3e7a7eb3b01d917c05a6573fef121b6ecb6"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "a6328afc76e9db71da297ebff4b0d3e7a7eb3b01d917c05a6573fef121b6ecb6"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "a6328afc76e9db71da297ebff4b0d3e7a7eb3b01d917c05a6573fef121b6ecb6"
+     }
+    ],
+    "afterHash": "a6328afc76e9db71da297ebff4b0d3e7a7eb3b01d917c05a6573fef121b6ecb6"
+   }
+  },
+  {
+   "before": "",
+   "after": "",
+   "expect": {
+    "hunks": [],
+    "stats": {
+     "hunks": 0,
+     "added": 0,
+     "removed": 0
+    },
+    "render": [],
+    "selections": [
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+     }
+    ],
+    "afterHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   }
+  },
+  {
+   "before": "a\nb\n",
+   "after": "a\nb\nc\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 4,
+      "endOffset": 4,
+      "oldText": "",
+      "newText": "c\n",
+      "oldStartLine": 3,
+      "oldLineCount": 0,
+      "newStartLine": 3,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 1,
+     "removed": 0
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -3,0 +3,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "a"
+       },
+       {
+        "kind": " ",
+        "text": "b"
+       },
+       {
+        "kind": "+",
+        "text": "c"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 4,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "911169ddaaf146aff539f58c26c489af3b892dff0fe283c1c264c65ae5aa59a2"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 4,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 4,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 4,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+     }
+    ],
+    "afterHash": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+   }
+  },
+  {
+   "before": "a\nb\nc\n",
+   "after": "a\nc\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 2,
+      "endOffset": 4,
+      "oldText": "b\n",
+      "newText": "",
+      "oldStartLine": 2,
+      "oldLineCount": 1,
+      "newStartLine": 2,
+      "newLineCount": 0
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 0,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -2,1 +2,0 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "a"
+       },
+       {
+        "kind": "-",
+        "text": "b"
+       },
+       {
+        "kind": " ",
+        "text": "c"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "b72cf6d7918130f75347ff0f8b6e9fde004ee6d7fc26af90a349707207f72750"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "b72cf6d7918130f75347ff0f8b6e9fde004ee6d7fc26af90a349707207f72750"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "b72cf6d7918130f75347ff0f8b6e9fde004ee6d7fc26af90a349707207f72750"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "b72cf6d7918130f75347ff0f8b6e9fde004ee6d7fc26af90a349707207f72750"
+     }
+    ],
+    "afterHash": "b72cf6d7918130f75347ff0f8b6e9fde004ee6d7fc26af90a349707207f72750"
+   }
+  },
+  {
+   "before": "a\nb\nc\nd\n",
+   "after": "d\nc\nb\na\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 6,
+      "oldText": "a\nb\nc\n",
+      "newText": "",
+      "oldStartLine": 1,
+      "oldLineCount": 3,
+      "newStartLine": 1,
+      "newLineCount": 0
+     },
+     {
+      "id": "h2",
+      "startOffset": 8,
+      "endOffset": 8,
+      "oldText": "",
+      "newText": "c\nb\na\n",
+      "oldStartLine": 5,
+      "oldLineCount": 0,
+      "newStartLine": 2,
+      "newLineCount": 3
+     }
+    ],
+    "stats": {
+     "hunks": 2,
+     "added": 3,
+     "removed": 3
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,3 +1,0 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "a"
+       },
+       {
+        "kind": "-",
+        "text": "b"
+       },
+       {
+        "kind": "-",
+        "text": "c"
+       },
+       {
+        "kind": " ",
+        "text": "d"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -5,0 +2,3 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "c"
+       },
+       {
+        "kind": " ",
+        "text": "d"
+       },
+       {
+        "kind": "+",
+        "text": "c"
+       },
+       {
+        "kind": "+",
+        "text": "b"
+       },
+       {
+        "kind": "+",
+        "text": "a"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 6,
+        "text": ""
+       },
+       {
+        "start": 8,
+        "end": 8,
+        "text": "c\nb\na\n"
+       }
+      ],
+      "resultHash": "5c6861a52da9e6bfd5f0b37a8c51af173d7550443bb36253b18b2caf57987f53"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "cf2c7f63055d2e84af6e3f01ac1bb7fce598d20cf213fab2b56b8e8047b46ced"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 6,
+        "text": ""
+       }
+      ],
+      "resultHash": "8d74beec1be996322ad76813bafb92d40839895d6dd7ee808b17ca201eac98be"
+     },
+     {
+      "ids": [
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 8,
+        "end": 8,
+        "text": "c\nb\na\n"
+       }
+      ],
+      "resultHash": "dc6d0a0e5b9c8b858b75a602b8a76deae623951d896fb0c0d1278fb7ccd80242"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 6,
+        "text": ""
+       }
+      ],
+      "resultHash": "8d74beec1be996322ad76813bafb92d40839895d6dd7ee808b17ca201eac98be"
+     }
+    ],
+    "afterHash": "5c6861a52da9e6bfd5f0b37a8c51af173d7550443bb36253b18b2caf57987f53"
+   }
+  },
+  {
+   "before": "x\ny\nz\n",
+   "after": "y\nz\nx\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 2,
+      "oldText": "x\n",
+      "newText": "",
+      "oldStartLine": 1,
+      "oldLineCount": 1,
+      "newStartLine": 1,
+      "newLineCount": 0
+     },
+     {
+      "id": "h2",
+      "startOffset": 6,
+      "endOffset": 6,
+      "oldText": "",
+      "newText": "x\n",
+      "oldStartLine": 4,
+      "oldLineCount": 0,
+      "newStartLine": 3,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 2,
+     "added": 1,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,1 +1,0 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "x"
+       },
+       {
+        "kind": " ",
+        "text": "y"
+       },
+       {
+        "kind": " ",
+        "text": "z"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -4,0 +3,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "y"
+       },
+       {
+        "kind": " ",
+        "text": "z"
+       },
+       {
+        "kind": "+",
+        "text": "x"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 2,
+        "text": ""
+       },
+       {
+        "start": 6,
+        "end": 6,
+        "text": "x\n"
+       }
+      ],
+      "resultHash": "766a14d13926c4a27a053412dc6b395a69d993c0ed84b19e9cac9fb270aec34d"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "81884b5f2cb68edc6286363dcc4699a913a2d5ba05818d0fdc43ba68bb990bd8"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 2,
+        "text": ""
+       }
+      ],
+      "resultHash": "e17dcb655ef2278687c81d1c2f169c5b823205c063bed8754828c665e8bc1df2"
+     },
+     {
+      "ids": [
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 6,
+        "end": 6,
+        "text": "x\n"
+       }
+      ],
+      "resultHash": "4c8833bbe031ca718131579f049042d78b09e817833aea94f11c4d213656edc9"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 2,
+        "text": ""
+       }
+      ],
+      "resultHash": "e17dcb655ef2278687c81d1c2f169c5b823205c063bed8754828c665e8bc1df2"
+     }
+    ],
+    "afterHash": "766a14d13926c4a27a053412dc6b395a69d993c0ed84b19e9cac9fb270aec34d"
+   }
+  },
+  {
+   "before": "a\na\nb\na\n",
+   "after": "a\nb\na\na\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 2,
+      "endOffset": 4,
+      "oldText": "a\n",
+      "newText": "",
+      "oldStartLine": 2,
+      "oldLineCount": 1,
+      "newStartLine": 2,
+      "newLineCount": 0
+     },
+     {
+      "id": "h2",
+      "startOffset": 6,
+      "endOffset": 6,
+      "oldText": "",
+      "newText": "a\n",
+      "oldStartLine": 4,
+      "oldLineCount": 0,
+      "newStartLine": 3,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 2,
+     "added": 1,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -2,1 +2,0 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "a"
+       },
+       {
+        "kind": "-",
+        "text": "a"
+       },
+       {
+        "kind": " ",
+        "text": "b"
+       },
+       {
+        "kind": " ",
+        "text": "a"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -4,0 +3,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "a"
+       },
+       {
+        "kind": " ",
+        "text": "b"
+       },
+       {
+        "kind": "+",
+        "text": "a"
+       },
+       {
+        "kind": " ",
+        "text": "a"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 4,
+        "text": ""
+       },
+       {
+        "start": 6,
+        "end": 6,
+        "text": "a\n"
+       }
+      ],
+      "resultHash": "55910d95dcb70e7a403793d750e725561c0c3baeba235b2175a402188e52d509"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "c574c4fbaec8debabb1029a554159c1db923466726150ac0b1f352a43c3a918b"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "c9cec88805eba4528d8ff787705e91790705fa8f3f2f54c15418996a2a0bab92"
+     },
+     {
+      "ids": [
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 6,
+        "end": 6,
+        "text": "a\n"
+       }
+      ],
+      "resultHash": "aae766cbf3b54e6c9fa76935a2f05e45e6a80f4014beac228af931dd0873bc84"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 4,
+        "text": ""
+       }
+      ],
+      "resultHash": "c9cec88805eba4528d8ff787705e91790705fa8f3f2f54c15418996a2a0bab92"
+     }
+    ],
+    "afterHash": "55910d95dcb70e7a403793d750e725561c0c3baeba235b2175a402188e52d509"
+   }
+  },
+  {
+   "before": "a\nb\n",
+   "after": "a\r\nb\r\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 4,
+      "oldText": "a\nb\n",
+      "newText": "a\r\nb\r\n",
+      "oldStartLine": 1,
+      "oldLineCount": 2,
+      "newStartLine": 1,
+      "newLineCount": 2
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 2,
+     "removed": 2
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,2 +1,2 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "a"
+       },
+       {
+        "kind": "-",
+        "text": "b"
+       },
+       {
+        "kind": "+",
+        "text": "a"
+       },
+       {
+        "kind": "+",
+        "text": "b"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": "a\r\nb\r\n"
+       }
+      ],
+      "resultHash": "58055bdcc73787eb88c78d36f0b4939e9c5dc1c3ad17e25cc85a6833cf1a0cab"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "911169ddaaf146aff539f58c26c489af3b892dff0fe283c1c264c65ae5aa59a2"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": "a\r\nb\r\n"
+       }
+      ],
+      "resultHash": "58055bdcc73787eb88c78d36f0b4939e9c5dc1c3ad17e25cc85a6833cf1a0cab"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": "a\r\nb\r\n"
+       }
+      ],
+      "resultHash": "58055bdcc73787eb88c78d36f0b4939e9c5dc1c3ad17e25cc85a6833cf1a0cab"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 4,
+        "text": "a\r\nb\r\n"
+       }
+      ],
+      "resultHash": "58055bdcc73787eb88c78d36f0b4939e9c5dc1c3ad17e25cc85a6833cf1a0cab"
+     }
+    ],
+    "afterHash": "58055bdcc73787eb88c78d36f0b4939e9c5dc1c3ad17e25cc85a6833cf1a0cab"
+   }
+  },
+  {
+   "before": "a\n\nb\r\n\rc",
+   "after": "a\n\nB\r\n\rc\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 3,
+      "endOffset": 6,
+      "oldText": "b\r\n",
+      "newText": "B\r\n",
+      "oldStartLine": 3,
+      "oldLineCount": 1,
+      "newStartLine": 3,
+      "newLineCount": 1
+     },
+     {
+      "id": "h2",
+      "startOffset": 7,
+      "endOffset": 8,
+      "oldText": "c",
+      "newText": "c\n",
+      "oldStartLine": 5,
+      "oldLineCount": 1,
+      "newStartLine": 5,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 2,
+     "added": 2,
+     "removed": 2
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -3,1 +3,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "a"
+       },
+       {
+        "kind": " ",
+        "text": ""
+       },
+       {
+        "kind": "-",
+        "text": "b"
+       },
+       {
+        "kind": "+",
+        "text": "B"
+       },
+       {
+        "kind": " ",
+        "text": ""
+       },
+       {
+        "kind": " ",
+        "text": "c"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -5,1 +5,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "b"
+       },
+       {
+        "kind": " ",
+        "text": ""
+       },
+       {
+        "kind": "-",
+        "text": "c"
+       },
+       {
+        "kind": "+",
+        "text": "c"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 3,
+        "end": 6,
+        "text": "B\r\n"
+       },
+       {
+        "start": 7,
+        "end": 8,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "e3e87484af62c6e721ff112fb6efb2cdf9cb6353fcc8406510d47b5c6d7c125f"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "f10265914b3dbb6520634b5fb1c7b2fada9168562a7713f05c7ce20acb4c413b"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 3,
+        "end": 6,
+        "text": "B\r\n"
+       }
+      ],
+      "resultHash": "4987a6fdff0bb24b6a86c5b81cc87f81c0f8a3f9050a73296ac3dce95544df80"
+     },
+     {
+      "ids": [
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 7,
+        "end": 8,
+        "text": "c\n"
+       }
+      ],
+      "resultHash": "9ecc1b609cfc0553c98f953099f27d2c275b107cdd62a7c17ca0b730b461cc77"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 3,
+        "end": 6,
+        "text": "B\r\n"
+       }
+      ],
+      "resultHash": "4987a6fdff0bb24b6a86c5b81cc87f81c0f8a3f9050a73296ac3dce95544df80"
+     }
+    ],
+    "afterHash": "e3e87484af62c6e721ff112fb6efb2cdf9cb6353fcc8406510d47b5c6d7c125f"
+   }
+  },
+  {
+   "before": "\n\n\n",
+   "after": "\n\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 2,
+      "endOffset": 3,
+      "oldText": "\n",
+      "newText": "",
+      "oldStartLine": 3,
+      "oldLineCount": 1,
+      "newStartLine": 3,
+      "newLineCount": 0
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 0,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -3,1 +3,0 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": ""
+       },
+       {
+        "kind": " ",
+        "text": ""
+       },
+       {
+        "kind": "-",
+        "text": ""
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 3,
+        "text": ""
+       }
+      ],
+      "resultHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "6a3cf5192354f71615ac51034b3e97c20eda99643fcaf5bbe6d41ad59bd12167"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 3,
+        "text": ""
+       }
+      ],
+      "resultHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 3,
+        "text": ""
+       }
+      ],
+      "resultHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 2,
+        "end": 3,
+        "text": ""
+       }
+      ],
+      "resultHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+     }
+    ],
+    "afterHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+   }
+  },
+  {
+   "before": "no newline",
+   "after": "no newline\nsecond",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 10,
+      "oldText": "no newline",
+      "newText": "no newline\nsecond",
+      "oldStartLine": 1,
+      "oldLineCount": 1,
+      "newStartLine": 1,
+      "newLineCount": 2
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 2,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,1 +1,2 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "no newline"
+       },
+       {
+        "kind": "+",
+        "text": "no newline"
+       },
+       {
+        "kind": "+",
+        "text": "second"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 10,
+        "text": "no newline\nsecond"
+       }
+      ],
+      "resultHash": "4cb1baa13e75f0bc6e37167fdff613117ed320bf96dcfabce06f23225c8ad25c"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "84629f9a7125f5b50e9767df4fea1e93b34462b57bd35a12ebca2b52520f5c84"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 10,
+        "text": "no newline\nsecond"
+       }
+      ],
+      "resultHash": "4cb1baa13e75f0bc6e37167fdff613117ed320bf96dcfabce06f23225c8ad25c"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 10,
+        "text": "no newline\nsecond"
+       }
+      ],
+      "resultHash": "4cb1baa13e75f0bc6e37167fdff613117ed320bf96dcfabce06f23225c8ad25c"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 10,
+        "text": "no newline\nsecond"
+       }
+      ],
+      "resultHash": "4cb1baa13e75f0bc6e37167fdff613117ed320bf96dcfabce06f23225c8ad25c"
+     }
+    ],
+    "afterHash": "4cb1baa13e75f0bc6e37167fdff613117ed320bf96dcfabce06f23225c8ad25c"
+   }
+  },
+  {
+   "before": "fn a() {}\n\nfn b() {}\n\nfn c() {}\n",
+   "after": "fn a() { 1 }\n\nfn b() {}\n\nfn c() { 3 }\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 10,
+      "oldText": "fn a() {}\n",
+      "newText": "fn a() { 1 }\n",
+      "oldStartLine": 1,
+      "oldLineCount": 1,
+      "newStartLine": 1,
+      "newLineCount": 1
+     },
+     {
+      "id": "h2",
+      "startOffset": 22,
+      "endOffset": 32,
+      "oldText": "fn c() {}\n",
+      "newText": "fn c() { 3 }\n",
+      "oldStartLine": 5,
+      "oldLineCount": 1,
+      "newStartLine": 5,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 2,
+     "added": 2,
+     "removed": 2
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,1 +1,1 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "fn a() {}"
+       },
+       {
+        "kind": "+",
+        "text": "fn a() { 1 }"
+       },
+       {
+        "kind": " ",
+        "text": ""
+       },
+       {
+        "kind": " ",
+        "text": "fn b() {}"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -5,1 +5,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "fn b() {}"
+       },
+       {
+        "kind": " ",
+        "text": ""
+       },
+       {
+        "kind": "-",
+        "text": "fn c() {}"
+       },
+       {
+        "kind": "+",
+        "text": "fn c() { 3 }"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 10,
+        "text": "fn a() { 1 }\n"
+       },
+       {
+        "start": 22,
+        "end": 32,
+        "text": "fn c() { 3 }\n"
+       }
+      ],
+      "resultHash": "eec0f8aed7670188eb279263c5ca27965bf6a55d9b8bff4eb5d5d8d3b3421d92"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "244602d7ca43f7bfdb606ef810b897a28915ecdc599aecf9c05cb54bad4e6cb2"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 10,
+        "text": "fn a() { 1 }\n"
+       }
+      ],
+      "resultHash": "3437c729c97d48904d9ff41eede51e39bb3063635a061acff159f6ddfade4853"
+     },
+     {
+      "ids": [
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 22,
+        "end": 32,
+        "text": "fn c() { 3 }\n"
+       }
+      ],
+      "resultHash": "12106f715b47708e16dae0f6d11ae8f6d84ac7d86fd7966e7fe09db9922970b5"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 10,
+        "text": "fn a() { 1 }\n"
+       }
+      ],
+      "resultHash": "3437c729c97d48904d9ff41eede51e39bb3063635a061acff159f6ddfade4853"
+     }
+    ],
+    "afterHash": "eec0f8aed7670188eb279263c5ca27965bf6a55d9b8bff4eb5d5d8d3b3421d92"
+   }
+  },
+  {
+   "before": "😀\n😀😀\n",
+   "after": "😀😀\n😀\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 3,
+      "oldText": "😀\n",
+      "newText": "",
+      "oldStartLine": 1,
+      "oldLineCount": 1,
+      "newStartLine": 1,
+      "newLineCount": 0
+     },
+     {
+      "id": "h2",
+      "startOffset": 8,
+      "endOffset": 8,
+      "oldText": "",
+      "newText": "😀\n",
+      "oldStartLine": 3,
+      "oldLineCount": 0,
+      "newStartLine": 2,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 2,
+     "added": 1,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,1 +1,0 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "😀"
+       },
+       {
+        "kind": " ",
+        "text": "😀😀"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -3,0 +2,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "😀"
+       },
+       {
+        "kind": " ",
+        "text": "😀😀"
+       },
+       {
+        "kind": "+",
+        "text": "😀"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 3,
+        "text": ""
+       },
+       {
+        "start": 8,
+        "end": 8,
+        "text": "😀\n"
+       }
+      ],
+      "resultHash": "b6ff153bc167656b737abfdbfd3c21f663f25628a9cf34f6ed1977f1ade87e0e"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "f0c122989249eeffd71a837849bebac6bd1e4c28822ed4cc1d335040e403428b"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 3,
+        "text": ""
+       }
+      ],
+      "resultHash": "bfc78288c06afb16370b3440bd5246796f0d8390b2db036a7bb3145df60b44e1"
+     },
+     {
+      "ids": [
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 8,
+        "end": 8,
+        "text": "😀\n"
+       }
+      ],
+      "resultHash": "6d43f8b34fdf106a20a4587d82acf09e34d0e2f0d7e5bc29261e62870900d92d"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 3,
+        "text": ""
+       }
+      ],
+      "resultHash": "bfc78288c06afb16370b3440bd5246796f0d8390b2db036a7bb3145df60b44e1"
+     }
+    ],
+    "afterHash": "b6ff153bc167656b737abfdbfd3c21f663f25628a9cf34f6ed1977f1ade87e0e"
+   }
+  },
+  {
+   "before": "😀x\n😀x\n😀x\n",
+   "after": "😀x\n😀y\n😀x\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 4,
+      "endOffset": 8,
+      "oldText": "😀x\n",
+      "newText": "😀y\n",
+      "oldStartLine": 2,
+      "oldLineCount": 1,
+      "newStartLine": 2,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 1,
+     "removed": 1
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -2,1 +2,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "😀x"
+       },
+       {
+        "kind": "-",
+        "text": "😀x"
+       },
+       {
+        "kind": "+",
+        "text": "😀y"
+       },
+       {
+        "kind": " ",
+        "text": "😀x"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 8,
+        "text": "😀y\n"
+       }
+      ],
+      "resultHash": "6ffcd5058e93b1a7f26e3a7390d23b93034033daa16a18cde275dfe4413dd7df"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "e6251fe7097e33428a7bb2a77fd75dbb79b7e616091bb357e9aff469440068a6"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 8,
+        "text": "😀y\n"
+       }
+      ],
+      "resultHash": "6ffcd5058e93b1a7f26e3a7390d23b93034033daa16a18cde275dfe4413dd7df"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 8,
+        "text": "😀y\n"
+       }
+      ],
+      "resultHash": "6ffcd5058e93b1a7f26e3a7390d23b93034033daa16a18cde275dfe4413dd7df"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 4,
+        "end": 8,
+        "text": "😀y\n"
+       }
+      ],
+      "resultHash": "6ffcd5058e93b1a7f26e3a7390d23b93034033daa16a18cde275dfe4413dd7df"
+     }
+    ],
+    "afterHash": "6ffcd5058e93b1a7f26e3a7390d23b93034033daa16a18cde275dfe4413dd7df"
+   }
+  },
+  {
+   "before": "line 0\nline 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nline 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39\nline 40\nline 41\nline 42\nline 43\nline 44\nline 45\nline 46\nline 47\nline 48\nline 49\nline 50\nline 51\nline 52\nline 53\nline 54\nline 55\nline 56\nline 57\nline 58\nline 59\n",
+   "after": "LINE 0\nline 1\nline 2\nline 3\nline 4\nLINE 5\nline 6\nline 7\nline 8\nline 9\nLINE 10\nline 11\nline 12\nline 13\nline 14\nLINE 15\nline 16\nline 17\nline 18\nline 19\nLINE 20\nline 21\nline 22\nline 23\nline 24\nLINE 25\nline 26\nline 27\nline 28\nline 29\nLINE 30\nline 31\nline 32\nline 33\nline 34\nLINE 35\nline 36\nline 37\nline 38\nline 39\nLINE 40\nline 41\nline 42\nline 43\nline 44\nLINE 45\nline 46\nline 47\nline 48\nline 49\nLINE 50\nline 51\nline 52\nline 53\nline 54\nLINE 55\nline 56\nline 57\nline 58\nline 59\n",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 7,
+      "oldText": "line 0\n",
+      "newText": "LINE 0\n",
+      "oldStartLine": 1,
+      "oldLineCount": 1,
+      "newStartLine": 1,
+      "newLineCount": 1
+     },
+     {
+      "id": "h2",
+      "startOffset": 35,
+      "endOffset": 42,
+      "oldText": "line 5\n",
+      "newText": "LINE 5\n",
+      "oldStartLine": 6,
+      "oldLineCount": 1,
+      "newStartLine": 6,
+      "newLineCount": 1
+     },
+     {
+      "id": "h3",
+      "startOffset": 70,
+      "endOffset": 78,
+      "oldText": "line 10\n",
+      "newText": "LINE 10\n",
+      "oldStartLine": 11,
+      "oldLineCount": 1,
+      "newStartLine": 11,
+      "newLineCount": 1
+     },
+     {
+      "id": "h4",
+      "startOffset": 110,
+      "endOffset": 118,
+      "oldText": "line 15\n",
+      "newText": "LINE 15\n",
+      "oldStartLine": 16,
+      "oldLineCount": 1,
+      "newStartLine": 16,
+      "newLineCount": 1
+     },
+     {
+      "id": "h5",
+      "startOffset": 150,
+      "endOffset": 158,
+      "oldText": "line 20\n",
+      "newText": "LINE 20\n",
+      "oldStartLine": 21,
+      "oldLineCount": 1,
+      "newStartLine": 21,
+      "newLineCount": 1
+     },
+     {
+      "id": "h6",
+      "startOffset": 190,
+      "endOffset": 198,
+      "oldText": "line 25\n",
+      "newText": "LINE 25\n",
+      "oldStartLine": 26,
+      "oldLineCount": 1,
+      "newStartLine": 26,
+      "newLineCount": 1
+     },
+     {
+      "id": "h7",
+      "startOffset": 230,
+      "endOffset": 238,
+      "oldText": "line 30\n",
+      "newText": "LINE 30\n",
+      "oldStartLine": 31,
+      "oldLineCount": 1,
+      "newStartLine": 31,
+      "newLineCount": 1
+     },
+     {
+      "id": "h8",
+      "startOffset": 270,
+      "endOffset": 278,
+      "oldText": "line 35\n",
+      "newText": "LINE 35\n",
+      "oldStartLine": 36,
+      "oldLineCount": 1,
+      "newStartLine": 36,
+      "newLineCount": 1
+     },
+     {
+      "id": "h9",
+      "startOffset": 310,
+      "endOffset": 318,
+      "oldText": "line 40\n",
+      "newText": "LINE 40\n",
+      "oldStartLine": 41,
+      "oldLineCount": 1,
+      "newStartLine": 41,
+      "newLineCount": 1
+     },
+     {
+      "id": "h10",
+      "startOffset": 350,
+      "endOffset": 358,
+      "oldText": "line 45\n",
+      "newText": "LINE 45\n",
+      "oldStartLine": 46,
+      "oldLineCount": 1,
+      "newStartLine": 46,
+      "newLineCount": 1
+     },
+     {
+      "id": "h11",
+      "startOffset": 390,
+      "endOffset": 398,
+      "oldText": "line 50\n",
+      "newText": "LINE 50\n",
+      "oldStartLine": 51,
+      "oldLineCount": 1,
+      "newStartLine": 51,
+      "newLineCount": 1
+     },
+     {
+      "id": "h12",
+      "startOffset": 430,
+      "endOffset": 438,
+      "oldText": "line 55\n",
+      "newText": "LINE 55\n",
+      "oldStartLine": 56,
+      "oldLineCount": 1,
+      "newStartLine": 56,
+      "newLineCount": 1
+     }
+    ],
+    "stats": {
+     "hunks": 12,
+     "added": 12,
+     "removed": 12
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,1 +1,1 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "line 0"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 0"
+       },
+       {
+        "kind": " ",
+        "text": "line 1"
+       },
+       {
+        "kind": " ",
+        "text": "line 2"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -6,1 +6,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 3"
+       },
+       {
+        "kind": " ",
+        "text": "line 4"
+       },
+       {
+        "kind": "-",
+        "text": "line 5"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 5"
+       },
+       {
+        "kind": " ",
+        "text": "line 6"
+       },
+       {
+        "kind": " ",
+        "text": "line 7"
+       }
+      ]
+     },
+     {
+      "id": "h3",
+      "header": "@@ -11,1 +11,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 8"
+       },
+       {
+        "kind": " ",
+        "text": "line 9"
+       },
+       {
+        "kind": "-",
+        "text": "line 10"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 10"
+       },
+       {
+        "kind": " ",
+        "text": "line 11"
+       },
+       {
+        "kind": " ",
+        "text": "line 12"
+       }
+      ]
+     },
+     {
+      "id": "h4",
+      "header": "@@ -16,1 +16,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 13"
+       },
+       {
+        "kind": " ",
+        "text": "line 14"
+       },
+       {
+        "kind": "-",
+        "text": "line 15"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 15"
+       },
+       {
+        "kind": " ",
+        "text": "line 16"
+       },
+       {
+        "kind": " ",
+        "text": "line 17"
+       }
+      ]
+     },
+     {
+      "id": "h5",
+      "header": "@@ -21,1 +21,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 18"
+       },
+       {
+        "kind": " ",
+        "text": "line 19"
+       },
+       {
+        "kind": "-",
+        "text": "line 20"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 20"
+       },
+       {
+        "kind": " ",
+        "text": "line 21"
+       },
+       {
+        "kind": " ",
+        "text": "line 22"
+       }
+      ]
+     },
+     {
+      "id": "h6",
+      "header": "@@ -26,1 +26,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 23"
+       },
+       {
+        "kind": " ",
+        "text": "line 24"
+       },
+       {
+        "kind": "-",
+        "text": "line 25"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 25"
+       },
+       {
+        "kind": " ",
+        "text": "line 26"
+       },
+       {
+        "kind": " ",
+        "text": "line 27"
+       }
+      ]
+     },
+     {
+      "id": "h7",
+      "header": "@@ -31,1 +31,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 28"
+       },
+       {
+        "kind": " ",
+        "text": "line 29"
+       },
+       {
+        "kind": "-",
+        "text": "line 30"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 30"
+       },
+       {
+        "kind": " ",
+        "text": "line 31"
+       },
+       {
+        "kind": " ",
+        "text": "line 32"
+       }
+      ]
+     },
+     {
+      "id": "h8",
+      "header": "@@ -36,1 +36,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 33"
+       },
+       {
+        "kind": " ",
+        "text": "line 34"
+       },
+       {
+        "kind": "-",
+        "text": "line 35"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 35"
+       },
+       {
+        "kind": " ",
+        "text": "line 36"
+       },
+       {
+        "kind": " ",
+        "text": "line 37"
+       }
+      ]
+     },
+     {
+      "id": "h9",
+      "header": "@@ -41,1 +41,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 38"
+       },
+       {
+        "kind": " ",
+        "text": "line 39"
+       },
+       {
+        "kind": "-",
+        "text": "line 40"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 40"
+       },
+       {
+        "kind": " ",
+        "text": "line 41"
+       },
+       {
+        "kind": " ",
+        "text": "line 42"
+       }
+      ]
+     },
+     {
+      "id": "h10",
+      "header": "@@ -46,1 +46,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 43"
+       },
+       {
+        "kind": " ",
+        "text": "line 44"
+       },
+       {
+        "kind": "-",
+        "text": "line 45"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 45"
+       },
+       {
+        "kind": " ",
+        "text": "line 46"
+       },
+       {
+        "kind": " ",
+        "text": "line 47"
+       }
+      ]
+     },
+     {
+      "id": "h11",
+      "header": "@@ -51,1 +51,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 48"
+       },
+       {
+        "kind": " ",
+        "text": "line 49"
+       },
+       {
+        "kind": "-",
+        "text": "line 50"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 50"
+       },
+       {
+        "kind": " ",
+        "text": "line 51"
+       },
+       {
+        "kind": " ",
+        "text": "line 52"
+       }
+      ]
+     },
+     {
+      "id": "h12",
+      "header": "@@ -56,1 +56,1 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "line 53"
+       },
+       {
+        "kind": " ",
+        "text": "line 54"
+       },
+       {
+        "kind": "-",
+        "text": "line 55"
+       },
+       {
+        "kind": "+",
+        "text": "LINE 55"
+       },
+       {
+        "kind": " ",
+        "text": "line 56"
+       },
+       {
+        "kind": " ",
+        "text": "line 57"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2",
+       "h3",
+       "h4",
+       "h5",
+       "h6",
+       "h7",
+       "h8",
+       "h9",
+       "h10",
+       "h11",
+       "h12"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 7,
+        "text": "LINE 0\n"
+       },
+       {
+        "start": 35,
+        "end": 42,
+        "text": "LINE 5\n"
+       },
+       {
+        "start": 70,
+        "end": 78,
+        "text": "LINE 10\n"
+       },
+       {
+        "start": 110,
+        "end": 118,
+        "text": "LINE 15\n"
+       },
+       {
+        "start": 150,
+        "end": 158,
+        "text": "LINE 20\n"
+       },
+       {
+        "start": 190,
+        "end": 198,
+        "text": "LINE 25\n"
+       },
+       {
+        "start": 230,
+        "end": 238,
+        "text": "LINE 30\n"
+       },
+       {
+        "start": 270,
+        "end": 278,
+        "text": "LINE 35\n"
+       },
+       {
+        "start": 310,
+        "end": 318,
+        "text": "LINE 40\n"
+       },
+       {
+        "start": 350,
+        "end": 358,
+        "text": "LINE 45\n"
+       },
+       {
+        "start": 390,
+        "end": 398,
+        "text": "LINE 50\n"
+       },
+       {
+        "start": 430,
+        "end": 438,
+        "text": "LINE 55\n"
+       }
+      ],
+      "resultHash": "2e876066a118cf549a6a39d3d2a6a1206a5429a29fd0ef288f81dfda290a6131"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "7d45fe4920dd68416f9890d7c86a94bd47a94e51a91f051fcb050ac8cfd4de6e"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 7,
+        "text": "LINE 0\n"
+       }
+      ],
+      "resultHash": "7b7ee83737749957c88b8f779ec314baf7b92afd7f0c760fd91feb65d24ac549"
+     },
+     {
+      "ids": [
+       "h12"
+      ],
+      "edits": [
+       {
+        "start": 430,
+        "end": 438,
+        "text": "LINE 55\n"
+       }
+      ],
+      "resultHash": "558f944962f2ada2ee80c2b2ce6db5f219af585598c31932c12bbed8a46a976d"
+     },
+     {
+      "ids": [
+       "h1",
+       "h3",
+       "h5",
+       "h7",
+       "h9",
+       "h11"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 7,
+        "text": "LINE 0\n"
+       },
+       {
+        "start": 70,
+        "end": 78,
+        "text": "LINE 10\n"
+       },
+       {
+        "start": 150,
+        "end": 158,
+        "text": "LINE 20\n"
+       },
+       {
+        "start": 230,
+        "end": 238,
+        "text": "LINE 30\n"
+       },
+       {
+        "start": 310,
+        "end": 318,
+        "text": "LINE 40\n"
+       },
+       {
+        "start": 390,
+        "end": 398,
+        "text": "LINE 50\n"
+       }
+      ],
+      "resultHash": "dd8537da2509c06c4f42148351ce2c3ec2f4fc585c1574545c9f7ecf70f50f99"
+     }
+    ],
+    "afterHash": "2e876066a118cf549a6a39d3d2a6a1206a5429a29fd0ef288f81dfda290a6131"
+   }
+  },
+  {
+   "before": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18\nrow 19\nrow 20\nrow 21\nrow 22\nrow 23\nrow 24\nrow 25\nrow 26\nrow 27\nrow 28\nrow 29\n",
+   "after": "\nrow 29\nrow 28\nrow 27\nrow 26\nrow 25\nrow 24\nrow 23\nrow 22\nrow 21\nrow 20\nrow 19\nrow 18\nrow 17\nrow 16\nrow 15\nrow 14\nrow 13\nrow 12\nrow 11\nrow 10\nrow 9\nrow 8\nrow 7\nrow 6\nrow 5\nrow 4\nrow 3\nrow 2\nrow 1\nrow 0",
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 193,
+      "oldText": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18\nrow 19\nrow 20\nrow 21\nrow 22\nrow 23\nrow 24\nrow 25\nrow 26\nrow 27\nrow 28\n",
+      "newText": "\n",
+      "oldStartLine": 1,
+      "oldLineCount": 29,
+      "newStartLine": 1,
+      "newLineCount": 1
+     },
+     {
+      "id": "h2",
+      "startOffset": 200,
+      "endOffset": 200,
+      "oldText": "",
+      "newText": "row 28\nrow 27\nrow 26\nrow 25\nrow 24\nrow 23\nrow 22\nrow 21\nrow 20\nrow 19\nrow 18\nrow 17\nrow 16\nrow 15\nrow 14\nrow 13\nrow 12\nrow 11\nrow 10\nrow 9\nrow 8\nrow 7\nrow 6\nrow 5\nrow 4\nrow 3\nrow 2\nrow 1\nrow 0",
+      "oldStartLine": 31,
+      "oldLineCount": 0,
+      "newStartLine": 3,
+      "newLineCount": 29
+     }
+    ],
+    "stats": {
+     "hunks": 2,
+     "added": 30,
+     "removed": 29
+    },
+    "render": [
+     {
+      "id": "h1",
+      "header": "@@ -1,29 +1,1 @@",
+      "lines": [
+       {
+        "kind": "-",
+        "text": "row 0"
+       },
+       {
+        "kind": "-",
+        "text": "row 1"
+       },
+       {
+        "kind": "-",
+        "text": "row 2"
+       },
+       {
+        "kind": "-",
+        "text": "row 3"
+       },
+       {
+        "kind": "-",
+        "text": "row 4"
+       },
+       {
+        "kind": "-",
+        "text": "row 5"
+       },
+       {
+        "kind": "-",
+        "text": "row 6"
+       },
+       {
+        "kind": "-",
+        "text": "row 7"
+       },
+       {
+        "kind": "-",
+        "text": "row 8"
+       },
+       {
+        "kind": "-",
+        "text": "row 9"
+       },
+       {
+        "kind": "-",
+        "text": "row 10"
+       },
+       {
+        "kind": "-",
+        "text": "row 11"
+       },
+       {
+        "kind": "-",
+        "text": "row 12"
+       },
+       {
+        "kind": "-",
+        "text": "row 13"
+       },
+       {
+        "kind": "-",
+        "text": "row 14"
+       },
+       {
+        "kind": "-",
+        "text": "row 15"
+       },
+       {
+        "kind": "-",
+        "text": "row 16"
+       },
+       {
+        "kind": "-",
+        "text": "row 17"
+       },
+       {
+        "kind": "-",
+        "text": "row 18"
+       },
+       {
+        "kind": "-",
+        "text": "row 19"
+       },
+       {
+        "kind": "-",
+        "text": "row 20"
+       },
+       {
+        "kind": "-",
+        "text": "row 21"
+       },
+       {
+        "kind": "-",
+        "text": "row 22"
+       },
+       {
+        "kind": "-",
+        "text": "row 23"
+       },
+       {
+        "kind": "-",
+        "text": "row 24"
+       },
+       {
+        "kind": "-",
+        "text": "row 25"
+       },
+       {
+        "kind": "-",
+        "text": "row 26"
+       },
+       {
+        "kind": "-",
+        "text": "row 27"
+       },
+       {
+        "kind": "-",
+        "text": "row 28"
+       },
+       {
+        "kind": "+",
+        "text": ""
+       },
+       {
+        "kind": " ",
+        "text": "row 29"
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "header": "@@ -31,0 +3,29 @@",
+      "lines": [
+       {
+        "kind": " ",
+        "text": "row 28"
+       },
+       {
+        "kind": " ",
+        "text": "row 29"
+       },
+       {
+        "kind": "+",
+        "text": "row 28"
+       },
+       {
+        "kind": "+",
+        "text": "row 27"
+       },
+       {
+        "kind": "+",
+        "text": "row 26"
+       },
+       {
+        "kind": "+",
+        "text": "row 25"
+       },
+       {
+        "kind": "+",
+        "text": "row 24"
+       },
+       {
+        "kind": "+",
+        "text": "row 23"
+       },
+       {
+        "kind": "+",
+        "text": "row 22"
+       },
+       {
+        "kind": "+",
+        "text": "row 21"
+       },
+       {
+        "kind": "+",
+        "text": "row 20"
+       },
+       {
+        "kind": "+",
+        "text": "row 19"
+       },
+       {
+        "kind": "+",
+        "text": "row 18"
+       },
+       {
+        "kind": "+",
+        "text": "row 17"
+       },
+       {
+        "kind": "+",
+        "text": "row 16"
+       },
+       {
+        "kind": "+",
+        "text": "row 15"
+       },
+       {
+        "kind": "+",
+        "text": "row 14"
+       },
+       {
+        "kind": "+",
+        "text": "row 13"
+       },
+       {
+        "kind": "+",
+        "text": "row 12"
+       },
+       {
+        "kind": "+",
+        "text": "row 11"
+       },
+       {
+        "kind": "+",
+        "text": "row 10"
+       },
+       {
+        "kind": "+",
+        "text": "row 9"
+       },
+       {
+        "kind": "+",
+        "text": "row 8"
+       },
+       {
+        "kind": "+",
+        "text": "row 7"
+       },
+       {
+        "kind": "+",
+        "text": "row 6"
+       },
+       {
+        "kind": "+",
+        "text": "row 5"
+       },
+       {
+        "kind": "+",
+        "text": "row 4"
+       },
+       {
+        "kind": "+",
+        "text": "row 3"
+       },
+       {
+        "kind": "+",
+        "text": "row 2"
+       },
+       {
+        "kind": "+",
+        "text": "row 1"
+       },
+       {
+        "kind": "+",
+        "text": "row 0"
+       }
+      ]
+     }
+    ],
+    "selections": [
+     {
+      "ids": [
+       "h1",
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 193,
+        "text": "\n"
+       },
+       {
+        "start": 200,
+        "end": 200,
+        "text": "row 28\nrow 27\nrow 26\nrow 25\nrow 24\nrow 23\nrow 22\nrow 21\nrow 20\nrow 19\nrow 18\nrow 17\nrow 16\nrow 15\nrow 14\nrow 13\nrow 12\nrow 11\nrow 10\nrow 9\nrow 8\nrow 7\nrow 6\nrow 5\nrow 4\nrow 3\nrow 2\nrow 1\nrow 0"
+       }
+      ],
+      "resultHash": "bdfef1ab54345aa1091bdd2e607048221c3e0290febc332af518901f69a76ad6"
+     },
+     {
+      "ids": [],
+      "edits": [],
+      "resultHash": "3de8af7aecfce306c64defa71f5fb09f1d450fcb221e0332bd3072d2d16591ac"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 193,
+        "text": "\n"
+       }
+      ],
+      "resultHash": "bc1275c9fe874abf3e5e35bd852ffcaf891816bb2d1b6142c4a1185febad3169"
+     },
+     {
+      "ids": [
+       "h2"
+      ],
+      "edits": [
+       {
+        "start": 200,
+        "end": 200,
+        "text": "row 28\nrow 27\nrow 26\nrow 25\nrow 24\nrow 23\nrow 22\nrow 21\nrow 20\nrow 19\nrow 18\nrow 17\nrow 16\nrow 15\nrow 14\nrow 13\nrow 12\nrow 11\nrow 10\nrow 9\nrow 8\nrow 7\nrow 6\nrow 5\nrow 4\nrow 3\nrow 2\nrow 1\nrow 0"
+       }
+      ],
+      "resultHash": "e3516dce5df0afc5957d2d5e1c5ca3747e1c04cd7d19a929421bf08bed9cb419"
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "edits": [
+       {
+        "start": 0,
+        "end": 193,
+        "text": "\n"
+       }
+      ],
+      "resultHash": "bc1275c9fe874abf3e5e35bd852ffcaf891816bb2d1b6142c4a1185febad3169"
+     }
+    ],
+    "afterHash": "bdfef1ab54345aa1091bdd2e607048221c3e0290febc332af518901f69a76ad6"
+   }
+  }
+ ],
+ "syntheticDiff": [
+  {
+   "head": 1,
+   "tail": 1,
+   "lines": 2001,
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 7,
+      "endOffset": 16906,
+      "oldStartLine": 2,
+      "oldLineCount": 2001,
+      "newStartLine": 2,
+      "newLineCount": 2001
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 2001,
+     "removed": 2001
+    },
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "d481f972068b1e7a560eabc45f18e1f24da42a0419782c805b8ba7733c314082",
+      "edits": [
+       {
+        "start": 7,
+        "end": 16906
+       }
+      ]
+     },
+     {
+      "ids": [],
+      "resultHash": "31abcdf4e11dcccaaef647455552318f527aa2424e094bd782972e16cce0a22a",
+      "edits": []
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "d481f972068b1e7a560eabc45f18e1f24da42a0419782c805b8ba7733c314082",
+      "edits": [
+       {
+        "start": 7,
+        "end": 16906
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "d481f972068b1e7a560eabc45f18e1f24da42a0419782c805b8ba7733c314082",
+      "edits": [
+       {
+        "start": 7,
+        "end": 16906
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "d481f972068b1e7a560eabc45f18e1f24da42a0419782c805b8ba7733c314082",
+      "edits": [
+       {
+        "start": 7,
+        "end": 16906
+       }
+      ]
+     }
+    ],
+    "afterHash": "d481f972068b1e7a560eabc45f18e1f24da42a0419782c805b8ba7733c314082"
+   }
+  },
+  {
+   "head": 0,
+   "tail": 0,
+   "lines": 2001,
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 16899,
+      "oldStartLine": 1,
+      "oldLineCount": 2001,
+      "newStartLine": 1,
+      "newLineCount": 2001
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 2001,
+     "removed": 2001
+    },
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9d73236926f89f67a0153837919fee6d0fe012b04915d8c9ae6eff26012bd0e9",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16899
+       }
+      ]
+     },
+     {
+      "ids": [],
+      "resultHash": "ad6745679c9c3b50782a0ce195c612c76affee3ec69a3109241eb58b9468a526",
+      "edits": []
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9d73236926f89f67a0153837919fee6d0fe012b04915d8c9ae6eff26012bd0e9",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16899
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9d73236926f89f67a0153837919fee6d0fe012b04915d8c9ae6eff26012bd0e9",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16899
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9d73236926f89f67a0153837919fee6d0fe012b04915d8c9ae6eff26012bd0e9",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16899
+       }
+      ]
+     }
+    ],
+    "afterHash": "9d73236926f89f67a0153837919fee6d0fe012b04915d8c9ae6eff26012bd0e9"
+   }
+  },
+  {
+   "head": 0,
+   "tail": 0,
+   "lines": 2000,
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 0,
+      "endOffset": 16890,
+      "oldStartLine": 1,
+      "oldLineCount": 2000,
+      "newStartLine": 1,
+      "newLineCount": 2000
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 2000,
+     "removed": 2000
+    },
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9525f4ef7804f0764d64f6db765046733cc1f092cabc88c5af48e3502c1fa2f5",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16890
+       }
+      ]
+     },
+     {
+      "ids": [],
+      "resultHash": "efce49f8968789db0fd6673edfc54dae2d3dff54f48164283b86eaff7b95f51e",
+      "edits": []
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9525f4ef7804f0764d64f6db765046733cc1f092cabc88c5af48e3502c1fa2f5",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16890
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9525f4ef7804f0764d64f6db765046733cc1f092cabc88c5af48e3502c1fa2f5",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16890
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "9525f4ef7804f0764d64f6db765046733cc1f092cabc88c5af48e3502c1fa2f5",
+      "edits": [
+       {
+        "start": 0,
+        "end": 16890
+       }
+      ]
+     }
+    ],
+    "afterHash": "9525f4ef7804f0764d64f6db765046733cc1f092cabc88c5af48e3502c1fa2f5"
+   }
+  },
+  {
+   "head": 5,
+   "tail": 2,
+   "lines": 1500,
+   "expect": {
+    "hunks": [
+     {
+      "id": "h1",
+      "startOffset": 35,
+      "endOffset": 12425,
+      "oldStartLine": 6,
+      "oldLineCount": 1500,
+      "newStartLine": 6,
+      "newLineCount": 1500
+     }
+    ],
+    "stats": {
+     "hunks": 1,
+     "added": 1500,
+     "removed": 1500
+    },
+    "selections": [
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "83db53b84e376dfaef19fc3f71559b70ea50451798d6fae9fbb5053534952828",
+      "edits": [
+       {
+        "start": 35,
+        "end": 12425
+       }
+      ]
+     },
+     {
+      "ids": [],
+      "resultHash": "a8f85876c5c49aee23e7aadf55a7883321992db50a2617cae40d8f05c17575c6",
+      "edits": []
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "83db53b84e376dfaef19fc3f71559b70ea50451798d6fae9fbb5053534952828",
+      "edits": [
+       {
+        "start": 35,
+        "end": 12425
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "83db53b84e376dfaef19fc3f71559b70ea50451798d6fae9fbb5053534952828",
+      "edits": [
+       {
+        "start": 35,
+        "end": 12425
+       }
+      ]
+     },
+     {
+      "ids": [
+       "h1"
+      ],
+      "resultHash": "83db53b84e376dfaef19fc3f71559b70ea50451798d6fae9fbb5053534952828",
+      "edits": [
+       {
+        "start": 35,
+        "end": 12425
+       }
+      ]
+     }
+    ],
+    "afterHash": "83db53b84e376dfaef19fc3f71559b70ea50451798d6fae9fbb5053534952828"
+   }
+  }
+ ],
+ "excerpt": [
+  {
+   "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+   "cursor": 500,
+   "before": 80,
+   "after": 80,
+   "expect": {
+    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "start": 420,
+    "end": 580,
+    "cursorInExcerpt": 80,
+    "truncated": true
+   }
+  },
+  {
+   "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+   "cursor": 502,
+   "before": 1,
+   "after": 1,
+   "expect": {
+    "text": "y",
+    "start": 502,
+    "end": 503,
+    "cursorInExcerpt": 0,
+    "truncated": true
+   }
+  },
+  {
+   "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+   "cursor": 500,
+   "before": 1,
+   "after": 1,
+   "expect": {
+    "text": "x",
+    "start": 499,
+    "end": 500,
+    "cursorInExcerpt": 1,
+    "truncated": true
+   }
+  },
+  {
+   "text": "abc",
+   "cursor": 99,
+   "before": 10,
+   "after": 10,
+   "expect": {
+    "text": "abc",
+    "start": 0,
+    "end": 3,
+    "cursorInExcerpt": 3,
+    "truncated": false
+   }
+  },
+  {
+   "text": "abc",
+   "cursor": -5,
+   "before": 10,
+   "after": 10,
+   "expect": {
+    "text": "abc",
+    "start": 0,
+    "end": 3,
+    "cursorInExcerpt": 0,
+    "truncated": false
+   }
+  },
+  {
+   "text": "aaaa\r\nbbbb",
+   "cursor": 7,
+   "before": 2,
+   "after": 3,
+   "expect": {
+    "text": "bbbb",
+    "start": 6,
+    "end": 10,
+    "cursorInExcerpt": 1,
+    "truncated": true
+   }
+  },
+  {
+   "text": "aaaa\r\nbbbb",
+   "cursor": 6,
+   "before": 2,
+   "after": 0,
+   "expect": {
+    "text": "\r\n",
+    "start": 4,
+    "end": 6,
+    "cursorInExcerpt": 2,
+    "truncated": true
+   }
+  },
+  {
+   "text": "",
+   "cursor": 0,
+   "before": 5,
+   "after": 5,
+   "expect": {
+    "text": "",
+    "start": 0,
+    "end": 0,
+    "cursorInExcerpt": 0,
+    "truncated": false
+   }
+  },
+  {
+   "text": "one\ntwo\nthree 😀 four\nfive\n",
+   "cursor": 14,
+   "before": 5,
+   "after": 5,
+   "expect": {
+    "text": "hree 😀 fo",
+    "start": 9,
+    "end": 19,
+    "cursorInExcerpt": 5,
+    "truncated": true
+   }
+  },
+  {
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "cursor": 2500,
+   "before": 1800,
+   "after": 900,
+   "expect": {
+    "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "start": 700,
+    "end": 3400,
+    "cursorInExcerpt": 1800,
+    "truncated": true
+   }
+  }
+ ],
+ "settings": [
+  {
+   "values": {},
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 200,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1500,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "providers": {},
+    "scenarios": {},
+    "budget": {}
+   },
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 200,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1500,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "budget": {
+     "maxRequests": 3
+    }
+   },
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 3,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1500,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "providers": {
+     "mockA": {
+      "api": "openai-responses",
+      "endpoint": "https://127.0.0.1:9/v1/responses"
+     }
+    },
+    "scenarios": {
+     "f1Full": {
+      "provider": "mockA",
+      "model": "m-1",
+      "effort": "high"
+     },
+     "other": {
+      "model": "z"
+     }
+    },
+    "budget": {
+     "maxRequests": 3,
+     "extra": 1
+    }
+   },
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     },
+     "mockA": {
+      "api": "openai-responses",
+      "endpoint": "https://127.0.0.1:9/v1/responses"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "mockA",
+      "model": "m-1",
+      "effort": "high",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 3,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0,
+     "extra": 1
+    }
+   },
+   "issues": [],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "mockA",
+     "family": "openai-responses",
+     "endpoint": "https://127.0.0.1:9/v1/responses",
+     "model": "m-1",
+     "effort": "high",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1500,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "providers": {
+     "2": {
+      "api": "openai-chat",
+      "endpoint": "https://y.example/"
+     },
+     "10": {
+      "api": "openai-chat",
+      "endpoint": "https://x.example/"
+     },
+     "openai": {
+      "endpoint": "https://proxy.example/v1/responses"
+     },
+     "bad id": {
+      "api": "x"
+     },
+     "nul": null,
+     "b": {
+      "api": "openai-chat",
+      "endpoint": "https://b.example/"
+     }
+    }
+   },
+   "effective": {
+    "providers": {
+     "2": {
+      "api": "openai-chat",
+      "endpoint": "https://y.example/"
+     },
+     "10": {
+      "api": "openai-chat",
+      "endpoint": "https://x.example/"
+     },
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://proxy.example/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     },
+     "b": {
+      "api": "openai-chat",
+      "endpoint": "https://b.example/"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 200,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://proxy.example/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://proxy.example/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://proxy.example/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1500,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "providers": {
+     "oa": {
+      "api": "openai-chat",
+      "endpoint": "https://a.example/v1",
+      "maxTokensParam": "max_completion_tokens"
+     },
+     "an": {
+      "api": "anthropic-messages",
+      "endpoint": "https://b.example/v1",
+      "apiVersion": "2026-10-21"
+     }
+    },
+    "scenarios": {
+     "f1Full": {
+      "provider": "oa",
+      "effort": "xhigh"
+     },
+     "f1Insert": {
+      "provider": "an",
+      "effort": "none"
+     },
+     "realtime": {
+      "provider": "oa",
+      "effort": "minimal"
+     }
+    }
+   },
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     },
+     "oa": {
+      "api": "openai-chat",
+      "endpoint": "https://a.example/v1",
+      "maxTokensParam": "max_completion_tokens"
+     },
+     "an": {
+      "api": "anthropic-messages",
+      "endpoint": "https://b.example/v1",
+      "apiVersion": "2026-10-21"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "oa",
+      "model": "",
+      "effort": "minimal",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "oa",
+      "model": "",
+      "effort": "xhigh",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "an",
+      "model": "",
+      "effort": "none",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 200,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "oa",
+     "family": "openai-chat",
+     "endpoint": "https://a.example/v1",
+     "maxTokensParam": "max_completion_tokens",
+     "model": "",
+     "effort": "minimal",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "oa",
+     "family": "openai-chat",
+     "endpoint": "https://a.example/v1",
+     "maxTokensParam": "max_completion_tokens",
+     "model": "",
+     "effort": "xhigh",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "an",
+     "family": "anthropic-messages",
+     "endpoint": "https://b.example/v1",
+     "apiVersion": "2026-10-21",
+     "model": "",
+     "effort": "none",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1500,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "providers": {
+     "oa": {
+      "api": "openai-chat",
+      "endpoint": "https://a.example/v1",
+      "maxTokensParam": "max_completion_tokens"
+     },
+     "an": {
+      "api": "anthropic-messages",
+      "endpoint": "https://b.example/v1",
+      "apiVersion": "2026-10-21"
+     },
+     "bad1": {
+      "api": "openai-chat",
+      "endpoint": "https://c.example/v1",
+      "maxTokensParam": "max_new_tokens"
+     },
+     "bad2": {
+      "api": "anthropic-messages",
+      "endpoint": "https://d.example/v1",
+      "apiVersion": "latest"
+     }
+    }
+   },
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     },
+     "oa": {
+      "api": "openai-chat",
+      "endpoint": "https://a.example/v1",
+      "maxTokensParam": "max_completion_tokens"
+     },
+     "an": {
+      "api": "anthropic-messages",
+      "endpoint": "https://b.example/v1",
+      "apiVersion": "2026-10-21"
+     },
+     "bad1": {
+      "api": "openai-chat",
+      "endpoint": "https://c.example/v1",
+      "maxTokensParam": "max_new_tokens"
+     },
+     "bad2": {
+      "api": "anthropic-messages",
+      "endpoint": "https://d.example/v1",
+      "apiVersion": "latest"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 200,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [
+    {
+     "path": "providers.bad1.maxTokensParam",
+     "message": "must be max_tokens or max_completion_tokens"
+    },
+    {
+     "path": "providers.bad2.apiVersion",
+     "message": "expected YYYY-MM-DD"
+    }
+   ],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1500,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "providers": {
+     "p": {
+      "api": "nope",
+      "endpoint": "http://insecure.example"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "ghost",
+      "effort": "turbo",
+      "maxOutputTokens": 0,
+      "timeoutMs": 999
+     },
+     "f1Full": {
+      "maxOutputTokens": 64001,
+      "timeoutMs": 300001
+     },
+     "f1Insert": {
+      "maxOutputTokens": 1.5
+     }
+    }
+   },
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     },
+     "p": {
+      "api": "nope",
+      "endpoint": "http://insecure.example"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "ghost",
+      "model": "",
+      "effort": "turbo",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 0,
+      "timeoutMs": 999
+     },
+     "f1Full": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 64001,
+      "timeoutMs": 300001
+     },
+     "f1Insert": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1.5,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 200,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [
+    {
+     "path": "providers.p.api",
+     "message": "unknown API family"
+    },
+    {
+     "path": "providers.p.endpoint",
+     "message": "HTTPS endpoint required"
+    },
+    {
+     "path": "scenarios.realtime.provider",
+     "message": "undefined provider"
+    },
+    {
+     "path": "scenarios.realtime.effort",
+     "message": "invalid effort level"
+    },
+    {
+     "path": "scenarios.realtime.maxOutputTokens",
+     "message": "out of range"
+    },
+    {
+     "path": "scenarios.realtime.timeoutMs",
+     "message": "out of range (1 s - 300 s)"
+    },
+    {
+     "path": "scenarios.f1Full.maxOutputTokens",
+     "message": "out of range"
+    },
+    {
+     "path": "scenarios.f1Full.timeoutMs",
+     "message": "out of range (1 s - 300 s)"
+    },
+    {
+     "path": "scenarios.f1Insert.maxOutputTokens",
+     "message": "out of range"
+    }
+   ],
+   "resolved": {
+    "realtime": {
+     "error": "MODEL_UNSUPPORTED"
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 64001,
+     "timeoutMs": 300001
+    },
+    "f1Insert": {
+     "scenario": "f1Insert",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 1.5,
+     "timeoutMs": 30000
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  },
+  {
+   "values": {
+    "scenarios": {
+     "f1Insert": {
+      "provider": "ghost"
+     },
+     "realtime": {
+      "effortCapability": {
+       "state": "supported",
+       "supported": [
+        "low"
+       ],
+       "checkedAt": "2026-01-01T00:00:00.000Z"
+      }
+     }
+    }
+   },
+   "effective": {
+    "providers": {
+     "openai": {
+      "api": "openai-responses",
+      "endpoint": "https://api.openai.com/v1/responses"
+     },
+     "openai-compatible": {
+      "api": "openai-chat",
+      "endpoint": "https://api.example.com/v1/chat/completions"
+     },
+     "anthropic": {
+      "api": "anthropic-messages",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+     }
+    },
+    "scenarios": {
+     "realtime": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "supported",
+       "supported": [
+        "low"
+       ],
+       "checkedAt": "2026-01-01T00:00:00.000Z"
+      },
+      "maxOutputTokens": 250,
+      "timeoutMs": 8000
+     },
+     "f1Full": {
+      "provider": "openai",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 12000,
+      "timeoutMs": 60000
+     },
+     "f1Insert": {
+      "provider": "ghost",
+      "model": "",
+      "effort": "auto",
+      "effortCapability": {
+       "state": "unknown"
+      },
+      "maxOutputTokens": 1500,
+      "timeoutMs": 30000
+     }
+    },
+    "budget": {
+     "maxRequests": 200,
+     "maxTokens": 400000,
+     "pricePer1kTokens": 0
+    }
+   },
+   "issues": [
+    {
+     "path": "scenarios.f1Insert.provider",
+     "message": "undefined provider"
+    }
+   ],
+   "resolved": {
+    "realtime": {
+     "scenario": "realtime",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "supported",
+      "supported": [
+       "low"
+      ],
+      "checkedAt": "2026-01-01T00:00:00.000Z"
+     },
+     "maxOutputTokens": 250,
+     "timeoutMs": 8000
+    },
+    "f1Full": {
+     "scenario": "f1Full",
+     "providerId": "openai",
+     "family": "openai-responses",
+     "endpoint": "https://api.openai.com/v1/responses",
+     "model": "",
+     "effort": "auto",
+     "capability": {
+      "state": "unknown"
+     },
+     "maxOutputTokens": 12000,
+     "timeoutMs": 60000
+    },
+    "f1Insert": {
+     "error": "MODEL_UNSUPPORTED"
+    }
+   },
+   "unknownScenario": "SETTINGS_INVALID"
+  }
+ ],
+ "endpoints": [
+  {
+   "endpoint": "https://api.openai.com/v1/responses",
+   "ok": true
+  },
+  {
+   "endpoint": "HTTPS://Example.COM/x",
+   "ok": true
+  },
+  {
+   "endpoint": "https:example.com",
+   "ok": true
+  },
+  {
+   "endpoint": "https:\\\\example.com\\x",
+   "ok": true
+  },
+  {
+   "endpoint": "https:///example.com",
+   "ok": true
+  },
+  {
+   "endpoint": "https://127.0.0.1:8443/v1",
+   "ok": true
+  },
+  {
+   "endpoint": "https://[::1]:8443/v1",
+   "ok": true
+  },
+  {
+   "endpoint": "https://@example.com",
+   "ok": true
+  },
+  {
+   "endpoint": "https://:@example.com",
+   "ok": true
+  },
+  {
+   "endpoint": "https://example.com:/x",
+   "ok": true
+  },
+  {
+   "endpoint": "  https://example.com/x \n",
+   "ok": true
+  },
+  {
+   "endpoint": "ht\ttps://example.com",
+   "ok": true
+  },
+  {
+   "endpoint": "https://user@example.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://user:pw@example.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://:pw@example.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://example.com:99999",
+   "ok": false
+  },
+  {
+   "endpoint": "https://example.com:80a",
+   "ok": false
+  },
+  {
+   "endpoint": "https://exa mple.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://exa<mple.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://a@",
+   "ok": false
+  },
+  {
+   "endpoint": "http://example.com",
+   "ok": false
+  },
+  {
+   "endpoint": "ftp://example.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://",
+   "ok": false
+  },
+  {
+   "endpoint": "https:///",
+   "ok": false
+  },
+  {
+   "endpoint": "",
+   "ok": false
+  },
+  {
+   "endpoint": "example.com",
+   "ok": false
+  },
+  {
+   "endpoint": "//example.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://example.com:65535",
+   "ok": true
+  },
+  {
+   "endpoint": "https://example.com:65536",
+   "ok": false
+  },
+  {
+   "endpoint": "https://a.b.c.d.example.com/path?query=1#frag",
+   "ok": true
+  },
+  {
+   "endpoint": "https://exa%6Dple.com/",
+   "ok": true
+  },
+  {
+   "endpoint": "https://exa%25mple.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://exa%zzmple.com",
+   "ok": false
+  },
+  {
+   "endpoint": "https://exa%2",
+   "ok": false
+  },
+  {
+   "endpoint": "https://exämple.com/",
+   "ok": true
+  },
+  {
+   "endpoint": "https://localhost:8080/x",
+   "ok": true
+  },
+  {
+   "endpoint": "https://1.2.3.4/x",
+   "ok": true
+  }
+ ],
+ "workspaceTokens": [
+  {
+   "uris": [
+    "file:///w"
+   ],
+   "token": "e7af091b5815cdb7bf4fd590"
+  },
+  {
+   "uris": [
+    "file:///b",
+    "file:///a"
+   ],
+   "token": "9a8cd4c782ae40e7204f978e"
+  },
+  {
+   "uris": [
+    "file:///a",
+    "file:///b"
+   ],
+   "token": "9a8cd4c782ae40e7204f978e"
+  },
+  {
+   "uris": [
+    "￿",
+    "😀"
+   ],
+   "token": "57f5d534d4bd26247b45d36b"
+  },
+  {
+   "uris": [],
+   "token": "e3b0c44298fc1c149afbf4c8"
+  },
+  {
+   "uris": [
+    "no-folder"
+   ],
+   "token": "3e6912eafe1da2be32fa2ec9"
+  },
+  {
+   "uris": [
+    "file:///w/ü",
+    "file:///w/中"
+   ],
+   "token": "bd6c3ff1383e8bfee1a7e9b5"
+  }
+ ]
+}

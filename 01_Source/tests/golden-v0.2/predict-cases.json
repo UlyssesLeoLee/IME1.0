@@ -1,0 +1,2268 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "limit": 6,
+ "cases": [
+  {
+   "profile": "rust",
+   "prefix": "fnm",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn main() {\n    ${cursor}\n}",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "f",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn main() {\n    ${cursor}\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "rust.fn#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn ${name}(${args}) {\n    ${cursor}\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "rust.fori#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "for ${item} in ${items}.iter() {\n    ${cursor}\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "rust.kw.fn",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn",
+     "match": "prefix"
+    },
+    {
+     "id": "rust.kw.for",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "for",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "impl Foo {\n    ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.method#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn ${name}(&self${args}) {\n    ${cursor}\n}",
+     "match": "exact"
+    },
+    {
+     "id": "rust.kw.fn",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn",
+     "match": "exact"
+    },
+    {
+     "id": "rust.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn main() {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "trait T {\n    ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.method#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn ${name}(&self${args}) {\n    ${cursor}\n}",
+     "match": "exact"
+    },
+    {
+     "id": "rust.kw.fn",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn",
+     "match": "exact"
+    },
+    {
+     "id": "rust.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn main() {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "struct A;\n\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.fn#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn ${name}(${args}) {\n    ${cursor}\n}",
+     "match": "exact"
+    },
+    {
+     "id": "rust.kw.fn",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn",
+     "match": "exact"
+    },
+    {
+     "id": "rust.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn main() {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "impl Foo {\n    fn a() {\n        ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.fn#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn ${name}(${args}) {\n    ${cursor}\n}",
+     "match": "exact"
+    },
+    {
+     "id": "rust.kw.fn",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn",
+     "match": "exact"
+    },
+    {
+     "id": "rust.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn main() {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "println",
+   "before": "fn main() {\n    ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.println#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "println!(\"${message}\");",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "println",
+   "before": "let x = ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.println#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "println!(\"${message}\")",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "println",
+   "before": "foo.bar baz ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.println#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "println!(\"${message}\")",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "let s = \"abc ",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "// hello ",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "/* block ",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "prefix": "mat",
+   "before": "let v = ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.match#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "match ${value} {\n    ${pattern} => ${expr},\n    _ => {}\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "rust.kw.match",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "match",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "res",
+   "before": "fn f() -> ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.result#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Result<${T}, ${E}>",
+     "match": "prefix"
+    },
+    {
+     "id": "rust.kw.Result",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Result",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "cou",
+   "before": "let counter = 1;\nlet count_total = counter + 2;\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.id.counter",
+     "kind": "identifier",
+     "source": "context",
+     "validation": "unchecked",
+     "text": "counter",
+     "match": "context"
+    },
+    {
+     "id": "rust.id.count_total",
+     "kind": "identifier",
+     "source": "context",
+     "validation": "unchecked",
+     "text": "count_total",
+     "match": "context"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "ext",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "edition": "2021"
+   },
+   "expect": [
+    {
+     "id": "rust.extern.2021#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "extern \"C\" {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "ext",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "edition": "2024"
+   },
+   "expect": [
+    {
+     "id": "rust.unsafe_extern.2024#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "unsafe extern \"C\" {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "Fn",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.fn#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn ${name}(${args}) {\n    ${cursor}\n}",
+     "match": "exact"
+    },
+    {
+     "id": "rust.kw.fn",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn",
+     "match": "exact"
+    },
+    {
+     "id": "rust.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "fn main() {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "zzzz",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "prefix": "imp",
+   "before": "fn main() {\n    ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.kw.impl",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "impl",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "impl",
+   "before": "impl A {\n    ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.kw.impl",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "impl",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "opt",
+   "before": "let x: ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.option#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Option<${T}>",
+     "match": "prefix"
+    },
+    {
+     "id": "rust.kw.Option",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Option",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "tes",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "rust.test#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "#[test]\nfn ${name}() {\n    ${cursor}\n}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "fn",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "edition": "2018"
+   },
+   "expect": [
+    {
+     "id": "rust.dialect",
+     "kind": "explain",
+     "source": "rule",
+     "validation": "context_missing",
+     "text": null,
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "d",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.def#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def ${name}(${args}):\n    ${cursor}",
+     "match": "prefix"
+    },
+    {
+     "id": "py.defmain#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def main():\n    ${cursor}\n\n\nif __name__ == \"__main__\":\n    main()",
+     "match": "prefix"
+    },
+    {
+     "id": "py.dataclass#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "@dataclass\nclass ${Name}:\n    ${field}: ${type}",
+     "match": "prefix"
+    },
+    {
+     "id": "python.kw.def",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "def",
+   "before": "class A:\n    ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.method#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def ${name}(self${args}):\n    ${cursor}",
+     "match": "exact"
+    },
+    {
+     "id": "python.kw.def",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def",
+     "match": "exact"
+    },
+    {
+     "id": "py.defmain#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def main():\n    ${cursor}\n\n\nif __name__ == \"__main__\":\n    main()",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "def",
+   "before": "x = 1\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.def#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def ${name}(${args}):\n    ${cursor}",
+     "match": "exact"
+    },
+    {
+     "id": "python.kw.def",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def",
+     "match": "exact"
+    },
+    {
+     "id": "py.defmain#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def main():\n    ${cursor}\n\n\nif __name__ == \"__main__\":\n    main()",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "def",
+   "before": "class A:\n    def g(self):\n        ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.def#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def ${name}(${args}):\n    ${cursor}",
+     "match": "exact"
+    },
+    {
+     "id": "python.kw.def",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def",
+     "match": "exact"
+    },
+    {
+     "id": "py.defmain#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def main():\n    ${cursor}\n\n\nif __name__ == \"__main__\":\n    main()",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "fori",
+   "before": "def f():\n    ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.fori#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "for ${item} in ${items}:\n    ${cursor}",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "lc",
+   "before": "x = ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.lc#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "[${expr} for ${item} in ${items}]",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "cl",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.class#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "class ${Name}:\n    def __init__(self${args}):\n        ${cursor}",
+     "match": "prefix"
+    },
+    {
+     "id": "python.kw.class",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "class",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "pri",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "python.kw.print",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "print",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "t",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.try#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "try:\n    ${cursor}\nexcept ${Exception} as exc:\n    raise",
+     "match": "prefix"
+    },
+    {
+     "id": "python.kw.True",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "True",
+     "match": "prefix"
+    },
+    {
+     "id": "python.kw.try",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "try",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "if",
+   "before": "# comment ",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "python",
+   "prefix": "wi",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.with#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "with ${resource} as ${value}:\n    ${cursor}",
+     "match": "prefix"
+    },
+    {
+     "id": "python.kw.with",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "with",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "ma",
+   "before": "x = 1\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.match#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "match ${value}:\n    case ${pattern}:\n        ${cursor}\n    case _:\n        pass",
+     "match": "prefix"
+    },
+    {
+     "id": "python.kw.match",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "match",
+     "match": "prefix"
+    },
+    {
+     "id": "py.defmain#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "def main():\n    ${cursor}\n\n\nif __name__ == \"__main__\":\n    main()",
+     "match": "keyword"
+    },
+    {
+     "id": "py.with#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "with ${resource} as ${value}:\n    ${cursor}",
+     "match": "keyword"
+    },
+    {
+     "id": "py.ifmain#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "if __name__ == \"__main__\":\n    ${cursor}",
+     "match": "keyword"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "garrow",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "mode": "ts"
+   },
+   "expect": [
+    {
+     "id": "ts.generic.ts#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "const ${name} = <T>(value: T): T => value;",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "garrow",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "mode": "tsx"
+   },
+   "expect": [
+    {
+     "id": "ts.generic.tsx#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "const ${name} = <T,>(value: T): T => value;",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "comp",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "mode": "tsx"
+   },
+   "expect": [
+    {
+     "id": "ts.component.tsx#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "const ${Name} = (): JSX.Element => {\n  return <div>${cursor}</div>;\n};",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "comp",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "mode": "ts"
+   },
+   "expect": []
+  },
+  {
+   "profile": "powershell",
+   "prefix": "func",
+   "before": "$a = 1\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ps.func#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "function ${Verb-Noun} {\n    param(\n        ${param}\n    )\n    ${cursor}\n}",
+     "match": "exact"
+    },
+    {
+     "id": "powershell.kw.function",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "function",
+     "match": "prefix"
+    },
+    {
+     "id": "ps.cmdletbinding#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "[CmdletBinding()]\nparam(\n    ${param}\n)",
+     "match": "keyword"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "func",
+   "before": "$a = 1 +\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "powershell.kw.function",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "function",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "fori",
+   "before": "y = 2\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.fori#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "for (const ${item} of ${items}) {\n  ${cursor}\n}",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "fori",
+   "before": "const a = 1\nconst b = 2\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.fori#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "for (const ${item} of ${items}) {\n  ${cursor}\n}",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "prefix": "fori",
+   "before": "y = 2\n",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "py.fori#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "for ${item} in ${items}:\n    ${cursor}",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "fori",
+   "before": "y = 2\n",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "typescript",
+   "prefix": "int",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.interface#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "interface ${Name} {\n  ${id}: ${string};\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "typescript.kw.interface",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "interface",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "fn",
+   "before": "const x = ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.fn#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "const ${name} = (${value}: ${unknown}): ${void} => {\n  ${cursor}\n};",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "pro",
+   "before": "let p: ",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.prom#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Promise<${T}>",
+     "match": "prefix"
+    },
+    {
+     "id": "typescript.kw.Promise",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Promise",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "as",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.async#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "async function ${name}(${args}): Promise<${void}> {\n  ${cursor}\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "typescript.kw.async",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "async",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "en",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.enum#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "enum ${Name} {\n  ${Member},\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "typescript.kw.enum",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "enum",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "prefix": "cla",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ts.class#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "class ${Name} {\n  constructor(${args}) {\n    ${cursor}\n  }\n}",
+     "match": "prefix"
+    },
+    {
+     "id": "typescript.kw.class",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "class",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "Ge",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "powershell.kw.Get-ChildItem",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Get-ChildItem",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.Get-Command",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Get-Command",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.Get-Content",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Get-Content",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.Get-Help",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Get-Help",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.Get-Item",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Get-Item",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.Get-Process",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Get-Process",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "p",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ps.param#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "param(\n    [string]$${Name}\n)",
+     "match": "prefix"
+    },
+    {
+     "id": "ps.parallel.7#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "$${items} | ForEach-Object -Parallel {\n    $_\n} -ThrottleLimit 4",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.param",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "param",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "tern",
+   "before": "$x = ",
+   "after": "",
+   "dialect": {
+    "version": "7"
+   },
+   "expect": [
+    {
+     "id": "ps.ternary.7#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "${cond} ? ${a} : ${b}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "tern",
+   "before": "$x = ",
+   "after": "",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": [
+    {
+     "id": "ps.ifelse.5#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "$(if (${cond}) { ${a} } else { ${b} })",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "func",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ps.func#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "function ${Verb-Noun} {\n    param(\n        ${param}\n    )\n    ${cursor}\n}",
+     "match": "exact"
+    },
+    {
+     "id": "powershell.kw.function",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "function",
+     "match": "prefix"
+    },
+    {
+     "id": "ps.cmdletbinding#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "[CmdletBinding()]\nparam(\n    ${param}\n)",
+     "match": "keyword"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "foreach",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ps.foreach#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "$${items} | ForEach-Object {\n    $_\n}",
+     "match": "exact"
+    },
+    {
+     "id": "powershell.kw.foreach",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "foreach",
+     "match": "exact"
+    },
+    {
+     "id": "powershell.kw.ForEach-Object",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "ForEach-Object",
+     "match": "prefix"
+    },
+    {
+     "id": "ps.parallel.7#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "$${items} | ForEach-Object -Parallel {\n    $_\n} -ThrottleLimit 4",
+     "match": "keyword"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "para",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "version": "7"
+   },
+   "expect": [
+    {
+     "id": "ps.param#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "param(\n    [string]$${Name}\n)",
+     "match": "prefix"
+    },
+    {
+     "id": "ps.parallel.7#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "$${items} | ForEach-Object -Parallel {\n    $_\n} -ThrottleLimit 4",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.param",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "param",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "para",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "version": "5.1"
+   },
+   "expect": [
+    {
+     "id": "ps.param#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "param(\n    [string]$${Name}\n)",
+     "match": "prefix"
+    },
+    {
+     "id": "powershell.kw.param",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "param",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "Wh",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "powershell.kw.Where-Object",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Where-Object",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "prefix": "gci",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "ps.gci#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "Get-ChildItem -Path ${path} -Recurse",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "static",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "std": "c11"
+   },
+   "expect": [
+    {
+     "id": "c.kw.static",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "static",
+     "match": "exact"
+    },
+    {
+     "id": "c.static_assert.11#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "_Static_assert(${cond}, \"${message}\");",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "static",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "std": "c23"
+   },
+   "expect": [
+    {
+     "id": "c.kw.static",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "static",
+     "match": "exact"
+    },
+    {
+     "id": "c.static_assert.23#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "static_assert(${cond}, \"${message}\");",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "constexpr",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "std": "c17"
+   },
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "prefix": "nullptr",
+   "before": "x = ",
+   "after": "",
+   "dialect": {
+    "std": "c23"
+   },
+   "expect": [
+    {
+     "id": "c.nullptr.23#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "nullptr",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "nullptr",
+   "before": "x = ",
+   "after": "",
+   "dialect": {
+    "std": "c11"
+   },
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "prefix": "#inc",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "prefix": "inc",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "c.include#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "#include <${stdio.h}>",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "main",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "c.main#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "int main(void) {\n    ${cursor}\n    return 0;\n}",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "fnptr",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "c.fnptr#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "${char} (*${fn})(${void});",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "str",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "c.struct#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "struct ${Name} {\n    ${int} ${value};\n};",
+     "match": "prefix"
+    },
+    {
+     "id": "c.kw.struct",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "struct",
+     "match": "prefix"
+    },
+    {
+     "id": "c.typedef#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "typedef struct {\n    ${int} ${value};\n} ${Name};",
+     "match": "keyword"
+    },
+    {
+     "id": "c.static_assert.11#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "_Static_assert(${cond}, \"${message}\");",
+     "match": "fuzzy"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "ty",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "c.typedef#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "typedef struct {\n    ${int} ${value};\n} ${Name};",
+     "match": "prefix"
+    },
+    {
+     "id": "c.kw.typedef",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "typedef",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "prefix": "if",
+   "before": "// c ",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "assembly",
+   "prefix": "mov",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "syntax": "intel"
+   },
+   "expect": [
+    {
+     "id": "asm.mov.intel#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "mov ${rax}, ${rbx}",
+     "match": "exact"
+    },
+    {
+     "id": "assembly.kw.mov",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "mov",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "mov",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "syntax": "att",
+    "assembler": "gas"
+   },
+   "expect": [
+    {
+     "id": "asm.mov.att#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "movq %${rbx}, %${rax}",
+     "match": "exact"
+    },
+    {
+     "id": "assembly.kw.mov",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "mov",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "prol",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "syntax": "intel"
+   },
+   "expect": [
+    {
+     "id": "asm.prologue.intel#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "push rbp\nmov rbp, rsp",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "prol",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "syntax": "att",
+    "assembler": "gas"
+   },
+   "expect": [
+    {
+     "id": "asm.prologue.att#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "pushq %rbp\nmovq %rsp, %rbp",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "sec",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "assembler": "nasm"
+   },
+   "expect": [
+    {
+     "id": "asm.section.nasm#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "section .text\nglobal _start\n_start:\n    ${cursor}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "sec",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "assembler": "gas",
+    "syntax": "intel"
+   },
+   "expect": [
+    {
+     "id": "asm.section.gas#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": ".text\n.globl _start\n_start:\n    ${cursor}",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "sec",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "assembler": "masm"
+   },
+   "expect": [
+    {
+     "id": "asm.section.masm#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": ".code\nmain PROC\n    ${cursor}\nmain ENDP\nEND",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "ret",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "asm.ret#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "ret",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "sys",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "asm.syscall#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "syscall",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "mov",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "isa": "arm64"
+   },
+   "expect": [
+    {
+     "id": "assembly.dialect",
+     "kind": "explain",
+     "source": "rule",
+     "validation": "context_missing",
+     "text": null,
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "prefix": "mo",
+   "before": "mov rax, rbx ; copy ",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "nop",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.nop",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "90",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "push r",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.push r8",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "41 50",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.push r9",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "41 51",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.push r10",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "41 52",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.push r11",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "41 53",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.push rax",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "50",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.push rbp",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "55",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "mov rax, rbx",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.mov rax, rbx",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "48 89 D8",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "jmp foo",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.unresolved:jmp foo",
+     "kind": "explain",
+     "source": "rule",
+     "validation": "context_missing",
+     "text": null,
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "48 89 d8",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.disasm:48 89 d8",
+     "kind": "explain",
+     "source": "rule",
+     "validation": "verified",
+     "text": null,
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "xor eax",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.xor eax, eax",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "31 C0",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.xor eax, ebp",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "31 E8",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.xor eax, ebx",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "31 D8",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.xor eax, ecx",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "31 C8",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.xor eax, edi",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "31 F8",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.xor eax, edx",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "31 D0",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "mov r8",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.mov r8, r8",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "4D 89 C0",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.mov r8, r9",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "4D 89 C8",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.mov r8, r10",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "4D 89 D0",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.mov r8, r11",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "4D 89 D8",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.mov r8, rax",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "49 89 C0",
+     "match": "prefix"
+    },
+    {
+     "id": "mc.mov r8, rbp",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "49 89 E8",
+     "match": "prefix"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "nop",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "isa": "arm64"
+   },
+   "expect": [
+    {
+     "id": "machine-code.dialect",
+     "kind": "explain",
+     "source": "rule",
+     "validation": "context_missing",
+     "text": null,
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "sub rsp, 0x20",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "mov rax, 1",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.unresolved:mov rax, 1",
+     "kind": "explain",
+     "source": "rule",
+     "validation": "context_missing",
+     "text": null,
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "push rbp",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "format": "compact"
+   },
+   "expect": [
+    {
+     "id": "mc.push rbp",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "55",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "ret",
+   "before": "",
+   "after": "",
+   "dialect": {
+    "format": "compact"
+   },
+   "expect": [
+    {
+     "id": "mc.ret",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "C3",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "machine-code",
+   "prefix": "xor edi, edi",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "mc.xor edi, edi",
+     "kind": "byte_hex",
+     "source": "rule",
+     "validation": "verified",
+     "text": "31 FF",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "prefix": "",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "profile": "unknown",
+   "prefix": "fn",
+   "before": "",
+   "after": "",
+   "dialect": {},
+   "expect": []
+  }
+ ]
+}

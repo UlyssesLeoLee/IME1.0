@@ -1,0 +1,729 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/pime/core-protocol-v0.3.json",
+  "title": "Programming IME local core JSON Lines protocol 0.3",
+  "description": "stdin/stdout JSON Lines between a trusted local process and pime-core: one JSON object per line, exactly one response line per request line. Every request may carry an integer `id` that is echoed in the response as `id`. Protocol 0.3 is a SUPERSET of 0.2 (schemas/core-protocol-v0.2.json): the seven stateless 0.2 operations behave exactly as before and keep the 65536 byte line limit; `health` now reports protocol \"0.3\" (and the unchanged version \"0.2.0\"); `predict` additionally accepts the optional `pins` and `usage` ranking inputs. The stateful operations below are new. Every new operation except `session.open` names an open session in `session`; a missing, unknown, evicted or expired session answers NO_SESSION. Operations that carry document text (ctx.snapshot, ctx.validate, edit.propose, edit.plan, edit.prepare, edit.begin_apply, edit.finish_apply) may use lines up to 16777216 bytes; every other operation is limited to 65536 bytes (PAYLOAD_TOO_LARGE otherwise). All offsets and columns are UTF-16 code units. The core keeps snapshot and proposal text in memory (addressed by snapshot_id / proposal) so the bridge never resends it; ids are derived from the `entropy` given to session.open (HMAC-SHA-256 counter construction, see crates/pime-core/src/ids.rs). Time comes from the core's wall clock (epoch milliseconds). New top-level request fields are snake_case; nested objects that mirror the bridge's own shapes keep their camelCase names. The core never executes anything, never opens files or the network and never echoes secret values. Not the secure PIME-IPC/1 named-pipe protocol of the detailed design.",
+  "oneOf": [
+    {"$ref": "#/$defs/healthRequest"},
+    {"$ref": "#/$defs/predictRequest"},
+    {"$ref": "#/$defs/resolveRequest"},
+    {"$ref": "#/$defs/validateRequest"},
+    {"$ref": "#/$defs/encodeRequest"},
+    {"$ref": "#/$defs/validateHexRequest"},
+    {"$ref": "#/$defs/scanRequest"},
+    {"$ref": "#/$defs/sessionOpenRequest"},
+    {"$ref": "#/$defs/sessionCloseRequest"},
+    {"$ref": "#/$defs/settingsApplyRequest"},
+    {"$ref": "#/$defs/settingsResolveRequest"},
+    {"$ref": "#/$defs/ctxSnapshotRequest"},
+    {"$ref": "#/$defs/ctxExcerptRequest"},
+    {"$ref": "#/$defs/ctxValidateRequest"},
+    {"$ref": "#/$defs/ctxReleaseRequest"},
+    {"$ref": "#/$defs/editProposeRequest"},
+    {"$ref": "#/$defs/editSelectRequest"},
+    {"$ref": "#/$defs/editResultRequest"},
+    {"$ref": "#/$defs/editPlanRequest"},
+    {"$ref": "#/$defs/editPrepareRequest"},
+    {"$ref": "#/$defs/editBeginApplyRequest"},
+    {"$ref": "#/$defs/editFinishApplyRequest"},
+    {"$ref": "#/$defs/editInvalidateRequest"},
+    {"$ref": "#/$defs/editDiscardRequest"},
+    {"$ref": "#/$defs/editPurgeRequest"},
+    {"$ref": "#/$defs/editStatusRequest"},
+    {"$ref": "#/$defs/grantWorkspaceTokenRequest"},
+    {"$ref": "#/$defs/grantAuthorizeRequest"},
+    {"$ref": "#/$defs/grantCheckRequest"},
+    {"$ref": "#/$defs/grantFindRequest"},
+    {"$ref": "#/$defs/grantRequireRequest"},
+    {"$ref": "#/$defs/grantConsumeRequest"},
+    {"$ref": "#/$defs/grantRevokeRequest"},
+    {"$ref": "#/$defs/grantRevokeProviderRequest"},
+    {"$ref": "#/$defs/grantRevokeProviderPrefixRequest"},
+    {"$ref": "#/$defs/grantRevokeAllRequest"},
+    {"$ref": "#/$defs/grantStillValidRequest"},
+    {"$ref": "#/$defs/grantListRequest"},
+    {"$ref": "#/$defs/grantExportRequest"},
+    {"$ref": "#/$defs/grantImportRequest"},
+    {"$ref": "#/$defs/budgetConfigureRequest"},
+    {"$ref": "#/$defs/budgetReserveRequest"},
+    {"$ref": "#/$defs/budgetSettleRequest"},
+    {"$ref": "#/$defs/budgetReleaseRequest"},
+    {"$ref": "#/$defs/budgetSnapshotRequest"},
+    {"$ref": "#/$defs/budgetResetRequest"}
+  ],
+  "$defs": {
+    "id": {"type": "integer", "description": "Optional correlation id, echoed verbatim as `id` in the response. A non-integer id is rejected with INVALID_REQUEST (field `id`)."},
+    "session": {"type": "string", "description": "Session id returned by session.open (32 lowercase hex characters)."},
+    "hexId": {"type": "string", "pattern": "^[0-9a-f]+$"},
+    "language": {"enum": ["rust", "python", "typescript", "powershell", "c", "assembly", "machine-code"]},
+    "dialect": {
+      "type": ["object", "null"],
+      "description": "Dialect axis -> value, for example {\"edition\":\"2021\"}. Values must be strings (or null = default).",
+      "additionalProperties": {"type": ["string", "null"]}
+    },
+    "position": {
+      "type": "object",
+      "required": ["line", "character"],
+      "properties": {"line": {"type": "integer", "minimum": 0}, "character": {"type": "integer", "minimum": 0, "description": "UTF-16 code units"}}
+    },
+    "selection": {
+      "type": ["object", "null"],
+      "required": ["start", "end"],
+      "properties": {"start": {"$ref": "#/$defs/position"}, "end": {"$ref": "#/$defs/position"}}
+    },
+    "edit": {
+      "type": "object",
+      "description": "A replacement of [start, end) of the baseline text (UTF-16 offsets). Offsets must not split a surrogate pair or a CRLF; edits must not overlap; two inserts at one offset are ambiguous.",
+      "required": ["start", "end", "text"],
+      "properties": {"start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}, "text": {"type": "string"}}
+    },
+    "docState": {
+      "type": ["object", "null"],
+      "description": "The document as the editor reports it right now. The core hashes `text` itself. null or absent counts as a closed document.",
+      "required": ["uri", "version", "text"],
+      "properties": {
+        "uri": {"type": "string"}, "version": {"type": "integer"}, "text": {"type": "string"},
+        "isClosed": {"type": "boolean", "default": false}, "editable": {"type": "boolean", "default": true, "description": "false = read-only (EDIT_REJECTED)."},
+        "selection": {"$ref": "#/$defs/selection"}
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["ok", "level", "issues"],
+      "properties": {"ok": {"type": "boolean"}, "level": {"enum": ["valid", "invalid", "unchecked"]}, "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}}}
+    },
+    "issue": {
+      "type": "object",
+      "required": ["line", "code", "message"],
+      "properties": {"line": {"type": "integer", "minimum": 0}, "code": {"type": "string"}, "message": {"type": "string"}}
+    },
+    "grant": {
+      "type": "object",
+      "description": "The grant object exactly as the JavaScript broker keeps and persists it (key pime.grants.v1).",
+      "required": ["id", "providerId", "workspace", "scope", "once", "used", "revoked", "createdAt", "expiresAt"],
+      "properties": {
+        "id": {"type": "string"}, "providerId": {"type": "string"}, "workspace": {"type": "string", "description": "workspace token (hash), never a path"},
+        "scope": {"enum": ["L1", "L2", "L3", "L4"]}, "once": {"type": "boolean"}, "used": {"type": "boolean"}, "revoked": {"type": "boolean"},
+        "createdAt": {"type": "integer"}, "expiresAt": {"type": "integer"}
+      }
+    },
+    "workspaceRef": {
+      "description": "Exactly one of `workspace` (a token) or `workspace_uris` (the workspace folder uris; the core derives the token: first 24 hex characters of SHA-256 of the uris sorted by UTF-16 code unit and joined by \\n).",
+      "properties": {"workspace": {"type": "string"}, "workspace_uris": {"type": "array", "items": {"type": "string"}}}
+    },
+
+    "healthRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "health"}, "id": {"$ref": "#/$defs/id"}}
+    },
+    "predictRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": {"const": "predict"},
+        "id": {"$ref": "#/$defs/id"},
+        "language": {"type": "string"},
+        "prefix": {"type": "string"},
+        "before": {"type": "string"},
+        "after": {"type": "string"},
+        "dialect": {"$ref": "#/$defs/dialect"},
+        "limit": {"type": "integer", "minimum": 0, "maximum": 200, "default": 6},
+        "pins": {"type": "array", "items": {"type": "string"}, "description": "0.3: candidate ids that always rank first."},
+        "usage": {"type": "object", "additionalProperties": {"type": "integer"}, "description": "0.3: candidate id -> local use count (tie-break before weight)."}
+      }
+    },
+    "resolveRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": {"const": "resolve"}, "id": {"$ref": "#/$defs/id"},
+        "languageId": {"type": ["string", "null"]}, "fileName": {"type": ["string", "null"]}, "text": {"type": ["string", "null"]},
+        "current": {"type": ["string", "null"], "default": "unknown"}, "locked": {"type": ["string", "null"]}
+      }
+    },
+    "validateRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "validate"}, "id": {"$ref": "#/$defs/id"}, "language": {"type": "string"}, "text": {"type": "string"}, "dialect": {"$ref": "#/$defs/dialect"}}
+    },
+    "encodeRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "encode"}, "id": {"$ref": "#/$defs/id"}, "instruction": {"type": "string"}}
+    },
+    "validateHexRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "validate_hex"}, "id": {"$ref": "#/$defs/id"}, "hex": {"type": "string"}}
+    },
+    "scanRequest": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {"op": {"const": "scan"}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}, "fileName": {"type": "string"}}
+    },
+
+    "sessionOpenRequest": {
+      "type": "object",
+      "description": "Opens a session. `entropy` is 32..512 bytes of cryptographically random data (hex) from the caller (crypto.randomBytes): the core has no entropy source of its own (a limitation that phase P2 removes with the OS random generator). A buffer with fewer than 8 distinct byte values is refused, and the same entropy cannot open two sessions. At most 16 sessions are kept (the least recently used is dropped) and a session idle for 24 hours expires.",
+      "required": ["op", "locale", "entropy"],
+      "properties": {
+        "op": {"const": "session.open"}, "id": {"$ref": "#/$defs/id"},
+        "locale": {"type": "string", "minLength": 1, "maxLength": 32},
+        "entropy": {"type": "string", "pattern": "^([0-9a-fA-F]{2}){32,512}$"},
+        "settings": {"$ref": "#/$defs/settingsValues"}
+      }
+    },
+    "settingsValues": {
+      "type": ["object", "null"],
+      "description": "The bridge's configuration values: {providers, scenarios, budget} (each an object). Unknown scenarios and invalid provider ids are dropped, user values override the defaults field by field.",
+      "properties": {"providers": {"type": ["object", "null"]}, "scenarios": {"type": ["object", "null"]}, "budget": {"type": ["object", "null"]}}
+    },
+    "sessionCloseRequest": {
+      "type": "object",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "session.close"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "settingsApplyRequest": {
+      "type": "object",
+      "required": ["op", "session", "values"],
+      "properties": {"op": {"const": "settings.apply"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "values": {"$ref": "#/$defs/settingsValues"}, "locale": {"type": ["string", "null"]}}
+    },
+    "settingsResolveRequest": {
+      "type": "object",
+      "required": ["op", "session", "scenario"],
+      "properties": {"op": {"const": "settings.resolve"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "scenario": {"enum": ["realtime", "f1Full", "f1Insert"]}}
+    },
+
+    "ctxSnapshotRequest": {
+      "type": "object",
+      "description": "Takes a snapshot of an editor buffer (never of the disk) and keeps its TEXT in the core. At most 8 snapshots (and 64 MiB of text) are kept per session; the oldest is dropped. Release it with ctx.release when the F1 session closes.",
+      "required": ["op", "session", "uri", "version", "text"],
+      "properties": {
+        "op": {"const": "ctx.snapshot"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"},
+        "uri": {"type": "string"}, "version": {"type": "integer"},
+        "text": {"type": "string", "description": "A missing or non-string text answers CONTEXT_UNAVAILABLE."},
+        "languageId": {"type": "string"}, "fileName": {"type": "string"}, "selection": {"$ref": "#/$defs/selection"}, "isDirty": {"type": "boolean"},
+        "level": {"type": "string", "maxLength": 16, "default": "L3", "description": "Context level L0-L4. Whole-file plans need L3; L4 (disk) is preview only."},
+        "editorInstanceId": {"type": "string", "default": "editor-1"}
+      }
+    },
+    "ctxExcerptRequest": {
+      "type": "object",
+      "description": "A nearby excerpt (L1) of a snapshot; the bounds never split a surrogate pair or a CRLF. With `policy`, a wider request than the authorised bounds answers GRANT_DENIED.",
+      "required": ["op", "session", "snapshot_id", "cursor"],
+      "properties": {
+        "op": {"const": "ctx.excerpt"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "snapshot_id": {"$ref": "#/$defs/hexId"},
+        "cursor": {"type": "integer", "description": "UTF-16 offset, clamped to the text"},
+        "before": {"type": "integer", "minimum": 0, "default": 1800}, "after": {"type": "integer", "minimum": 0, "default": 900},
+        "policy": {"type": ["object", "null"], "properties": {"before": {"type": "integer", "minimum": 0}, "after": {"type": "integer", "minimum": 0}}}
+      }
+    },
+    "ctxValidateRequest": {
+      "type": "object",
+      "description": "Syntax check of the snapshot text, or of the snapshot with `edits` applied (preview of an insert; nothing is created).",
+      "required": ["op", "session", "snapshot_id", "language"],
+      "properties": {
+        "op": {"const": "ctx.validate"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "snapshot_id": {"$ref": "#/$defs/hexId"},
+        "language": {"type": "string"}, "dialect": {"$ref": "#/$defs/dialect"}, "edits": {"type": ["array", "null"], "items": {"$ref": "#/$defs/edit"}}
+      }
+    },
+    "ctxReleaseRequest": {
+      "type": "object",
+      "description": "Forgets a snapshot and every proposal made from it (source text must not linger).",
+      "required": ["op", "session", "snapshot_id"],
+      "properties": {"op": {"const": "ctx.release"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "snapshot_id": {"$ref": "#/$defs/hexId"}}
+    },
+
+    "editProposeRequest": {
+      "type": "object",
+      "description": "Builds the line hunks that turn the snapshot into `proposed_text` and holds the proposal (text + hunks; at most 16 per session). A proposal is not a plan yet: the plan, with its lifetime, is created by edit.plan when the user applies.",
+      "required": ["op", "session", "snapshot_id", "proposed_text"],
+      "properties": {
+        "op": {"const": "edit.propose"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "snapshot_id": {"$ref": "#/$defs/hexId"},
+        "proposed_text": {"type": "string"},
+        "language": {"type": "string", "description": "With a language, every result carries the syntax verdict."}, "dialect": {"$ref": "#/$defs/dialect"}
+      }
+    },
+    "editSelectRequest": {
+      "type": "object",
+      "description": "The result of applying the chosen hunks to the baseline (unknown hunk ids are ignored).",
+      "required": ["op", "session", "proposal", "hunk_ids"],
+      "properties": {
+        "op": {"const": "edit.select"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "proposal": {"$ref": "#/$defs/hexId"},
+        "hunk_ids": {"type": "array", "items": {"type": "string"}}, "language": {"type": "string"}, "dialect": {"$ref": "#/$defs/dialect"}
+      }
+    },
+    "editResultRequest": {
+      "type": "object",
+      "description": "The whole result text of a hunk selection (for the read-only Diff view). The reply may be as large as the document.",
+      "required": ["op", "session", "proposal", "hunk_ids"],
+      "properties": {"op": {"const": "edit.result"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "proposal": {"$ref": "#/$defs/hexId"}, "hunk_ids": {"type": "array", "items": {"type": "string"}}}
+    },
+    "editPlanRequest": {
+      "type": "object",
+      "description": "EditCoordinator.createPlan: a plan from the chosen hunks of a `proposal`, or from explicit `edits` of a snapshot (the insert path). Rules: kind full|insert, every target must be the snapshot's document (CROSS_FILE_DENIED), a full plan needs an L3 snapshot (FULL_CONTEXT_REQUIRED), at least one edit, valid non-overlapping offsets. The plan lives 10 minutes.",
+      "required": ["op", "session", "kind"],
+      "properties": {
+        "op": {"const": "edit.plan"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"},
+        "kind": {"enum": ["full", "insert"]},
+        "proposal": {"$ref": "#/$defs/hexId"}, "hunk_ids": {"type": "array", "items": {"type": "string"}},
+        "snapshot_id": {"$ref": "#/$defs/hexId"}, "edits": {"type": "array", "items": {"$ref": "#/$defs/edit"}},
+        "targets": {"type": "array", "items": {"type": "string"}, "description": "default: the snapshot's own uri"},
+        "selection": {"$ref": "#/$defs/selection"}
+      }
+    },
+    "editPrepareRequest": {
+      "type": "object",
+      "description": "EditCoordinator.prepare, checked in this order: plan exists (TOKEN_INVALID), `confirmed` is the literal true (USER_CONFIRMATION_REQUIRED), the grant is still valid (GRANT_DENIED), then the plan is not stale / expired / unknown-result (STALE_DOCUMENT, STALE_RESULT, EDIT_UNKNOWN), the document is open (DOCUMENT_CLOSED), uri + version + SHA-256 of `state.text` equal the baseline (STALE_DOCUMENT), writable (EDIT_REJECTED), an insert's selection is unchanged (STALE_SELECTION), and finally `validation_ok` is not false (VALIDATION_FAILED). Returns a one-use token valid for 60 seconds.",
+      "required": ["op", "session", "plan"],
+      "properties": {
+        "op": {"const": "edit.prepare"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "plan": {"$ref": "#/$defs/hexId"},
+        "state": {"$ref": "#/$defs/docState"},
+        "confirmed": {"description": "Only the literal true counts."},
+        "grant_id": {"type": "string", "description": "The core asks its own broker (still valid: not revoked, not expired; a used one-request grant still counts)."},
+        "grant_ok": {"description": "Used only when `grant_id` is absent; only the literal true counts."},
+        "validation_ok": {"description": "Only the literal false disables the apply."}
+      }
+    },
+    "editBeginApplyRequest": {
+      "type": "object",
+      "description": "First half of apply: re-validates the plan against `state`, marks the token used BEFORE anything is written and returns the edits to write as ONE editor edit (one Undo). Starts a deadline of apply_timeout_ms. While another write of the same document waits for its result, a second begin answers EDIT_REJECTED without consuming its token.",
+      "required": ["op", "session", "token", "state"],
+      "properties": {"op": {"const": "edit.begin_apply"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "token": {"$ref": "#/$defs/hexId"}, "state": {"$ref": "#/$defs/docState"}}
+    },
+    "editFinishApplyRequest": {
+      "type": "object",
+      "description": "Second half of apply: what the editor answered and the document state after the write. accepted -> the SHA-256 of state.text must equal the plan's proposed hash (APPLIED, otherwise EDIT_UNKNOWN); rejected -> EDIT_REJECTED when the document is still the baseline, otherwise EDIT_UNKNOWN; error (the editor threw, or the bridge gave up) -> EDIT_UNKNOWN. A finish after the deadline is EDIT_UNKNOWN, never APPLIED. EDIT_UNKNOWN is final: it is never retried automatically and the plan cannot be prepared again.",
+      "required": ["op", "session", "token", "outcome"],
+      "properties": {"op": {"const": "edit.finish_apply"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "token": {"$ref": "#/$defs/hexId"}, "outcome": {"enum": ["accepted", "rejected", "error"]}, "state": {"$ref": "#/$defs/docState"}}
+    },
+    "editInvalidateRequest": {
+      "type": "object",
+      "description": "The document changed, closed or lost focus: every REVIEW_READY or PREPARED plan of the uri becomes STALE.",
+      "required": ["op", "session", "uri"],
+      "properties": {"op": {"const": "edit.invalidate"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "uri": {"type": "string"}}
+    },
+    "editDiscardRequest": {
+      "type": "object",
+      "required": ["op", "session", "plan"],
+      "properties": {"op": {"const": "edit.discard"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "plan": {"type": "string"}}
+    },
+    "editPurgeRequest": {
+      "type": "object",
+      "description": "Drops expired plans, used tokens and applied plans.",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "edit.purge"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "editStatusRequest": {
+      "type": "object",
+      "required": ["op", "session", "plan"],
+      "properties": {"op": {"const": "edit.status"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "plan": {"type": "string"}}
+    },
+
+    "grantWorkspaceTokenRequest": {
+      "type": "object",
+      "required": ["op", "session", "uris"],
+      "properties": {"op": {"const": "grant.workspace_token"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "uris": {"type": "array", "items": {"type": "string"}}}
+    },
+    "grantAuthorizeRequest": {
+      "type": "object",
+      "description": "PermissionBroker.authorize. The reply carries `persist`: the reusable, not revoked grants for the bridge to store (pime.grants.v1). One-request grants (`once`) are never persisted.",
+      "required": ["op", "session", "provider_id", "scope"],
+      "allOf": [{"$ref": "#/$defs/workspaceRef"}],
+      "properties": {
+        "op": {"const": "grant.authorize"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"},
+        "provider_id": {"type": "string", "description": "provider and host, e.g. mockA:127.0.0.1:9443"}, "scope": {"enum": ["L1", "L2", "L3", "L4"]},
+        "ttl_ms": {"type": "integer", "minimum": 0, "default": 86400000}, "once": {"type": "boolean", "default": false}
+      }
+    },
+    "grantCheckRequest": {
+      "type": "object",
+      "description": "Any mismatch is a denial: reason is one of ok, unknown-grant, revoked, expired, already-used, provider-mismatch, workspace-mismatch, scope-mismatch.",
+      "required": ["op", "session", "grant_id", "provider_id", "scope"],
+      "allOf": [{"$ref": "#/$defs/workspaceRef"}],
+      "properties": {"op": {"const": "grant.check"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "grant_id": {"type": "string"}, "provider_id": {"type": "string"}, "scope": {"type": "string"}}
+    },
+    "grantFindRequest": {
+      "type": "object",
+      "description": "A reusable (workspace-wide) grant for the criteria, or null.",
+      "required": ["op", "session", "provider_id", "scope"],
+      "allOf": [{"$ref": "#/$defs/workspaceRef"}],
+      "properties": {"op": {"const": "grant.find"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "provider_id": {"type": "string"}, "scope": {"type": "string"}}
+    },
+    "grantRequireRequest": {
+      "type": "object",
+      "description": "Like grant.check, but a denial is the error GRANT_DENIED \"authorisation denied (<reason>)\".",
+      "required": ["op", "session", "grant_id", "provider_id", "scope"],
+      "allOf": [{"$ref": "#/$defs/workspaceRef"}],
+      "properties": {"op": {"const": "grant.require"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "grant_id": {"type": "string"}, "provider_id": {"type": "string"}, "scope": {"type": "string"}}
+    },
+    "grantConsumeRequest": {
+      "type": "object",
+      "required": ["op", "session", "grant_id"],
+      "properties": {"op": {"const": "grant.consume"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "grant_id": {"type": "string"}}
+    },
+    "grantRevokeRequest": {
+      "type": "object",
+      "required": ["op", "session", "grant_id"],
+      "properties": {"op": {"const": "grant.revoke"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "grant_id": {"type": "string"}}
+    },
+    "grantRevokeProviderRequest": {
+      "type": "object",
+      "required": ["op", "session", "provider_id"],
+      "properties": {"op": {"const": "grant.revoke_provider"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "provider_id": {"type": "string"}}
+    },
+    "grantRevokeProviderPrefixRequest": {
+      "type": "object",
+      "description": "Revokes every grant whose provider id starts with `prefix` (\"<provider>:\" = every host of one provider), used or expired ones included: no authorisation survives its key.",
+      "required": ["op", "session", "prefix"],
+      "properties": {"op": {"const": "grant.revoke_provider_prefix"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "prefix": {"type": "string"}}
+    },
+    "grantRevokeAllRequest": {
+      "type": "object",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "grant.revoke_all"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "grantStillValidRequest": {
+      "type": "object",
+      "description": "Honoured at Apply time: not revoked and not expired (a used one-request grant still counts).",
+      "required": ["op", "session", "grant_id"],
+      "properties": {"op": {"const": "grant.still_valid"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "grant_id": {"type": "string"}}
+    },
+    "grantListRequest": {
+      "type": "object",
+      "description": "Live grants: not revoked, not expired, not a used one-request grant.",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "grant.list"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "grantExportRequest": {
+      "type": "object",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "grant.export"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "grantImportRequest": {
+      "type": "object",
+      "description": "Loads persisted grants (at most 1000). Malformed entries (not an object, no string id, unknown scope, a one-request grant, non-string provider or workspace, no numeric expiry) are skipped.",
+      "required": ["op", "session", "grants"],
+      "properties": {"op": {"const": "grant.import"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "grants": {"type": "array", "maxItems": 1000}}
+    },
+
+    "budgetConfigureRequest": {
+      "type": "object",
+      "description": "Limits and price; the counters keep running. A missing, null, zero or negative limit means unlimited (the bridge's 0).",
+      "required": ["op", "session"],
+      "properties": {
+        "op": {"const": "budget.configure"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"},
+        "max_requests": {"type": ["number", "null"]}, "max_tokens": {"type": ["number", "null"]}, "price_per_1k_tokens": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "budgetReserveRequest": {
+      "type": "object",
+      "description": "Reserves one request and `estimate` tokens before anything is sent; AI_BUDGET_EXCEEDED when the budget is used up. Returns a ticket (at most 1024 unsettled ones).",
+      "required": ["op", "session", "estimate"],
+      "properties": {"op": {"const": "budget.reserve"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "estimate": {"type": "integer", "minimum": 0}}
+    },
+    "budgetSettleRequest": {
+      "type": "object",
+      "description": "Settles a ticket with the real usage, or with its estimate when `usage` is absent (the budget is then marked estimated). An unknown (already closed) ticket is a no-op: settled=false.",
+      "required": ["op", "session", "ticket"],
+      "properties": {"op": {"const": "budget.settle"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "ticket": {"type": "string"}, "usage": {"type": ["object", "null"], "properties": {"input": {"type": "integer", "minimum": 0}, "output": {"type": "integer", "minimum": 0}}}}
+    },
+    "budgetReleaseRequest": {
+      "type": "object",
+      "description": "Gives the reservation back (the request never happened).",
+      "required": ["op", "session", "ticket"],
+      "properties": {"op": {"const": "budget.release"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "ticket": {"type": "string"}}
+    },
+    "budgetSnapshotRequest": {
+      "type": "object",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "budget.snapshot"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "budgetResetRequest": {
+      "type": "object",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "budget.reset"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+
+    "hunk": {
+      "type": "object",
+      "description": "Geometry in 1-based lines and UTF-16 offsets plus the display lines (kind ' ', '-' or '+'; two lines of context).",
+      "required": ["id", "oldStartLine", "oldLineCount", "newStartLine", "newLineCount", "startOffset", "endOffset", "header", "lines"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^h[0-9]+$"},
+        "oldStartLine": {"type": "integer", "minimum": 1}, "oldLineCount": {"type": "integer", "minimum": 0},
+        "newStartLine": {"type": "integer", "minimum": 1}, "newLineCount": {"type": "integer", "minimum": 0},
+        "startOffset": {"type": "integer", "minimum": 0}, "endOffset": {"type": "integer", "minimum": 0},
+        "header": {"type": "string", "pattern": "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@$"},
+        "lines": {"type": "array", "items": {"type": "object", "required": ["kind", "text"], "properties": {"kind": {"enum": [" ", "-", "+"]}, "text": {"type": "string"}}}}
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": ["length", "hash", "preview", "truncated"],
+      "properties": {
+        "length": {"type": "integer", "minimum": 0, "description": "UTF-16 units of the result text"}, "hash": {"type": "string", "description": "sha256-utf8 of the result text"},
+        "preview": {"type": "string", "description": "the first 4000 UTF-16 units"}, "truncated": {"type": "boolean"}, "validation": {"$ref": "#/$defs/validation"}
+      }
+    },
+    "plan": {
+      "type": "object",
+      "required": ["id", "kind", "uri", "editorInstance", "baseline", "selection", "proposedHash", "expiresAt", "status", "editCount"],
+      "properties": {
+        "id": {"type": "string"}, "kind": {"enum": ["full", "insert"]}, "uri": {"type": "string"}, "editorInstance": {"type": "string"},
+        "baseline": {"type": "object", "required": ["version", "hash"], "properties": {"version": {"type": "integer"}, "hash": {"type": "string"}}},
+        "selection": {"$ref": "#/$defs/selection"}, "proposedHash": {"type": "string"}, "expiresAt": {"type": "integer"},
+        "status": {"enum": ["REVIEW_READY", "PREPARED", "STALE", "UNKNOWN", "APPLIED"]}, "editCount": {"type": "integer", "minimum": 1}
+      }
+    },
+
+    "responses": {
+      "oneOf": [
+        {
+          "title": "health",
+          "type": "object",
+          "required": ["ok", "name", "version", "protocol", "languages"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "name": {"const": "pime-core"}, "version": {"const": "0.2.0"}, "protocol": {"const": "0.3"},
+            "languages": {"type": "array", "items": {"$ref": "#/$defs/language"}, "minItems": 7, "maxItems": 7}
+          }
+        },
+        {
+          "title": "session.open",
+          "type": "object",
+          "required": ["ok", "session", "protocol", "issues"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "protocol": {"const": "0.3"},
+            "issues": {"type": "array", "items": {"type": "object", "required": ["path", "message"], "properties": {"path": {"type": "string"}, "message": {"type": "string"}}}}
+          }
+        },
+        {
+          "title": "settings.apply",
+          "type": "object",
+          "required": ["ok", "settings", "issues"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "settings": {"type": "object", "required": ["providers", "scenarios", "budget"], "description": "The effective settings in the JS shape (key order follows JavaScript object spread)."},
+            "issues": {"type": "array", "items": {"type": "object", "required": ["path", "message"], "properties": {"path": {"type": "string"}, "message": {"type": "string"}}}}
+          }
+        },
+        {
+          "title": "settings.resolve",
+          "type": "object",
+          "required": ["ok", "scenario"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "scenario": {"type": "object", "required": ["scenario", "providerId"], "properties": {"scenario": {"type": "string"}, "providerId": {"type": "string"}, "family": {"type": "string"}, "endpoint": {"type": "string"}, "apiVersion": {"type": "string"}, "maxTokensParam": {"type": "string"}, "model": {"type": "string"}, "effort": {"type": "string"}, "capability": {"type": "object"}, "maxOutputTokens": {"type": "integer"}, "timeoutMs": {"type": "integer"}}}
+          }
+        },
+        {
+          "title": "ctx.snapshot",
+          "type": "object",
+          "required": ["ok", "snapshot"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "snapshot": {
+              "type": "object",
+              "description": "The JS snapshot fields without `content` (the core keeps the text).",
+              "required": ["snapshot_id", "editor_instance_id", "document_uri", "document_version", "sha256", "hash_algorithm", "language_id", "file_name", "eol", "dirty", "selection", "range_unit", "content_scope", "encoding", "length"],
+              "properties": {
+                "snapshot_id": {"$ref": "#/$defs/hexId"}, "editor_instance_id": {"type": "string"}, "document_uri": {"type": "string"}, "document_version": {"type": "integer"},
+                "sha256": {"type": "string"}, "hash_algorithm": {"const": "sha256-utf8"}, "language_id": {"type": "string"}, "file_name": {"type": "string"},
+                "eol": {"enum": ["NONE", "LF", "CRLF", "CR", "MIXED"]}, "dirty": {"type": "boolean"}, "selection": {"$ref": "#/$defs/selection"},
+                "range_unit": {"const": "UTF16_CODE_UNITS"}, "content_scope": {"type": "string"}, "encoding": {"const": "encoding_unknown"}, "length": {"type": "integer", "minimum": 0}
+              }
+            }
+          }
+        },
+        {
+          "title": "ctx.excerpt",
+          "type": "object",
+          "required": ["ok", "excerpt"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "excerpt": {"type": "object", "required": ["text", "start", "end", "cursorInExcerpt", "truncated"], "properties": {"text": {"type": "string"}, "start": {"type": "integer"}, "end": {"type": "integer"}, "cursorInExcerpt": {"type": "integer"}, "truncated": {"type": "boolean"}}}
+          }
+        },
+        {
+          "title": "ctx.validate",
+          "type": "object",
+          "required": ["ok", "result"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "result": {"$ref": "#/$defs/validation"}}
+        },
+        {
+          "title": "ctx.release",
+          "type": "object",
+          "required": ["ok", "released"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "released": {"type": "boolean"}}
+        },
+        {
+          "title": "edit.propose",
+          "type": "object",
+          "required": ["ok", "proposal", "hunks", "stats", "after_hash", "after_length", "result"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "proposal": {"$ref": "#/$defs/hexId"},
+            "hunks": {"type": "array", "items": {"$ref": "#/$defs/hunk"}},
+            "stats": {"type": "object", "required": ["hunks", "added", "removed"], "properties": {"hunks": {"type": "integer"}, "added": {"type": "integer"}, "removed": {"type": "integer"}}},
+            "after_hash": {"type": "string"}, "after_length": {"type": "integer"},
+            "result": {"$ref": "#/$defs/result"}
+          }
+        },
+        {
+          "title": "edit.select",
+          "type": "object",
+          "required": ["ok", "result"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "result": {"$ref": "#/$defs/result"}}
+        },
+        {
+          "title": "edit.result",
+          "type": "object",
+          "required": ["ok", "text"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}}
+        },
+        {
+          "title": "edit.plan",
+          "type": "object",
+          "required": ["ok", "plan"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "plan": {"$ref": "#/$defs/plan"}}
+        },
+        {
+          "title": "edit.prepare",
+          "type": "object",
+          "required": ["ok", "token"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "token": {"$ref": "#/$defs/hexId"}}
+        },
+        {
+          "title": "edit.begin_apply",
+          "type": "object",
+          "required": ["ok", "edits", "apply_timeout_ms"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "edits": {"type": "array", "items": {"$ref": "#/$defs/edit"}, "minItems": 1}, "apply_timeout_ms": {"type": "integer"}}
+        },
+        {
+          "title": "edit.finish_apply",
+          "type": "object",
+          "required": ["ok", "state", "newVersion", "newHash"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "state": {"const": "APPLIED"}, "newVersion": {"type": "integer"}, "newHash": {"type": "string"}}
+        },
+        {
+          "title": "edit.invalidate",
+          "type": "object",
+          "required": ["ok", "invalidated"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "invalidated": {"type": "integer", "minimum": 0}}
+        },
+        {
+          "title": "edit.status",
+          "type": "object",
+          "required": ["ok", "status"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "status": {"enum": ["REVIEW_READY", "PREPARED", "STALE", "UNKNOWN", "APPLIED", "UNKNOWN_PLAN"]}}
+        },
+        {
+          "title": "grant.workspace_token",
+          "type": "object",
+          "required": ["ok", "workspace"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "workspace": {"type": "string", "minLength": 24, "maxLength": 24}}
+        },
+        {
+          "title": "grant.authorize",
+          "type": "object",
+          "required": ["ok", "grant", "persist"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "grant": {"$ref": "#/$defs/grant"}, "persist": {"type": "array", "items": {"$ref": "#/$defs/grant"}}}
+        },
+        {
+          "title": "grant.check",
+          "type": "object",
+          "required": ["ok", "result"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "result": {"type": "object", "required": ["ok", "reason"], "properties": {"ok": {"type": "boolean"}, "reason": {"enum": ["ok", "unknown-grant", "revoked", "expired", "already-used", "provider-mismatch", "workspace-mismatch", "scope-mismatch"]}}}}
+        },
+        {
+          "title": "grant.find / grant.require",
+          "type": "object",
+          "required": ["ok", "grant"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "grant": {"oneOf": [{"$ref": "#/$defs/grant"}, {"type": "null"}]}}
+        },
+        {
+          "title": "grant.revoke / revoke_provider / revoke_provider_prefix / revoke_all",
+          "type": "object",
+          "required": ["ok", "persist"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "revoked": {"type": "boolean"}, "count": {"type": "integer", "minimum": 0}, "persist": {"type": "array", "items": {"$ref": "#/$defs/grant"}}}
+        },
+        {
+          "title": "grant.still_valid",
+          "type": "object",
+          "required": ["ok", "valid"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "valid": {"type": "boolean"}}
+        },
+        {
+          "title": "grant.list",
+          "type": "object",
+          "required": ["ok", "grants"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "grants": {"type": "array", "items": {"type": "object", "required": ["id", "providerId", "scope", "once", "expiresAt"], "properties": {"id": {"type": "string"}, "providerId": {"type": "string"}, "scope": {"type": "string"}, "once": {"type": "boolean"}, "expiresAt": {"type": "integer"}}}}}
+        },
+        {
+          "title": "grant.export",
+          "type": "object",
+          "required": ["ok", "grants"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "grants": {"type": "array", "items": {"$ref": "#/$defs/grant"}}}
+        },
+        {
+          "title": "grant.import",
+          "type": "object",
+          "required": ["ok", "imported"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "imported": {"type": "integer", "minimum": 0}}
+        },
+        {
+          "title": "budget.reserve",
+          "type": "object",
+          "required": ["ok", "ticket"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "ticket": {"$ref": "#/$defs/hexId"}}
+        },
+        {
+          "title": "budget.settle / budget.release",
+          "type": "object",
+          "required": ["ok", "settled"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "settled": {"type": "boolean"}}
+        },
+        {
+          "title": "budget.snapshot",
+          "type": "object",
+          "required": ["ok", "budget"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "budget": {"type": "object", "required": ["requests", "tokens", "estimated", "cost"], "properties": {"requests": {"type": "integer"}, "tokens": {"type": "integer"}, "estimated": {"type": "boolean"}, "cost": {"type": ["number", "null"], "description": "null when no price is configured"}}}}
+        },
+        {
+          "title": "success without data (session.close, grant.consume, budget.configure, budget.reset, edit.discard, edit.purge)",
+          "type": "object",
+          "required": ["ok"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "closed": {"type": "boolean"}}
+        },
+        {
+          "title": "error",
+          "type": "object",
+          "required": ["ok", "error"],
+          "properties": {
+            "ok": {"const": false}, "id": {"$ref": "#/$defs/id"},
+            "error": {
+              "enum": [
+                "INVALID_JSON", "INVALID_REQUEST", "PAYLOAD_TOO_LARGE", "UNKNOWN_OPERATION", "NO_SESSION", "INTERNAL",
+                "AI_BUDGET_EXCEEDED", "CONTEXT_UNAVAILABLE", "CROSS_FILE_DENIED", "DOCUMENT_CLOSED", "EDIT_REJECTED", "EDIT_UNKNOWN",
+                "FULL_CONTEXT_REQUIRED", "GRANT_DENIED", "MODEL_UNSUPPORTED", "PATCH_INVALID", "SETTINGS_INVALID", "STALE_DOCUMENT",
+                "STALE_RESULT", "STALE_SELECTION", "TARGET_RANGE_INVALID", "TOKEN_INVALID", "USER_CONFIRMATION_REQUIRED", "VALIDATION_FAILED"
+              ]
+            },
+            "field": {"type": "string", "description": "INVALID_REQUEST: the offending request field (nested fields as a.b)."},
+            "message": {"type": "string", "description": "Never contains document text, prompts or credentials."}
+          }
+        },
+        {
+          "title": "encode / validate_hex refusal (unchanged from 0.2; no bytes are ever returned)",
+          "type": "object",
+          "required": ["ok", "code", "reason"],
+          "properties": {
+            "ok": {"const": false}, "id": {"$ref": "#/$defs/id"},
+            "code": {"enum": ["BYTE_ENCODING_UNRESOLVED", "UNSUPPORTED_ENCODING", "CONTEXT_MISSING", "INVALID_HEX", "ODD_HEX_LENGTH", "HEX_TOO_LARGE"]},
+            "reason": {"type": "string"}
+          }
+        }
+      ]
+    }
+  }
+}
