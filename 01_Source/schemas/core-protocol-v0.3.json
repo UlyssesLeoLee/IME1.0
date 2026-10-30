@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/pime/core-protocol-v0.3.json",
   "title": "Programming IME local core JSON Lines protocol 0.3",
-  "description": "stdin/stdout JSON Lines between a trusted local process and pime-core: one JSON object per line, exactly one response line per request line. Every request may carry an integer `id` that is echoed in the response as `id`. Protocol 0.3 is a SUPERSET of 0.2 (schemas/core-protocol-v0.2.json): the seven stateless 0.2 operations behave exactly as before and keep the 65536 byte line limit; `health` now reports protocol \"0.3\" (and the unchanged version \"0.2.0\"); `predict` additionally accepts the optional `pins` and `usage` ranking inputs. The stateful operations below are new. Every new operation except `session.open` names an open session in `session`; a missing, unknown, evicted or expired session answers NO_SESSION. Operations that carry document text (ctx.snapshot, ctx.validate, edit.propose, edit.plan, edit.prepare, edit.begin_apply, edit.finish_apply) may use lines up to 16777216 bytes; every other operation is limited to 65536 bytes (PAYLOAD_TOO_LARGE otherwise). All offsets and columns are UTF-16 code units. The core keeps snapshot and proposal text in memory (addressed by snapshot_id / proposal) so the bridge never resends it; ids are derived from the `entropy` given to session.open (HMAC-SHA-256 counter construction, see crates/pime-core/src/ids.rs). Time comes from the core's wall clock (epoch milliseconds). New top-level request fields are snake_case; nested objects that mirror the bridge's own shapes keep their camelCase names. The core never executes anything, never opens files or the network and never echoes secret values. Not the secure PIME-IPC/1 named-pipe protocol of the detailed design.",
+  "description": "stdin/stdout JSON Lines between a trusted local process and pime-core: one JSON object per line, exactly one response line per request line. Every request may carry an integer `id` that is echoed in the response as `id`. Protocol 0.3 is a SUPERSET of 0.2 (schemas/core-protocol-v0.2.json): the seven stateless 0.2 operations behave exactly as before and keep the 65536 byte line limit; `health` now reports protocol \"0.3\" (and the unchanged version \"0.2.0\"); `predict` additionally accepts the optional `pins` and `usage` ranking inputs. The stateful operations below are new. Every new operation except `session.open` names an open session in `session`; a missing, unknown, evicted or expired session answers NO_SESSION. Operations that carry document text (ctx.snapshot, ctx.validate, edit.propose, edit.plan, edit.prepare, edit.begin_apply, edit.finish_apply) may use lines up to 16777216 bytes; every other operation is limited to 65536 bytes (PAYLOAD_TOO_LARGE otherwise). All offsets and columns are UTF-16 code units. The core keeps snapshot and proposal text in memory (addressed by snapshot_id / proposal) so the bridge never resends it; ids are derived from the `entropy` given to session.open (HMAC-SHA-256 counter construction, see crates/pime-core/src/ids.rs). Time comes from the core's wall clock (epoch milliseconds). New top-level request fields are snake_case; nested objects that mirror the bridge's own shapes keep their camelCase names. The core never executes anything, never opens files or the network and never echoes secret values. Migration steps 1.2 and 1.3 add, without changing anything above: ai.prompt, ai.prepare, ai.complete, ai.parse (provider request construction and response/error handling; the HTTP call itself stays with the sender), privacy.assess / redact / restore / release, annotate.supports / prompt / f1_addendum / apply, symbols.extract / dir_candidates, and sched.* / lang.* (realtime scheduling decisions and input session epochs and locks). Of these, ai.prompt, ai.prepare, ai.complete, ai.parse, privacy.assess, privacy.redact, privacy.restore, annotate.prompt, annotate.apply, symbols.extract and lang.state may also use lines up to 16777216 bytes. Not the secure PIME-IPC/1 named-pipe protocol of the detailed design.",
   "oneOf": [
     {"$ref": "#/$defs/healthRequest"},
     {"$ref": "#/$defs/predictRequest"},
@@ -49,7 +49,31 @@
     {"$ref": "#/$defs/budgetSettleRequest"},
     {"$ref": "#/$defs/budgetReleaseRequest"},
     {"$ref": "#/$defs/budgetSnapshotRequest"},
-    {"$ref": "#/$defs/budgetResetRequest"}
+    {"$ref": "#/$defs/budgetResetRequest"},
+    {"$ref": "#/$defs/aiPromptRequest"},
+    {"$ref": "#/$defs/aiPrepareRequest"},
+    {"$ref": "#/$defs/aiCompleteRequest"},
+    {"$ref": "#/$defs/aiParseRequest"},
+    {"$ref": "#/$defs/privacyAssessRequest"},
+    {"$ref": "#/$defs/privacyRedactRequest"},
+    {"$ref": "#/$defs/privacyRestoreRequest"},
+    {"$ref": "#/$defs/privacyReleaseRequest"},
+    {"$ref": "#/$defs/annotateSupportsRequest"},
+    {"$ref": "#/$defs/annotatePromptRequest"},
+    {"$ref": "#/$defs/annotateF1AddendumRequest"},
+    {"$ref": "#/$defs/annotateApplyRequest"},
+    {"$ref": "#/$defs/symbolsExtractRequest"},
+    {"$ref": "#/$defs/symbolsDirCandidatesRequest"},
+    {"$ref": "#/$defs/schedConfigureRequest"},
+    {"$ref": "#/$defs/schedScheduleRequest"},
+    {"$ref": "#/$defs/schedFireRequest"},
+    {"$ref": "#/$defs/schedFinishRequest"},
+    {"$ref": "#/$defs/schedCancelRequest"},
+    {"$ref": "#/$defs/schedTouchRequest"},
+    {"$ref": "#/$defs/schedIsCurrentRequest"},
+    {"$ref": "#/$defs/langStateRequest"},
+    {"$ref": "#/$defs/langLockRequest"},
+    {"$ref": "#/$defs/langUnlockRequest"}
   ],
   "$defs": {
     "id": {"type": "integer", "description": "Optional correlation id, echoed verbatim as `id` in the response. A non-integer id is rejected with INVALID_REQUEST (field `id`)."},
@@ -446,6 +470,203 @@
       "properties": {"op": {"const": "budget.reset"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
     },
 
+    "inputKey": {
+      "type": "object",
+      "description": "The identity of one input: any change of one field invalidates results tied to an older value (seq: keystrokes, profileEpoch: language switches, documentEpoch: document changes).",
+      "required": ["seq", "profileEpoch", "documentEpoch"],
+      "properties": {"seq": {"type": "integer", "minimum": 0}, "profileEpoch": {"type": "integer", "minimum": 0}, "documentEpoch": {"type": "integer", "minimum": 0}}
+    },
+    "budgetSnapshot": {
+      "type": "object",
+      "required": ["requests", "tokens", "estimated", "cost"],
+      "properties": {"requests": {"type": "integer"}, "tokens": {"type": "integer"}, "estimated": {"type": "boolean"}, "cost": {"type": ["number", "null"]}}
+    },
+    "stats": {
+      "type": "object",
+      "required": ["scheduled", "started", "delivered", "discarded", "inFlight", "maxInFlight"],
+      "properties": {"scheduled": {"type": "integer"}, "started": {"type": "integer"}, "delivered": {"type": "integer"}, "discarded": {"type": "integer"}, "inFlight": {"type": "integer"}, "maxInFlight": {"type": "integer"}}
+    },
+    "effects": {
+      "type": "object",
+      "description": "What the bridge does: clear its debounce timer, abort the running request (best effort: data already sent cannot be recalled) and, when arm_ms is not null, start a new timer of that many milliseconds.",
+      "required": ["clear_timer", "abort", "arm_ms"],
+      "properties": {"clear_timer": {"type": "boolean"}, "abort": {"type": "boolean"}, "arm_ms": {"type": ["integer", "null"]}}
+    },
+    "effortResult": {
+      "type": "object",
+      "description": "The effort negotiation: `status` is omitted (auto), sent (value is the vendor value), unsupported, stale (capability older than 30 days) or unknown. Anything but omitted/sent says why the level was NOT sent in `message`.",
+      "required": ["status", "level", "message"],
+      "properties": {"status": {"enum": ["omitted", "sent", "unsupported", "stale", "unknown"]}, "level": {"type": "string"}, "supportedLevels": {"type": "array"}, "value": {}, "message": {"type": "string"}}
+    },
+
+    "aiPromptRequest": {
+      "type": "object",
+      "description": "buildPrompt: the fixed, tool-less instructions of a task and the payload as the data channel (JSON.stringify(payload)); file text never reaches `instructions`.",
+      "required": ["op", "session", "task", "payload"],
+      "properties": {"op": {"const": "ai.prompt"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "task": {"enum": ["full", "insert", "realtime"]}, "payload": {"description": "any JSON value (an object in practice)"}}
+    },
+    "aiPrepareRequest": {
+      "type": "object",
+      "description": "Everything AiClient.infer does before the HTTP call, in the same order, so the first failing check is the same: AI_DISABLED, the 429 cool-down (AI_RATE_LIMIT), unknown family / no model (MODEL_UNSUPPORTED), the HTTPS endpoint (SETTINGS_INVALID), no key (VAULT_ERROR), authorisation by the core's own grants (untrusted workspace or no grant: CONSENT_REQUIRED; a given grant_id is required and consumed: GRANT_DENIED), the last sensitivity gate (SENSITIVE_BLOCKED unless allow_sensitive), the budget reservation (AI_BUDGET_EXCEEDED), then effort negotiation and the request. The key is only ever put into the returned headers. At most 64 prepared requests wait for their outcome (the oldest is settled as failed).",
+      "required": ["op", "session", "enabled", "trusted", "instructions", "input", "provider_id", "grant_scope"],
+      "allOf": [{"$ref": "#/$defs/workspaceRef"}],
+      "properties": {
+        "op": {"const": "ai.prepare"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"},
+        "enabled": {"type": "boolean", "description": "the bridge's AI switch"}, "trusted": {"type": "boolean", "description": "the editor's workspace trust"},
+        "family": {"type": ["string", "null"], "description": "openai-responses | openai-chat | anthropic-messages (anything else: MODEL_UNSUPPORTED)"},
+        "endpoint": {"type": ["string", "null"]}, "key": {"type": ["string", "null"]}, "model": {"type": ["string", "null"]},
+        "instructions": {"type": "string"}, "input": {"type": "string"},
+        "max_output_tokens": {"type": ["integer", "null"], "description": "0/absent: 800 in the request, 0 in the reservation"}, "timeout_ms": {"type": ["integer", "null"], "description": "0/absent: 30000"},
+        "effort": {"type": ["string", "null"]}, "capability": {"type": ["object", "null"], "description": "the model's effort capability record; an unknown, stale or unverified capability means the effort parameter is NOT sent"},
+        "api_version": {"type": ["string", "null"]}, "max_tokens_param": {"type": ["string", "null"]},
+        "allow_sensitive": {"type": "boolean", "default": false},
+        "provider_id": {"type": "string", "description": "provider and host, e.g. A:api.a.example"}, "grant_scope": {"enum": ["L1", "L2", "L3", "L4"]}, "grant_id": {"type": ["string", "null"]},
+        "workspace": {"type": "string"}, "workspace_uris": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "aiCompleteRequest": {
+      "type": "object",
+      "description": "The outcome of a prepared request, reported once: `transport_error` (the sender saw no usable answer), or `status` (+ `retry_after`, the raw Retry-After header: absent = the sender has no header API, null = no such header, otherwise the string) and the `body`. Non-2xx statuses map to AI_AUTH_FAILED / AI_QUOTA / AI_TIMEOUT / AI_RATE_LIMIT / AI_SERVER_ERROR / AI_BAD_REQUEST (a 429 pauses AI until the retry time, 30 s without one); a transport failure to AI_CANCELLED / AI_TIMEOUT / AI_NETWORK. A body over max_response_units UTF-16 units (or `oversize`:true, when the sender did not forward it), that is not JSON, or has no text is OUTPUT_INVALID. Every outcome settles the budget reservation: with the real usage, or with the estimate.",
+      "required": ["op", "session", "request"],
+      "properties": {
+        "op": {"const": "ai.complete"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "request": {"$ref": "#/$defs/hexId"},
+        "transport_error": {"type": ["object", "null"], "properties": {"name": {"type": "string", "description": "the exception's name"}, "code": {"type": "string", "description": "its code, or its cause's code"}, "user_aborted": {"type": "boolean", "description": "the user's own cancel signal had fired"}}},
+        "status": {"type": "integer"}, "retry_after": {"type": ["string", "number", "null"]}, "body": {"type": "string"}, "oversize": {"type": "boolean"}
+      }
+    },
+    "aiParseRequest": {
+      "type": "object",
+      "description": "parseModelResult: strict validation of a model reply (model output is data). A fenced reply is tolerated, unknown keys are listed in ignoredKeys and dropped, NUL is stripped, bounds (1 MiB reply, 500000-unit file, 8 candidates of 100000 units, 200 patch edits) are enforced, a cross-file plan keeps only the current file (the rest counts in rejectedTargets), a patch is applied to `baseline` (overlaps and surrogate splits are refused) and LF output for a CRLF baseline is converted (and announced in assumptions). A missing or non-string `raw` is OUTPUT_INVALID. A reply with duplicate keys or nesting deeper than 64 is OUTPUT_INVALID (the JSON parser is strict).",
+      "required": ["op", "session", "raw"],
+      "properties": {"op": {"const": "ai.parse"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "raw": {"type": "string"}, "task": {"enum": ["full", "insert", "realtime"], "default": "full"}, "baseline": {"type": "string", "default": ""}, "current_file": {"type": "string", "default": ""}}
+    },
+
+    "privacyAssessRequest": {
+      "type": "object",
+      "description": "assessOutbound: what may leave the machine. allow (nothing found), redact (medium findings), and for high-risk content or a credential-like file name: block (scope realtime: never sent) or confirm (any other scope: the user must decide explicitly). Findings carry kind, severity and line, never the value.",
+      "required": ["op", "session", "text"],
+      "properties": {"op": {"const": "privacy.assess"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "text": {"type": "string"}, "file_name": {"type": "string", "default": ""}, "scope": {"type": "string", "default": "realtime"}}
+    },
+    "privacyRedactRequest": {
+      "type": "object",
+      "description": "Replaces every finding of `text` by a PIME_REDACTED_n marker (numbered from 1 per call) and keeps the originals in the core under a `redaction` id. Passing the id of an earlier reply adds the parts of one prompt to the same set (up to 16 sets per session, 100000 entries per set); markers that two parts share go to the later part, as in the reference. The originals are never returned.",
+      "required": ["op", "session", "text"],
+      "properties": {"op": {"const": "privacy.redact"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "text": {"type": "string"}, "redaction": {"type": "string"}}
+    },
+    "privacyRestoreRequest": {
+      "type": "object",
+      "description": "Puts the originals of a redaction set back into a model reply; a marker that is not in the set stays and is counted in `unresolved` (the bridge must not use such a reply).",
+      "required": ["op", "session", "text", "redaction"],
+      "properties": {"op": {"const": "privacy.restore"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "text": {"type": "string"}, "redaction": {"type": "string"}}
+    },
+    "privacyReleaseRequest": {
+      "type": "object",
+      "description": "Forgets a redaction set (the originals must not linger).",
+      "required": ["op", "session", "redaction"],
+      "properties": {"op": {"const": "privacy.release"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "redaction": {"type": "string"}}
+    },
+
+    "annotateSupportsRequest": {
+      "type": "object",
+      "description": "Whether annotation is supported for a language and its line-comment prefix (assembly: ; or # for gas).",
+      "required": ["op", "session", "language"],
+      "properties": {"op": {"const": "annotate.supports"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "language": {"type": "string"}, "dialect": {"$ref": "#/$defs/dialect"}}
+    },
+    "annotatePromptRequest": {
+      "type": "object",
+      "description": "buildAnnotatePrompt: the instructions ask for what is enabled (comment and/or graph), the file text stays in the data channel.",
+      "required": ["op", "session", "language"],
+      "properties": {
+        "op": {"const": "annotate.prompt"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "language": {"type": "string"}, "dialect": {"$ref": "#/$defs/dialect"}, "locale": {"type": "string", "default": "en-US"},
+        "comment": {"type": "boolean"}, "graph": {"type": "boolean"}, "file_name": {"type": "string"}, "file_text": {"type": "string"}, "snippet": {"type": "string"}, "line": {"type": "integer"},
+        "current_symbols": {"type": "array"}, "directory_symbols": {"type": "array"}
+      }
+    },
+    "annotateF1AddendumRequest": {
+      "type": "object",
+      "description": "The text appended to the F1 instructions when autoComment / graphComment are on (empty when neither is on or the language has no line comments).",
+      "required": ["op", "session", "task", "language"],
+      "properties": {"op": {"const": "annotate.f1_addendum"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "task": {"enum": ["full", "insert"]}, "comment": {"type": "boolean"}, "graph": {"type": "boolean"}, "locale": {"type": "string", "default": "en-US"}, "language": {"type": "string"}, "dialect": {"$ref": "#/$defs/dialect"}}
+    },
+    "annotateApplyRequest": {
+      "type": "object",
+      "description": "applyAnnotateReply: the AI may only ADD comments. The commented snippet is accepted only if, after removing comments and collapsing whitespace (Python keeps indentation), it equals the original (otherwise note comment-rejected:<reason>); a `${` inside a comment is neutralised (it would become a snippet tab stop); Cypher lines are re-rendered with the language's own comment prefix after sanitising (MERGE/MATCH/CREATE only, no DELETE/DETACH/DROP/LOAD CSV/CALL, at most 12 lines of 300 characters). An unusable reply returns the original (note reply-invalid).",
+      "required": ["op", "session", "raw", "profile", "original"],
+      "properties": {"op": {"const": "annotate.apply"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "raw": {"type": "string"}, "profile": {"type": "string"}, "original": {"type": "string"}, "dialect": {"$ref": "#/$defs/dialect"}, "comment": {"type": "boolean"}, "graph": {"type": "boolean"}}
+    },
+    "symbolsExtractRequest": {
+      "type": "object",
+      "description": "The heuristic symbol index of one file (names only: declarations per language, comments and strings ignored, de-duplicated, file order, the first 200 KiB). max defaults to 60 and is capped at 1000.",
+      "required": ["op", "session", "language", "text"],
+      "properties": {"op": {"const": "symbols.extract"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "language": {"type": "string"}, "text": {"type": "string"}, "max": {"type": "integer", "minimum": 0}}
+    },
+    "symbolsDirCandidatesRequest": {
+      "type": "object",
+      "description": "The decisions of the directory scan that need no file access: of a directory listing (at most 10000 entries) the regular files other than the current one, not credential-like by name, whose language the extension identifies, in listing order. The caller reads them and calls symbols.extract.",
+      "required": ["op", "session", "current_name", "entries"],
+      "properties": {"op": {"const": "symbols.dir_candidates"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "current_name": {"type": "string"}, "entries": {"type": "array", "maxItems": 10000, "items": {"type": "object", "required": ["name", "is_file"], "properties": {"name": {"type": "string"}, "is_file": {"type": "boolean"}}}}}
+    },
+
+    "schedConfigureRequest": {
+      "type": "object",
+      "description": "The debounce window of the realtime scheduler: clamped to 150..1000 ms; anything that is not a number is the default 350.",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "sched.configure"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "debounce_ms": {"type": ["number", "null"]}}
+    },
+    "schedScheduleRequest": {
+      "type": "object",
+      "description": "New input: it becomes the newest (every older one is stale at once) and the reply says what to do with the timer and the running request. `allowed` is the bridge's own gate (AI on, not paused, a grant): not allowed means no timer.",
+      "required": ["op", "session", "key", "allowed"],
+      "properties": {"op": {"const": "sched.schedule"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "key": {"$ref": "#/$defs/inputKey"}, "allowed": {"type": "boolean"}}
+    },
+    "schedFireRequest": {
+      "type": "object",
+      "description": "The debounce timer fired and the previous request has settled: start the request only if `start` is true (the input is still the newest and still allowed).",
+      "required": ["op", "session", "key", "allowed"],
+      "properties": {"op": {"const": "sched.fire"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "key": {"$ref": "#/$defs/inputKey"}, "allowed": {"type": "boolean"}}
+    },
+    "schedFinishRequest": {
+      "type": "object",
+      "description": "A started request finished (ok) or failed (ok false, with the error code when it has one). The result is delivered only if its input is still the newest and the request was not aborted; otherwise it is discarded with STALE_RESULT.",
+      "required": ["op", "session", "key", "ok"],
+      "properties": {"op": {"const": "sched.finish"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "key": {"$ref": "#/$defs/inputKey"}, "ok": {"type": "boolean"}, "code": {"type": ["string", "null"]}}
+    },
+    "schedCancelRequest": {
+      "type": "object",
+      "description": "Forgets the newest input (nothing is stale-checked against it any more) and asks to stop the timer and the running request.",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "sched.cancel"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}}
+    },
+    "schedTouchRequest": {
+      "type": "object",
+      "description": "Input session epochs: a keystroke (seq), a document change (documentEpoch) or a language switch (profileEpoch; `changed` says whether it really switched). Returns the current key.",
+      "required": ["op", "session", "kind"],
+      "properties": {"op": {"const": "sched.touch"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "kind": {"enum": ["input", "document", "language"]}, "language": {"type": "string"}}
+    },
+    "schedIsCurrentRequest": {
+      "type": "object",
+      "description": "Whether a key still equals the session's current key (null or an older key: false).",
+      "required": ["op", "session", "key"],
+      "properties": {"op": {"const": "sched.is_current"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "key": {"oneOf": [{"$ref": "#/$defs/inputKey"}, {"type": "null"}]}}
+    },
+    "langStateRequest": {
+      "type": "object",
+      "description": "InputSession.resolve: a manual lock always beats automatic detection and weak evidence never switches the profile; the session's language (and profile epoch) follows the decision.",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "lang.state"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "language_id": {"type": ["string", "null"]}, "file_name": {"type": ["string", "null"]}, "text": {"type": ["string", "null"], "description": "the head of the file"}, "file_key": {"type": "string", "default": "", "description": "a hash of the document uri, never a path"}}
+    },
+    "langLockRequest": {
+      "type": "object",
+      "description": "Locks the profile for one file (file_key) or for everything (scope global). An unknown profile is refused: locked false. The reply lists the locks for persistence.",
+      "required": ["op", "session", "profile"],
+      "properties": {"op": {"const": "lang.lock"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "profile": {"type": "string"}, "scope": {"enum": ["file", "global"], "default": "file"}, "file_key": {"type": "string", "default": ""}}
+    },
+    "langUnlockRequest": {
+      "type": "object",
+      "required": ["op", "session"],
+      "properties": {"op": {"const": "lang.unlock"}, "id": {"$ref": "#/$defs/id"}, "session": {"$ref": "#/$defs/session"}, "scope": {"enum": ["file", "global"], "default": "file"}, "file_key": {"type": "string", "default": ""}}
+    },
+
     "hunk": {
       "type": "object",
       "description": "Geometry in 1-based lines and UTF-16 offsets plus the display lines (kind ' ', '-' or '+'; two lines of context).",
@@ -690,6 +911,150 @@
           "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "budget": {"type": "object", "required": ["requests", "tokens", "estimated", "cost"], "properties": {"requests": {"type": "integer"}, "tokens": {"type": "integer"}, "estimated": {"type": "boolean"}, "cost": {"type": ["number", "null"], "description": "null when no price is configured"}}}}
         },
         {
+          "title": "ai.prompt / annotate.prompt",
+          "type": "object",
+          "required": ["ok", "instructions", "input"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "instructions": {"type": "string"}, "input": {"type": "string", "description": "JSON.stringify of the data channel"}}
+        },
+        {
+          "title": "ai.prepare",
+          "type": "object",
+          "required": ["ok", "request", "http", "timeout_ms", "max_response_units", "effort", "budget"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "request": {"$ref": "#/$defs/hexId"},
+            "http": {"type": "object", "required": ["url", "headers", "body"], "description": "POST body (a JSON object) and headers to send to url; redirects must not be followed (the credential header must never reach another host).", "properties": {"url": {"type": "string"}, "headers": {"type": "object", "additionalProperties": {"type": "string"}}, "body": {"type": "object"}}},
+            "timeout_ms": {"type": "integer"}, "max_response_units": {"const": 4194304}, "effort": {"$ref": "#/$defs/effortResult"}, "budget": {"$ref": "#/$defs/budgetSnapshot"}
+          }
+        },
+        {
+          "title": "ai.complete",
+          "type": "object",
+          "required": ["ok", "text", "usage", "estimated", "effort", "elapsed_ms", "budget"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"},
+            "usage": {"oneOf": [{"type": "object", "required": ["input", "output"], "properties": {"input": {"type": "integer", "minimum": 0}, "output": {"type": "integer", "minimum": 0}}}, {"type": "null"}], "description": "null when the reply had no usable (non-negative integer) token counts"},
+            "estimated": {"type": "boolean"}, "effort": {"$ref": "#/$defs/effortResult"}, "elapsed_ms": {"type": "integer"}, "budget": {"$ref": "#/$defs/budgetSnapshot"}
+          }
+        },
+        {
+          "title": "ai.parse",
+          "type": "object",
+          "required": ["ok", "result"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"},
+            "result": {"type": "object", "required": ["insertCandidates", "explanation", "ignoredKeys", "rejectedTargets", "assumptions"], "properties": {"insertCandidates": {"type": "array", "items": {"type": "string"}}, "explanation": {"type": "string"}, "ignoredKeys": {"type": "array", "items": {"type": "string"}}, "rejectedTargets": {"type": "integer"}, "assumptions": {"type": "array", "items": {"type": "string"}}, "proposedText": {"type": "string"}}}
+          }
+        },
+        {
+          "title": "privacy.assess",
+          "type": "object",
+          "required": ["ok", "action", "scanned", "summary"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "action": {"enum": ["allow", "redact", "block", "confirm"]},
+            "scanned": {"type": "object", "required": ["highest", "sensitiveFile", "blocked", "truncated", "findings"], "properties": {"highest": {"enum": ["none", "medium", "high"]}, "sensitiveFile": {"type": "boolean"}, "blocked": {"type": "boolean"}, "truncated": {"type": "boolean"}, "findings": {"type": "array", "items": {"type": "object", "required": ["kind", "severity", "line"], "properties": {"kind": {"type": "string"}, "severity": {"enum": ["medium", "high"]}, "line": {"type": "integer", "minimum": 1}}}}}},
+            "summary": {"type": "object", "additionalProperties": {"type": "integer"}, "description": "findings per kind"}
+          }
+        },
+        {
+          "title": "privacy.redact",
+          "type": "object",
+          "required": ["ok", "text", "count", "total", "redaction"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}, "count": {"type": "integer", "description": "values redacted by this call"}, "total": {"type": "integer", "description": "values in the set"}, "redaction": {"type": "string"}}
+        },
+        {
+          "title": "privacy.restore",
+          "type": "object",
+          "required": ["ok", "text", "unresolved"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}, "unresolved": {"type": "integer", "minimum": 0}}
+        },
+        {
+          "title": "privacy.release",
+          "type": "object",
+          "required": ["ok", "released"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "released": {"type": "boolean"}}
+        },
+        {
+          "title": "annotate.supports",
+          "type": "object",
+          "required": ["ok", "supported", "prefix"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "supported": {"type": "boolean"}, "prefix": {"type": ["string", "null"]}}
+        },
+        {
+          "title": "annotate.f1_addendum",
+          "type": "object",
+          "required": ["ok", "text"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string"}}
+        },
+        {
+          "title": "annotate.apply",
+          "type": "object",
+          "required": ["ok", "text", "notes"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "text": {"type": "string", "description": "what to insert"}, "notes": {"type": "array", "items": {"type": "string"}}, "commented": {"type": "boolean"}, "graph": {"type": "boolean"}}
+        },
+        {
+          "title": "symbols.extract",
+          "type": "object",
+          "required": ["ok", "symbols"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "symbols": {"type": "array", "items": {"type": "object", "required": ["kind", "name"], "properties": {"kind": {"type": "string"}, "name": {"type": "string"}}}}}
+        },
+        {
+          "title": "symbols.dir_candidates",
+          "type": "object",
+          "required": ["ok", "candidates"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "candidates": {"type": "array", "items": {"type": "object", "required": ["name", "language"], "properties": {"name": {"type": "string"}, "language": {"$ref": "#/$defs/language"}}}}}
+        },
+        {
+          "title": "sched.configure",
+          "type": "object",
+          "required": ["ok", "debounce_ms"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "debounce_ms": {"type": "integer", "minimum": 150, "maximum": 1000}}
+        },
+        {
+          "title": "sched.schedule / sched.cancel",
+          "type": "object",
+          "required": ["ok", "effects", "stats"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "effects": {"$ref": "#/$defs/effects"}, "stats": {"$ref": "#/$defs/stats"}}
+        },
+        {
+          "title": "sched.fire",
+          "type": "object",
+          "required": ["ok", "start", "stats"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "start": {"type": "boolean"}, "stats": {"$ref": "#/$defs/stats"}}
+        },
+        {
+          "title": "sched.finish",
+          "type": "object",
+          "required": ["ok", "action", "stats"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "action": {"enum": ["deliver", "discard"]}, "code": {"type": "string", "description": "with discard: STALE_RESULT, the error code of the request, or ERROR"}, "stats": {"$ref": "#/$defs/stats"}}
+        },
+        {
+          "title": "sched.touch",
+          "type": "object",
+          "required": ["ok", "key"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "changed": {"type": "boolean"}, "key": {"$ref": "#/$defs/inputKey"}}
+        },
+        {
+          "title": "sched.is_current",
+          "type": "object",
+          "required": ["ok", "current"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "current": {"type": "boolean"}}
+        },
+        {
+          "title": "lang.state",
+          "type": "object",
+          "required": ["ok", "decision", "key"],
+          "properties": {
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "key": {"$ref": "#/$defs/inputKey"},
+            "decision": {"type": "object", "required": ["language", "reason", "changed", "uncertain", "suggestion", "confidence", "dialectHints", "locked"], "properties": {"language": {"type": "string"}, "reason": {"type": "string"}, "changed": {"type": "boolean"}, "uncertain": {"type": "boolean"}, "suggestion": {"type": ["string", "null"]}, "confidence": {"type": "integer"}, "dialectHints": {"type": "object", "additionalProperties": {"type": "string"}}, "locked": {"type": "boolean"}}}
+          }
+        },
+        {
+          "title": "lang.lock / lang.unlock",
+          "type": "object",
+          "required": ["ok", "file_locks", "global_lock"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "locked": {"type": "boolean"}, "file_locks": {"type": "object", "additionalProperties": {"$ref": "#/$defs/language"}}, "global_lock": {"oneOf": [{"$ref": "#/$defs/language"}, {"type": "null"}]}}
+        },
+        {
           "title": "success without data (session.close, grant.consume, budget.configure, budget.reset, edit.discard, edit.purge)",
           "type": "object",
           "required": ["ok"],
@@ -706,11 +1071,15 @@
                 "INVALID_JSON", "INVALID_REQUEST", "PAYLOAD_TOO_LARGE", "UNKNOWN_OPERATION", "NO_SESSION", "INTERNAL",
                 "AI_BUDGET_EXCEEDED", "CONTEXT_UNAVAILABLE", "CROSS_FILE_DENIED", "DOCUMENT_CLOSED", "EDIT_REJECTED", "EDIT_UNKNOWN",
                 "FULL_CONTEXT_REQUIRED", "GRANT_DENIED", "MODEL_UNSUPPORTED", "PATCH_INVALID", "SETTINGS_INVALID", "STALE_DOCUMENT",
-                "STALE_RESULT", "STALE_SELECTION", "TARGET_RANGE_INVALID", "TOKEN_INVALID", "USER_CONFIRMATION_REQUIRED", "VALIDATION_FAILED"
+                "STALE_RESULT", "STALE_SELECTION", "TARGET_RANGE_INVALID", "TOKEN_INVALID", "USER_CONFIRMATION_REQUIRED", "VALIDATION_FAILED",
+                "AI_DISABLED", "AI_RATE_LIMIT", "AI_AUTH_FAILED", "AI_QUOTA", "AI_SERVER_ERROR", "AI_TIMEOUT", "AI_NETWORK", "AI_BAD_REQUEST", "AI_CANCELLED", "OUTPUT_INVALID", "VAULT_ERROR", "CONSENT_REQUIRED", "SENSITIVE_BLOCKED"
               ]
             },
             "field": {"type": "string", "description": "INVALID_REQUEST: the offending request field (nested fields as a.b)."},
-            "message": {"type": "string", "description": "Never contains document text, prompts or credentials."}
+            "message": {"type": "string", "description": "Never contains document text, prompts or credentials."},
+            "retryable": {"type": "boolean", "description": "AI failures (ai.prepare / ai.complete): the metadata of the reference error."}, "user_action": {"type": "string", "description": "AI failures: what the user can do (may be empty)."},
+            "retry_after_sec": {"type": "number", "description": "AI_RATE_LIMIT from ai.complete: the provider's Retry-After in seconds, when it gave a finite one."}, "detail": {"type": "string", "description": "AI_NETWORK: a sanitised transport code such as ECONNREFUSED, never text from the exchange."},
+            "budget": {"$ref": "#/$defs/budgetSnapshot", "description": "AI failures: the budget after the failure was settled."}
           }
         },
         {

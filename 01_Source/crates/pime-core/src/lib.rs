@@ -33,6 +33,14 @@ pub mod util;
 pub mod validators;
 pub mod x86;
 
+// Steps 1.2 / 1.3: AI request logic, annotations, symbols, realtime scheduling
+pub mod ai;
+pub mod annotate;
+pub mod ops_ai;
+mod regex;
+pub mod scheduler;
+pub mod symbols;
+
 pub const VERSION: &str = "0.2.0";
 /// Protocol 0.3 is a superset of 0.2: every 0.2 operation is unchanged, the session operations are added.
 pub const PROTOCOL: &str = "0.3";

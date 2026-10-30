@@ -39,6 +39,22 @@ path = "../../tests/rust/protocol_v03.rs"
 name = "protocol_v03_edit"
 path = "../../tests/rust/protocol_v03_edit.rs"
 
+[[test]]
+name = "parity_ai"
+path = "../../tests/rust/parity_ai.rs"
+
+[[test]]
+name = "parity_annotate"
+path = "../../tests/rust/parity_annotate.rs"
+
+[[test]]
+name = "parity_sched"
+path = "../../tests/rust/parity_sched.rs"
+
+[[test]]
+name = "protocol_v03_ai"
+path = "../../tests/rust/protocol_v03_ai.rs"
+
 [[bin]]
 name = "pime-core"
 path = "src/main.rs"

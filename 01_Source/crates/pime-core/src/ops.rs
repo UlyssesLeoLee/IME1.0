@@ -82,6 +82,16 @@ pub const BULK_OPS: &[&str] = &[
     "edit.finish_apply",
 ];
 
+/// Whether `op` is a 0.3 operation of this core (the lists of `OPS` and of the step 1.2/1.3 operations).
+pub fn is_op(op: &str) -> bool {
+    OPS.contains(&op) || crate::ops_ai::OPS.contains(&op)
+}
+
+/// Whether `op` may use a request line longer than the 0.2 limit.
+pub fn is_bulk_op(op: &str) -> bool {
+    BULK_OPS.contains(&op) || crate::ops_ai::BULK_OPS.contains(&op)
+}
+
 /// The F1 preview of a result shows its first 4000 UTF-16 units.
 pub const PREVIEW_UNITS: usize = 4000;
 const MAX_HUNK_IDS: usize = 100_000;
@@ -93,6 +103,8 @@ pub struct OpError {
     pub code: String,
     pub message: Option<String>,
     pub field: Option<String>,
+    /// Further response fields of an expected failure (for example the AI error metadata `retryable`).
+    pub extra: Vec<(&'static str, Json)>,
 }
 
 impl OpError {
@@ -101,6 +113,7 @@ impl OpError {
             code: "INVALID_REQUEST".to_string(),
             message: None,
             field: Some(field.to_string()),
+            extra: Vec::new(),
         }
     }
 
@@ -109,6 +122,7 @@ impl OpError {
             code: code.to_string(),
             message: Some(message.to_string()),
             field: None,
+            extra: Vec::new(),
         }
     }
 
@@ -127,6 +141,7 @@ impl OpError {
         if let Some(f) = &self.field {
             pairs.push(("field", Json::str(f)));
         }
+        pairs.extend(self.extra.iter().map(|(k, v)| (*k, v.clone())));
         Json::obj(pairs)
     }
 }
@@ -137,6 +152,7 @@ impl From<PimeError> for OpError {
             code: e.code.to_string(),
             message: Some(e.message),
             field: None,
+            extra: Vec::new(),
         }
     }
 }
@@ -961,6 +977,7 @@ fn budget_snapshot(session: &Session) -> OpResult {
 
 fn run(session: &mut Session, now: u64, op: &str, req: &Json) -> OpResult {
     match op {
+        op if crate::ops_ai::OPS.contains(&op) => crate::ops_ai::run(session, now, op, req),
         "settings.apply" => apply_settings(session, req),
         "settings.resolve" => resolve_scenario(session, req),
         "ctx.snapshot" => ctx_snapshot(session, req),

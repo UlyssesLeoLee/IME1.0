@@ -157,23 +157,46 @@ fn rust_raw_opener(t: &[char], i: usize) -> Option<(usize, usize)> {
     Some((k + 1 - i, hashes))
 }
 
+/// What a masked region is: a comment or a string literal.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpanKind {
+    Comment,
+    String,
+}
+
+/// A region blanked by the masking, in char indices (`end` exclusive).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Span {
+    pub start: usize,
+    pub end: usize,
+    pub kind: SpanKind,
+}
+
 /// Replaces comments and literals by blanks (newlines kept) so bracket/indent logic only sees code.
 pub fn mask_source(text: &str, style: Style) -> String {
     string_of(&mask_chars(&chars_of(text), style))
 }
 
 pub fn mask_chars(text: &[char], style: Style) -> Vec<char> {
+    mask_chars_spans(text, style).0
+}
+
+/// Like [`mask_chars`], and also reports every blanked region (the `spans` argument of `maskSource`).
+pub fn mask_chars_spans(text: &[char], style: Style) -> (Vec<char>, Vec<Span>) {
     let n = text.len();
     let mut out = text.to_vec();
+    let mut spans = Vec::new();
     let mut i = 0usize;
     while i < n {
         let c = text[i];
         let d = text.get(i + 1).copied();
         let mut end: Option<usize> = None;
+        let mut kind = SpanKind::String;
         match style {
             Style::Python => {
                 if c == '#' {
                     end = Some(line_end(text, i));
+                    kind = SpanKind::Comment;
                 } else if c == '"' || c == '\'' {
                     if text.get(i + 1) == Some(&c) && text.get(i + 2) == Some(&c) {
                         let e = find_seq(text, &[c, c, c], i + 3);
@@ -187,8 +210,10 @@ pub fn mask_chars(text: &[char], style: Style) -> Vec<char> {
                 if c == '<' && d == Some('#') {
                     let e = find_seq(text, &['#', '>'], i + 2);
                     end = Some(e.map_or(n, |e| e + 2));
+                    kind = SpanKind::Comment;
                 } else if c == '#' {
                     end = Some(line_end(text, i));
+                    kind = SpanKind::Comment;
                 } else if c == '@' && matches!(d, Some('"' | '\'')) && {
                     // rest of the line after @" must be blanks only (/^[ \t]*\r?$/)
                     let le = line_end(text, i);
@@ -212,7 +237,9 @@ pub fn mask_chars(text: &[char], style: Style) -> Vec<char> {
             Style::Rust | Style::C | Style::TypeScript => {
                 if c == '/' && d == Some('/') {
                     end = Some(line_end(text, i));
+                    kind = SpanKind::Comment;
                 } else if c == '/' && d == Some('*') {
+                    kind = SpanKind::Comment;
                     let mut depth = 1usize;
                     let mut j = i + 2;
                     while j < n && depth > 0 {
@@ -252,6 +279,11 @@ pub fn mask_chars(text: &[char], style: Style) -> Vec<char> {
         }
         match end {
             Some(e) if e > i => {
+                spans.push(Span {
+                    start: i,
+                    end: e.min(n),
+                    kind,
+                });
                 for slot in out.iter_mut().take(e.min(n)).skip(i) {
                     if *slot != '\n' && *slot != '\r' {
                         *slot = ' ';
@@ -262,7 +294,7 @@ pub fn mask_chars(text: &[char], style: Style) -> Vec<char> {
             _ => i += 1,
         }
     }
-    out
+    (out, spans)
 }
 
 // ---------------------------------------------------------------- brackets

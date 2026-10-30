@@ -1,0 +1,3201 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "extract": [
+  {
+   "profile": "rust",
+   "text": "pub struct Point;\n// fn hidden() {}\nlet s = \"fn fake()\";\npub(crate) async fn run() {}\nimpl<T> Trait for Point {}\nmod util;\nenum E {}\nconst X: u8 = 1;\n",
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "Point"
+    },
+    {
+     "kind": "fn",
+     "name": "run"
+    },
+    {
+     "kind": "impl",
+     "name": "Point"
+    },
+    {
+     "kind": "mod",
+     "name": "util"
+    },
+    {
+     "kind": "enum",
+     "name": "E"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub struct Point;\n// fn hidden() {}\nlet s = \"fn fake()\";\npub(crate) async fn run() {}\nimpl<T> Trait for Point {}\nmod util;\nenum E {}\nconst X: u8 = 1;\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "Point"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub struct Point;\n// fn hidden() {}\nlet s = \"fn fake()\";\npub(crate) async fn run() {}\nimpl<T> Trait for Point {}\nmod util;\nenum E {}\nconst X: u8 = 1;\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "Point"
+    },
+    {
+     "kind": "fn",
+     "name": "run"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub struct Point;\n// fn hidden() {}\nlet s = \"fn fake()\";\npub(crate) async fn run() {}\nimpl<T> Trait for Point {}\nmod util;\nenum E {}\nconst X: u8 = 1;\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "Point"
+    },
+    {
+     "kind": "fn",
+     "name": "run"
+    },
+    {
+     "kind": "impl",
+     "name": "Point"
+    },
+    {
+     "kind": "mod",
+     "name": "util"
+    },
+    {
+     "kind": "enum",
+     "name": "E"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub struct Point;\n// fn hidden() {}\nlet s = \"fn fake()\";\npub(crate) async fn run() {}\nimpl<T> Trait for Point {}\nmod util;\nenum E {}\nconst X: u8 = 1;\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "Point"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub(in crate::a) unsafe extern \"C\" fn ffi() {}\nconst unsafe fn c() {}\nasync unsafe fn au() {}\ntype Alias = u8;\nstatic S: u8 = 1;\ntrait T {}\npub trait Pt { fn m(&self); }\n    fn indented() {}\n",
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "c"
+    },
+    {
+     "kind": "fn",
+     "name": "au"
+    },
+    {
+     "kind": "type",
+     "name": "Alias"
+    },
+    {
+     "kind": "static",
+     "name": "S"
+    },
+    {
+     "kind": "trait",
+     "name": "T"
+    },
+    {
+     "kind": "trait",
+     "name": "Pt"
+    },
+    {
+     "kind": "fn",
+     "name": "indented"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub(in crate::a) unsafe extern \"C\" fn ffi() {}\nconst unsafe fn c() {}\nasync unsafe fn au() {}\ntype Alias = u8;\nstatic S: u8 = 1;\ntrait T {}\npub trait Pt { fn m(&self); }\n    fn indented() {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "c"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub(in crate::a) unsafe extern \"C\" fn ffi() {}\nconst unsafe fn c() {}\nasync unsafe fn au() {}\ntype Alias = u8;\nstatic S: u8 = 1;\ntrait T {}\npub trait Pt { fn m(&self); }\n    fn indented() {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "c"
+    },
+    {
+     "kind": "fn",
+     "name": "au"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub(in crate::a) unsafe extern \"C\" fn ffi() {}\nconst unsafe fn c() {}\nasync unsafe fn au() {}\ntype Alias = u8;\nstatic S: u8 = 1;\ntrait T {}\npub trait Pt { fn m(&self); }\n    fn indented() {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "c"
+    },
+    {
+     "kind": "fn",
+     "name": "au"
+    },
+    {
+     "kind": "type",
+     "name": "Alias"
+    },
+    {
+     "kind": "static",
+     "name": "S"
+    },
+    {
+     "kind": "trait",
+     "name": "T"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub(in crate::a) unsafe extern \"C\" fn ffi() {}\nconst unsafe fn c() {}\nasync unsafe fn au() {}\ntype Alias = u8;\nstatic S: u8 = 1;\ntrait T {}\npub trait Pt { fn m(&self); }\n    fn indented() {}\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "impl Foo {}\nimpl<T: Clone, U> Bar<T> for Baz<U> {}\nimpl <T> Qux for Vec<T> {}\nimpl fmt::Display for Wrapper {}\nimpl<'a> Iterator for It<'a> {}\nimpl&mut X {}\n",
+   "expect": [
+    {
+     "kind": "impl",
+     "name": "Foo"
+    },
+    {
+     "kind": "impl",
+     "name": "Baz"
+    },
+    {
+     "kind": "impl",
+     "name": "Vec"
+    },
+    {
+     "kind": "impl",
+     "name": "Wrapper"
+    },
+    {
+     "kind": "impl",
+     "name": "It"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "impl Foo {}\nimpl<T: Clone, U> Bar<T> for Baz<U> {}\nimpl <T> Qux for Vec<T> {}\nimpl fmt::Display for Wrapper {}\nimpl<'a> Iterator for It<'a> {}\nimpl&mut X {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "impl",
+     "name": "Foo"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "impl Foo {}\nimpl<T: Clone, U> Bar<T> for Baz<U> {}\nimpl <T> Qux for Vec<T> {}\nimpl fmt::Display for Wrapper {}\nimpl<'a> Iterator for It<'a> {}\nimpl&mut X {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "impl",
+     "name": "Foo"
+    },
+    {
+     "kind": "impl",
+     "name": "Baz"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "impl Foo {}\nimpl<T: Clone, U> Bar<T> for Baz<U> {}\nimpl <T> Qux for Vec<T> {}\nimpl fmt::Display for Wrapper {}\nimpl<'a> Iterator for It<'a> {}\nimpl&mut X {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "impl",
+     "name": "Foo"
+    },
+    {
+     "kind": "impl",
+     "name": "Baz"
+    },
+    {
+     "kind": "impl",
+     "name": "Vec"
+    },
+    {
+     "kind": "impl",
+     "name": "Wrapper"
+    },
+    {
+     "kind": "impl",
+     "name": "It"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "impl Foo {}\nimpl<T: Clone, U> Bar<T> for Baz<U> {}\nimpl <T> Qux for Vec<T> {}\nimpl fmt::Display for Wrapper {}\nimpl<'a> Iterator for It<'a> {}\nimpl&mut X {}\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "impl",
+     "name": "Foo"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "fn a() {}\nfn a() {}\nstruct a;\nstruct a;\nimpl a {}\nimpl Tr for a {}\n",
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "a"
+    },
+    {
+     "kind": "struct",
+     "name": "a"
+    },
+    {
+     "kind": "impl",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "fn a() {}\nfn a() {}\nstruct a;\nstruct a;\nimpl a {}\nimpl Tr for a {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "fn a() {}\nfn a() {}\nstruct a;\nstruct a;\nimpl a {}\nimpl Tr for a {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "a"
+    },
+    {
+     "kind": "struct",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "fn a() {}\nfn a() {}\nstruct a;\nstruct a;\nimpl a {}\nimpl Tr for a {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "a"
+    },
+    {
+     "kind": "struct",
+     "name": "a"
+    },
+    {
+     "kind": "impl",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "fn a() {}\nfn a() {}\nstruct a;\nstruct a;\nimpl a {}\nimpl Tr for a {}\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "r#\"fn in_raw() {}\"#;\n/* fn in_block() {} */\nfn real() {}\n\"fn in_string() {}\"\nfn r#try() {}\nfn é() {}\nfn _x1$() {}\n",
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "real"
+    },
+    {
+     "kind": "fn",
+     "name": "r"
+    },
+    {
+     "kind": "fn",
+     "name": "_x1$"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "r#\"fn in_raw() {}\"#;\n/* fn in_block() {} */\nfn real() {}\n\"fn in_string() {}\"\nfn r#try() {}\nfn é() {}\nfn _x1$() {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "real"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "r#\"fn in_raw() {}\"#;\n/* fn in_block() {} */\nfn real() {}\n\"fn in_string() {}\"\nfn r#try() {}\nfn é() {}\nfn _x1$() {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "real"
+    },
+    {
+     "kind": "fn",
+     "name": "r"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "r#\"fn in_raw() {}\"#;\n/* fn in_block() {} */\nfn real() {}\n\"fn in_string() {}\"\nfn r#try() {}\nfn é() {}\nfn _x1$() {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "real"
+    },
+    {
+     "kind": "fn",
+     "name": "r"
+    },
+    {
+     "kind": "fn",
+     "name": "_x1$"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "r#\"fn in_raw() {}\"#;\n/* fn in_block() {} */\nfn real() {}\n\"fn in_string() {}\"\nfn r#try() {}\nfn é() {}\nfn _x1$() {}\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "fn\n  split_line() {}\nstruct\n  Split;\n",
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "fn\n  split_line() {}\nstruct\n  Split;\n",
+   "max": 1,
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "fn\n  split_line() {}\nstruct\n  Split;\n",
+   "max": 2,
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "fn\n  split_line() {}\nstruct\n  Split;\n",
+   "max": 5,
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "fn\n  split_line() {}\nstruct\n  Split;\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "pub fn pub_fn() {}\npublic fn nope() {}\nFN upper() {}\n  \t fn tabs() {}\n",
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "pub_fn"
+    },
+    {
+     "kind": "fn",
+     "name": "tabs"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub fn pub_fn() {}\npublic fn nope() {}\nFN upper() {}\n  \t fn tabs() {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "pub_fn"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub fn pub_fn() {}\npublic fn nope() {}\nFN upper() {}\n  \t fn tabs() {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "pub_fn"
+    },
+    {
+     "kind": "fn",
+     "name": "tabs"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub fn pub_fn() {}\npublic fn nope() {}\nFN upper() {}\n  \t fn tabs() {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "pub_fn"
+    },
+    {
+     "kind": "fn",
+     "name": "tabs"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "pub fn pub_fn() {}\npublic fn nope() {}\nFN upper() {}\n  \t fn tabs() {}\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "pub_fn"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "class A:\n    def m(self): pass\nasync def go(): pass\n# def hidden()\n",
+   "expect": [
+    {
+     "kind": "class",
+     "name": "A"
+    },
+    {
+     "kind": "def",
+     "name": "m"
+    },
+    {
+     "kind": "def",
+     "name": "go"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "class A:\n    def m(self): pass\nasync def go(): pass\n# def hidden()\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "A"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "class A:\n    def m(self): pass\nasync def go(): pass\n# def hidden()\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "A"
+    },
+    {
+     "kind": "def",
+     "name": "m"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "class A:\n    def m(self): pass\nasync def go(): pass\n# def hidden()\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "A"
+    },
+    {
+     "kind": "def",
+     "name": "m"
+    },
+    {
+     "kind": "def",
+     "name": "go"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "class A:\n    def m(self): pass\nasync def go(): pass\n# def hidden()\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "A"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "x = \"\"\"\ndef in_doc():\n\"\"\"\ndef real():\n    pass\n@dec\nclass D(B): pass\n\tdef tabbed(): pass\nasync  def  spaced ( ) : pass\ndefine = 1\nclass_ = 2\nclass é: pass\n",
+   "expect": [
+    {
+     "kind": "def",
+     "name": "real"
+    },
+    {
+     "kind": "class",
+     "name": "D"
+    },
+    {
+     "kind": "def",
+     "name": "tabbed"
+    },
+    {
+     "kind": "def",
+     "name": "spaced"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "x = \"\"\"\ndef in_doc():\n\"\"\"\ndef real():\n    pass\n@dec\nclass D(B): pass\n\tdef tabbed(): pass\nasync  def  spaced ( ) : pass\ndefine = 1\nclass_ = 2\nclass é: pass\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "def",
+     "name": "real"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "x = \"\"\"\ndef in_doc():\n\"\"\"\ndef real():\n    pass\n@dec\nclass D(B): pass\n\tdef tabbed(): pass\nasync  def  spaced ( ) : pass\ndefine = 1\nclass_ = 2\nclass é: pass\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "def",
+     "name": "real"
+    },
+    {
+     "kind": "class",
+     "name": "D"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "x = \"\"\"\ndef in_doc():\n\"\"\"\ndef real():\n    pass\n@dec\nclass D(B): pass\n\tdef tabbed(): pass\nasync  def  spaced ( ) : pass\ndefine = 1\nclass_ = 2\nclass é: pass\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "def",
+     "name": "real"
+    },
+    {
+     "kind": "class",
+     "name": "D"
+    },
+    {
+     "kind": "def",
+     "name": "tabbed"
+    },
+    {
+     "kind": "def",
+     "name": "spaced"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "x = \"\"\"\ndef in_doc():\n\"\"\"\ndef real():\n    pass\n@dec\nclass D(B): pass\n\tdef tabbed(): pass\nasync  def  spaced ( ) : pass\ndefine = 1\nclass_ = 2\nclass é: pass\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "python",
+   "text": "def a(): pass\ndef a(): pass\nclass a: pass\n",
+   "expect": [
+    {
+     "kind": "def",
+     "name": "a"
+    },
+    {
+     "kind": "class",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "def a(): pass\ndef a(): pass\nclass a: pass\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "def",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "def a(): pass\ndef a(): pass\nclass a: pass\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "def",
+     "name": "a"
+    },
+    {
+     "kind": "class",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "def a(): pass\ndef a(): pass\nclass a: pass\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "def",
+     "name": "a"
+    },
+    {
+     "kind": "class",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "python",
+   "text": "def a(): pass\ndef a(): pass\nclass a: pass\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "def",
+     "name": "a"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export interface I {}\nexport const f = (x: number) => x;\nexport default class C {}\ntype T = string;\n",
+   "expect": [
+    {
+     "kind": "interface",
+     "name": "I"
+    },
+    {
+     "kind": "function",
+     "name": "f"
+    },
+    {
+     "kind": "class",
+     "name": "C"
+    },
+    {
+     "kind": "type",
+     "name": "T"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export interface I {}\nexport const f = (x: number) => x;\nexport default class C {}\ntype T = string;\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "interface",
+     "name": "I"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export interface I {}\nexport const f = (x: number) => x;\nexport default class C {}\ntype T = string;\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "interface",
+     "name": "I"
+    },
+    {
+     "kind": "function",
+     "name": "f"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export interface I {}\nexport const f = (x: number) => x;\nexport default class C {}\ntype T = string;\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "interface",
+     "name": "I"
+    },
+    {
+     "kind": "function",
+     "name": "f"
+    },
+    {
+     "kind": "class",
+     "name": "C"
+    },
+    {
+     "kind": "type",
+     "name": "T"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export interface I {}\nexport const f = (x: number) => x;\nexport default class C {}\ntype T = string;\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "interface",
+     "name": "I"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export default abstract class AC {}\ndeclare function df(): void;\nexport declare const x: number;\nexport async function af() {}\nnamespace N {}\nenum E { A }\nexport const g: Fn = async (a, b) => a;\nconst h = x => x;\nconst k = async y => y;\nconst typed = (a: string): number => 1;\nconst obj = { a: 1 };\nconst notfn = (1 + 2);\nexport const u: (a: number) => void = (a) => {};\nlet l = () => 1;\n",
+   "expect": [
+    {
+     "kind": "class",
+     "name": "AC"
+    },
+    {
+     "kind": "function",
+     "name": "df"
+    },
+    {
+     "kind": "function",
+     "name": "af"
+    },
+    {
+     "kind": "namespace",
+     "name": "N"
+    },
+    {
+     "kind": "enum",
+     "name": "E"
+    },
+    {
+     "kind": "function",
+     "name": "g"
+    },
+    {
+     "kind": "function",
+     "name": "h"
+    },
+    {
+     "kind": "function",
+     "name": "k"
+    },
+    {
+     "kind": "function",
+     "name": "typed"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export default abstract class AC {}\ndeclare function df(): void;\nexport declare const x: number;\nexport async function af() {}\nnamespace N {}\nenum E { A }\nexport const g: Fn = async (a, b) => a;\nconst h = x => x;\nconst k = async y => y;\nconst typed = (a: string): number => 1;\nconst obj = { a: 1 };\nconst notfn = (1 + 2);\nexport const u: (a: number) => void = (a) => {};\nlet l = () => 1;\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "AC"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export default abstract class AC {}\ndeclare function df(): void;\nexport declare const x: number;\nexport async function af() {}\nnamespace N {}\nenum E { A }\nexport const g: Fn = async (a, b) => a;\nconst h = x => x;\nconst k = async y => y;\nconst typed = (a: string): number => 1;\nconst obj = { a: 1 };\nconst notfn = (1 + 2);\nexport const u: (a: number) => void = (a) => {};\nlet l = () => 1;\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "AC"
+    },
+    {
+     "kind": "function",
+     "name": "df"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export default abstract class AC {}\ndeclare function df(): void;\nexport declare const x: number;\nexport async function af() {}\nnamespace N {}\nenum E { A }\nexport const g: Fn = async (a, b) => a;\nconst h = x => x;\nconst k = async y => y;\nconst typed = (a: string): number => 1;\nconst obj = { a: 1 };\nconst notfn = (1 + 2);\nexport const u: (a: number) => void = (a) => {};\nlet l = () => 1;\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "AC"
+    },
+    {
+     "kind": "function",
+     "name": "df"
+    },
+    {
+     "kind": "function",
+     "name": "af"
+    },
+    {
+     "kind": "namespace",
+     "name": "N"
+    },
+    {
+     "kind": "enum",
+     "name": "E"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "export default abstract class AC {}\ndeclare function df(): void;\nexport declare const x: number;\nexport async function af() {}\nnamespace N {}\nenum E { A }\nexport const g: Fn = async (a, b) => a;\nconst h = x => x;\nconst k = async y => y;\nconst typed = (a: string): number => 1;\nconst obj = { a: 1 };\nconst notfn = (1 + 2);\nexport const u: (a: number) => void = (a) => {};\nlet l = () => 1;\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "class",
+     "name": "AC"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "// function hidden() {}\nconst s = \"function fake() {}\";\nconst t = `class Tpl {}`;\nfunction real() {}\n/* class InBlock {} */\ninterface   Spaced   {}\nexport  default  function  dflt() {}\nfunction $dollar() {}\nclass é {}\n",
+   "expect": [
+    {
+     "kind": "function",
+     "name": "real"
+    },
+    {
+     "kind": "interface",
+     "name": "Spaced"
+    },
+    {
+     "kind": "function",
+     "name": "dflt"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "// function hidden() {}\nconst s = \"function fake() {}\";\nconst t = `class Tpl {}`;\nfunction real() {}\n/* class InBlock {} */\ninterface   Spaced   {}\nexport  default  function  dflt() {}\nfunction $dollar() {}\nclass é {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "real"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "// function hidden() {}\nconst s = \"function fake() {}\";\nconst t = `class Tpl {}`;\nfunction real() {}\n/* class InBlock {} */\ninterface   Spaced   {}\nexport  default  function  dflt() {}\nfunction $dollar() {}\nclass é {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "real"
+    },
+    {
+     "kind": "interface",
+     "name": "Spaced"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "// function hidden() {}\nconst s = \"function fake() {}\";\nconst t = `class Tpl {}`;\nfunction real() {}\n/* class InBlock {} */\ninterface   Spaced   {}\nexport  default  function  dflt() {}\nfunction $dollar() {}\nclass é {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "real"
+    },
+    {
+     "kind": "interface",
+     "name": "Spaced"
+    },
+    {
+     "kind": "function",
+     "name": "dflt"
+    }
+   ]
+  },
+  {
+   "profile": "typescript",
+   "text": "// function hidden() {}\nconst s = \"function fake() {}\";\nconst t = `class Tpl {}`;\nfunction real() {}\n/* class InBlock {} */\ninterface   Spaced   {}\nexport  default  function  dflt() {}\nfunction $dollar() {}\nclass é {}\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "powershell",
+   "text": "function Get-Thing {\n}\nfilter Only-Odd {}\n",
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Get-Thing"
+    },
+    {
+     "kind": "function",
+     "name": "Only-Odd"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "function Get-Thing {\n}\nfilter Only-Odd {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Get-Thing"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "function Get-Thing {\n}\nfilter Only-Odd {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Get-Thing"
+    },
+    {
+     "kind": "function",
+     "name": "Only-Odd"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "function Get-Thing {\n}\nfilter Only-Odd {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Get-Thing"
+    },
+    {
+     "kind": "function",
+     "name": "Only-Odd"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "function Get-Thing {\n}\nfilter Only-Odd {}\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Get-Thing"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "FUNCTION Upper-Case {}\nFilter Mixed-Case {}\n  function Indented {}\nfunction a.b-c {}\nfunction {}\nfunction  Tab\tName {}\n# function hidden {}\n\"function fake {}\"\n<# function inblock {} #>\nfunction é {}\n",
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Upper-Case"
+    },
+    {
+     "kind": "function",
+     "name": "Mixed-Case"
+    },
+    {
+     "kind": "function",
+     "name": "Indented"
+    },
+    {
+     "kind": "function",
+     "name": "a"
+    },
+    {
+     "kind": "function",
+     "name": "Tab"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "FUNCTION Upper-Case {}\nFilter Mixed-Case {}\n  function Indented {}\nfunction a.b-c {}\nfunction {}\nfunction  Tab\tName {}\n# function hidden {}\n\"function fake {}\"\n<# function inblock {} #>\nfunction é {}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Upper-Case"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "FUNCTION Upper-Case {}\nFilter Mixed-Case {}\n  function Indented {}\nfunction a.b-c {}\nfunction {}\nfunction  Tab\tName {}\n# function hidden {}\n\"function fake {}\"\n<# function inblock {} #>\nfunction é {}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Upper-Case"
+    },
+    {
+     "kind": "function",
+     "name": "Mixed-Case"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "FUNCTION Upper-Case {}\nFilter Mixed-Case {}\n  function Indented {}\nfunction a.b-c {}\nfunction {}\nfunction  Tab\tName {}\n# function hidden {}\n\"function fake {}\"\n<# function inblock {} #>\nfunction é {}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Upper-Case"
+    },
+    {
+     "kind": "function",
+     "name": "Mixed-Case"
+    },
+    {
+     "kind": "function",
+     "name": "Indented"
+    },
+    {
+     "kind": "function",
+     "name": "a"
+    },
+    {
+     "kind": "function",
+     "name": "Tab"
+    }
+   ]
+  },
+  {
+   "profile": "powershell",
+   "text": "FUNCTION Upper-Case {}\nFilter Mixed-Case {}\n  function Indented {}\nfunction a.b-c {}\nfunction {}\nfunction  Tab\tName {}\n# function hidden {}\n\"function fake {}\"\n<# function inblock {} #>\nfunction é {}\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "Upper-Case"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#define MAX 3\nstruct node { int v; };\nint add(int a, int b)\n{\n    if (a) return b;\n}\n",
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "MAX"
+    },
+    {
+     "kind": "struct",
+     "name": "node"
+    },
+    {
+     "kind": "function",
+     "name": "add"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#define MAX 3\nstruct node { int v; };\nint add(int a, int b)\n{\n    if (a) return b;\n}\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "MAX"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#define MAX 3\nstruct node { int v; };\nint add(int a, int b)\n{\n    if (a) return b;\n}\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "MAX"
+    },
+    {
+     "kind": "struct",
+     "name": "node"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#define MAX 3\nstruct node { int v; };\nint add(int a, int b)\n{\n    if (a) return b;\n}\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "MAX"
+    },
+    {
+     "kind": "struct",
+     "name": "node"
+    },
+    {
+     "kind": "function",
+     "name": "add"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#define MAX 3\nstruct node { int v; };\nint add(int a, int b)\n{\n    if (a) return b;\n}\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "MAX"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "typedef struct point Point;\ntypedef enum color { RED } Color;\nunion u { int a; };\nstatic int helper(void);\nint *ptr_fn(int x) {\n    return 0;\n}\nconst char * const name(void) {\n}\nvoid noargs()\nunsigned long long big(unsigned a)\n  {\n",
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "point"
+    },
+    {
+     "kind": "enum",
+     "name": "color"
+    },
+    {
+     "kind": "union",
+     "name": "u"
+    },
+    {
+     "kind": "function",
+     "name": "ptr_fn"
+    },
+    {
+     "kind": "function",
+     "name": "name"
+    },
+    {
+     "kind": "function",
+     "name": "noargs"
+    },
+    {
+     "kind": "function",
+     "name": "big"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "typedef struct point Point;\ntypedef enum color { RED } Color;\nunion u { int a; };\nstatic int helper(void);\nint *ptr_fn(int x) {\n    return 0;\n}\nconst char * const name(void) {\n}\nvoid noargs()\nunsigned long long big(unsigned a)\n  {\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "point"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "typedef struct point Point;\ntypedef enum color { RED } Color;\nunion u { int a; };\nstatic int helper(void);\nint *ptr_fn(int x) {\n    return 0;\n}\nconst char * const name(void) {\n}\nvoid noargs()\nunsigned long long big(unsigned a)\n  {\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "point"
+    },
+    {
+     "kind": "enum",
+     "name": "color"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "typedef struct point Point;\ntypedef enum color { RED } Color;\nunion u { int a; };\nstatic int helper(void);\nint *ptr_fn(int x) {\n    return 0;\n}\nconst char * const name(void) {\n}\nvoid noargs()\nunsigned long long big(unsigned a)\n  {\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "point"
+    },
+    {
+     "kind": "enum",
+     "name": "color"
+    },
+    {
+     "kind": "union",
+     "name": "u"
+    },
+    {
+     "kind": "function",
+     "name": "ptr_fn"
+    },
+    {
+     "kind": "function",
+     "name": "name"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "typedef struct point Point;\ntypedef enum color { RED } Color;\nunion u { int a; };\nstatic int helper(void);\nint *ptr_fn(int x) {\n    return 0;\n}\nconst char * const name(void) {\n}\nvoid noargs()\nunsigned long long big(unsigned a)\n  {\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "struct",
+     "name": "point"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "int x = 1;\nint f(int a) { return a; }\nint g(int a) { return a; } int h;\nif (x) foo(1);\nwhile (x) bar();\nreturn baz(2);\nelse qux();\nsizeof(int);\nswitch (x) {\ncase foo(1):\n",
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "int x = 1;\nint f(int a) { return a; }\nint g(int a) { return a; } int h;\nif (x) foo(1);\nwhile (x) bar();\nreturn baz(2);\nelse qux();\nsizeof(int);\nswitch (x) {\ncase foo(1):\n",
+   "max": 1,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "int x = 1;\nint f(int a) { return a; }\nint g(int a) { return a; } int h;\nif (x) foo(1);\nwhile (x) bar();\nreturn baz(2);\nelse qux();\nsizeof(int);\nswitch (x) {\ncase foo(1):\n",
+   "max": 2,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "int x = 1;\nint f(int a) { return a; }\nint g(int a) { return a; } int h;\nif (x) foo(1);\nwhile (x) bar();\nreturn baz(2);\nelse qux();\nsizeof(int);\nswitch (x) {\ncase foo(1):\n",
+   "max": 5,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "int x = 1;\nint f(int a) { return a; }\nint g(int a) { return a; } int h;\nif (x) foo(1);\nwhile (x) bar();\nreturn baz(2);\nelse qux();\nsizeof(int);\nswitch (x) {\ncase foo(1):\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "#  define SPACED 1\n  #define INDENT 2\n#define FN(x) ((x)+1)\n#define 9bad 1\n# define\n// #define hidden 1\n\"#define fake 1\"\nint ret;\nstruct;\nstruct 9x;\n",
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "SPACED"
+    },
+    {
+     "kind": "macro",
+     "name": "INDENT"
+    },
+    {
+     "kind": "macro",
+     "name": "FN"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#  define SPACED 1\n  #define INDENT 2\n#define FN(x) ((x)+1)\n#define 9bad 1\n# define\n// #define hidden 1\n\"#define fake 1\"\nint ret;\nstruct;\nstruct 9x;\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "SPACED"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#  define SPACED 1\n  #define INDENT 2\n#define FN(x) ((x)+1)\n#define 9bad 1\n# define\n// #define hidden 1\n\"#define fake 1\"\nint ret;\nstruct;\nstruct 9x;\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "SPACED"
+    },
+    {
+     "kind": "macro",
+     "name": "INDENT"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#  define SPACED 1\n  #define INDENT 2\n#define FN(x) ((x)+1)\n#define 9bad 1\n# define\n// #define hidden 1\n\"#define fake 1\"\nint ret;\nstruct;\nstruct 9x;\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "SPACED"
+    },
+    {
+     "kind": "macro",
+     "name": "INDENT"
+    },
+    {
+     "kind": "macro",
+     "name": "FN"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "#  define SPACED 1\n  #define INDENT 2\n#define FN(x) ((x)+1)\n#define 9bad 1\n# define\n// #define hidden 1\n\"#define fake 1\"\nint ret;\nstruct;\nstruct 9x;\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "macro",
+     "name": "SPACED"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "void a(void);\nvoid b(void) {}\nvoid c(int x)\n\n{\n}\nint d(char *s, ...)\t{ }\nstatic inline int e(void) { return 1; }\nvoid (*fp)(void);\nint main(int argc, char **argv) {\n",
+   "expect": [
+    {
+     "kind": "function",
+     "name": "c"
+    },
+    {
+     "kind": "function",
+     "name": "main"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "void a(void);\nvoid b(void) {}\nvoid c(int x)\n\n{\n}\nint d(char *s, ...)\t{ }\nstatic inline int e(void) { return 1; }\nvoid (*fp)(void);\nint main(int argc, char **argv) {\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "c"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "void a(void);\nvoid b(void) {}\nvoid c(int x)\n\n{\n}\nint d(char *s, ...)\t{ }\nstatic inline int e(void) { return 1; }\nvoid (*fp)(void);\nint main(int argc, char **argv) {\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "c"
+    },
+    {
+     "kind": "function",
+     "name": "main"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "void a(void);\nvoid b(void) {}\nvoid c(int x)\n\n{\n}\nint d(char *s, ...)\t{ }\nstatic inline int e(void) { return 1; }\nvoid (*fp)(void);\nint main(int argc, char **argv) {\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "function",
+     "name": "c"
+    },
+    {
+     "kind": "function",
+     "name": "main"
+    }
+   ]
+  },
+  {
+   "profile": "c",
+   "text": "void a(void);\nvoid b(void) {}\nvoid c(int x)\n\n{\n}\nint d(char *s, ...)\t{ }\nstatic inline int e(void) { return 1; }\nvoid (*fp)(void);\nint main(int argc, char **argv) {\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "long\nmultiline(int a,\n          int b) {\n",
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "long\nmultiline(int a,\n          int b) {\n",
+   "max": 1,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "long\nmultiline(int a,\n          int b) {\n",
+   "max": 2,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "long\nmultiline(int a,\n          int b) {\n",
+   "max": 5,
+   "expect": []
+  },
+  {
+   "profile": "c",
+   "text": "long\nmultiline(int a,\n          int b) {\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "assembly",
+   "text": "_start:\n    mov rax, 1 ; x:\nloop_a:\n",
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    },
+    {
+     "kind": "label",
+     "name": "loop_a"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "_start:\n    mov rax, 1 ; x:\nloop_a:\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "_start:\n    mov rax, 1 ; x:\nloop_a:\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    },
+    {
+     "kind": "label",
+     "name": "loop_a"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "_start:\n    mov rax, 1 ; x:\nloop_a:\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    },
+    {
+     "kind": "label",
+     "name": "loop_a"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "_start:\n    mov rax, 1 ; x:\nloop_a:\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": ".L1:\nmain:  ; comment\n  mov rax, 1\n.loop.inner:\nfoo$bar:\n9bad:\n  indented_label:\n label with space:\nx: y:\n\"str:\"\n; label_in_comment:\n",
+   "expect": [
+    {
+     "kind": "label",
+     "name": ".L1"
+    },
+    {
+     "kind": "label",
+     "name": "main"
+    },
+    {
+     "kind": "label",
+     "name": ".loop.inner"
+    },
+    {
+     "kind": "label",
+     "name": "foo$bar"
+    },
+    {
+     "kind": "label",
+     "name": "indented_label"
+    },
+    {
+     "kind": "label",
+     "name": "x"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": ".L1:\nmain:  ; comment\n  mov rax, 1\n.loop.inner:\nfoo$bar:\n9bad:\n  indented_label:\n label with space:\nx: y:\n\"str:\"\n; label_in_comment:\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "label",
+     "name": ".L1"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": ".L1:\nmain:  ; comment\n  mov rax, 1\n.loop.inner:\nfoo$bar:\n9bad:\n  indented_label:\n label with space:\nx: y:\n\"str:\"\n; label_in_comment:\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "label",
+     "name": ".L1"
+    },
+    {
+     "kind": "label",
+     "name": "main"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": ".L1:\nmain:  ; comment\n  mov rax, 1\n.loop.inner:\nfoo$bar:\n9bad:\n  indented_label:\n label with space:\nx: y:\n\"str:\"\n; label_in_comment:\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "label",
+     "name": ".L1"
+    },
+    {
+     "kind": "label",
+     "name": "main"
+    },
+    {
+     "kind": "label",
+     "name": ".loop.inner"
+    },
+    {
+     "kind": "label",
+     "name": "foo$bar"
+    },
+    {
+     "kind": "label",
+     "name": "indented_label"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": ".L1:\nmain:  ; comment\n  mov rax, 1\n.loop.inner:\nfoo$bar:\n9bad:\n  indented_label:\n label with space:\nx: y:\n\"str:\"\n; label_in_comment:\n",
+   "max": 0,
+   "expect": [
+    {
+     "kind": "label",
+     "name": ".L1"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "section .text:\nglobal _start\n_start:\n",
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "section .text:\nglobal _start\n_start:\n",
+   "max": 1,
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "section .text:\nglobal _start\n_start:\n",
+   "max": 2,
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "section .text:\nglobal _start\n_start:\n",
+   "max": 5,
+   "expect": [
+    {
+     "kind": "label",
+     "name": "_start"
+    }
+   ]
+  },
+  {
+   "profile": "assembly",
+   "text": "section .text:\nglobal _start\n_start:\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "machine-code",
+   "text": "48 89 D8\nlabel:\n",
+   "expect": []
+  },
+  {
+   "profile": "machine-code",
+   "text": "48 89 D8\nlabel:\n",
+   "max": 1,
+   "expect": []
+  },
+  {
+   "profile": "machine-code",
+   "text": "48 89 D8\nlabel:\n",
+   "max": 2,
+   "expect": []
+  },
+  {
+   "profile": "machine-code",
+   "text": "48 89 D8\nlabel:\n",
+   "max": 5,
+   "expect": []
+  },
+  {
+   "profile": "machine-code",
+   "text": "48 89 D8\nlabel:\n",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "cobol",
+   "text": "x: y",
+   "expect": []
+  },
+  {
+   "profile": "cobol",
+   "text": "x: y",
+   "max": 1,
+   "expect": []
+  },
+  {
+   "profile": "cobol",
+   "text": "x: y",
+   "max": 2,
+   "expect": []
+  },
+  {
+   "profile": "cobol",
+   "text": "x: y",
+   "max": 5,
+   "expect": []
+  },
+  {
+   "profile": "cobol",
+   "text": "x: y",
+   "max": 0,
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "fn f0() {}\nfn f1() {}\nfn f2() {}\nfn f3() {}\nfn f4() {}\nfn f5() {}\nfn f6() {}\nfn f7() {}\nfn f8() {}\nfn f9() {}\nfn f10() {}\nfn f11() {}\nfn f12() {}\nfn f13() {}\nfn f14() {}\nfn f15() {}\nfn f16() {}\nfn f17() {}\nfn f18() {}\nfn f19() {}\nfn f20() {}\nfn f21() {}\nfn f22() {}\nfn f23() {}\nfn f24() {}\nfn f25() {}\nfn f26() {}\nfn f27() {}\nfn f28() {}\nfn f29() {}\nfn f30() {}\nfn f31() {}\nfn f32() {}\nfn f33() {}\nfn f34() {}\nfn f35() {}\nfn f36() {}\nfn f37() {}\nfn f38() {}\nfn f39() {}\nfn f40() {}\nfn f41() {}\nfn f42() {}\nfn f43() {}\nfn f44() {}\nfn f45() {}\nfn f46() {}\nfn f47() {}\nfn f48() {}\nfn f49() {}\nfn f50() {}\nfn f51() {}\nfn f52() {}\nfn f53() {}\nfn f54() {}\nfn f55() {}\nfn f56() {}\nfn f57() {}\nfn f58() {}\nfn f59() {}\nfn f60() {}\nfn f61() {}\nfn f62() {}\nfn f63() {}\nfn f64() {}\nfn f65() {}\nfn f66() {}\nfn f67() {}\nfn f68() {}\nfn f69() {}\nfn f70() {}\nfn f71() {}\nfn f72() {}\nfn f73() {}\nfn f74() {}\nfn f75() {}\nfn f76() {}\nfn f77() {}\nfn f78() {}\nfn f79() {}\nfn f80() {}\nfn f81() {}\nfn f82() {}\nfn f83() {}\nfn f84() {}\nfn f85() {}\nfn f86() {}\nfn f87() {}\nfn f88() {}\nfn f89() {}\nfn f90() {}\nfn f91() {}\nfn f92() {}\nfn f93() {}\nfn f94() {}\nfn f95() {}\nfn f96() {}\nfn f97() {}\nfn f98() {}\nfn f99() {}\nfn f100() {}\nfn f101() {}\nfn f102() {}\nfn f103() {}\nfn f104() {}\nfn f105() {}\nfn f106() {}\nfn f107() {}\nfn f108() {}\nfn f109() {}\nfn f110() {}\nfn f111() {}\nfn f112() {}\nfn f113() {}\nfn f114() {}\nfn f115() {}\nfn f116() {}\nfn f117() {}\nfn f118() {}\nfn f119() {}\nfn f120() {}\nfn f121() {}\nfn f122() {}\nfn f123() {}\nfn f124() {}\nfn f125() {}\nfn f126() {}\nfn f127() {}\nfn f128() {}\nfn f129() {}\nfn f130() {}\nfn f131() {}\nfn f132() {}\nfn f133() {}\nfn f134() {}\nfn f135() {}\nfn f136() {}\nfn f137() {}\nfn f138() {}\nfn f139() {}\nfn f140() {}\nfn f141() {}\nfn f142() {}\nfn f143() {}\nfn f144() {}\nfn f145() {}\nfn f146() {}\nfn f147() {}\nfn f148() {}\nfn f149() {}\nfn f150() {}\nfn f151() {}\nfn f152() {}\nfn f153() {}\nfn f154() {}\nfn f155() {}\nfn f156() {}\nfn f157() {}\nfn f158() {}\nfn f159() {}\nfn f160() {}\nfn f161() {}\nfn f162() {}\nfn f163() {}\nfn f164() {}\nfn f165() {}\nfn f166() {}\nfn f167() {}\nfn f168() {}\nfn f169() {}\nfn f170() {}\nfn f171() {}\nfn f172() {}\nfn f173() {}\nfn f174() {}\nfn f175() {}\nfn f176() {}\nfn f177() {}\nfn f178() {}\nfn f179() {}\nfn f180() {}\nfn f181() {}\nfn f182() {}\nfn f183() {}\nfn f184() {}\nfn f185() {}\nfn f186() {}\nfn f187() {}\nfn f188() {}\nfn f189() {}\nfn f190() {}\nfn f191() {}\nfn f192() {}\nfn f193() {}\nfn f194() {}\nfn f195() {}\nfn f196() {}\nfn f197() {}\nfn f198() {}\nfn f199() {}",
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "f0"
+    },
+    {
+     "kind": "fn",
+     "name": "f1"
+    },
+    {
+     "kind": "fn",
+     "name": "f2"
+    },
+    {
+     "kind": "fn",
+     "name": "f3"
+    },
+    {
+     "kind": "fn",
+     "name": "f4"
+    },
+    {
+     "kind": "fn",
+     "name": "f5"
+    },
+    {
+     "kind": "fn",
+     "name": "f6"
+    },
+    {
+     "kind": "fn",
+     "name": "f7"
+    },
+    {
+     "kind": "fn",
+     "name": "f8"
+    },
+    {
+     "kind": "fn",
+     "name": "f9"
+    },
+    {
+     "kind": "fn",
+     "name": "f10"
+    },
+    {
+     "kind": "fn",
+     "name": "f11"
+    },
+    {
+     "kind": "fn",
+     "name": "f12"
+    },
+    {
+     "kind": "fn",
+     "name": "f13"
+    },
+    {
+     "kind": "fn",
+     "name": "f14"
+    },
+    {
+     "kind": "fn",
+     "name": "f15"
+    },
+    {
+     "kind": "fn",
+     "name": "f16"
+    },
+    {
+     "kind": "fn",
+     "name": "f17"
+    },
+    {
+     "kind": "fn",
+     "name": "f18"
+    },
+    {
+     "kind": "fn",
+     "name": "f19"
+    },
+    {
+     "kind": "fn",
+     "name": "f20"
+    },
+    {
+     "kind": "fn",
+     "name": "f21"
+    },
+    {
+     "kind": "fn",
+     "name": "f22"
+    },
+    {
+     "kind": "fn",
+     "name": "f23"
+    },
+    {
+     "kind": "fn",
+     "name": "f24"
+    },
+    {
+     "kind": "fn",
+     "name": "f25"
+    },
+    {
+     "kind": "fn",
+     "name": "f26"
+    },
+    {
+     "kind": "fn",
+     "name": "f27"
+    },
+    {
+     "kind": "fn",
+     "name": "f28"
+    },
+    {
+     "kind": "fn",
+     "name": "f29"
+    },
+    {
+     "kind": "fn",
+     "name": "f30"
+    },
+    {
+     "kind": "fn",
+     "name": "f31"
+    },
+    {
+     "kind": "fn",
+     "name": "f32"
+    },
+    {
+     "kind": "fn",
+     "name": "f33"
+    },
+    {
+     "kind": "fn",
+     "name": "f34"
+    },
+    {
+     "kind": "fn",
+     "name": "f35"
+    },
+    {
+     "kind": "fn",
+     "name": "f36"
+    },
+    {
+     "kind": "fn",
+     "name": "f37"
+    },
+    {
+     "kind": "fn",
+     "name": "f38"
+    },
+    {
+     "kind": "fn",
+     "name": "f39"
+    },
+    {
+     "kind": "fn",
+     "name": "f40"
+    },
+    {
+     "kind": "fn",
+     "name": "f41"
+    },
+    {
+     "kind": "fn",
+     "name": "f42"
+    },
+    {
+     "kind": "fn",
+     "name": "f43"
+    },
+    {
+     "kind": "fn",
+     "name": "f44"
+    },
+    {
+     "kind": "fn",
+     "name": "f45"
+    },
+    {
+     "kind": "fn",
+     "name": "f46"
+    },
+    {
+     "kind": "fn",
+     "name": "f47"
+    },
+    {
+     "kind": "fn",
+     "name": "f48"
+    },
+    {
+     "kind": "fn",
+     "name": "f49"
+    },
+    {
+     "kind": "fn",
+     "name": "f50"
+    },
+    {
+     "kind": "fn",
+     "name": "f51"
+    },
+    {
+     "kind": "fn",
+     "name": "f52"
+    },
+    {
+     "kind": "fn",
+     "name": "f53"
+    },
+    {
+     "kind": "fn",
+     "name": "f54"
+    },
+    {
+     "kind": "fn",
+     "name": "f55"
+    },
+    {
+     "kind": "fn",
+     "name": "f56"
+    },
+    {
+     "kind": "fn",
+     "name": "f57"
+    },
+    {
+     "kind": "fn",
+     "name": "f58"
+    },
+    {
+     "kind": "fn",
+     "name": "f59"
+    }
+   ]
+  },
+  {
+   "profile": "rust",
+   "text": "fn f0() {}\nfn f1() {}\nfn f2() {}\nfn f3() {}\nfn f4() {}\nfn f5() {}\nfn f6() {}\nfn f7() {}\nfn f8() {}\nfn f9() {}\nfn f10() {}\nfn f11() {}\nfn f12() {}\nfn f13() {}\nfn f14() {}\nfn f15() {}\nfn f16() {}\nfn f17() {}\nfn f18() {}\nfn f19() {}\nfn f20() {}\nfn f21() {}\nfn f22() {}\nfn f23() {}\nfn f24() {}\nfn f25() {}\nfn f26() {}\nfn f27() {}\nfn f28() {}\nfn f29() {}\nfn f30() {}\nfn f31() {}\nfn f32() {}\nfn f33() {}\nfn f34() {}\nfn f35() {}\nfn f36() {}\nfn f37() {}\nfn f38() {}\nfn f39() {}\nfn f40() {}\nfn f41() {}\nfn f42() {}\nfn f43() {}\nfn f44() {}\nfn f45() {}\nfn f46() {}\nfn f47() {}\nfn f48() {}\nfn f49() {}\nfn f50() {}\nfn f51() {}\nfn f52() {}\nfn f53() {}\nfn f54() {}\nfn f55() {}\nfn f56() {}\nfn f57() {}\nfn f58() {}\nfn f59() {}\nfn f60() {}\nfn f61() {}\nfn f62() {}\nfn f63() {}\nfn f64() {}\nfn f65() {}\nfn f66() {}\nfn f67() {}\nfn f68() {}\nfn f69() {}\nfn f70() {}\nfn f71() {}\nfn f72() {}\nfn f73() {}\nfn f74() {}\nfn f75() {}\nfn f76() {}\nfn f77() {}\nfn f78() {}\nfn f79() {}\nfn f80() {}\nfn f81() {}\nfn f82() {}\nfn f83() {}\nfn f84() {}\nfn f85() {}\nfn f86() {}\nfn f87() {}\nfn f88() {}\nfn f89() {}\nfn f90() {}\nfn f91() {}\nfn f92() {}\nfn f93() {}\nfn f94() {}\nfn f95() {}\nfn f96() {}\nfn f97() {}\nfn f98() {}\nfn f99() {}\nfn f100() {}\nfn f101() {}\nfn f102() {}\nfn f103() {}\nfn f104() {}\nfn f105() {}\nfn f106() {}\nfn f107() {}\nfn f108() {}\nfn f109() {}\nfn f110() {}\nfn f111() {}\nfn f112() {}\nfn f113() {}\nfn f114() {}\nfn f115() {}\nfn f116() {}\nfn f117() {}\nfn f118() {}\nfn f119() {}\nfn f120() {}\nfn f121() {}\nfn f122() {}\nfn f123() {}\nfn f124() {}\nfn f125() {}\nfn f126() {}\nfn f127() {}\nfn f128() {}\nfn f129() {}\nfn f130() {}\nfn f131() {}\nfn f132() {}\nfn f133() {}\nfn f134() {}\nfn f135() {}\nfn f136() {}\nfn f137() {}\nfn f138() {}\nfn f139() {}\nfn f140() {}\nfn f141() {}\nfn f142() {}\nfn f143() {}\nfn f144() {}\nfn f145() {}\nfn f146() {}\nfn f147() {}\nfn f148() {}\nfn f149() {}\nfn f150() {}\nfn f151() {}\nfn f152() {}\nfn f153() {}\nfn f154() {}\nfn f155() {}\nfn f156() {}\nfn f157() {}\nfn f158() {}\nfn f159() {}\nfn f160() {}\nfn f161() {}\nfn f162() {}\nfn f163() {}\nfn f164() {}\nfn f165() {}\nfn f166() {}\nfn f167() {}\nfn f168() {}\nfn f169() {}\nfn f170() {}\nfn f171() {}\nfn f172() {}\nfn f173() {}\nfn f174() {}\nfn f175() {}\nfn f176() {}\nfn f177() {}\nfn f178() {}\nfn f179() {}\nfn f180() {}\nfn f181() {}\nfn f182() {}\nfn f183() {}\nfn f184() {}\nfn f185() {}\nfn f186() {}\nfn f187() {}\nfn f188() {}\nfn f189() {}\nfn f190() {}\nfn f191() {}\nfn f192() {}\nfn f193() {}\nfn f194() {}\nfn f195() {}\nfn f196() {}\nfn f197() {}\nfn f198() {}\nfn f199() {}",
+   "max": 1000,
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "f0"
+    },
+    {
+     "kind": "fn",
+     "name": "f1"
+    },
+    {
+     "kind": "fn",
+     "name": "f2"
+    },
+    {
+     "kind": "fn",
+     "name": "f3"
+    },
+    {
+     "kind": "fn",
+     "name": "f4"
+    },
+    {
+     "kind": "fn",
+     "name": "f5"
+    },
+    {
+     "kind": "fn",
+     "name": "f6"
+    },
+    {
+     "kind": "fn",
+     "name": "f7"
+    },
+    {
+     "kind": "fn",
+     "name": "f8"
+    },
+    {
+     "kind": "fn",
+     "name": "f9"
+    },
+    {
+     "kind": "fn",
+     "name": "f10"
+    },
+    {
+     "kind": "fn",
+     "name": "f11"
+    },
+    {
+     "kind": "fn",
+     "name": "f12"
+    },
+    {
+     "kind": "fn",
+     "name": "f13"
+    },
+    {
+     "kind": "fn",
+     "name": "f14"
+    },
+    {
+     "kind": "fn",
+     "name": "f15"
+    },
+    {
+     "kind": "fn",
+     "name": "f16"
+    },
+    {
+     "kind": "fn",
+     "name": "f17"
+    },
+    {
+     "kind": "fn",
+     "name": "f18"
+    },
+    {
+     "kind": "fn",
+     "name": "f19"
+    },
+    {
+     "kind": "fn",
+     "name": "f20"
+    },
+    {
+     "kind": "fn",
+     "name": "f21"
+    },
+    {
+     "kind": "fn",
+     "name": "f22"
+    },
+    {
+     "kind": "fn",
+     "name": "f23"
+    },
+    {
+     "kind": "fn",
+     "name": "f24"
+    },
+    {
+     "kind": "fn",
+     "name": "f25"
+    },
+    {
+     "kind": "fn",
+     "name": "f26"
+    },
+    {
+     "kind": "fn",
+     "name": "f27"
+    },
+    {
+     "kind": "fn",
+     "name": "f28"
+    },
+    {
+     "kind": "fn",
+     "name": "f29"
+    },
+    {
+     "kind": "fn",
+     "name": "f30"
+    },
+    {
+     "kind": "fn",
+     "name": "f31"
+    },
+    {
+     "kind": "fn",
+     "name": "f32"
+    },
+    {
+     "kind": "fn",
+     "name": "f33"
+    },
+    {
+     "kind": "fn",
+     "name": "f34"
+    },
+    {
+     "kind": "fn",
+     "name": "f35"
+    },
+    {
+     "kind": "fn",
+     "name": "f36"
+    },
+    {
+     "kind": "fn",
+     "name": "f37"
+    },
+    {
+     "kind": "fn",
+     "name": "f38"
+    },
+    {
+     "kind": "fn",
+     "name": "f39"
+    },
+    {
+     "kind": "fn",
+     "name": "f40"
+    },
+    {
+     "kind": "fn",
+     "name": "f41"
+    },
+    {
+     "kind": "fn",
+     "name": "f42"
+    },
+    {
+     "kind": "fn",
+     "name": "f43"
+    },
+    {
+     "kind": "fn",
+     "name": "f44"
+    },
+    {
+     "kind": "fn",
+     "name": "f45"
+    },
+    {
+     "kind": "fn",
+     "name": "f46"
+    },
+    {
+     "kind": "fn",
+     "name": "f47"
+    },
+    {
+     "kind": "fn",
+     "name": "f48"
+    },
+    {
+     "kind": "fn",
+     "name": "f49"
+    },
+    {
+     "kind": "fn",
+     "name": "f50"
+    },
+    {
+     "kind": "fn",
+     "name": "f51"
+    },
+    {
+     "kind": "fn",
+     "name": "f52"
+    },
+    {
+     "kind": "fn",
+     "name": "f53"
+    },
+    {
+     "kind": "fn",
+     "name": "f54"
+    },
+    {
+     "kind": "fn",
+     "name": "f55"
+    },
+    {
+     "kind": "fn",
+     "name": "f56"
+    },
+    {
+     "kind": "fn",
+     "name": "f57"
+    },
+    {
+     "kind": "fn",
+     "name": "f58"
+    },
+    {
+     "kind": "fn",
+     "name": "f59"
+    },
+    {
+     "kind": "fn",
+     "name": "f60"
+    },
+    {
+     "kind": "fn",
+     "name": "f61"
+    },
+    {
+     "kind": "fn",
+     "name": "f62"
+    },
+    {
+     "kind": "fn",
+     "name": "f63"
+    },
+    {
+     "kind": "fn",
+     "name": "f64"
+    },
+    {
+     "kind": "fn",
+     "name": "f65"
+    },
+    {
+     "kind": "fn",
+     "name": "f66"
+    },
+    {
+     "kind": "fn",
+     "name": "f67"
+    },
+    {
+     "kind": "fn",
+     "name": "f68"
+    },
+    {
+     "kind": "fn",
+     "name": "f69"
+    },
+    {
+     "kind": "fn",
+     "name": "f70"
+    },
+    {
+     "kind": "fn",
+     "name": "f71"
+    },
+    {
+     "kind": "fn",
+     "name": "f72"
+    },
+    {
+     "kind": "fn",
+     "name": "f73"
+    },
+    {
+     "kind": "fn",
+     "name": "f74"
+    },
+    {
+     "kind": "fn",
+     "name": "f75"
+    },
+    {
+     "kind": "fn",
+     "name": "f76"
+    },
+    {
+     "kind": "fn",
+     "name": "f77"
+    },
+    {
+     "kind": "fn",
+     "name": "f78"
+    },
+    {
+     "kind": "fn",
+     "name": "f79"
+    },
+    {
+     "kind": "fn",
+     "name": "f80"
+    },
+    {
+     "kind": "fn",
+     "name": "f81"
+    },
+    {
+     "kind": "fn",
+     "name": "f82"
+    },
+    {
+     "kind": "fn",
+     "name": "f83"
+    },
+    {
+     "kind": "fn",
+     "name": "f84"
+    },
+    {
+     "kind": "fn",
+     "name": "f85"
+    },
+    {
+     "kind": "fn",
+     "name": "f86"
+    },
+    {
+     "kind": "fn",
+     "name": "f87"
+    },
+    {
+     "kind": "fn",
+     "name": "f88"
+    },
+    {
+     "kind": "fn",
+     "name": "f89"
+    },
+    {
+     "kind": "fn",
+     "name": "f90"
+    },
+    {
+     "kind": "fn",
+     "name": "f91"
+    },
+    {
+     "kind": "fn",
+     "name": "f92"
+    },
+    {
+     "kind": "fn",
+     "name": "f93"
+    },
+    {
+     "kind": "fn",
+     "name": "f94"
+    },
+    {
+     "kind": "fn",
+     "name": "f95"
+    },
+    {
+     "kind": "fn",
+     "name": "f96"
+    },
+    {
+     "kind": "fn",
+     "name": "f97"
+    },
+    {
+     "kind": "fn",
+     "name": "f98"
+    },
+    {
+     "kind": "fn",
+     "name": "f99"
+    },
+    {
+     "kind": "fn",
+     "name": "f100"
+    },
+    {
+     "kind": "fn",
+     "name": "f101"
+    },
+    {
+     "kind": "fn",
+     "name": "f102"
+    },
+    {
+     "kind": "fn",
+     "name": "f103"
+    },
+    {
+     "kind": "fn",
+     "name": "f104"
+    },
+    {
+     "kind": "fn",
+     "name": "f105"
+    },
+    {
+     "kind": "fn",
+     "name": "f106"
+    },
+    {
+     "kind": "fn",
+     "name": "f107"
+    },
+    {
+     "kind": "fn",
+     "name": "f108"
+    },
+    {
+     "kind": "fn",
+     "name": "f109"
+    },
+    {
+     "kind": "fn",
+     "name": "f110"
+    },
+    {
+     "kind": "fn",
+     "name": "f111"
+    },
+    {
+     "kind": "fn",
+     "name": "f112"
+    },
+    {
+     "kind": "fn",
+     "name": "f113"
+    },
+    {
+     "kind": "fn",
+     "name": "f114"
+    },
+    {
+     "kind": "fn",
+     "name": "f115"
+    },
+    {
+     "kind": "fn",
+     "name": "f116"
+    },
+    {
+     "kind": "fn",
+     "name": "f117"
+    },
+    {
+     "kind": "fn",
+     "name": "f118"
+    },
+    {
+     "kind": "fn",
+     "name": "f119"
+    },
+    {
+     "kind": "fn",
+     "name": "f120"
+    },
+    {
+     "kind": "fn",
+     "name": "f121"
+    },
+    {
+     "kind": "fn",
+     "name": "f122"
+    },
+    {
+     "kind": "fn",
+     "name": "f123"
+    },
+    {
+     "kind": "fn",
+     "name": "f124"
+    },
+    {
+     "kind": "fn",
+     "name": "f125"
+    },
+    {
+     "kind": "fn",
+     "name": "f126"
+    },
+    {
+     "kind": "fn",
+     "name": "f127"
+    },
+    {
+     "kind": "fn",
+     "name": "f128"
+    },
+    {
+     "kind": "fn",
+     "name": "f129"
+    },
+    {
+     "kind": "fn",
+     "name": "f130"
+    },
+    {
+     "kind": "fn",
+     "name": "f131"
+    },
+    {
+     "kind": "fn",
+     "name": "f132"
+    },
+    {
+     "kind": "fn",
+     "name": "f133"
+    },
+    {
+     "kind": "fn",
+     "name": "f134"
+    },
+    {
+     "kind": "fn",
+     "name": "f135"
+    },
+    {
+     "kind": "fn",
+     "name": "f136"
+    },
+    {
+     "kind": "fn",
+     "name": "f137"
+    },
+    {
+     "kind": "fn",
+     "name": "f138"
+    },
+    {
+     "kind": "fn",
+     "name": "f139"
+    },
+    {
+     "kind": "fn",
+     "name": "f140"
+    },
+    {
+     "kind": "fn",
+     "name": "f141"
+    },
+    {
+     "kind": "fn",
+     "name": "f142"
+    },
+    {
+     "kind": "fn",
+     "name": "f143"
+    },
+    {
+     "kind": "fn",
+     "name": "f144"
+    },
+    {
+     "kind": "fn",
+     "name": "f145"
+    },
+    {
+     "kind": "fn",
+     "name": "f146"
+    },
+    {
+     "kind": "fn",
+     "name": "f147"
+    },
+    {
+     "kind": "fn",
+     "name": "f148"
+    },
+    {
+     "kind": "fn",
+     "name": "f149"
+    },
+    {
+     "kind": "fn",
+     "name": "f150"
+    },
+    {
+     "kind": "fn",
+     "name": "f151"
+    },
+    {
+     "kind": "fn",
+     "name": "f152"
+    },
+    {
+     "kind": "fn",
+     "name": "f153"
+    },
+    {
+     "kind": "fn",
+     "name": "f154"
+    },
+    {
+     "kind": "fn",
+     "name": "f155"
+    },
+    {
+     "kind": "fn",
+     "name": "f156"
+    },
+    {
+     "kind": "fn",
+     "name": "f157"
+    },
+    {
+     "kind": "fn",
+     "name": "f158"
+    },
+    {
+     "kind": "fn",
+     "name": "f159"
+    },
+    {
+     "kind": "fn",
+     "name": "f160"
+    },
+    {
+     "kind": "fn",
+     "name": "f161"
+    },
+    {
+     "kind": "fn",
+     "name": "f162"
+    },
+    {
+     "kind": "fn",
+     "name": "f163"
+    },
+    {
+     "kind": "fn",
+     "name": "f164"
+    },
+    {
+     "kind": "fn",
+     "name": "f165"
+    },
+    {
+     "kind": "fn",
+     "name": "f166"
+    },
+    {
+     "kind": "fn",
+     "name": "f167"
+    },
+    {
+     "kind": "fn",
+     "name": "f168"
+    },
+    {
+     "kind": "fn",
+     "name": "f169"
+    },
+    {
+     "kind": "fn",
+     "name": "f170"
+    },
+    {
+     "kind": "fn",
+     "name": "f171"
+    },
+    {
+     "kind": "fn",
+     "name": "f172"
+    },
+    {
+     "kind": "fn",
+     "name": "f173"
+    },
+    {
+     "kind": "fn",
+     "name": "f174"
+    },
+    {
+     "kind": "fn",
+     "name": "f175"
+    },
+    {
+     "kind": "fn",
+     "name": "f176"
+    },
+    {
+     "kind": "fn",
+     "name": "f177"
+    },
+    {
+     "kind": "fn",
+     "name": "f178"
+    },
+    {
+     "kind": "fn",
+     "name": "f179"
+    },
+    {
+     "kind": "fn",
+     "name": "f180"
+    },
+    {
+     "kind": "fn",
+     "name": "f181"
+    },
+    {
+     "kind": "fn",
+     "name": "f182"
+    },
+    {
+     "kind": "fn",
+     "name": "f183"
+    },
+    {
+     "kind": "fn",
+     "name": "f184"
+    },
+    {
+     "kind": "fn",
+     "name": "f185"
+    },
+    {
+     "kind": "fn",
+     "name": "f186"
+    },
+    {
+     "kind": "fn",
+     "name": "f187"
+    },
+    {
+     "kind": "fn",
+     "name": "f188"
+    },
+    {
+     "kind": "fn",
+     "name": "f189"
+    },
+    {
+     "kind": "fn",
+     "name": "f190"
+    },
+    {
+     "kind": "fn",
+     "name": "f191"
+    },
+    {
+     "kind": "fn",
+     "name": "f192"
+    },
+    {
+     "kind": "fn",
+     "name": "f193"
+    },
+    {
+     "kind": "fn",
+     "name": "f194"
+    },
+    {
+     "kind": "fn",
+     "name": "f195"
+    },
+    {
+     "kind": "fn",
+     "name": "f196"
+    },
+    {
+     "kind": "fn",
+     "name": "f197"
+    },
+    {
+     "kind": "fn",
+     "name": "f198"
+    },
+    {
+     "kind": "fn",
+     "name": "f199"
+    }
+   ]
+  },
+  {
+   "profile": "nope",
+   "text": "fn a() {}",
+   "expect": []
+  },
+  {
+   "profile": "rust",
+   "text": "fn a() {}\r\nfn b() {}\rfn c() {}\nfn d() {}",
+   "expect": [
+    {
+     "kind": "fn",
+     "name": "a"
+    },
+    {
+     "kind": "fn",
+     "name": "b"
+    },
+    {
+     "kind": "fn",
+     "name": "c"
+    },
+    {
+     "kind": "fn",
+     "name": "d"
+    }
+   ]
+  }
+ ],
+ "dir": [
+  {
+   "current": "a.rs",
+   "entries": [
+    {
+     "name": "a.rs",
+     "is_file": true
+    },
+    {
+     "name": "b.py",
+     "is_file": true
+    },
+    {
+     "name": ".env",
+     "is_file": true
+    },
+    {
+     "name": "notes.txt",
+     "is_file": true
+    },
+    {
+     "name": "sub",
+     "is_file": false
+    },
+    {
+     "name": "c.ts",
+     "is_file": true
+    },
+    {
+     "name": "id_rsa",
+     "is_file": true
+    },
+    {
+     "name": "secret.key",
+     "is_file": true
+    },
+    {
+     "name": "D.TSX",
+     "is_file": true
+    },
+    {
+     "name": "x.PS1",
+     "is_file": true
+    },
+    {
+     "name": "m.h",
+     "is_file": true
+    },
+    {
+     "name": "n.asm",
+     "is_file": true
+    },
+    {
+     "name": "blob.bin",
+     "is_file": true
+    },
+    {
+     "name": "Makefile",
+     "is_file": true
+    },
+    {
+     "name": ".npmrc",
+     "is_file": true
+    },
+    {
+     "name": "credentials.json",
+     "is_file": true
+    },
+    {
+     "name": "t.c",
+     "is_file": true
+    },
+    {
+     "name": "link",
+     "is_file": false
+    },
+    {
+     "name": "run.psm1",
+     "is_file": true
+    },
+    {
+     "name": "w.hex",
+     "is_file": true
+    }
+   ],
+   "expect": [
+    {
+     "name": "b.py",
+     "language": "python"
+    },
+    {
+     "name": "c.ts",
+     "language": "typescript"
+    },
+    {
+     "name": "D.TSX",
+     "language": "typescript"
+    },
+    {
+     "name": "x.PS1",
+     "language": "powershell"
+    },
+    {
+     "name": "t.c",
+     "language": "c"
+    },
+    {
+     "name": "run.psm1",
+     "language": "powershell"
+    }
+   ]
+  },
+  {
+   "current": "zzz.rs",
+   "entries": [
+    {
+     "name": "a.rs",
+     "is_file": true
+    },
+    {
+     "name": "b.py",
+     "is_file": true
+    },
+    {
+     "name": ".env",
+     "is_file": true
+    },
+    {
+     "name": "notes.txt",
+     "is_file": true
+    },
+    {
+     "name": "sub",
+     "is_file": false
+    },
+    {
+     "name": "c.ts",
+     "is_file": true
+    },
+    {
+     "name": "id_rsa",
+     "is_file": true
+    },
+    {
+     "name": "secret.key",
+     "is_file": true
+    },
+    {
+     "name": "D.TSX",
+     "is_file": true
+    },
+    {
+     "name": "x.PS1",
+     "is_file": true
+    },
+    {
+     "name": "m.h",
+     "is_file": true
+    },
+    {
+     "name": "n.asm",
+     "is_file": true
+    },
+    {
+     "name": "blob.bin",
+     "is_file": true
+    },
+    {
+     "name": "Makefile",
+     "is_file": true
+    },
+    {
+     "name": ".npmrc",
+     "is_file": true
+    },
+    {
+     "name": "credentials.json",
+     "is_file": true
+    },
+    {
+     "name": "t.c",
+     "is_file": true
+    },
+    {
+     "name": "link",
+     "is_file": false
+    },
+    {
+     "name": "run.psm1",
+     "is_file": true
+    },
+    {
+     "name": "w.hex",
+     "is_file": true
+    }
+   ],
+   "expect": [
+    {
+     "name": "a.rs",
+     "language": "rust"
+    },
+    {
+     "name": "b.py",
+     "language": "python"
+    },
+    {
+     "name": "c.ts",
+     "language": "typescript"
+    },
+    {
+     "name": "D.TSX",
+     "language": "typescript"
+    },
+    {
+     "name": "x.PS1",
+     "language": "powershell"
+    },
+    {
+     "name": "t.c",
+     "language": "c"
+    },
+    {
+     "name": "run.psm1",
+     "language": "powershell"
+    }
+   ]
+  },
+  {
+   "current": "",
+   "entries": [
+    {
+     "name": "a.rs",
+     "is_file": true
+    },
+    {
+     "name": "b.py",
+     "is_file": true
+    },
+    {
+     "name": ".env",
+     "is_file": true
+    },
+    {
+     "name": "notes.txt",
+     "is_file": true
+    },
+    {
+     "name": "sub",
+     "is_file": false
+    },
+    {
+     "name": "c.ts",
+     "is_file": true
+    },
+    {
+     "name": "id_rsa",
+     "is_file": true
+    },
+    {
+     "name": "secret.key",
+     "is_file": true
+    },
+    {
+     "name": "D.TSX",
+     "is_file": true
+    },
+    {
+     "name": "x.PS1",
+     "is_file": true
+    },
+    {
+     "name": "m.h",
+     "is_file": true
+    },
+    {
+     "name": "n.asm",
+     "is_file": true
+    },
+    {
+     "name": "blob.bin",
+     "is_file": true
+    },
+    {
+     "name": "Makefile",
+     "is_file": true
+    },
+    {
+     "name": ".npmrc",
+     "is_file": true
+    },
+    {
+     "name": "credentials.json",
+     "is_file": true
+    },
+    {
+     "name": "t.c",
+     "is_file": true
+    },
+    {
+     "name": "link",
+     "is_file": false
+    },
+    {
+     "name": "run.psm1",
+     "is_file": true
+    },
+    {
+     "name": "w.hex",
+     "is_file": true
+    }
+   ],
+   "expect": [
+    {
+     "name": "a.rs",
+     "language": "rust"
+    },
+    {
+     "name": "b.py",
+     "language": "python"
+    },
+    {
+     "name": "c.ts",
+     "language": "typescript"
+    },
+    {
+     "name": "D.TSX",
+     "language": "typescript"
+    },
+    {
+     "name": "x.PS1",
+     "language": "powershell"
+    },
+    {
+     "name": "t.c",
+     "language": "c"
+    },
+    {
+     "name": "run.psm1",
+     "language": "powershell"
+    }
+   ]
+  }
+ ]
+}

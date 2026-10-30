@@ -314,7 +314,7 @@ impl Core {
             "encode" => encode_op(id, req),
             "validate_hex" => validate_hex_op(id, req),
             "scan" => scan_op(id, req),
-            _ if ops::OPS.contains(&op) => {
+            _ if ops::is_op(op) => {
                 return ops::handle(&mut self.sessions, self.clock.now_ms(), op, id, req);
             }
             _ => return error_json(id, "UNKNOWN_OPERATION", None),
@@ -338,7 +338,7 @@ impl Core {
             Err(_) => error_json(None, "INVALID_JSON", None),
             Ok(req) => {
                 let op = req.get("op").and_then(Json::as_str).unwrap_or("");
-                if big && !ops::BULK_OPS.contains(&op) {
+                if big && !ops::is_bulk_op(op) {
                     error_json(None, "PAYLOAD_TOO_LARGE", None)
                 } else {
                     catch_unwind(AssertUnwindSafe(|| self.dispatch(&req)))

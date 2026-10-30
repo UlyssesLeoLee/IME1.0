@@ -1,0 +1,5729 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "assess": [
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 2
+     },
+     {
+      "kind": "private-key",
+      "severity": "high",
+      "line": 3
+     },
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 4
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 5
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1,
+     "private-key": 1,
+     "aws-access-key": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "fn main() {}",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "private-path": 2
+    }
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "x",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "allow",
+    "highest": "none",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [],
+    "summary": {}
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "github-token",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "github-token": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "bearer-token",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "bearer-token": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "url-credentials",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "url-credentials": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "jwt",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "jwt": 1
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 2
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "redact",
+    "highest": "medium",
+    "sensitiveFile": false,
+    "blocked": false,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     },
+     {
+      "kind": "private-path",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "credential-assignment": 1,
+     "private-path": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "aws-access-key",
+      "severity": "high",
+      "line": 2
+     }
+    ],
+    "summary": {
+     "aws-access-key": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "src/main.rs",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "src/main.rs",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "src/main.rs",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": false,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "config/.env",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "config/.env",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "config/.env",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "id_rsa",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "id_rsa",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "id_rsa",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "a.PEM",
+   "scope": "realtime",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "a.PEM",
+   "scope": "f1",
+   "expect": {
+    "action": "confirm",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "fileName": "a.PEM",
+   "expect": {
+    "action": "block",
+    "highest": "high",
+    "sensitiveFile": true,
+    "blocked": true,
+    "truncated": false,
+    "findings": [
+     {
+      "kind": "api-key",
+      "severity": "high",
+      "line": 1
+     },
+     {
+      "kind": "credential-assignment",
+      "severity": "medium",
+      "line": 1
+     }
+    ],
+    "summary": {
+     "api-key": 1,
+     "credential-assignment": 1
+    }
+   }
+  }
+ ],
+ "redact": [
+  {
+   "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+   "expect": {
+    "text": "const k = \"PIME_REDACTED_1\";\napi_key = \"PIME_REDACTED_2\"\nPIME_REDACTED_3\nPIME_REDACTED_4\nPIME_REDACTED_5\\proj\n",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "sk-abcdefghijklmnopqrstuvwxyz0123",
+      "kind": "api-key"
+     },
+     {
+      "marker": "PIME_REDACTED_2",
+      "original": "mock-key-test-123",
+      "kind": "credential-assignment"
+     },
+     {
+      "marker": "PIME_REDACTED_3",
+      "original": "-----BEGIN RSA PRIVATE KEY-----",
+      "kind": "private-key"
+     },
+     {
+      "marker": "PIME_REDACTED_4",
+      "original": "AKIAABCDEFGHIJKLMNOP",
+      "kind": "aws-access-key"
+     },
+     {
+      "marker": "PIME_REDACTED_5",
+      "original": "C:\\Users\\alice",
+      "kind": "private-path"
+     }
+    ],
+    "count": 5
+   },
+   "restore": [
+    {
+     "text": "const k = \"PIME_REDACTED_1\";\napi_key = \"PIME_REDACTED_2\"\nPIME_REDACTED_3\nPIME_REDACTED_4\nPIME_REDACTED_5\\proj\n",
+     "expect": {
+      "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "const k = \"PIME_REDACTED_9\";\napi_key = \"PIME_REDACTED_2\"\nPIME_REDACTED_3\nPIME_REDACTED_4\nPIME_REDACTED_5\\proj\n",
+     "expect": {
+      "text": "const k = \"PIME_REDACTED_9\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "const k = \"PIME_REDACTED_1\";\napi_key = \"PIME_REDACTED_2\"\nPIME_REDACTED_3\nPIME_REDACTED_4\nPIME_REDACTED_5\\proj\n PIME_REDACTED_",
+     "expect": {
+      "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "const k = \"PIME_REDACTED_1\";\napi_key = \"PIME_REDACTED_2\"\nPIME_REDACTED_3\nPIME_REDACTED_4\nPIME_REDACTED_5\\proj\n PIME_REDACTED_10",
+     "expect": {
+      "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "const k = \"PIME_REDACTED_1\";\napi_key = \"PIME_REDACTED_2\"\nPIME_REDACTED_3\nPIME_REDACTED_4\nPIME_REDACTED_5\\proj\n PIME_REDACTED_01",
+     "expect": {
+      "text": "const k = \"sk-abcdefghijklmnopqrstuvwxyz0123\";\napi_key = \"mock-key-test-123\"\n-----BEGIN RSA PRIVATE KEY-----\nAKIAABCDEFGHIJKLMNOP\nC:\\Users\\alice\\proj\n PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x sk-abcdefghijklmnopqrstuvwxyz0123mock-key-test-123 y",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "sk-abcdefghijklmnopqrstuvwxyz0123sk-abcdefghijklmnopqrstuvwxyz0123",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and sk-abcdefghijklmnopqrstuvwxyz0123",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "fn main() {}",
+   "expect": {
+    "text": "fn main() {}",
+    "map": [],
+    "count": 0
+   },
+   "restore": [
+    {
+     "text": "fn main() {}",
+     "expect": {
+      "text": "fn main() {}",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "fn main() {}",
+     "expect": {
+      "text": "fn main() {}",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "fn main() {} PIME_REDACTED_",
+     "expect": {
+      "text": "fn main() {} PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "fn main() {} PIME_REDACTED_10",
+     "expect": {
+      "text": "fn main() {} PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "fn main() {} PIME_REDACTED_01",
+     "expect": {
+      "text": "fn main() {} PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+      "unresolved": 2
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_1PIME_REDACTED_1",
+      "unresolved": 2
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+      "unresolved": 2
+     }
+    }
+   ]
+  },
+  {
+   "text": "see C:\\Users\\bob\\x and /home/carol/p",
+   "expect": {
+    "text": "see PIME_REDACTED_1\\x and PIME_REDACTED_2/p",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "C:\\Users\\bob",
+      "kind": "private-path"
+     },
+     {
+      "marker": "PIME_REDACTED_2",
+      "original": "/home/carol",
+      "kind": "private-path"
+     }
+    ],
+    "count": 2
+   },
+   "restore": [
+    {
+     "text": "see PIME_REDACTED_1\\x and PIME_REDACTED_2/p",
+     "expect": {
+      "text": "see C:\\Users\\bob\\x and /home/carol/p",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "see PIME_REDACTED_9\\x and PIME_REDACTED_2/p",
+     "expect": {
+      "text": "see PIME_REDACTED_9\\x and /home/carol/p",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "see PIME_REDACTED_1\\x and PIME_REDACTED_2/p PIME_REDACTED_",
+     "expect": {
+      "text": "see C:\\Users\\bob\\x and /home/carol/p PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "see PIME_REDACTED_1\\x and PIME_REDACTED_2/p PIME_REDACTED_10",
+     "expect": {
+      "text": "see C:\\Users\\bob\\x and /home/carol/p PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "see PIME_REDACTED_1\\x and PIME_REDACTED_2/p PIME_REDACTED_01",
+     "expect": {
+      "text": "see C:\\Users\\bob\\x and /home/carol/p PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x C:\\Users\\bob/home/carol y",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "C:\\Users\\bobC:\\Users\\bob",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and C:\\Users\\bob",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "x",
+   "expect": {
+    "text": "x",
+    "map": [],
+    "count": 0
+   },
+   "restore": [
+    {
+     "text": "x",
+     "expect": {
+      "text": "x",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "x",
+     "expect": {
+      "text": "x",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_",
+     "expect": {
+      "text": "x PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_10",
+     "expect": {
+      "text": "x PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_01",
+     "expect": {
+      "text": "x PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+      "unresolved": 2
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_1PIME_REDACTED_1",
+      "unresolved": 2
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+      "unresolved": 2
+     }
+    }
+   ]
+  },
+  {
+   "text": "",
+   "expect": {
+    "text": "",
+    "map": [],
+    "count": 0
+   },
+   "restore": [
+    {
+     "text": "",
+     "expect": {
+      "text": "",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "",
+     "expect": {
+      "text": "",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": " PIME_REDACTED_",
+     "expect": {
+      "text": " PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": " PIME_REDACTED_10",
+     "expect": {
+      "text": " PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": " PIME_REDACTED_01",
+     "expect": {
+      "text": " PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+      "unresolved": 2
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_1PIME_REDACTED_1",
+      "unresolved": 2
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+      "unresolved": 2
+     }
+    }
+   ]
+  },
+  {
+   "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+   "expect": {
+    "text": "token = \"PIME_REDACTED_1\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "kind": "github-token"
+     }
+    ],
+    "count": 1
+   },
+   "restore": [
+    {
+     "text": "token = \"PIME_REDACTED_1\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+     "expect": {
+      "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "token = \"PIME_REDACTED_9\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+     "expect": {
+      "text": "token = \"PIME_REDACTED_9\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\"",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "token = \"PIME_REDACTED_1\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\" PIME_REDACTED_",
+     "expect": {
+      "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\" PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "token = \"PIME_REDACTED_1\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\" PIME_REDACTED_10",
+     "expect": {
+      "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\" PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "token = \"PIME_REDACTED_1\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\" PIME_REDACTED_01",
+     "expect": {
+      "text": "token = \"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\napi_key = \"your_api_key_here\"\npassword = process.env.PW\nsecret = \"${SECRET}\" PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaPIME_REDACTED_2 y",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+   "expect": {
+    "text": "Authorization: PIME_REDACTED_1",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "Bearer abcdefghijklmnopqrstuvwxyz012345",
+      "kind": "bearer-token"
+     }
+    ],
+    "count": 1
+   },
+   "restore": [
+    {
+     "text": "Authorization: PIME_REDACTED_1",
+     "expect": {
+      "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "Authorization: PIME_REDACTED_9",
+     "expect": {
+      "text": "Authorization: PIME_REDACTED_9",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "Authorization: PIME_REDACTED_1 PIME_REDACTED_",
+     "expect": {
+      "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345 PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "Authorization: PIME_REDACTED_1 PIME_REDACTED_10",
+     "expect": {
+      "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345 PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "Authorization: PIME_REDACTED_1 PIME_REDACTED_01",
+     "expect": {
+      "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345 PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x Bearer abcdefghijklmnopqrstuvwxyz012345PIME_REDACTED_2 y",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "Bearer abcdefghijklmnopqrstuvwxyz012345Bearer abcdefghijklmnopqrstuvwxyz012345",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and Bearer abcdefghijklmnopqrstuvwxyz012345",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "url = \"https://user:pass@example.com/x\"",
+   "expect": {
+    "text": "url = \"PIME_REDACTED_1example.com/x\"",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "https://user:pass@",
+      "kind": "url-credentials"
+     }
+    ],
+    "count": 1
+   },
+   "restore": [
+    {
+     "text": "url = \"PIME_REDACTED_1example.com/x\"",
+     "expect": {
+      "text": "url = \"https://user:pass@example.com/x\"",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "url = \"PIME_REDACTED_9example.com/x\"",
+     "expect": {
+      "text": "url = \"PIME_REDACTED_9example.com/x\"",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "url = \"PIME_REDACTED_1example.com/x\" PIME_REDACTED_",
+     "expect": {
+      "text": "url = \"https://user:pass@example.com/x\" PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "url = \"PIME_REDACTED_1example.com/x\" PIME_REDACTED_10",
+     "expect": {
+      "text": "url = \"https://user:pass@example.com/x\" PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "url = \"PIME_REDACTED_1example.com/x\" PIME_REDACTED_01",
+     "expect": {
+      "text": "url = \"https://user:pass@example.com/x\" PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x https://user:pass@PIME_REDACTED_2 y",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "https://user:pass@https://user:pass@",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and https://user:pass@",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+   "expect": {
+    "text": "PIME_REDACTED_1",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+      "kind": "jwt"
+     }
+    ],
+    "count": 1
+   },
+   "restore": [
+    {
+     "text": "PIME_REDACTED_1",
+     "expect": {
+      "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_9",
+     "expect": {
+      "text": "PIME_REDACTED_9",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1 PIME_REDACTED_",
+     "expect": {
+      "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1 PIME_REDACTED_10",
+     "expect": {
+      "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1 PIME_REDACTED_01",
+     "expect": {
+      "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnopPIME_REDACTED_2 y",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnopeyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+   "expect": {
+    "text": "two: PIME_REDACTED_1 and PIME_REDACTED_2",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "sk-abcdefghijklmnopqrstuvwxyz0123",
+      "kind": "api-key"
+     },
+     {
+      "marker": "PIME_REDACTED_2",
+      "original": "sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+      "kind": "api-key"
+     }
+    ],
+    "count": 2
+   },
+   "restore": [
+    {
+     "text": "two: PIME_REDACTED_1 and PIME_REDACTED_2",
+     "expect": {
+      "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "two: PIME_REDACTED_9 and PIME_REDACTED_2",
+     "expect": {
+      "text": "two: PIME_REDACTED_9 and sk-ant-abcdefghijklmnopqrstuvwxyz9999",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "two: PIME_REDACTED_1 and PIME_REDACTED_2 PIME_REDACTED_",
+     "expect": {
+      "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999 PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "two: PIME_REDACTED_1 and PIME_REDACTED_2 PIME_REDACTED_10",
+     "expect": {
+      "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999 PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "two: PIME_REDACTED_1 and PIME_REDACTED_2 PIME_REDACTED_01",
+     "expect": {
+      "text": "two: sk-abcdefghijklmnopqrstuvwxyz0123 and sk-ant-abcdefghijklmnopqrstuvwxyz9999 PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x sk-abcdefghijklmnopqrstuvwxyz0123sk-ant-abcdefghijklmnopqrstuvwxyz9999 y",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "sk-abcdefghijklmnopqrstuvwxyz0123sk-abcdefghijklmnopqrstuvwxyz0123",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and sk-abcdefghijklmnopqrstuvwxyz0123",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+   "expect": {
+    "text": "😀 password = \"PIME_REDACTED_1\" 😀 PIME_REDACTED_2/x",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "hunter2hunter2",
+      "kind": "credential-assignment"
+     },
+     {
+      "marker": "PIME_REDACTED_2",
+      "original": "/Users/dave",
+      "kind": "private-path"
+     }
+    ],
+    "count": 2
+   },
+   "restore": [
+    {
+     "text": "😀 password = \"PIME_REDACTED_1\" 😀 PIME_REDACTED_2/x",
+     "expect": {
+      "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "😀 password = \"PIME_REDACTED_9\" 😀 PIME_REDACTED_2/x",
+     "expect": {
+      "text": "😀 password = \"PIME_REDACTED_9\" 😀 /Users/dave/x",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "😀 password = \"PIME_REDACTED_1\" 😀 PIME_REDACTED_2/x PIME_REDACTED_",
+     "expect": {
+      "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "😀 password = \"PIME_REDACTED_1\" 😀 PIME_REDACTED_2/x PIME_REDACTED_10",
+     "expect": {
+      "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "😀 password = \"PIME_REDACTED_1\" 😀 PIME_REDACTED_2/x PIME_REDACTED_01",
+     "expect": {
+      "text": "😀 password = \"hunter2hunter2\" 😀 /Users/dave/x PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x hunter2hunter2/Users/dave y",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "hunter2hunter2hunter2hunter2",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and hunter2hunter2",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+   "expect": {
+    "text": "a\r\nb: PIME_REDACTED_1\r\nc",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "AKIAABCDEFGHIJKLMNOP",
+      "kind": "aws-access-key"
+     }
+    ],
+    "count": 1
+   },
+   "restore": [
+    {
+     "text": "a\r\nb: PIME_REDACTED_1\r\nc",
+     "expect": {
+      "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "a\r\nb: PIME_REDACTED_9\r\nc",
+     "expect": {
+      "text": "a\r\nb: PIME_REDACTED_9\r\nc",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "a\r\nb: PIME_REDACTED_1\r\nc PIME_REDACTED_",
+     "expect": {
+      "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "a\r\nb: PIME_REDACTED_1\r\nc PIME_REDACTED_10",
+     "expect": {
+      "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "a\r\nb: PIME_REDACTED_1\r\nc PIME_REDACTED_01",
+     "expect": {
+      "text": "a\r\nb: AKIAABCDEFGHIJKLMNOP\r\nc PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x AKIAABCDEFGHIJKLMNOPPIME_REDACTED_2 y",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "AKIAABCDEFGHIJKLMNOPAKIAABCDEFGHIJKLMNOP",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and AKIAABCDEFGHIJKLMNOP",
+      "unresolved": 1
+     }
+    }
+   ]
+  },
+  {
+   "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+   "expect": {
+    "text": "overlap: api_key = PIME_REDACTED_1",
+    "map": [
+     {
+      "marker": "PIME_REDACTED_1",
+      "original": "sk-abcdefghijklmnopqrstuvwxyz0123",
+      "kind": "api-key"
+     }
+    ],
+    "count": 1
+   },
+   "restore": [
+    {
+     "text": "overlap: api_key = PIME_REDACTED_1",
+     "expect": {
+      "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "overlap: api_key = PIME_REDACTED_9",
+     "expect": {
+      "text": "overlap: api_key = PIME_REDACTED_9",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "overlap: api_key = PIME_REDACTED_1 PIME_REDACTED_",
+     "expect": {
+      "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123 PIME_REDACTED_",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "overlap: api_key = PIME_REDACTED_1 PIME_REDACTED_10",
+     "expect": {
+      "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123 PIME_REDACTED_10",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "overlap: api_key = PIME_REDACTED_1 PIME_REDACTED_01",
+     "expect": {
+      "text": "overlap: api_key = sk-abcdefghijklmnopqrstuvwxyz0123 PIME_REDACTED_01",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "x PIME_REDACTED_1PIME_REDACTED_2 y",
+     "expect": {
+      "text": "x sk-abcdefghijklmnopqrstuvwxyz0123PIME_REDACTED_2 y",
+      "unresolved": 1
+     }
+    },
+    {
+     "text": "PIME_REDACTED_1PIME_REDACTED_1",
+     "expect": {
+      "text": "sk-abcdefghijklmnopqrstuvwxyz0123sk-abcdefghijklmnopqrstuvwxyz0123",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "no markers",
+     "expect": {
+      "text": "no markers",
+      "unresolved": 0
+     }
+    },
+    {
+     "text": "PIME_REDACTED_99 and PIME_REDACTED_1",
+     "expect": {
+      "text": "PIME_REDACTED_99 and sk-abcdefghijklmnopqrstuvwxyz0123",
+      "unresolved": 1
+     }
+    }
+   ]
+  }
+ ],
+ "sharedSet": {
+  "parts": [
+   "api_key = \"aaaaaaaaaaaaaaaa\"",
+   "api_key = \"bbbbbbbbbbbbbbbb\"\nsecond = sk-abcdefghijklmnopqrstuvwxyz0123"
+  ],
+  "texts": [
+   "api_key = \"PIME_REDACTED_1\"",
+   "api_key = \"PIME_REDACTED_1\"\nsecond = PIME_REDACTED_2"
+  ],
+  "restore": [
+   {
+    "text": "api_key = \"PIME_REDACTED_1\"",
+    "expect": {
+     "text": "api_key = \"bbbbbbbbbbbbbbbb\"",
+     "unresolved": 0
+    }
+   },
+   {
+    "text": "api_key = \"PIME_REDACTED_1\"\nsecond = PIME_REDACTED_2",
+    "expect": {
+     "text": "api_key = \"bbbbbbbbbbbbbbbb\"\nsecond = sk-abcdefghijklmnopqrstuvwxyz0123",
+     "unresolved": 0
+    }
+   },
+   {
+    "text": "PIME_REDACTED_1 PIME_REDACTED_2 PIME_REDACTED_3",
+    "expect": {
+     "text": "bbbbbbbbbbbbbbbb sk-abcdefghijklmnopqrstuvwxyz0123 PIME_REDACTED_3",
+     "unresolved": 1
+    }
+   }
+  ]
+ }
+}

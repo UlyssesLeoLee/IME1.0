@@ -473,6 +473,99 @@ pub fn scan(text: &str, file_name: &str) -> ScanResult {
     }
 }
 
+/// What may leave the machine (`assessOutbound`): `allow`, `redact` (medium findings), and for high-risk content
+/// `block` in the realtime scope (never sent) or `confirm` (the user must decide explicitly).
+pub fn assess_outbound(text: &str, file_name: &str, scope: &str) -> (&'static str, ScanResult) {
+    let scanned = scan(text, file_name);
+    let action = match scanned.highest {
+        "none" => "allow",
+        "medium" => "redact",
+        _ if scope == "realtime" => "block",
+        _ => "confirm",
+    };
+    (action, scanned)
+}
+
+/// `summarize`: number of findings per kind, in the order the kinds first occur.
+pub fn summarize(findings: &[Finding]) -> Vec<(&'static str, usize)> {
+    let mut counts: Vec<(&'static str, usize)> = Vec::new();
+    for f in findings {
+        match counts.iter_mut().find(|(k, _)| *k == f.kind) {
+            Some(slot) => slot.1 += 1,
+            None => counts.push((f.kind, 1)),
+        }
+    }
+    counts
+}
+
+/// One redacted value; the map of a redaction lets a model reply be restored locally.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Redacted {
+    pub marker: String,
+    pub original: String,
+    pub kind: &'static str,
+}
+
+/// Replaces the findings with `PIME_REDACTED_n` markers (numbered from 1 in this call). Overlapping findings are
+/// covered by the first one.
+pub fn redact(text: &str, findings: &[Finding]) -> (String, Vec<Redacted>) {
+    let t: Vec<char> = text.chars().collect();
+    let mut out = String::new();
+    let mut map = Vec::new();
+    let mut cursor = 0usize;
+    for f in findings {
+        if f.start < cursor {
+            continue; // overlapping finding already covered
+        }
+        let marker = format!("PIME_REDACTED_{}", map.len() + 1);
+        out.extend(&t[cursor..f.start]);
+        out.push_str(&marker);
+        map.push(Redacted {
+            marker,
+            original: t[f.start..f.end].iter().collect(),
+            kind: f.kind,
+        });
+        cursor = f.end;
+    }
+    out.extend(&t[cursor..]);
+    (out, map)
+}
+
+/// Puts the originals back; a marker that is not in the map stays and is counted as unresolved. When two entries
+/// share a marker the later one wins (a `Map` built from the list, as in the reference).
+pub fn restore(text: &str, map: &[Redacted]) -> (String, usize) {
+    const PREFIX: &str = "PIME_REDACTED_";
+    let t: Vec<char> = text.chars().collect();
+    let prefix: Vec<char> = PREFIX.chars().collect();
+    let mut out = String::new();
+    let mut unresolved = 0usize;
+    let mut i = 0usize;
+    while i < t.len() {
+        if t[i..].starts_with(&prefix) {
+            let digits = t[i + prefix.len()..]
+                .iter()
+                .take_while(|c| c.is_ascii_digit())
+                .count();
+            if digits > 0 {
+                let end = i + prefix.len() + digits;
+                let marker: String = t[i..end].iter().collect();
+                match map.iter().rev().find(|r| r.marker == marker) {
+                    Some(r) => out.push_str(&r.original),
+                    None => {
+                        unresolved += 1;
+                        out.push_str(&marker);
+                    }
+                }
+                i = end;
+                continue;
+            }
+        }
+        out.push(t[i]);
+        i += 1;
+    }
+    (out, unresolved)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
