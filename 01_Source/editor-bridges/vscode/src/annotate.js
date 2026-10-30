@@ -6,11 +6,7 @@
 const vscode = require('vscode');
 const path = require('node:path');
 const {rt, cfg, L, errorText, aiEnabled, workspaceId, grantProviderId} = require('./runtime');
-const annotate = require('./core/annotate');
-const {extractSymbols} = require('./core/symbols');
-const secrets = require('./core/secrets');
 const settingsMod = require('./core/settings');
-const languages = require('./core/languages');
 const {codeOf} = require('./core/errors');
 
 const MAX_FILE_BYTES = 1.5 * 1024 * 1024;
@@ -19,7 +15,7 @@ const MAX_DIR_FILES = 30, MAX_DIR_FILE_BYTES = 400 * 1024, MAX_DIR_SYMBOLS = 300
 const wanted = () => ({comment: cfg().get('autoComment') !== false, graph: cfg().get('graphComment') === true, scope: cfg().get('graphCommentScope') === 'file' ? 'file' : 'directory'});
 async function readySettings(profile) {
   const w = wanted();
-  if (!(w.comment || w.graph) || !aiEnabled() || !vscode.workspace.isTrusted || !annotate.supportsAnnotation(profile)) return null;
+  if (!(w.comment || w.graph) || !aiEnabled() || !vscode.workspace.isTrusted || !await rt.engine.annotate.supports(profile)) return null;
   let sc; try { sc = settingsMod.resolveScenario(rt.settings, 'f1Insert'); } catch { return null; }
   const key = sc.model ? await rt.ctx.secrets.get('pime-key:' + sc.providerId) : null;
   return key ? {w, sc, key} : null;
@@ -32,18 +28,17 @@ async function directorySymbols(doc) {
   let total = 0;
   let entries = [];
   try { entries = await vscode.workspace.fs.readDirectory(dir); } catch { return []; }
-  for (const [name, type] of entries) {
+  // which files are worth reading (regular files, not the current one, no credential-like names, a known extension) is the engine's call
+  const candidates = await rt.engine.symbols.dirCandidates(path.basename(doc.uri.fsPath), entries.map(([name, type]) => ({name, isFile: type === vscode.FileType.File})));
+  for (const {name, language} of candidates) {
     if (out.length >= MAX_DIR_FILES || total >= MAX_DIR_SYMBOLS) break;
-    if (type !== vscode.FileType.File || name === path.basename(doc.uri.fsPath) || secrets.isSensitiveFileName(name)) continue;
-    const decision = languages.resolveLanguage({languageId: '', fileName: name});
-    if (decision.reason !== 'extension' && decision.reason !== 'bridge-languageId') continue;
     try {
       const uri = vscode.Uri.joinPath(dir, name);
       const open = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri.toString());
       let text;
       if (open) text = open.getText();
       else { const stat = await vscode.workspace.fs.stat(uri); if (stat.size > MAX_DIR_FILE_BYTES) continue; text = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8'); }
-      const symbols = extractSymbols(decision.language, text, 40);
+      const symbols = await rt.engine.symbols.extract(language, text, 40);
       if (symbols.length) { out.push({file: name, symbols}); total += symbols.length; }
     } catch { /* unreadable file: skipped */ }
   }
@@ -57,12 +52,13 @@ async function annotateInsertion({doc, info, template, position}) {
   const {w, sc, key} = ready;
   const fileText = doc.getText();
   if (Buffer.byteLength(fileText, 'utf8') > MAX_FILE_BYTES) return null;
-  const verdict = secrets.assessOutbound(fileText, {fileName: doc.fileName, scope: 'f1'});
+  const verdict = await rt.engine.privacy.assess(fileText, {fileName: doc.fileName, scope: 'f1'});
   if (verdict.action === 'confirm' || verdict.action === 'block') {
-    vscode.window.showWarningMessage(L('annotate.skipSensitive', Object.keys(secrets.summarize(verdict.scanned.findings)).join(', ') || 'file name'));
+    vscode.window.showWarningMessage(L('annotate.skipSensitive', Object.keys(verdict.summary).join(', ') || 'file name'));
     return null;
   }
-  const sent = verdict.action === 'redact' ? secrets.redact(fileText, verdict.scanned.findings).text : fileText;
+  let sent = fileText; // the reply is never restored, so the redaction map is not kept
+  if (verdict.action === 'redact') { const set = rt.engine.privacy.redactionSet(); sent = await rt.engine.privacy.redact(fileText, set); await rt.engine.privacy.release(set); }
   const needDirectory = w.graph && w.scope === 'directory';
   // authorisation: the whole file (L3) and, for the graph, symbol names of other files (L4); never silent
   const grantKey = grantProviderId(sc), workspace = workspaceId();
@@ -82,9 +78,9 @@ async function annotateInsertion({doc, info, template, position}) {
       else if (once) await rt.broker.consume(g.id); // the directory-names grant is consumed by this one request
     }
   }
-  const symbolsHere = extractSymbols(info.language, fileText, 60);
+  const symbolsHere = await rt.engine.symbols.extract(info.language, fileText, 60);
   const dirSyms = needDirectory ? await directorySymbols(doc) : [];
-  const prompt = annotate.buildAnnotatePrompt({language: info.language, dialect: info.dialect, locale: rt.locale, comment: w.comment, graph: w.graph, fileName: path.basename(doc.fileName),
+  const prompt = await rt.engine.annotate.prompt({language: info.language, dialect: info.dialect, locale: rt.locale, comment: w.comment, graph: w.graph, fileName: path.basename(doc.fileName),
     fileText: sent, snippet: template, line: position.line + 1, currentSymbols: symbolsHere, directorySymbols: dirSyms});
   const controller = new AbortController();
   try {
@@ -92,7 +88,7 @@ async function annotateInsertion({doc, info, template, position}) {
       token.onCancellationRequested(() => controller.abort());
       return rt.ai.infer({...sc, providerId: grantKey, key, ...prompt, maxOutputTokens: Math.max(sc.maxOutputTokens, 3000), signal: controller.signal, grantId: onceGrant ? onceGrant.id : undefined, grantScope: 'L3'});
     });
-    const out = annotate.applyAnnotateReply(res.text, {profile: info.language, original: template, dialect: info.dialect, comment: w.comment, graph: w.graph});
+    const out = await rt.engine.annotate.apply(res.text, {profile: info.language, original: template, dialect: info.dialect, comment: w.comment, graph: w.graph});
     if (out.notes.some(n => n.startsWith('comment-rejected'))) vscode.window.showWarningMessage(L('annotate.rejected'));
     const kinds = [out.commented && L('annotate.kind.comment'), out.graph && L('annotate.kind.graph')].filter(Boolean);
     return out.text === template ? null : {text: out.text, kinds};
