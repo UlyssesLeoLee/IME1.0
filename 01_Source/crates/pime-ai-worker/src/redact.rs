@@ -93,9 +93,23 @@ pub fn redact_key_shaped(text: &str) -> String {
     out
 }
 
+/// The one way the worker writes a line to stderr: prefixed, one line, key-shaped text masked. Every message passed in
+/// is fixed text today; the masking is the guard for the day someone formats a value into one.
+pub fn diagnostic(message: &str) -> String {
+    let one_line = message.replace(['\r', '\n'], " ");
+    format!("pime-ai-worker: {}", redact_key_shaped(&one_line))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn diagnostics_are_one_line_prefixed_and_masked() {
+        let line = diagnostic("failed with sk-proj-AbCdEf0123456789AbCdEf\nsecond line");
+        assert_eq!(line, "pime-ai-worker: failed with [redacted] second line");
+        assert!(!line.contains('\n'));
+    }
 
     #[test]
     fn scrub_exact_replaces_every_occurrence_and_counts_them() {

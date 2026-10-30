@@ -21,3 +21,5 @@ pub mod redact;
 pub mod secret;
 pub mod transport;
 pub mod vault;
+pub mod wincred;
+pub mod winhttp;
