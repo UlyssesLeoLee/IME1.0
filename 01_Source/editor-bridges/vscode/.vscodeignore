@@ -1,0 +1,13 @@
+# What is NOT shipped in the .vsix. scripts/package-vsix.js stages only the files the extension needs, so this is the
+# second line of defence for anyone who runs `vsce package` in this folder directly (that build lacks language-packs/,
+# which the extension needs: always build the .vsix with scripts/package-vsix.js).
+.vscode/**
+.vscode-test/**
+scripts/**
+test/**
+tests/**
+node_modules/**
+**/*.map
+**/*.ts
+.gitignore
+.vscodeignore
