@@ -25,6 +25,18 @@ features = [
   "Win32_System_Com",
   "Win32_UI_TextServices",
   "Win32_UI_Input_KeyboardAndMouse",
+  # superset for the parallel work items (candidate window, registration, edit sessions): unused features cost nothing
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_Graphics_Gdi",
+  "Win32_System_Registry",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Threading",
+  "Win32_System_Ole",
+  "Win32_System_Variant",
+  "Win32_Security",
+  "Win32_Globalization",
+  "Win32_UI_HiDpi",
+  "Win32_UI_Shell",
 ]
 
 [dependencies.windows-core]

@@ -1,54 +1,35 @@
 //! Programming IME text service (TSF text input processor).
 //!
-//! STATUS (milestone M2): the DLL builds with the pure-Rust toolchain, exports the four COM entry points and links
-//! `pime-core` in-process. It is NOT a working input method yet: the key sink, the composition, the candidate window and
-//! the registration (`DllRegisterServer`) are the next milestones and are deliberately not faked here.
+//! STATUS: the DLL builds with the pure-Rust toolchain and exports the four COM entry points. Module ownership (so that
+//! parallel work does not collide): `tip` + `keymap` (activation, key sink, composition), `popup` + `layout` (candidate
+//! window), `register` (registry and TSF profile registration), `ui` (the shared contract between them).
+//! Not a working input method until the milestones in docs/RUST_MIGRATION_PLAN.md 13.7 are done AND verified in a
+//! disposable Windows VM: nothing here may be registered on a real machine before that.
 //!
 //! Safety rules for this crate: every `unsafe` block is a COM/FFI boundary and carries a reason; a panic must never
 //! unwind into the host application (`panic = "abort"` in the release profile, and no `unwrap` on host input).
 
-use std::cell::RefCell;
 use std::ffi::c_void;
 
-use pime_core::input::{InputMachine, LocalPredictor};
 use windows::Win32::Foundation::{
-    BOOL, CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, E_NOTIMPL, E_POINTER, S_FALSE,
+    BOOL, CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, E_POINTER, S_FALSE,
 };
 use windows::Win32::System::Com::{IClassFactory, IClassFactory_Impl};
-use windows::Win32::UI::TextServices::{
-    ITfTextInputProcessor, ITfTextInputProcessor_Impl, ITfThreadMgr,
-};
 use windows::core::{GUID, HRESULT, IUnknown, Interface, Result, implement};
+
+pub mod keymap;
+pub mod layout;
+pub mod popup;
+pub mod register;
+pub mod tip;
+pub mod ui;
 
 /// Prototype GUIDs (the same values as the C++ skeleton in `windows/tsf`); to be replaced by governed product ids.
 pub const CLSID_PIME: GUID = GUID::from_u128(0x43f95ed1_95b4_421d_8f5a_837128c2d854);
-
-/// The text input processor: one per thread that activates the profile. TSF calls it on the thread's apartment, so
-/// interior mutability without locking is enough.
-#[implement(ITfTextInputProcessor)]
-struct Tip {
-    machine: RefCell<InputMachine<LocalPredictor>>,
-}
-
-impl Tip {
-    fn new() -> Tip {
-        Tip {
-            machine: RefCell::new(InputMachine::new(LocalPredictor, "rust")),
-        }
-    }
-}
-
-impl ITfTextInputProcessor_Impl for Tip_Impl {
-    fn Activate(&self, _ptim: Option<&ITfThreadMgr>, _tid: u32) -> Result<()> {
-        // M3: advise the key-event sink and the thread-manager sink here.
-        let _ = self.machine.borrow().state();
-        Ok(())
-    }
-
-    fn Deactivate(&self) -> Result<()> {
-        Ok(())
-    }
-}
+/// Language profiles: zh-CN (0x0804), en-US (0x0409), ja-JP (0x0411).
+pub const PROFILE_ZH: GUID = GUID::from_u128(0x223fd919_f8cb_476c_a852_351e7381c801);
+pub const PROFILE_EN: GUID = GUID::from_u128(0x68ed92de_77cf_43b1_a7b2_d3be2686e2a0);
+pub const PROFILE_JA: GUID = GUID::from_u128(0x22e54b52_5082_42d3_9e41_1c2e0ce74dfb);
 
 #[implement(IClassFactory)]
 struct Factory;
@@ -66,9 +47,8 @@ impl IClassFactory_Impl for Factory_Impl {
         if outer.is_some() {
             return Err(CLASS_E_NOAGGREGATION.into());
         }
-        let tip: ITfTextInputProcessor = Tip::new().into();
         // SAFETY: `iid` and `object` were checked for null; COM requires them to be valid for the call.
-        unsafe { tip.query(iid, object).ok() }
+        unsafe { tip::create_instance(iid, object) }
     }
 
     fn LockServer(&self, _lock: BOOL) -> Result<()> {
@@ -98,21 +78,20 @@ pub unsafe extern "system" fn DllGetClassObject(
     }
 }
 
-/// Never unload while any object could be alive (no object counting yet: M3).
+/// Never unload while any object could be alive (no object counting yet).
 #[unsafe(no_mangle)]
 pub extern "system" fn DllCanUnloadNow() -> HRESULT {
     S_FALSE
 }
 
-/// Registration of the CLSID, the language profiles (zh-CN, en-US, ja-JP) and the TSF categories is milestone M4.
 #[unsafe(no_mangle)]
 pub extern "system" fn DllRegisterServer() -> HRESULT {
-    E_NOTIMPL
+    register::register_server()
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn DllUnregisterServer() -> HRESULT {
-    E_NOTIMPL
+    register::unregister_server()
 }
 
 #[cfg(test)]
