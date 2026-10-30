@@ -1,0 +1,12 @@
+/target/
+**/node_modules/
+**/out/
+*.vsix
+*.log
+.env
+*.key
+*.pfx
+*.pem
+*.exe
+*.dll
+build/

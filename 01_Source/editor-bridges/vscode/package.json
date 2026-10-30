@@ -1,0 +1,41 @@
+{
+  "name": "programming-ime-vscode-bridge",
+  "displayName": "Programming IME (Prototype Bridge)",
+  "description": "Prototype: seven-language local suggestions and reviewed AI edits (BYOK). Not a replacement for a system TSF IME.",
+  "version": "0.1.0",
+  "publisher": "pime-local-prototype",
+  "license": "MIT",
+  "engines": {"vscode": "^1.94.0"},
+  "categories": ["Programming Languages", "Snippets", "Other"],
+  "main": "./src/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      {"command":"programmingIme.enable", "title":"Programming IME: Enable / Disable"},
+      {"command":"programmingIme.chooseLanguage", "title":"Programming IME: Choose Programming Language"},
+      {"command":"programmingIme.showCandidates", "title":"Programming IME: Show Code Candidates"},
+      {"command":"programmingIme.configureAI", "title":"Programming IME: Configure AI Provider / API Key"},
+      {"command":"programmingIme.chooseModel", "title":"Programming IME: Set Model and Effort"},
+      {"command":"programmingIme.toggleRealtimeAI", "title":"Programming IME: Toggle Realtime AI"},
+      {"command":"programmingIme.f1Edit", "title":"Programming IME: F1 AI Edit (Full File / Insert)"}
+    ],
+    "keybindings": [
+      {"command":"programmingIme.f1Edit", "key":"f1", "when":"editorTextFocus && programmingIme.enabled"},
+      {"command":"programmingIme.showCandidates", "key":"ctrl+alt+space", "when":"editorTextFocus && programmingIme.enabled"}
+    ],
+    "configuration": {
+      "title": "Programming IME Prototype",
+      "properties": {
+        "programmingIme.enabled": {"type":"boolean","default":false,"description":"Enable editor candidate provider and the F1 keybinding; can override editor F1 Help."},
+        "programmingIme.coreExecutable": {"type":"string","default":"","description":"Absolute path of a trusted, locally built pime-core executable. Empty uses JavaScript fallback."},
+        "programmingIme.realtimeAI": {"type":"boolean","default":false,"description":"Send authorized context to selected provider for AI suggestions. Requires explicit opt-in."},
+        "programmingIme.provider": {"type":"string","enum":["openai","openai-compatible"],"default":"openai"},
+        "programmingIme.endpoint": {"type":"string","default":"https://api.openai.com/v1/responses","description":"HTTPS endpoint. For openai-compatible use the chat/completions endpoint."},
+        "programmingIme.model": {"type":"string","default":"","description":"Explicit model identifier selected by the user; never silently selected."},
+        "programmingIme.effort": {"type":"string","enum":["auto","low","medium","high"],"default":"auto"},
+        "programmingIme.effortCapability": {"type":"string","enum":["unknown","supported","unsupported"],"default":"unknown","description":"Set supported only when provider/model documentation confirms a reasoning effort argument."}
+      }
+    }
+  },
+  "scripts": {"test":"node --test test/*.test.js", "check":"node --check src/extension.js && node --check src/logic.js"}
+}

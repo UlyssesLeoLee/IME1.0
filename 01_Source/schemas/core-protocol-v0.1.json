@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Programming IME v0.1 local core JSON Lines request",
+  "description": "Prototype stdin/stdout JSONL only. Not the secure PIME-IPC/1 protocol proposed by detailed design.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["op"],
+  "properties": {
+    "op": {"enum": ["health", "predict", "detect", "encode", "validate_hex"]},
+    "language": {"type":"string"},
+    "prefix": {"type":"string","maxLength":128},
+    "limit": {"type":"integer","minimum":0,"maximum":20},
+    "filename": {"type":"string"},
+    "text": {"type":"string"},
+    "locked": {"type":"string"},
+    "instruction": {"type":"string"},
+    "hex": {"type":"string"},
+    "seq": {"type":"integer"}
+  }
+}

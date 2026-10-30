@@ -1,0 +1,14 @@
+{"op":"health"}
+{"op":"detect","filename":"src/main.rs","text":"fn main() {}"}
+{"op":"detect","filename":"module.py","text":"print(42)","locked":"rust"}
+{"op":"predict","language":"rust","prefix":"fnm","seq":1}
+{"op":"predict","language":"python","prefix":"fori","seq":2}
+{"op":"predict","language":"typescript","prefix":"interface","seq":3}
+{"op":"predict","language":"powershell","prefix":"func","seq":4}
+{"op":"predict","language":"c","prefix":"main","seq":5}
+{"op":"predict","language":"assembly","prefix":"mov","seq":6}
+{"op":"predict","language":"machine-code","prefix":"nop","seq":7}
+{"op":"encode","instruction":"nop"}
+{"op":"encode","instruction":"jmp unresolved_label"}
+{"op":"validate_hex","hex":"90 C3"}
+{"op":"validate_hex","hex":"GG"}

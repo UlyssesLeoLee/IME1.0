@@ -1,0 +1,93 @@
+SKIP: cargo unavailable (not a pass)
+
+> programming-ime-vscode-bridge@0.1.0 test
+> node --test test/*.test.js
+
+TAP version 13
+# Subtest: seven local language profiles
+ok 1 - seven local language profiles
+  ---
+  duration_ms: 5.64611
+  type: 'test'
+  ...
+# Subtest: manual language lock wins
+ok 2 - manual language lock wins
+  ---
+  duration_ms: 0.461581
+  type: 'test'
+  ...
+# Subtest: typescriptreact detected
+ok 3 - typescriptreact detected
+  ---
+  duration_ms: 0.145405
+  type: 'test'
+  ...
+# Subtest: unknown syntax conservatively unknown
+ok 4 - unknown syntax conservatively unknown
+  ---
+  duration_ms: 0.341997
+  type: 'test'
+  ...
+# Subtest: prefix result safe
+ok 5 - prefix result safe
+  ---
+  duration_ms: 0.276397
+  type: 'test'
+  ...
+# Subtest: no candidate on empty input
+ok 6 - no candidate on empty input
+  ---
+  duration_ms: 2.580839
+  type: 'test'
+  ...
+# Subtest: AI result validated
+ok 7 - AI result validated
+  ---
+  duration_ms: 0.771458
+  type: 'test'
+  ...
+# Subtest: invalid AI output rejected
+ok 8 - invalid AI output rejected
+  ---
+  duration_ms: 1.096631
+  type: 'test'
+  ...
+# Subtest: document hash version guards
+ok 9 - document hash version guards
+  ---
+  duration_ms: 2.309801
+  type: 'test'
+  ...
+# Subtest: unknown model effort omitted
+ok 10 - unknown model effort omitted
+  ---
+  duration_ms: 0.94702
+  type: 'test'
+  ...
+# Subtest: capability effort emitted
+ok 11 - capability effort emitted
+  ---
+  duration_ms: 0.520369
+  type: 'test'
+  ...
+# Subtest: last word
+ok 12 - last word
+  ---
+  duration_ms: 0.416089
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 219.313587
+
+> programming-ime-vscode-bridge@0.1.0 check
+> node --check src/extension.js && node --check src/logic.js
+
+
+Exit code: 0

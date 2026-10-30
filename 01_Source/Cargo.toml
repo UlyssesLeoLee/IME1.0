@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/pime-core"]
+resolver = "2"
