@@ -20,6 +20,9 @@ pub const MANIFEST_NAME: &str = "install-manifest.json";
 pub const UNINSTALLER_NAME: &str = "uninstall.exe";
 /// Under `HKEY_LOCAL_MACHINE`.
 pub const ARP_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\ProgrammingIME";
+/// The CLSID of the text service, as `regsvr32` registers it (`CLSID_PIME` in crates/pime-tsf/src/lib.rs; a test checks
+/// that the two agree). Only used to tell the person which keys to remove by hand when the DLL cannot unregister itself.
+pub const TEXT_SERVICE_CLSID: &str = "{43F95ED1-95B4-421D-8F5A-837128C2D854}";
 const MANIFEST_SCHEMA: i64 = 1;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -395,6 +398,23 @@ pub fn is_within(child: &Path, root: &Path, allow_equal: bool) -> bool {
         .is_some_and(|rest| rest.starts_with('\\'))
 }
 
+/// The components of `path` below `root` (both compared case-insensitively, `path` may equal `root`: then none), in
+/// the spelling of `path`. `None` when `path` is not inside `root` or contains `.` / `..`.
+pub fn relative_below(root: &Path, path: &Path) -> Option<Vec<String>> {
+    let text = |c: std::path::Component| c.as_os_str().to_string_lossy().into_owned();
+    let (mut r, mut p) = (root.components(), path.components());
+    loop {
+        match (r.next(), p.next()) {
+            (None, first) => {
+                let rest: Vec<String> = first.into_iter().chain(p).map(text).collect();
+                return rest.iter().all(|c| c != ".." && c != ".").then_some(rest);
+            }
+            (Some(a), Some(b)) if text(a).to_lowercase() == text(b).to_lowercase() => {}
+            _ => return None,
+        }
+    }
+}
+
 const RESERVED_DEVICES: [&str; 22] = [
     "con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8",
     "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
@@ -606,13 +626,7 @@ pub fn install_plan(prefix: &Path, options: &InstallOptions) -> Result<Plan, Pla
     }
 
     let mut warnings = Vec::new();
-    let admin_only = options
-        .system
-        .program_files_x86
-        .iter()
-        .chain([&options.system.program_files])
-        .any(|r| is_within(&prefix, r, true));
-    if options.register && !admin_only {
+    if options.register && !is_admin_only(&prefix, &options.system) {
         warnings.push(format!(
             "{} is outside Program Files: anyone who can write there can replace the DLL that Windows loads into other programs. Use the default folder unless this is a disposable test machine.",
             prefix.display()
@@ -663,6 +677,13 @@ pub fn uninstall_plan(manifest: &Manifest, options: &UninstallOptions) -> Result
         steps.push(Step::RemoveDir(d.clone()));
     }
     let writes_hklm = !manifest.text_service_dlls.is_empty() || !manifest.registry_keys.is_empty();
+    let mut warnings = Vec::new();
+    if !is_admin_only(&prefix, &options.system) {
+        warnings.push(format!(
+            "{} is outside Program Files: anyone who can write there could have replaced the files in it, and this uninstall runs regsvr32 /u on the DLL there and deletes files there with administrator rights. Links (junctions, symbolic links) inside it are never followed, but only a folder under Program Files is protected against being changed by other users.",
+            prefix.display()
+        ));
+    }
     Ok(Plan {
         action: Action::Uninstall,
         version: manifest.version.clone(),
@@ -671,8 +692,17 @@ pub fn uninstall_plan(manifest: &Manifest, options: &UninstallOptions) -> Result
         prefix,
         steps,
         manifest: manifest.clone(),
-        warnings: Vec::new(),
+        warnings,
     })
+}
+
+/// Below one of the Program Files folders, where ordinary users cannot write.
+fn is_admin_only(prefix: &Path, system: &SystemPaths) -> bool {
+    system
+        .program_files_x86
+        .iter()
+        .chain([&system.program_files])
+        .any(|r| is_within(prefix, r, true))
 }
 
 /// Text of `--dry-run`.
@@ -1224,6 +1254,52 @@ pub mod tests {
             p(r"D:\Tools\Deep\PIME"),
         ];
         assert!(uninstall_plan(&deep, &uninstall_options(VscodeMode::Install)).is_ok());
+    }
+
+    #[test]
+    fn st_035_review_3_an_uninstall_outside_program_files_warns_and_one_inside_does_not() {
+        let m = full_manifest();
+        let plan = uninstall_plan(&m, &uninstall_options(VscodeMode::Install)).unwrap();
+        assert!(plan.warnings.is_empty(), "{:?}", plan.warnings);
+        for outside in [
+            r"D:\Tools\PIME",
+            r"C:\Users\me\AppData\Local\Temp\pime-test",
+            r"C:\Program Files2\PIME",
+        ] {
+            let mut o = options();
+            o.register = false;
+            let m = install_plan(Path::new(outside), &o).unwrap().manifest;
+            let plan = uninstall_plan(&m, &uninstall_options(VscodeMode::Install)).unwrap();
+            assert_eq!(plan.warnings.len(), 1, "{outside}");
+            assert!(plan.warnings[0].contains("outside Program Files"));
+            assert!(plan.warnings[0].contains(outside));
+            // the dry run shows it, too
+            assert!(render(&plan, &[]).contains("WARNING: "));
+        }
+        let m = install_plan(Path::new(r"C:\Program Files (x86)\PIME"), &options())
+            .unwrap()
+            .manifest;
+        assert!(
+            uninstall_plan(&m, &uninstall_options(VscodeMode::Install))
+                .unwrap()
+                .warnings
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn st_035_review_3_relative_below_gives_the_components_in_the_spelling_of_the_path() {
+        let r = |root: &str, path: &str| relative_below(Path::new(root), Path::new(path));
+        assert_eq!(r(r"C:\a\b", r"C:\a\b"), Some(vec![]));
+        assert_eq!(
+            r(r"c:\A\B\", r"C:/a/b/Sub/File.DLL"),
+            Some(vec!["Sub".to_string(), "File.DLL".to_string()])
+        );
+        assert_eq!(r(r"C:\a\b", r"C:\a\bc\x"), None);
+        assert_eq!(r(r"C:\a\b", r"C:\a"), None);
+        assert_eq!(r(r"C:\a\b", r"D:\a\b\x"), None);
+        assert_eq!(r(r"C:\a\b", r"C:\a\b\..\x"), None);
+        assert_eq!(r(r"C:\a\b", r"C:\a\b\sub\..\..\x"), None);
     }
 
     #[test]

@@ -26,6 +26,10 @@ path = "src/main.rs"
 name = "real_fs"
 path = "../../tests/setup/real_fs.rs"
 
+[[test]]
+name = "real_links"
+path = "../../tests/setup/real_links.rs"
+
 [dependencies]
 # Only for the audited SHA-256 and the strict JSON parser; the core itself is not part of what this installer executes.
 pime-core = { path = "../pime-core" }
@@ -39,6 +43,7 @@ features = [
   "Win32_Storage_FileSystem",
   "Win32_System_Com",
   "Win32_System_Console",
+  "Win32_System_IO",
   "Win32_System_LibraryLoader",
   "Win32_System_Registry",
   "Win32_System_SystemInformation",

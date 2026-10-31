@@ -499,14 +499,22 @@ fn uninstall_flow(
         return Ok(None);
     }
     if interactive {
+        let notes = plan
+            .warnings
+            .iter()
+            .map(|w| format!("\nWARNING: {w}"))
+            .collect::<String>();
         let ask = text(
             lang,
             Msg::ConfirmUninstall,
-            &[&plan.version, &plan.prefix.display().to_string()],
+            &[&plan.version, &plan.prefix.display().to_string(), &notes],
         );
         if !real::message_box(&text(lang, Msg::Title, &[]), &ask, Icon::Question, true) {
             return Err(failure(EXIT_CANCELLED, "cancelled"));
         }
+    }
+    for w in &plan.warnings {
+        rep.line(&format!("WARNING: {w}"));
     }
     if plan.requires_admin && !real::is_elevated() {
         let mut child = vec![

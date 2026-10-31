@@ -42,7 +42,7 @@ pub fn template(lang: Lang, msg: Msg) -> &'static str {
             "Install Programming IME {0} into:\n{1}\n\nThis is a PRE-RELEASE. It registers a text input service (a TSF DLL) with Windows that has not been verified on a clean virtual machine yet, and this installer is not code signed, so Windows may warn about an unknown publisher. It does not change your default input method.\n{2}\nContinue?"
         }
         (En, ConfirmUninstall) => {
-            "Remove Programming IME {0} from:\n{1}\n\nOnly the files and registry entries that the installer created are removed.\n\nContinue?"
+            "Remove Programming IME {0} from:\n{1}\n\nOnly the files and registry entries that the installer created are removed.\n{2}\nContinue?"
         }
         (En, InstallDone) => "Programming IME {0} was installed into:\n{1}\n\n{2}",
         (En, UninstallDone) => "Programming IME was removed.\n\n{0}",
@@ -60,7 +60,7 @@ pub fn template(lang: Lang, msg: Msg) -> &'static str {
             "将 Programming IME {0} 安装到：\n{1}\n\n这是预发布版本。它会向 Windows 注册一个文本输入服务（TSF DLL），该组件尚未在干净的虚拟机中验证；安装程序也没有代码签名，Windows 可能提示“未知发布者”。不会更改你的默认输入法。\n{2}\n是否继续？"
         }
         (ZhCn, ConfirmUninstall) => {
-            "将从以下位置卸载 Programming IME {0}：\n{1}\n\n只会删除本安装程序创建的文件和注册表项。\n\n是否继续？"
+            "将从以下位置卸载 Programming IME {0}：\n{1}\n\n只会删除本安装程序创建的文件和注册表项。\n{2}\n是否继续？"
         }
         (ZhCn, InstallDone) => "Programming IME {0} 已安装到：\n{1}\n\n{2}",
         (ZhCn, UninstallDone) => "Programming IME 已卸载。\n\n{0}",
@@ -76,7 +76,7 @@ pub fn template(lang: Lang, msg: Msg) -> &'static str {
             "Programming IME {0} を次の場所にインストールします:\n{1}\n\nこれはプレリリース版です。Windows にテキスト入力サービス (TSF DLL) を登録しますが、クリーンな仮想マシンでの検証はまだ完了していません。また、このインストーラーはコード署名されていないため、Windows が「不明な発行元」と警告する場合があります。既定の入力方式は変更しません。\n{2}\n続行しますか?"
         }
         (Ja, ConfirmUninstall) => {
-            "次の場所から Programming IME {0} を削除します:\n{1}\n\nインストーラーが作成したファイルとレジストリ項目だけを削除します。\n\n続行しますか?"
+            "次の場所から Programming IME {0} を削除します:\n{1}\n\nインストーラーが作成したファイルとレジストリ項目だけを削除します。\n{2}\n続行しますか?"
         }
         (Ja, InstallDone) => "Programming IME {0} を次の場所にインストールしました:\n{1}\n\n{2}",
         (Ja, UninstallDone) => "Programming IME を削除しました。\n\n{0}",

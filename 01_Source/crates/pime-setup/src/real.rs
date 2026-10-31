@@ -16,12 +16,18 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 use windows::Win32::Foundation::{
-    CloseHandle, ERROR_CANCELLED, ERROR_FILE_NOT_FOUND, HANDLE, HWND, WIN32_ERROR,
+    CloseHandle, ERROR_CANCELLED, ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND, HANDLE, HWND,
+    WIN32_ERROR,
 };
-use windows::Win32::Globalization::GetUserDefaultUILanguage;
+use windows::Win32::Globalization::{CSTR_EQUAL, CompareStringOrdinal, GetUserDefaultUILanguage};
 use windows::Win32::Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation};
 use windows::Win32::Storage::FileSystem::{
-    MOVE_FILE_FLAGS, MOVEFILE_DELAY_UNTIL_REBOOT, MoveFileExW,
+    BY_HANDLE_FILE_INFORMATION, CreateFileW, FILE_ATTRIBUTE_DIRECTORY,
+    FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
+    FILE_NAME_NORMALIZED, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ,
+    FILE_SHARE_WRITE, GETFINALPATHNAMEBYHANDLE_FLAGS, GetFileInformationByHandle,
+    GetFinalPathNameByHandleW, MOVE_FILE_FLAGS, MOVEFILE_DELAY_UNTIL_REBOOT, MoveFileExW,
+    OPEN_EXISTING, VOLUME_NAME_DOS,
 };
 use windows::Win32::System::Com::CoTaskMemFree;
 use windows::Win32::System::Console::{FreeConsole, GetConsoleProcessList};
@@ -131,6 +137,160 @@ pub fn system_paths() -> io::Result<SystemPaths> {
         )?),
         user_profile: Some(known_folder(&FOLDERID_Profile, "the user profile folder")?),
     })
+}
+
+struct Handle(HANDLE);
+
+impl Drop for Handle {
+    fn drop(&mut self) {
+        // SAFETY: the handle came from a successful CreateFileW and is closed exactly once.
+        unsafe {
+            let _ = CloseHandle(self.0);
+        }
+    }
+}
+
+/// An existing file or folder, opened for attribute queries only.
+struct Opened {
+    handle: Handle,
+    attributes: u32,
+}
+
+/// Opens `path` ITSELF: when its last component is a link, the link is opened and not followed
+/// (`FILE_FLAG_OPEN_REPARSE_POINT`). Folders are opened too (`FILE_FLAG_BACKUP_SEMANTICS`). Everybody keeps access
+/// (all three share modes): this must not disturb a running program. `Ok(None)`: nothing is there.
+fn open_no_follow(path: &Path) -> Result<Option<Opened>, String> {
+    let name = wide(path.as_os_str());
+    // SAFETY: `name` is NUL-terminated and outlives the call; no security attributes, no template.
+    let opened = unsafe {
+        CreateFileW(
+            PCWSTR(name.as_ptr()),
+            FILE_READ_ATTRIBUTES.0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            None,
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            HANDLE::default(),
+        )
+    };
+    let handle = match opened {
+        Ok(h) => Handle(h),
+        Err(e)
+            if [ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND]
+                .iter()
+                .any(|c| e.code() == HRESULT::from_win32(c.0)) =>
+        {
+            return Ok(None);
+        }
+        Err(e) => return Err(format!("cannot examine {}: {e}", path.display())),
+    };
+    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: the handle is open and `info` is a valid out structure.
+    unsafe { GetFileInformationByHandle(handle.0, &mut info) }
+        .map_err(|e| format!("cannot examine {}: {e}", path.display()))?;
+    Ok(Some(Opened {
+        handle,
+        attributes: info.dwFileAttributes,
+    }))
+}
+
+/// The path an open handle really refers to, as `C:\...`; the `\\?\` prefix is removed. A location that is not on a
+/// local drive letter (`\\?\UNC\...`, `\\?\Volume{...}\`) is refused.
+fn final_path(handle: &Handle) -> Result<String, String> {
+    let mut buf = vec![0u16; 1024];
+    loop {
+        // SAFETY: the handle is open; the buffer is valid for `buf.len()` units for the whole call.
+        let n = unsafe {
+            GetFinalPathNameByHandleW(
+                handle.0,
+                &mut buf,
+                GETFINALPATHNAMEBYHANDLE_FLAGS(FILE_NAME_NORMALIZED.0 | VOLUME_NAME_DOS.0),
+            )
+        } as usize;
+        if n == 0 {
+            return Err(format!(
+                "cannot resolve a path: {}",
+                io::Error::last_os_error()
+            ));
+        }
+        if n < buf.len() {
+            return plain_final(&String::from_utf16_lossy(&buf[..n]));
+        }
+        buf = vec![0u16; n + 1];
+    }
+}
+
+pub fn plain_final(raw: &str) -> Result<String, String> {
+    let Some(rest) = raw.strip_prefix(r"\\?\") else {
+        return Ok(raw.to_string());
+    };
+    let b = rest.as_bytes();
+    if b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && b[2] == b'\\' {
+        Ok(rest.to_string())
+    } else {
+        Err(format!(
+            "{raw} is not on a local drive letter (a network or volume path)"
+        ))
+    }
+}
+
+/// Case-insensitive the way NTFS compares names.
+fn same_name(a: &str, b: &str) -> bool {
+    let (a, b): (Vec<u16>, Vec<u16>) = (a.encode_utf16().collect(), b.encode_utf16().collect());
+    // SAFETY: both slices are valid for the call.
+    unsafe { CompareStringOrdinal(&a, &b, true) == CSTR_EQUAL }
+}
+
+/// [`Backend::check_plain`] for the real file system. Walks `root`, then each component down to `path`, opening every
+/// one without following a reparse point: a reparse point, or a name that resolves somewhere other than its place in
+/// the canonical `root`, is refused. A missing component ends the walk with `Ok`: there is nothing to act on.
+pub fn plain_path_check(root: &Path, path: &Path) -> Result<(), String> {
+    let Some(below) = crate::plan::relative_below(root, path) else {
+        return Err(format!(
+            "{} is not inside {}",
+            path.display(),
+            root.display()
+        ));
+    };
+    let link = |p: &Path| {
+        format!(
+            "{} is a junction, symbolic link or other reparse point, which is never followed",
+            p.display()
+        )
+    };
+    let Some(root_opened) = open_no_follow(root)? else {
+        return Ok(());
+    };
+    if root_opened.attributes & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0 {
+        return Err(link(root));
+    }
+    let canonical_root = final_path(&root_opened.handle)?;
+    let mut expected = canonical_root.clone();
+    let mut at = root.to_path_buf();
+    for (i, comp) in below.iter().enumerate() {
+        at.push(comp);
+        let Some(opened) = open_no_follow(&at)? else {
+            return Ok(());
+        };
+        if opened.attributes & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0 {
+            return Err(link(&at));
+        }
+        if i + 1 < below.len() && opened.attributes & FILE_ATTRIBUTE_DIRECTORY.0 == 0 {
+            return Err(format!("{} is not a folder", at.display()));
+        }
+        if !expected.ends_with('\\') {
+            expected.push('\\'); // a drive root already ends in one
+        }
+        expected.push_str(comp);
+        let actual = final_path(&opened.handle)?;
+        if !same_name(&actual, &expected) {
+            return Err(format!(
+                "{} resolves to {actual}, not to {expected} inside {canonical_root}",
+                at.display()
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// Windows virus scanners briefly hold freshly written files; retry the operations that scanners can collide with.
@@ -336,6 +496,10 @@ impl Backend for RealBackend {
 
     fn remove_dir(&mut self, path: &Path) -> io::Result<()> {
         std::fs::remove_dir(path)
+    }
+
+    fn check_plain(&self, root: &Path, path: &Path) -> Result<(), String> {
+        plain_path_check(root, path)
     }
 
     fn schedule_delete_on_reboot(&mut self, path: &Path) -> io::Result<()> {

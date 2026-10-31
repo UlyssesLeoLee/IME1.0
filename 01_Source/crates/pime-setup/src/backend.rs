@@ -26,6 +26,14 @@ pub trait Backend {
     fn remove_file(&mut self, path: &Path) -> io::Result<()>;
     /// Only an empty folder is removed.
     fn remove_dir(&mut self, path: &Path) -> io::Result<()>;
+    /// `root` is the install folder (or, for a folder above it, that folder itself) and `path` is `root` or below it.
+    /// `Ok` when nothing exists at `path`, or when everything from `root` down to `path` is a plain file or folder: no
+    /// junction, symbolic link or other reparse point on the way, and every step resolves to where its name says it is
+    /// (`GetFinalPathNameByHandle` against the canonical `root`). `Err(reason)` otherwise, and the caller leaves `path`
+    /// alone: a link inside a folder that ordinary users can write would make an administrator's delete or `regsvr32`
+    /// act on something else. Nothing is followed to find this out, and it must run before `is_dir`, `read_file` and
+    /// `dir_is_empty`, which do follow links.
+    fn check_plain(&self, root: &Path, path: &Path) -> Result<(), String>;
     /// `MoveFileEx(MOVEFILE_DELAY_UNTIL_REBOOT)`: Windows deletes `path` at the next restart, whatever is at that path
     /// by then. So it is only ever called with a name nothing else will use (a file that was renamed aside first, see
     /// `exec::defer_file_delete`), or with a folder (a folder is only removed at restart while it is still empty).
@@ -91,6 +99,11 @@ pub mod fake {
         pub foreign_pending: Vec<String>,
         /// How often the pending-rename list was read (the pre-flight check must stay off HKLM for temp-folder installs).
         pub pending_reads: std::cell::Cell<usize>,
+        /// Paths that are reparse points (a junction, a symbolic link). The fake does not resolve them: what is "below"
+        /// such a path is what the link would expose, and `check_plain` must refuse to go there.
+        pub links: BTreeSet<String>,
+        /// Every `check_plain` question: (root, path).
+        pub checks: std::cell::RefCell<Vec<(String, String)>>,
     }
 
     fn k(p: &Path) -> String {
@@ -124,6 +137,11 @@ pub mod fake {
 
         pub fn lock(&mut self, path: &str) {
             self.locked.insert(k(Path::new(path)));
+        }
+
+        /// Marks `path` as a junction / symbolic link.
+        pub fn link(&mut self, path: &str) {
+            self.links.insert(k(Path::new(path)));
         }
 
         /// Mapped into a running program AND not renameable (opened without FILE_SHARE_DELETE).
@@ -271,6 +289,37 @@ pub mod fake {
                 return Err(io::Error::from_raw_os_error(145)); // ERROR_DIR_NOT_EMPTY
             }
             self.state.dirs.remove(&k(path));
+            Ok(())
+        }
+
+        fn check_plain(&self, root: &Path, path: &Path) -> Result<(), String> {
+            let (root_key, path_key) = (k(root), k(path));
+            self.checks
+                .borrow_mut()
+                .push((root_key.clone(), path_key.clone()));
+            let Some(below) = crate::plan::relative_below(root, path) else {
+                return Err(format!(
+                    "{} is not inside {}",
+                    path.display(),
+                    root.display()
+                ));
+            };
+            let mut at = root_key;
+            let mut steps = vec![at.clone()];
+            for comp in below {
+                at = format!("{at}\\{}", comp.to_lowercase());
+                steps.push(at.clone());
+            }
+            for step in steps {
+                if self.links.contains(&step) {
+                    return Err(format!(
+                        "{step} is a junction or symbolic link (a reparse point)"
+                    ));
+                }
+                if !self.exists(Path::new(&step)) {
+                    break; // nothing below a missing step exists
+                }
+            }
             Ok(())
         }
 
