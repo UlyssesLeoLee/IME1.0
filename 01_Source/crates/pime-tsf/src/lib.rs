@@ -50,7 +50,13 @@ impl IClassFactory_Impl for Factory_Impl {
         iid: *const GUID,
         object: *mut *mut c_void,
     ) -> Result<()> {
-        if object.is_null() || iid.is_null() {
+        if object.is_null() {
+            return Err(E_POINTER.into());
+        }
+        // SAFETY: `object` was checked for null; COM requires it to be writable. COM also requires it to be NULL after
+        // every failure, so it is cleared before any other check can return.
+        unsafe { *object = std::ptr::null_mut() };
+        if iid.is_null() {
             return Err(E_POINTER.into());
         }
         if outer.is_some() {
@@ -73,12 +79,17 @@ pub unsafe extern "system" fn DllGetClassObject(
     riid: *const GUID,
     ppv: *mut *mut c_void,
 ) -> HRESULT {
-    if rclsid.is_null() || riid.is_null() || ppv.is_null() {
+    if ppv.is_null() {
+        return E_POINTER;
+    }
+    // SAFETY: `ppv` was checked for null; COM passes a writable pointer. It is NULL after every failure, whichever
+    // check returns.
+    unsafe { *ppv = std::ptr::null_mut() };
+    if rclsid.is_null() || riid.is_null() {
         return E_POINTER;
     }
     // SAFETY: checked for null above; COM passes pointers that are valid for the call.
     unsafe {
-        *ppv = std::ptr::null_mut();
         if *rclsid != CLSID_PIME {
             return CLASS_E_CLASSNOTAVAILABLE;
         }
@@ -114,6 +125,76 @@ mod tests {
             format!("{:?}", CLSID_PIME).to_lowercase(),
             "43f95ed1-95b4-421d-8f5a-837128c2d854"
         );
+    }
+
+    /// COM requires the out pointer to be NULL after a failure. Every case starts from a non-null sentinel, because a
+    /// pointer that is already NULL proves nothing (review finding 13).
+    #[test]
+    fn every_refused_request_leaves_the_out_pointer_null() {
+        let sentinel = std::ptr::NonNull::<c_void>::dangling().as_ptr();
+        let iid = IClassFactory::IID;
+        let other = GUID::from_u128(1);
+        let null_guid: *const GUID = std::ptr::null();
+        // SAFETY: valid pointers to live locals; the sentinel is only compared, never dereferenced; the factory is a live
+        // in-process object and `this` doubles as the (never dereferenced) outer object of the aggregation case.
+        unsafe {
+            for (clsid, riid, want) in [
+                (null_guid, &iid as *const GUID, E_POINTER),
+                (&CLSID_PIME as *const GUID, null_guid, E_POINTER),
+                (
+                    &other as *const GUID,
+                    &iid as *const GUID,
+                    CLASS_E_CLASSNOTAVAILABLE,
+                ),
+            ] {
+                let mut out = sentinel;
+                assert_eq!(DllGetClassObject(clsid, riid, &mut out), want);
+                assert!(out.is_null(), "DllGetClassObject left {out:?} behind");
+            }
+            assert_eq!(
+                DllGetClassObject(&CLSID_PIME, &iid, std::ptr::null_mut()),
+                E_POINTER
+            );
+
+            let mut raw: *mut c_void = std::ptr::null_mut();
+            assert_eq!(DllGetClassObject(&CLSID_PIME, &iid, &mut raw), S_OK);
+            let factory = IClassFactory::from_raw(raw);
+            let vtbl = Interface::vtable(&factory);
+            let this = Interface::as_raw(&factory);
+
+            let mut out = sentinel;
+            let hr = (vtbl.CreateInstance)(this, std::ptr::null_mut(), null_guid, &mut out);
+            assert_eq!(hr, E_POINTER, "no interface id");
+            assert!(out.is_null(), "CreateInstance left {out:?} behind");
+
+            let mut out = sentinel;
+            let hr = (vtbl.CreateInstance)(this, this, &IUnknown::IID, &mut out);
+            assert_eq!(hr, CLASS_E_NOAGGREGATION);
+            assert!(
+                out.is_null(),
+                "aggregation: CreateInstance left {out:?} behind"
+            );
+
+            let mut out = sentinel;
+            let hr = (vtbl.CreateInstance)(this, std::ptr::null_mut(), &other, &mut out);
+            assert!(hr.is_err(), "an interface the object does not have");
+            assert!(out.is_null(), "unknown interface: left {out:?} behind");
+
+            let hr = (vtbl.CreateInstance)(
+                this,
+                std::ptr::null_mut(),
+                &IUnknown::IID,
+                std::ptr::null_mut(),
+            );
+            assert_eq!(hr, E_POINTER, "no place for the answer");
+
+            // and the one that must work still works
+            let mut out = sentinel;
+            let hr = (vtbl.CreateInstance)(this, std::ptr::null_mut(), &IUnknown::IID, &mut out);
+            assert_eq!(hr, S_OK);
+            assert!(!out.is_null() && out != sentinel);
+            drop(IUnknown::from_raw(out));
+        }
     }
 
     #[test]

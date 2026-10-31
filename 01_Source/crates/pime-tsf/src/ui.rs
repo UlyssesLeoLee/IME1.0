@@ -1,5 +1,5 @@
 //! The contract between the text input processor (`tip`) and any candidate-window implementation (`popup`).
-//! Pure data and one trait: no Windows API here, so the TIP logic is testable with [`RecordingUi`].
+//! Pure data, one trait and the panic guard: no Windows API here, so the TIP logic is testable with [`RecordingUi`].
 //!
 //! Rules (design DD-02 / SRS NFR accessibility): a row is described by text (source, validation), never by colour
 //! alone; the window never steals focus and never changes the host's text; the host is only changed by the TIP through
@@ -36,11 +36,24 @@ pub struct Anchor {
     pub line_height: i32,
 }
 
+/// Run a callback so that a panic cannot unwind out of it: it answers `fallback` instead. Every COM method of the text
+/// service and the popup's window procedure go through this, because a panic that unwinds out of a COM method or an
+/// `extern "system"` frame takes the host application down with it. Plain `std`, so the popup demo can share this file.
+pub(crate) fn guard<T>(fallback: T, f: impl FnOnce() -> T) -> T {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).unwrap_or(fallback)
+}
+
 pub trait CandidateUi {
-    /// Show or update the window. Must not take focus.
-    fn show(&mut self, view: &CandidateView, anchor: Anchor);
+    /// Show or update the window. Must not take focus. Returns whether the list is VISIBLE to the user afterwards:
+    /// false when it could not be drawn (no window, no monitor, no font, nothing to lay out) or when the implementation
+    /// cannot tell. The caller treats false like a hidden window: nothing may be eaten behind a list nobody sees.
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool;
     /// Hide it (idempotent).
     fn hide(&mut self);
+    /// Whether the list is visible to the user RIGHT NOW. It can change without a `show` or `hide`: a host that draws the
+    /// list itself may hand it back (`ITfUIElement::Show(TRUE)`) to a popup that then cannot be drawn. The controller asks
+    /// before it eats a key.
+    fn is_visible(&self) -> bool;
 }
 
 /// Test double: remembers what it was asked to show.
@@ -50,17 +63,24 @@ pub struct RecordingUi {
     pub visible: bool,
     pub shows: usize,
     pub hides: usize,
+    /// Set by a test: `show` records the request but reports "not visible", like a popup that could not be drawn.
+    pub refuse: bool,
 }
 
 impl CandidateUi for RecordingUi {
-    fn show(&mut self, view: &CandidateView, anchor: Anchor) {
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
         self.last = Some((view.clone(), anchor));
-        self.visible = true;
+        self.visible = !self.refuse;
         self.shows += 1;
+        self.visible
     }
 
     fn hide(&mut self) {
         self.visible = false;
         self.hides += 1;
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visible
     }
 }

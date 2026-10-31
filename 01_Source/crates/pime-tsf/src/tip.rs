@@ -13,7 +13,6 @@
 use std::cell::{Cell, RefCell};
 use std::ffi::c_void;
 use std::mem::ManuallyDrop;
-use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -27,20 +26,27 @@ use windows::Win32::UI::TextServices::{
     ITfKeyEventSink_Impl, ITfKeystrokeMgr, ITfRange, ITfSource, ITfTextInputProcessor_Impl,
     ITfTextInputProcessorEx, ITfTextInputProcessorEx_Impl, ITfThreadMgr, ITfThreadMgrEventSink,
     ITfThreadMgrEventSink_Impl, InputScope, TF_AE_NONE, TF_ANCHOR_END, TF_DEFAULT_SELECTION,
-    TF_ES_READ, TF_ES_READWRITE, TF_ES_SYNC, TF_SELECTION, TF_SELECTIONSTYLE, TF_TMAE_SECUREMODE,
+    TF_ES_ASYNCDONTCARE, TF_ES_READ, TF_ES_READWRITE, TF_ES_SYNC, TF_SELECTION, TF_SELECTIONSTYLE,
+    TF_TMAE_SECUREMODE,
 };
 use windows::core::{GUID, IUnknown, IUnknownImpl, Interface, Result, implement};
 
 use crate::controller::{HostError, HostText, KeyInput, TipConfig, TipController};
 use crate::keymap::{Modifiers, vk};
 use crate::popup::PopupWindow;
+use crate::register::debug_line;
 use crate::ui::{Anchor, CandidateUi, CandidateView};
 use crate::uielement_com::candidate_ui;
 
-/// Run a COM entry point so that a panic cannot unwind into the host: it answers `fallback` instead.
-pub(crate) fn guard<T>(fallback: T, f: impl FnOnce() -> T) -> T {
-    catch_unwind(AssertUnwindSafe(f)).unwrap_or(fallback)
+/// Debugger output (DebugView) for the rare host behaviours the VM test has to see: codes and words only, never text.
+fn trace(message: &str) {
+    debug_line(&format!("pime-tsf tip: {message}"));
 }
+
+/// Run a COM entry point so that a panic cannot unwind into the host: it answers `fallback` instead. Defined in `ui`
+/// (plain `std`) because the popup's window procedure needs the same containment and is also compiled on its own by
+/// `examples/popup_demo.rs`, which has no `tip` module.
+pub(crate) use crate::ui::guard;
 
 /// `ActivateEx` flag: TSF runs on a secure desktop (logon, UAC): collect nothing there.
 fn is_secure_mode(flags: u32) -> bool {
@@ -55,17 +61,22 @@ fn refused<E>(_: E) -> HostError {
 struct BoxedUi(Box<dyn CandidateUi>);
 
 impl CandidateUi for BoxedUi {
-    fn show(&mut self, view: &CandidateView, anchor: Anchor) {
-        self.0.show(view, anchor);
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
+        self.0.show(view, anchor)
     }
 
     fn hide(&mut self) {
         self.0.hide();
     }
+
+    fn is_visible(&self) -> bool {
+        self.0.is_visible()
+    }
 }
 
-/// One edit session running a closure with the edit cookie. Only synchronous sessions are used, so the closure can
-/// hand its result back through a shared cell.
+/// One edit session running a closure with the edit cookie. The sessions that matter for a key are synchronous
+/// ([`run_session`]), so the closure can hand its result back through a shared cell; the only asynchronous one is the
+/// retry of a refused end of a composition ([`request_async`]), which has no result to hand back.
 #[implement(ITfEditSession)]
 struct EditSession {
     work: RefCell<Option<SessionWork>>,
@@ -110,11 +121,38 @@ fn run_session<T: 'static>(
     }
 }
 
+/// Queue an edit session that nothing waits for. With `TF_ES_ASYNCDONTCARE` TSF runs it at once when the lock is free
+/// and otherwise when it is granted (`TF_S_ASYNC`): that is what makes it fit for a retry after a refused synchronous
+/// session. `work` owns what it needs; TSF drops it with the session. Ok when TSF accepted the request (`S_OK` or
+/// `TF_S_ASYNC`), which says nothing about the work itself.
+fn request_async(
+    ctx: &ITfContext,
+    client_id: u32,
+    flags: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS,
+    work: impl FnOnce(u32) + 'static,
+) -> std::result::Result<(), HostError> {
+    let session: ITfEditSession = EditSession {
+        work: RefCell::new(Some(Box::new(work))),
+    }
+    .into();
+    // SAFETY: `ctx` and `session` are live COM objects; TSF keeps its own reference to the session while it is queued.
+    let requested = unsafe { ctx.RequestEditSession(client_id, &session, flags) };
+    match requested {
+        Ok(hr) if hr.is_ok() => Ok(()),
+        _ => Err(HostError::Refused),
+    }
+}
+
 const SYNC_READ: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS =
     windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS(TF_ES_SYNC.0 | TF_ES_READ.0);
 const SYNC_WRITE: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS =
     windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS(
         TF_ES_SYNC.0 | TF_ES_READWRITE.0,
+    );
+/// Read-write, synchronous when the lock is free and queued otherwise (`TF_ES_ASYNCDONTCARE` is 0 in the headers).
+const ASYNC_WRITE: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS =
+    windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS(
+        TF_ES_ASYNCDONTCARE.0 | TF_ES_READWRITE.0,
     );
 
 fn selection_of(range: ITfRange) -> TF_SELECTION {
@@ -246,8 +284,10 @@ struct TsfHost {
     sink: ITfCompositionSink,
     context: Option<ITfContext>,
     composition: Option<(ITfContext, ITfComposition)>,
-    /// Secure-field answer per context (by interface pointer); only successful probes are cached.
-    secure: Option<(usize, bool)>,
+    /// A composition whose synchronous end TSF refused. It waits here, apart from `composition` (so that the next
+    /// `begin_composition` never mistakes it for an open one), for the single asynchronous attempt of
+    /// `end_composition_later`; the controller makes that attempt right after the refusal.
+    stranded: Option<(ITfContext, ITfComposition)>,
 }
 
 impl TsfHost {
@@ -257,20 +297,12 @@ impl TsfHost {
             sink,
             context: None,
             composition: None,
-            secure: None,
+            stranded: None,
         }
     }
 
-    /// The context a key event arrived for; a different context invalidates the cached secure-field answer.
+    /// The context a key event arrived for.
     fn set_context(&mut self, pic: Option<&ITfContext>) {
-        let same = match (&self.context, pic) {
-            (Some(a), Some(b)) => a.as_raw() == b.as_raw(),
-            (None, None) => true,
-            _ => false,
-        };
-        if !same {
-            self.secure = None;
-        }
         self.context = pic.cloned();
     }
 
@@ -278,7 +310,6 @@ impl TsfHost {
     /// `end_composition`, which must reach the context that owns it.
     fn forget_context(&mut self) {
         self.context = None;
-        self.secure = None;
     }
 
     fn probe_secure(&self, ctx: &ITfContext) -> Option<bool> {
@@ -295,23 +326,14 @@ impl TsfHost {
 }
 
 impl HostText for TsfHost {
+    /// Probed afresh every time it is asked: the controller asks once per key event (never on a key-up), and an answer
+    /// kept per context would go stale when a host turns a text field into a password field without a focus event.
     fn is_secure_field(&mut self) -> bool {
         let Some(ctx) = self.context.clone() else {
             return true; // no context to type into or to look at: fail closed
         };
-        let id = ctx.as_raw() as usize;
-        if let Some((cached, answer)) = self.secure
-            && cached == id
-        {
-            return answer;
-        }
-        match self.probe_secure(&ctx) {
-            Some(answer) => {
-                self.secure = Some((id, answer));
-                answer
-            }
-            None => true, // could not tell (session refused): fail closed, DD section 3.3
-        }
+        // could not tell (session refused, no input scope support): fail closed, DD section 3.3
+        self.probe_secure(&ctx).unwrap_or(true)
     }
 
     fn caret_anchor(&mut self) -> Option<Anchor> {
@@ -360,10 +382,39 @@ impl HostText for TsfHost {
         let Some((ctx, composition)) = self.composition.take() else {
             return Ok(());
         };
-        run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
+        let ending = composition.clone();
+        let ended = run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
             // SAFETY: `ec` belongs to the running session on the composition's context.
-            unsafe { composition.EndComposition(ec) }.map_err(refused)
-        })
+            unsafe { ending.EndComposition(ec) }.map_err(refused)
+        });
+        if ended.is_err() {
+            // refused: do not drop the handle, the composition is still open in that document
+            self.stranded = Some((ctx, composition));
+        }
+        ended
+    }
+
+    fn end_composition_later(&mut self) -> std::result::Result<(), HostError> {
+        let Some((ctx, composition)) = self.stranded.take() else {
+            return Ok(());
+        };
+        let requested = request_async(&ctx, self.client_id, ASYNC_WRITE, move |ec| {
+            // SAFETY: `ec` belongs to the running session on the composition's context. A composition that is already
+            // gone (the host ended it meanwhile) only makes this fail, which nobody is waiting for.
+            match unsafe { composition.EndComposition(ec) } {
+                Ok(()) => trace("asynchronous end ran: composition ended"),
+                Err(e) => trace(&format!(
+                    "asynchronous end ran and failed code={:#010x}",
+                    e.code().0
+                )),
+            }
+        });
+        trace(if requested.is_ok() {
+            "end of the composition refused, asynchronous end requested"
+        } else {
+            "end of the composition refused, asynchronous end refused too (composition left to the host)"
+        });
+        requested
     }
 
     fn commit(&mut self, typed: &str, text: &str) -> std::result::Result<(), HostError> {
@@ -400,6 +451,88 @@ struct Inner {
 
 /// The three interfaces of the object that TSF is given to call back.
 type Sinks = (ITfKeyEventSink, ITfThreadMgrEventSink, ITfCompositionSink);
+
+/// The two advises `activate` makes and their undo, as a trait so that the rollback is tested without a thread manager.
+trait Advises {
+    fn advise_keys(&self) -> Result<()>;
+    fn unadvise_keys(&self);
+    /// The cookie of the thread-manager event sink.
+    fn advise_thread(&self) -> Result<u32>;
+    fn unadvise_thread(&self, cookie: u32);
+}
+
+/// [`Advises`] on the thread manager TSF handed to `Activate`.
+struct TsfAdvises<'a> {
+    thread_mgr: &'a ITfThreadMgr,
+    client_id: u32,
+    key_sink: &'a ITfKeyEventSink,
+    thread_sink: &'a ITfThreadMgrEventSink,
+}
+
+impl Advises for TsfAdvises<'_> {
+    fn advise_keys(&self) -> Result<()> {
+        let keystrokes: ITfKeystrokeMgr = self.thread_mgr.cast()?;
+        // SAFETY: plain COM call on the thread manager TSF handed us; the sink is a live object of ours.
+        unsafe { keystrokes.AdviseKeyEventSink(self.client_id, self.key_sink, BOOL(1)) }
+    }
+
+    fn unadvise_keys(&self) {
+        if let Ok(keystrokes) = self.thread_mgr.cast::<ITfKeystrokeMgr>() {
+            // SAFETY: undoes `advise_keys`; a failure cannot be acted on.
+            let _ = unsafe { keystrokes.UnadviseKeyEventSink(self.client_id) };
+        }
+    }
+
+    fn advise_thread(&self) -> Result<u32> {
+        let source: ITfSource = self.thread_mgr.cast()?;
+        // SAFETY: plain COM call; the sink is a live object of ours.
+        unsafe { source.AdviseSink(&ITfThreadMgrEventSink::IID, self.thread_sink) }
+    }
+
+    fn unadvise_thread(&self, cookie: u32) {
+        if let Ok(source) = self.thread_mgr.cast::<ITfSource>() {
+            // SAFETY: undoes `advise_thread` with the cookie it returned; a failure cannot be acted on.
+            let _ = unsafe { source.UnadviseSink(cookie) };
+        }
+    }
+}
+
+/// What has been advised so far; dropped armed, it undoes it in reverse order. Disarmed once `deactivate` owns the advises.
+struct Rollback<'a, A: Advises> {
+    advises: &'a A,
+    keys: bool,
+    thread: Option<u32>,
+}
+
+impl<A: Advises> Drop for Rollback<'_, A> {
+    fn drop(&mut self) {
+        if let Some(cookie) = self.thread.take() {
+            self.advises.unadvise_thread(cookie);
+        }
+        if std::mem::take(&mut self.keys) {
+            self.advises.unadvise_keys();
+        }
+    }
+}
+
+/// Advise both sinks, then run `build` with the thread-sink cookie. When an advise fails, or `build` panics (the unwind
+/// goes on to the caller's `guard`), every advise made so far is undone, so a retry starts clean: TSF refuses a second
+/// key-event sink for the same client id. After a normal return the advises stay, to be undone by `deactivate`.
+fn advised<A: Advises, T>(advises: &A, build: impl FnOnce(u32) -> T) -> Result<T> {
+    let mut undo = Rollback {
+        advises,
+        keys: false,
+        thread: None,
+    };
+    advises.advise_keys()?;
+    undo.keys = true;
+    let cookie = advises.advise_thread()?;
+    undo.thread = Some(cookie);
+    let built = build(cookie);
+    undo.keys = false;
+    undo.thread = None;
+    Ok(built)
+}
 
 const PENDING_FOCUS: u8 = 1;
 const PENDING_COMPOSITION_ENDED: u8 = 2;
@@ -465,39 +598,33 @@ impl Tip {
         if self.inner.try_borrow().map(|s| s.is_some()).unwrap_or(true) {
             return Err(E_FAIL.into()); // activated twice (or re-entered): refuse rather than double-advise
         }
-        // SAFETY: plain COM calls on the thread manager TSF handed us; the advises are undone in `deactivate` or below.
-        let thread_sink_cookie = unsafe {
-            let keystrokes: ITfKeystrokeMgr = thread_mgr.cast()?;
-            keystrokes.AdviseKeyEventSink(client_id, &key_sink, BOOL(1))?;
-            let advised = thread_mgr
-                .cast::<ITfSource>()
-                .and_then(|source| source.AdviseSink(&ITfThreadMgrEventSink::IID, &thread_sink));
-            match advised {
-                Ok(cookie) => cookie,
-                Err(e) => {
-                    let _ = keystrokes.UnadviseKeyEventSink(client_id);
-                    return Err(e);
-                }
-            }
-        };
-        // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
-        // `ITfUIElementMgr`; a host that answers "I draw" keeps the popup hidden (see `uielement`).
-        let ui = candidate_ui(&thread_mgr, Box::new(PopupWindow::new()));
-        let mut controller = TipController::new(
-            BoxedUi(Box::new(ui)),
-            TsfHost::new(client_id, composition_sink),
-            pime_core::input::LocalPredictor,
-            TipConfig::default(),
-        );
-        controller.activate(is_secure_mode(flags));
-        *self.inner.borrow_mut() = Some(Inner {
-            thread_mgr,
+        let tsf = TsfAdvises {
+            thread_mgr: &thread_mgr,
             client_id,
-            thread_sink_cookie,
-            controller,
-            started: Instant::now(),
-        });
-        Ok(())
+            key_sink: &key_sink,
+            thread_sink: &thread_sink,
+        };
+        // Everything after the advises runs inside `advised`: an error or a panic there (the popup, the controller, the
+        // store below) undoes both advises, so that TSF's retry of `Activate` is not refused as "already advised".
+        advised(&tsf, |thread_sink_cookie| {
+            // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
+            // `ITfUIElementMgr`; a host that answers "I draw" keeps the popup hidden (see `uielement`).
+            let ui = candidate_ui(&thread_mgr, Box::new(PopupWindow::new()));
+            let mut controller = TipController::new(
+                BoxedUi(Box::new(ui)),
+                TsfHost::new(client_id, composition_sink),
+                pime_core::input::LocalPredictor,
+                TipConfig::default(),
+            );
+            controller.activate(is_secure_mode(flags));
+            *self.inner.borrow_mut() = Some(Inner {
+                thread_mgr: thread_mgr.clone(),
+                client_id,
+                thread_sink_cookie,
+                controller,
+                started: Instant::now(),
+            });
+        })
     }
 
     fn deactivate(&self) -> Result<()> {
@@ -750,6 +877,8 @@ impl ITfCompositionSink_Impl for Tip_Impl {
 /// # Safety
 /// `iid` and `object` must be valid pointers (the class factory checks them for null).
 pub(crate) unsafe fn create_instance(iid: *const GUID, object: *mut *mut c_void) -> Result<()> {
+    // SAFETY: valid per the contract. NULL after every failure, including a panic below that is turned into E_FAIL.
+    unsafe { *object = std::ptr::null_mut() };
     guard(Err(E_FAIL.into()), || {
         let tip: ITfTextInputProcessorEx = Tip::new().into();
         // SAFETY: forwarded from the caller's contract.
@@ -774,6 +903,120 @@ mod tests {
         );
         // the guard is reusable after a panic
         assert_eq!(guard(1, || 2), 2);
+    }
+
+    /// Advises as TSF keeps them: a second advise while one is outstanding is refused (a key-event sink per client id).
+    #[derive(Default)]
+    struct FakeAdvises {
+        keys: Cell<bool>,
+        thread: Cell<Option<u32>>,
+        next_cookie: Cell<u32>,
+        fail_thread: Cell<bool>,
+        calls: RefCell<Vec<&'static str>>,
+    }
+
+    impl FakeAdvises {
+        fn outstanding(&self) -> bool {
+            self.keys.get() || self.thread.get().is_some()
+        }
+    }
+
+    impl Advises for FakeAdvises {
+        fn advise_keys(&self) -> Result<()> {
+            self.calls.borrow_mut().push("advise_keys");
+            if self.keys.replace(true) {
+                return Err(E_FAIL.into()); // "already advised"
+            }
+            Ok(())
+        }
+
+        fn unadvise_keys(&self) {
+            self.calls.borrow_mut().push("unadvise_keys");
+            self.keys.set(false);
+        }
+
+        fn advise_thread(&self) -> Result<u32> {
+            self.calls.borrow_mut().push("advise_thread");
+            if self.fail_thread.get() || self.thread.get().is_some() {
+                return Err(E_FAIL.into());
+            }
+            self.next_cookie.set(self.next_cookie.get() + 1);
+            self.thread.set(Some(self.next_cookie.get()));
+            Ok(self.next_cookie.get())
+        }
+
+        fn unadvise_thread(&self, cookie: u32) {
+            self.calls.borrow_mut().push("unadvise_thread");
+            assert_eq!(
+                self.thread.get(),
+                Some(cookie),
+                "the cookie that was advised"
+            );
+            self.thread.set(None);
+        }
+    }
+
+    #[test]
+    fn a_panic_after_the_advises_unadvises_both_sinks_and_the_retry_succeeds() {
+        // review finding 13: PopupWindow::new / TipController::new could panic after the advises; the guard answered
+        // E_FAIL and left both sinks advised, so TSF's retry of Activate was refused
+        let tsf = FakeAdvises::default();
+        let got = guard(Err(E_FAIL.into()), || {
+            advised(&tsf, |_| -> () {
+                panic!("popup or controller panicked (test)")
+            })
+        });
+        assert!(got.is_err());
+        assert!(!tsf.outstanding(), "{:?}", tsf.calls.borrow());
+        assert_eq!(
+            *tsf.calls.borrow(),
+            [
+                "advise_keys",
+                "advise_thread",
+                "unadvise_thread",
+                "unadvise_keys"
+            ],
+            "undone in reverse order"
+        );
+        // the retry is not refused, and its advises are the live ones
+        let cookie = advised(&tsf, |cookie| cookie).expect("the retry succeeds");
+        assert_eq!(tsf.thread.get(), Some(cookie));
+        assert!(tsf.keys.get());
+    }
+
+    #[test]
+    fn a_successful_build_keeps_the_advises_for_deactivate() {
+        let tsf = FakeAdvises::default();
+        let seen = advised(&tsf, |cookie| cookie).unwrap();
+        assert_eq!(
+            tsf.thread.get(),
+            Some(seen),
+            "build got the cookie of the advise"
+        );
+        assert!(tsf.keys.get());
+        assert_eq!(*tsf.calls.borrow(), ["advise_keys", "advise_thread"]);
+        // a second activation without a deactivate is refused by the advise itself, and changes nothing
+        assert!(advised(&tsf, |_| ()).is_err());
+        assert!(
+            tsf.keys.get(),
+            "the live advises are not undone by the refused second attempt"
+        );
+    }
+
+    #[test]
+    fn a_refused_thread_sink_unadvises_the_key_sink_and_a_refused_key_sink_undoes_nothing() {
+        let tsf = FakeAdvises::default();
+        tsf.fail_thread.set(true);
+        assert!(advised(&tsf, |_| ()).is_err());
+        assert!(!tsf.outstanding(), "{:?}", tsf.calls.borrow());
+        tsf.fail_thread.set(false);
+        assert!(advised(&tsf, |_| ()).is_ok(), "the retry is not refused");
+        // the key sink is refused (already advised): nothing of this attempt exists, so nothing is undone
+        let tsf = FakeAdvises::default();
+        tsf.keys.set(true);
+        assert!(advised(&tsf, |_| ()).is_err());
+        assert_eq!(*tsf.calls.borrow(), ["advise_keys"]);
+        assert!(tsf.keys.get(), "someone else's advise stays");
     }
 
     #[test]
@@ -843,11 +1086,12 @@ mod tests {
                 drop(IUnknown::from_raw(out));
             }
         }
-        let mut out: *mut c_void = std::ptr::null_mut();
-        // SAFETY: as above; an interface the object does not implement is an error, not a crash.
+        // SAFETY: as above; an interface the object does not implement is an error, not a crash, and the out pointer
+        // is NULL afterwards even when it held something before (a sentinel that is never dereferenced).
         unsafe {
+            let mut out = std::ptr::NonNull::<c_void>::dangling().as_ptr();
             assert!(create_instance(&GUID::from_u128(7), &mut out).is_err());
+            assert!(out.is_null());
         }
-        assert!(out.is_null());
     }
 }

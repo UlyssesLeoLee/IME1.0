@@ -3,8 +3,10 @@
 //! touch the host's text.
 //!
 //! Threading: a [`PopupWindow`] belongs to the thread that first shows it (a window has thread affinity); that thread's
-//! message loop, which the host owns, delivers its paint messages. Every failure (no monitor, no font, window creation)
-//! ends as "not shown": the popup never panics and never reports an error to the TIP, which keeps working without it.
+//! message loop, which the host owns, delivers its paint messages. Every failure (no monitor, no font, window creation,
+//! a layout that leaves nothing to draw) ends as "not shown": `show` answers `false` so that the TIP knows nobody sees
+//! the list (it then lets every key through, see `controller`). A panic must not unwind out of the window procedure
+//! (an `extern "system"` frame: it would abort the host), so every message runs inside `contained`.
 //!
 //! Colours are system colours (`GetSysColor`), so high-contrast themes apply; the selected row is additionally marked
 //! by a text marker (see `layout::draw_ops`). DPI comes from the monitor under the caret.
@@ -49,7 +51,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use windows::core::{HRESULT, PCWSTR, s, w};
 
 use crate::layout::{self, DrawOp, FillTone, Layout, Rect, TextMetrics, TextTone};
-use crate::ui::{Anchor, CandidateUi, CandidateView};
+use crate::ui::{Anchor, CandidateUi, CandidateView, guard};
 
 /// The window class is process-wide: a distinctive name, registered once per process.
 const CLASS_NAME: PCWSTR = w!("ProgrammingIME.CandidateWindow");
@@ -118,8 +120,7 @@ impl PopupWindow {
             layout::compute_scaled(view, anchor, work, &metrics, dpi as f32 / 96.0)
         };
         if !layout.is_visible() {
-            self.hide();
-            return Ok(());
+            return Err(NotShown); // `show` hides the window and reports "not visible"
         }
         let window = layout.window;
         // The borrow ends before any window call: SetWindowPos/UpdateWindow re-enter `wnd_proc` synchronously.
@@ -198,10 +199,12 @@ impl PopupWindow {
 }
 
 impl CandidateUi for PopupWindow {
-    fn show(&mut self, view: &CandidateView, anchor: Anchor) {
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
         if self.try_show(view, anchor).is_err() {
             self.hide();
+            return false;
         }
+        true
     }
 
     fn hide(&mut self) {
@@ -210,6 +213,10 @@ impl CandidateUi for PopupWindow {
             // SAFETY: plain call on our own window; a destroyed handle only makes it a no-op.
             let _ = unsafe { ShowWindow(self.hwnd, SW_HIDE) };
         }
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visible
     }
 }
 
@@ -308,12 +315,46 @@ unsafe fn painted_of<'a>(hwnd: HWND) -> Option<&'a RefCell<Painted>> {
     unsafe { ptr.as_ref() }
 }
 
+/// The window procedure. Everything runs inside [`contained`]: a panic that unwound out of this `extern "system"` frame
+/// would abort the host process (this is the one entry point of the DLL that Windows calls without a COM guard).
+/// `on_paint` is only ever reached from here, so it is covered too.
 unsafe extern "system" fn wnd_proc(
     hwnd: HWND,
     msg: u32,
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    contained(
+        msg,
+        || window_message(hwnd, msg, wparam, lparam),
+        // SAFETY: forwarding the message unchanged.
+        || unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) },
+    )
+}
+
+/// What a message answers when its handler panicked. Never "activate" (the popup must not take the focus) and never an
+/// unpainted `WM_PAINT` (`PaintScope` has already ended the paint cycle while unwinding); everything else gets the
+/// default processing.
+fn answer_after_panic(msg: u32, default: impl FnOnce() -> LRESULT) -> LRESULT {
+    match msg {
+        WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
+        WM_ERASEBKGND => LRESULT(1),
+        WM_PAINT => LRESULT(0),
+        _ => default(),
+    }
+}
+
+/// Run the handler of one window message; a panic becomes [`answer_after_panic`]. A pure wrapper, so that the
+/// containment is tested without a window.
+fn contained(
+    msg: u32,
+    handle: impl FnOnce() -> LRESULT,
+    default: impl FnOnce() -> LRESULT,
+) -> LRESULT {
+    guard(None, || Some(handle())).unwrap_or_else(|| answer_after_panic(msg, default))
+}
+
+fn window_message(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     match msg {
         // A click on the popup must not move the focus away from the host's editor.
         WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
@@ -663,5 +704,77 @@ fn dpi_for(monitor: HMONITOR, hwnd: HWND) -> u32 {
     match unsafe { GetDpiForWindow(hwnd) } {
         0 => 96,
         dpi => dpi,
+    }
+}
+
+// Only the pure parts are tested: nothing here creates a window (the real popup is verified by `examples/popup_demo.rs`).
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn panics() -> LRESULT {
+        panic!("message handler panicked (test)")
+    }
+
+    fn default_must_not_run() -> LRESULT {
+        panic!("the default processing must not run for this message (test)")
+    }
+
+    #[test]
+    fn a_panic_in_a_message_handler_becomes_that_messages_safe_answer() {
+        // review finding 9: wnd_proc is an `extern "system"` frame; a panic unwinding out of it aborts the host
+        assert_eq!(
+            contained(WM_MOUSEACTIVATE, panics, default_must_not_run),
+            LRESULT(MA_NOACTIVATE as isize),
+            "a panic must never let a click activate the popup"
+        );
+        assert_eq!(
+            contained(WM_ERASEBKGND, panics, default_must_not_run),
+            LRESULT(1)
+        );
+        assert_eq!(
+            contained(WM_PAINT, panics, default_must_not_run),
+            LRESULT(0)
+        );
+        assert_eq!(
+            contained(WM_NCDESTROY, panics, || LRESULT(77)),
+            LRESULT(77),
+            "every other message gets the default processing"
+        );
+    }
+
+    #[test]
+    fn a_handler_that_does_not_panic_is_passed_through_and_the_default_stays_unused() {
+        assert_eq!(
+            contained(WM_PAINT, || LRESULT(5), default_must_not_run),
+            LRESULT(5)
+        );
+        assert_eq!(
+            contained(WM_NCDESTROY, || LRESULT(6), default_must_not_run),
+            LRESULT(6)
+        );
+        // the wrapper is reusable after a panic
+        assert_eq!(contained(WM_PAINT, panics, || LRESULT(1)), LRESULT(0));
+        assert_eq!(
+            contained(WM_PAINT, || LRESULT(9), || LRESULT(1)),
+            LRESULT(9)
+        );
+    }
+
+    /// The real procedure, called without a window: the messages it answers itself never reach `DefWindowProc`.
+    #[test]
+    fn the_window_procedure_answers_its_own_messages_without_a_window() {
+        let none = HWND::default();
+        // SAFETY: these messages are answered without touching the (null) window.
+        unsafe {
+            assert_eq!(
+                wnd_proc(none, WM_MOUSEACTIVATE, WPARAM(0), LPARAM(0)),
+                LRESULT(MA_NOACTIVATE as isize)
+            );
+            assert_eq!(
+                wnd_proc(none, WM_ERASEBKGND, WPARAM(0), LPARAM(0)),
+                LRESULT(1)
+            );
+        }
     }
 }
