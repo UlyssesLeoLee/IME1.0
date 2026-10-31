@@ -335,7 +335,7 @@ function fingerprintBlind(profile, text, lines, always = false) {
   return blocked;
 }
 
-function analyseText(profile, text, dialect = {}) {
+function analyseText(profile, text, dialect = {}, blind = true) {
   text = typeof text === 'string' ? text : '';
   const lines = lineRanges(text), supported = supportsAnnotation(profile);
   const spans = supported ? scopeSpans(profile, text, dialect || {}) : [];
@@ -355,7 +355,7 @@ function analyseText(profile, text, dialect = {}) {
     if (anchorable && i === 0 && HASHBANG[profile]?.test(content)) anchorable = false;
     return {line: i, anchorable, indent};
   });
-  for (const i of fingerprintBlind(profile, text, lines)) anchors[i].anchorable = false;
+  if (blind) for (const i of fingerprintBlind(profile, text, lines)) anchors[i].anchorable = false;
   if (profile === 'python') { // an encoding cookie only counts on line 1 or 2
     const cookie = [0, 1].find(i => i < lines.length && PY_CODING.test(text.slice(lines[i].start, lines[i].end)));
     if (cookie !== undefined) for (let i = 0; i <= cookie; i++) anchors[i].anchorable = false;
@@ -370,7 +370,7 @@ function fileView(profile, own, dialect, {fileText, startLine} = {}) {
   const shown = text.endsWith('\n') ? lines.length - 1 : lines.length;
   if (startLine - 1 + shown > fileLines.length) return null;
   for (let i = 0; i < shown; i++) { const f = fileLines[startLine - 1 + i], l = lines[i]; if (fileText.slice(f.start, f.end) !== text.slice(l.start, l.end)) return null; }
-  const file = analyseText(profile, fileText, dialect);
+  const file = analyseText(profile, fileText, dialect, false); // the fingerprint check sees the scope, not the file: its blind lines are judged in analyseScope
   if (file.suspect) return null;
   return lines.map((_, i) => i < shown ? file.anchors[startLine - 1 + i].anchorable : own.anchors[i].anchorable);
 }

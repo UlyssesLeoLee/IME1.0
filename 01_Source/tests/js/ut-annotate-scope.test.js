@@ -114,6 +114,19 @@ test('ANN-31b a scope that is a slice of a file: one that starts or ends inside 
   assert.deepEqual(JSON.parse(A.buildScopePrompt({language: 'python', comment: true, fileText: file, scope: {startLine: 5, endLine: 9, text: '    x = 1\n    y = """\n    tail\n    """\n    return 1'}}).input).anchorable, [1, 2, 5]);
 });
 
+test('ANN-31c the file context never shrinks the anchors of a scope that lexes cleanly on its own', () => {
+  // maskSource (the fingerprint check) is blind after the regex /"/, but only for text that contains it: a later function is judged alone
+  const file = 'const re = /"/;\nconst s = "x";\n\nfunction f(a) {\n  const b = a + 1;\n  return b;\n}\n';
+  const scope = 'function f(a) {\n  const b = a + 1;\n  return b;\n}';
+  const ctx = {fileText: file, startLine: 4};
+  assert.equal(mask('typescript', scope), '1111');
+  assert.deepEqual(A.scopeAnchors('typescript', scope, {}, ctx).map(a => a.anchorable), [true, true, true, true]);
+  const r = A.applyScopeReply(reply([{line: 2, text: 'adds one'}]), {profile: 'typescript', scopeText: scope, comment: true, ...ctx});
+  assert.equal(r.ok, true); assert.equal(r.text, 'function f(a) {\n  // adds one\n  const b = a + 1;\n  return b;\n}');
+  const p = JSON.parse(A.buildScopePrompt({language: 'typescript', comment: true, fileText: file, scope: {startLine: 4, endLine: 7, text: scope}}).input);
+  assert.deepEqual(p.anchorable, [1, 2, 3, 4]);
+});
+
 test('ANN-32 JSX (tsx): text and tag markup are refused, {expressions} are code again, TypeScript generics are not JSX', () => {
   const tsx = ['function A() {', '  return (', '    <div className="a"', '      id="b">', '      Hello', '      {items.map(i => (', '        <li key={i}>', '          {i}', '        </li>', '      ))}', '    </div>', '  );', '}'].join('\n');
   assert.equal(mask('typescript', tsx, {mode: 'tsx'}), '1110001001011');
