@@ -5,7 +5,7 @@
 //
 // STATUS: written against the proven patterns of 02-ai-f1 / 04-annotate / f2-prompt, NOT RUN on a real VS Code (the work item had no memory
 // for it: no Playwright, no VS Code, no UAT run). Syntax-checked only (node tests/run-all.js --syntax). The same behaviour is covered against
-// fakes by tests/js/ut-f1-annotate.test.js (ANN-60..ANN-84). The part most likely to need maintenance is highlightedLines(): it reads Monaco's
+// fakes by tests/js/ut-f1-annotate.test.js (ANN-60..ANN-85). The part most likely to need maintenance is highlightedLines(): it reads Monaco's
 // own overlay DOM, which is not an API.
 // Run it with:  node tests/run-all.js --uat --only-uat "UAT-4[2-9]"
 const {test, expect} = require('@playwright/test');
@@ -67,7 +67,7 @@ async function highlightedLines() {
 const range = (a, b) => Array.from({length: b - a + 1}, (_, i) => a + i);
 const withoutComments = text => text.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
 
-test('UAT-42 [F1-A01] AI off: the annotate tab says so, nothing is asked, nothing is sent', async () => {
+test('UAT-42 [ANN-77] AI off: the annotate tab says so, nothing is asked, nothing is sent', async () => {
   await openF1('sc1.rs');
   await app.waitPanelStatus('annotate', /unavailable/);
   expect(await app.panelText('#panel-annotate .status')).toMatch(/AI off/);
@@ -78,7 +78,7 @@ test('UAT-42 [F1-A01] AI off: the annotate tab says so, nothing is asked, nothin
   await app.screenshot('annotate-ai-off');
 });
 
-test('UAT-43 [F1-A02] no selection inside a function: that function is the scope, the highlight shows it, and the hunks only add comment lines', async () => {
+test('UAT-43 [ANN-60] no selection inside a function: that function is the scope, the highlight shows it, and the hunks only add comment lines', async () => {
   await app.configureAI({provider: 'mockA', model: 'm-1', key: KEY});
   await openF1('sc2.rs', {line: 18});                                         // inside parse_header, no selection
   const d = await app.waitDialog();                                           // F1 starts the request on its own: the consent appears first
@@ -104,7 +104,7 @@ test('UAT-43 [F1-A02] no selection inside a function: that function is the scope
   await app.screenshot('annotate-proposal');
 });
 
-test('UAT-44 [F1-A03] a selection: exactly the selected lines are the scope, whatever is around them', async () => {
+test('UAT-44 [ANN-61] a selection: exactly the selected lines are the scope, whatever is around them', async () => {
   await openF1('sc3.rs', {line: 14, col: 1, select: 5});                      // lines 14-18 (the selection ends at column 0 of line 19)
   await authorise();
   await app.waitPanelStatus('annotate', /ready/);
@@ -125,7 +125,7 @@ test('UAT-44 [F1-A03] a selection: exactly the selected lines are the scope, wha
   expect(withoutComments(afterText)).toBe(RUST);
 });
 
-test('UAT-45 [F1-A04] Wider moves up the chain without sending anything; Generate then runs the wider scope', async () => {
+test('UAT-45 [ANN-62] Wider moves up the chain without sending anything; Generate then runs the wider scope', async () => {
   await openF1('sc4.rs', {line: 18});
   await authorise();
   await app.waitPanelStatus('annotate', /ready/);
@@ -148,7 +148,7 @@ test('UAT-45 [F1-A04] Wider moves up the chain without sending anything; Generat
   await app.screenshot('annotate-wider');
 });
 
-test('UAT-46 [F1-A05] Apply writes the selected blocks as ONE undo step: the code is unchanged, Ctrl+Z restores the original, the highlight is gone', async () => {
+test('UAT-46 [ANN-69] Apply writes the selected blocks as ONE undo step: the code is unchanged, Ctrl+Z restores the original, the highlight is gone', async () => {
   await openF1('sc5.rs', {line: 18});
   await authorise();
   await app.waitPanelStatus('annotate', /ready/);
@@ -170,7 +170,7 @@ test('UAT-46 [F1-A05] Apply writes the selected blocks as ONE undo step: the cod
   await app.screenshot('annotate-after-undo');
 });
 
-test('UAT-47 [F1-A06] declining the consent sends zero requests; the tab waits and Generate asks again', async () => {
+test('UAT-47 [ANN-65] declining the consent sends zero requests; the tab waits and Generate asks again', async () => {
   await openF1('sc6.rs', {line: 18});
   await app.waitDialog(); await app.dialogClick('Cancel');
   await sleep(800);
@@ -184,7 +184,7 @@ test('UAT-47 [F1-A06] declining the consent sends zero requests; the tab waits a
   expect(scopeRequests().length).toBe(1);
 });
 
-test('UAT-48 [F1-A07] secrets: the request carries no secret byte, the comments read <redacted>, the secret stays where it was', async () => {
+test('UAT-48 [ANN-66] secrets: the request carries no secret byte, the comments read <redacted>, the secret stays where it was', async () => {
   behaviour = ({input}) => ({json: {comments: [{line: 1, text: 'Connects with PIME_REDACTED_1 as the credential.'}, {line: 2, text: 'Hands the PIME_REDACTED_1 value to login.'}]}});
   await app.openFile('secret1.rs');
   await app.goto(3, 1);
@@ -205,7 +205,7 @@ test('UAT-48 [F1-A07] secrets: the request carries no secret byte, the comments 
   expect((text.match(/hunter2hunter2/g) || []).length).toBe(1);
 });
 
-test('UAT-49 [F1-A08] f1Mode=edit is the old F1: whole-file tab first, nothing starts on its own, Generate asks for both requests', async () => {
+test('UAT-49 [ANN-74] f1Mode=edit is the old F1: whole-file tab first, nothing starts on its own, Generate asks for both requests', async () => {
   patchSettings({'programmingIme.f1Mode': 'edit'}); await sleep(2500);
   await openF1('sc7.rs', {line: 18});
   expect(await app.panelFrame.locator('#tab-full').getAttribute('aria-selected')).toBe('true');

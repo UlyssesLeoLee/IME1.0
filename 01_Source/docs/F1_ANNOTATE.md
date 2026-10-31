@@ -1,6 +1,6 @@
 # F1 annotate: press F1, the scope under the cursor (or the selection) gets comments
 
-Requirement added by the project owner after the design baseline (SRS v1.2 has no ids for it; tests use ids `ANN-60..84`, UAT ids `UAT-42..49`).
+Requirement added by the project owner after the design baseline (SRS v1.2 has no ids for it; tests use ids `ANN-60..85`, UAT ids `UAT-42..49`).
 It extends FR-016 (authorisation), FR-049 (privacy filter) and the F1 review/apply contract (FR-031..040) without changing them. Original wording (Chinese):
 "按f1时，如果没有圈选，就自动识别当前的scope，给这个scope加注释，如果有圈选，就给选中的内容加注释，运用涌现式设计把这个核心功能完善到位"
 
@@ -78,11 +78,13 @@ take a tab name instead of being tied to the whole-file tab, whose behaviour is 
 
 **Engines.** `scope.js` and the anchored-comment functions are plain JavaScript used directly with BOTH engines. The Rust core has no operations for them yet: they belong to the
 P1C parity port (to be listed in `docs/RUST_MIGRATION_PLAN.md` section 13 by the integrator). Everything else the tab uses (snapshot, privacy, propose/select/hunkEdits,
-coordinator, broker, AI client, symbols) already goes through the engine adapter.
+coordinator, broker, symbols) already goes through the engine adapter (the provider call itself stays in JS with either engine). The flow was exercised against the real `pime-core`
+once, in ANN-85 (propose, select, hunkEdits, coordinator apply, redaction of the core; skipped without `PIME_CORE_EXE`); everything else in the tests uses the JS engine, and the
+Rust path is the same propose/commit path the whole-file tab already uses.
 
 **i18n parity.** The 36 `f1.ann.*` keys are only in `core/i18n.js`: `crates/pime-core/src/i18n_table.rs`, the key counts and `tests/fixtures/i18n-cases.json` are synced by the
-integrator, and until then the JS suite fails exactly two tests (`PARITY fixtures are exactly what the generator produces` and `CFG engine: every interface text, in every locale,
-is the JS text`).
+integrator, and until then the JS suite fails exactly two tests (`PARITY fixtures are exactly what the generator produces`, whose output names one drifted fixture,
+`i18n-cases.json`, and `CFG engine: every interface text, in every locale, is the JS text`, the key set of the Rust table).
 
 ## What the first slice taught us
 
@@ -110,12 +112,13 @@ The first slice was the whole loop with fakes: resolve the scope of real functio
 
 ## Tests
 
-* `tests/js/ut-f1-annotate.test.js` (ANN-60..84): routing (cursor / selection / blank), Wider and Narrower, size limits, options, consent L3/L4, redaction (the secret is not in the request
+* `tests/js/ut-f1-annotate.test.js` (ANN-60..85): routing (cursor / selection / blank), Wider and Narrower, size limits, options, consent L3/L4, redaction (the secret is not in the request
   body, comments read `<redacted>`, line-count refusal), nothing to add / unusable reply / provider error, Apply as one undo step, stale, CRLF, Open Diff, edit-mode regression, active-tab-only
   Generate, auto-start conditions, unavailable reasons, six languages and real repository files, the highlight (set, reused, moved, disposed, never revealing needlessly), reopen, helpers, and the
   page script run against a small fake DOM (ids, messages, the whole-file ids unchanged). All against fakes: no real VS Code window, no real provider.
 * `tests/uat/tests/06-annotate-scope.spec.js` (UAT-42..49): **written, not run** (no Playwright, VS Code or UAT run was possible; syntax-checked only). Existing UAT specs keep their behaviour:
-  `helpers/vscode.js` sets `programmingIme.f1Mode: 'edit'` in the base profile; the mock provider labels the new request `scope`.
+  `helpers/vscode.js` sets `programmingIme.f1Mode: 'edit'` in the base profile; the mock provider labels the new request `scope`. The editor highlight is read from Monaco's own overlay
+  DOM (`highlightedLines()`, a guess at its structure: if it is wrong it returns nothing, UAT-43 then fails and the "cleared after Apply" check of UAT-46 proves nothing).
 
 ## Deviations from the work-item brief, open questions
 

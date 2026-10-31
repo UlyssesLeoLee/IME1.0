@@ -60,12 +60,12 @@ function makeEditor(doc, a, b = a) {
 }
 
 // handler(call, n) -> response; reply(input, n) -> object (JSON) | string (raw model text), input = the parsed prompt of the request
-function rig({language = 'rust', text = RUST, fileName, languageId = 'rust', config = {}, reply, handler, key = {'pime-key:mock': 'KEY-123456'}, dirSymbols = [], scheme = 'file'} = {}) {
+function rig({language = 'rust', text = RUST, fileName, languageId = 'rust', config = {}, reply, handler, key = {'pime-key:mock': 'KEY-123456'}, dirSymbols = [], scheme = 'file', engine: given = null} = {}) {
   const st = {enabled: true, aiEnabled: true, trusted: true, locale: 'en-US', key, language,
     config: {f1Mode: 'annotate', f1AnnotateOnOpen: true, autoComment: true, graphComment: false, graphCommentScope: 'directory', ...config}};
   const ui = {warnings: [], errors: [], infos: [], dialogs: [], panels: [], types: [], commands: [], applyCalls: 0, choose: {consent: ONCE, sensitive: 'Redact and send'}, providers: new Map()};
   const doc = new FakeDoc(text, {languageId, scheme, ...(fileName ? {fileName} : {})});
-  const engine = createEngine('js', {globalState: store()});
+  const engine = given || createEngine('js', {globalState: store()});   // `given`: a started Rust engine (ANN-85)
   const diagnostics = new Diagnostics();
   const workspaceId = () => engine.workspaceKey(['file:///w']);
   const authorize = async req => {
@@ -80,7 +80,7 @@ function rig({language = 'rust', text = RUST, fileName, languageId = 'rust', con
     const r = (reply || defaultReply)(JSON.parse(call.body.input), n);
     return okJson(responsesBody(typeof r === 'string' ? r : JSON.stringify(r)));
   }));
-  const ai = new aiMod.AiClient({fetchImpl, budget: engine.budget, diagnostics, isEnabled: () => st.aiEnabled, authorize});
+  const ai = new aiMod.AiClient({fetchImpl, budget: given ? new aiMod.Budget() : engine.budget, diagnostics, isEnabled: () => st.aiEnabled, authorize}); // (the HTTP call stays in JS with either engine)
   const settings = settingsMod.effective({providers: {mock: {api: 'openai-responses', endpoint: 'https://api.a.example/v1/responses'}},
     scenarios: {f1Full: {provider: 'mock', model: 'm-full'}, f1Insert: {provider: 'mock', model: 'm-insert'}, realtime: {provider: 'mock', model: 'm-rt'}}});
   const rt = {engine, broker: engine.broker, coordinator: engine.coordinator, budget: engine.budget, ai, diagnostics, settings, get locale() { return st.locale; }, ctx: {secrets: {get: async id => st.key[id]}}};
@@ -454,10 +454,14 @@ test('ANN-68 a reply with nothing to add is "ready" with a clear message (and wh
   assert.equal(bad.doc.text, RUST); assert.deepEqual(t.hunks, []);
   await bad.send({type: 'regenerate', tab: 'annotate'});
   assert.equal(bad.tab().status, 'ready'); assert.equal(bad.tab().hunks.length, 1); assert.equal(bad.requests(), 2);
-  for (const text of ['', '[]', '"x"', '{"comments": "no"}']) {
+  const REPLY_INVALID = 'The model reply could not be used (it is not the expected JSON). Nothing was changed. Try Regenerate or another model.';
+  for (const [text, status, message] of [['[]', 'error', REPLY_INVALID], ['"x"', 'error', REPLY_INVALID], ['{"comments": "no"}', 'ready', 'Nothing to add: no new comment was proposed for this scope.'],
+    ['{"comments": [{"line": 1}]}', 'ready', 'Nothing to add: no new comment was proposed for this scope.'], ['', 'error', undefined]]) {
     const r = rig({reply: () => text}); await r.open(atText(RUST, 'n += 1', 3));
-    assert.ok(['error', 'ready'].includes(r.tab().status), text); assert.deepEqual(r.tab().hunks, []);
-    assert.equal(r.doc.text, RUST);
+    const t = r.tab();
+    assert.equal(t.status, status, JSON.stringify(text));
+    if (message !== undefined) assert.equal(t.message, message, JSON.stringify(text)); else assert.match(t.message, /^Failed: /, 'an empty reply never reaches the proposal (the client rejects it)');
+    assert.deepEqual(t.hunks, []); assert.equal(t.canApply, false); assert.equal(r.doc.text, RUST); assert.equal(r.state().busy, false);
   }
   // a provider failure is an error with the provider's reason
   const down = rig({handler: () => ({ok: false, status: 401, headers: {get: () => null}, text: async () => ''})});
@@ -644,18 +648,21 @@ test('ANN-76 auto-start only in annotate mode, with f1AnnotateOnOpen, AI availab
     assert.equal(r.ui.dialogs.length, requests ? 1 : 0, `${label}: the consent modal only when a request is about to go out`);
   }
   // the first F1 does not block the next one while the request is running: a second F1 opens a fresh session
-  let release;
-  const slow = rig({handler: call => new Promise(res => { release = () => res(okJson(responsesBody(JSON.stringify(replyOf([1, 'late']))))); })});
+  const pending = [];                                  // the provider answers when the test says so
+  const slow = rig({handler: () => new Promise(res => pending.push(() => res(okJson(responsesBody(JSON.stringify(replyOf([1, 'late'])))))))});
   slow.vscode.window.activeTextEditor = makeEditor(slow.doc, text); slow.vscode.window.visibleTextEditors = [slow.vscode.window.activeTextEditor];
   await slow.f1.open();
   slow.ready();
-  await until(() => slow.fetch.calls.length === 1);
+  await until(() => pending.length === 1);
   assert.equal(slow.state().busy, true); assert.equal(slow.tab().status, 'loading');
-  const second = slow.f1.open(); await second;
+  await slow.f1.open();                                // F1 again while the first request is still out
+  slow.ready();
   assert.equal(slow.ui.panels.length, 2, 'a second F1 during the request opens a new session'); assert.equal(slow.ui.panels[0].disposed, true);
-  release();
-  await until(() => slow.fetch.calls.length === 2).catch(() => {}); // the second session starts its own request, answer it too
-  release && release();
+  await until(() => pending.length === 2);             // the new session sends its own request
+  pending[1](); await slow.f1.settled();
+  assert.equal(slow.tab().status, 'ready'); assert.equal(slow.tab().hunks.length, 1);
+  pending[0](); await sleep(30);                       // the first request ends late: it must not touch the new session
+  assert.equal(slow.tab().status, 'ready'); assert.equal(slow.tab().hunks.length, 1); assert.equal(slow.requests(), 2); assert.deepEqual(slow.ui.errors, []);
   // cancelling ends the request quietly
   const c = rig({handler: call => new Promise((_, rej) => call.init.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), {name: 'AbortError'}))))});
   c.vscode.window.activeTextEditor = makeEditor(c.doc, text); c.vscode.window.visibleTextEditors = [c.vscode.window.activeTextEditor];
@@ -681,7 +688,7 @@ test('ANN-77 the annotate tab is unavailable, with a clear message, wherever it 
     const t = r.tab();
     assert.equal(t.status, 'unavailable', label); assert.match(t.message, re, label);
     assert.equal(r.requests(), 0, label); assert.equal(r.highlight(), null, `${label}: nothing to highlight`);
-    assert.equal(t.scope, null, label); assert.equal(r.state().canGenerate === false || label === 'file over 2 MiB' || label === 'not a file or an untitled buffer', true, label);
+    assert.equal(t.scope, null, label); assert.equal(r.state().canGenerate, false, `${label}: Generate has nothing to run on the tab on screen`);
     assert.equal(r.ui.dialogs.length, 0, label);
   }
   // an unavailable annotate tab does not take the other tabs down (language unknown, AI on): they say their own thing
@@ -918,4 +925,38 @@ test('ANN-84 the page: unavailable tab (message only), edit mode default tab, an
   assert.deepEqual(p.posted.slice(1), [{type: 'toggleHunk', tab: 'full', id: 'h1', on: false}, {type: 'openDiff', tab: 'full'}, {type: 'applyFull'}]);
   assert.equal(p.text('regen-annotate'), 'Add comments', 'idle and reachable in edit mode');
   assert.equal(p.$('generate').disabled, false);
+});
+
+// ---------------------------------------------------------------- the Rust engine
+// scope.js and the anchored-comment functions are plain JS with BOTH engines; everything else the tab uses (snapshot, privacy, propose / select /
+// resultText / hunkEdits, coordinator, broker) goes through the engine adapter. This runs that path against the real pime-core (skipped, not passed,
+// without PIME_CORE_EXE); the provider call stays in JS and the fake provider answers it.
+const CORE_EXE = process.env.PIME_CORE_EXE;
+const skipRust = CORE_EXE && fs.existsSync(CORE_EXE) ? false : 'set PIME_CORE_EXE to a built pime-core to run the Rust engine tests';
+test('ANN-85 the Rust engine: annotate through propose, select, hunkEdits, the coordinator and the redaction of the real core', {skip: skipRust}, async () => {
+  const engine = createEngine('rust', {globalState: store()});
+  assert.equal(await engine.start({binary: CORE_EXE, locale: 'en-US', values: {}}), true, engine.reason);
+  try {
+    const h = rig({engine, reply: () => replyOf([1, 'Header.'], [3, 'Loop.'])});
+    await h.open(atText(RUST, 'n += 1', 3));
+    let t = h.tab();
+    assert.equal(t.status, 'ready', JSON.stringify(t)); assert.equal(t.hunks.length, 2); assert.equal(h.requests(), 1);
+    assert.ok(t.hunks.every(x => x.lines.every(l => l.kind !== '-')), 'only additions in the blocks the core built');
+    assert.equal(t.validation.level, 'ok');
+    await h.send({type: 'toggleHunk', tab: 'annotate', id: 'h2', on: false});
+    t = h.tab();
+    assert.ok(t.preview.text.includes('// Header.') && !t.preview.text.includes('// Loop.'), 'the core evaluated the selection');
+    const before = h.doc.text;
+    await h.send({type: 'applyAnnotate'});
+    assert.equal(h.state().banner.kind, 'info', h.state().banner && h.state().banner.text);
+    assert.equal(h.ui.applyCalls, 1); assert.equal(h.doc.undoStack.length, 1);
+    assert.deepEqual(added(before, h.doc.text), ['    // Header.']); assert.equal(fingerprint('rust', h.doc.text), fingerprint('rust', before));
+    h.doc.undo(); assert.equal(h.doc.text, before);
+    // the redaction of the real core: the secret never leaves, the comments read <redacted>
+    const s = rig({engine, text: SECRET_FILE, reply: () => replyOf([1, 'Connects using PIME_REDACTED_1.'], [2, 'Hands PIME_REDACTED_1 to login.'])});
+    await s.open(atText(SECRET_FILE, 'login(', 2));
+    assert.equal(s.tab().status, 'ready', JSON.stringify(s.tab()));
+    assert.ok(!s.wire().includes('hunter2hunter2')); assert.ok(s.input().file.includes('PIME_REDACTED_1'));
+    assert.deepEqual(added(SECRET_FILE, s.f1.current().tabs.annotate.proposed), ['// Connects using <redacted>.', '    // Hands <redacted> to login.']);
+  } finally { engine.stop(); }
 });
