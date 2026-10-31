@@ -52,8 +52,15 @@ pub trait HostText {
     /// Open a composition over `typed`, the text the user typed just before the caret. Must fail with
     /// [`HostError::Mismatch`] unless the text before the caret is exactly `typed` (no blind ranges).
     fn begin_composition(&mut self, typed: &str) -> Result<(), HostError>;
-    /// Close the composition and leave the text as it is (cancel). Succeeds when none is open.
+    /// Close the composition and leave the text as it is (cancel). Succeeds when none is open. An `Err` means the
+    /// composition may still be open in the document (the host refused the session): the host keeps hold of it until the
+    /// controller has called [`HostText::end_composition_later`], which it does once, at once.
     fn end_composition(&mut self) -> Result<(), HostError>;
+    /// The one retry after a refused [`HostText::end_composition`]: ask the host to end that composition asynchronously
+    /// (the host may grant the lock later, or only after the callback that refused it returned). Fire and forget: the
+    /// host forgets the composition whatever the answer. `Err` means not even the request was accepted; the composition
+    /// then stays open in the document until the host or TSF ends it.
+    fn end_composition_later(&mut self) -> Result<(), HostError>;
     /// Replace `typed` (verified, just before the caret; empty means "insert at the caret") with `text` and put the
     /// caret after it. A composition stays open until [`HostText::end_composition`]. Never simulates key presses.
     fn commit(&mut self, typed: &str, text: &str) -> Result<(), HostError>;
@@ -520,7 +527,12 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     fn end_host_composition(&mut self) {
         if self.host_composing {
             self.host_composing = false;
-            let _ = self.host.end_composition();
+            if self.host.end_composition().is_err() {
+                // the host refused the (synchronous) session, e.g. inside a focus change or Deactivate: dropping the handle
+                // here would leave the composition open in that document with nobody to end it. One asynchronous attempt;
+                // after that the machine goes on without the composition either way.
+                let _ = self.host.end_composition_later();
+            }
         }
     }
 
@@ -657,6 +669,11 @@ mod tests {
         panic_commit: bool,
         begins: usize,
         ends: usize,
+        /// The synchronous end of the composition is refused (the composition stays open).
+        refuse_end: bool,
+        /// The asynchronous retry is refused too.
+        refuse_later: bool,
+        later_ends: usize,
         secure_checks: usize,
         commits: Vec<(String, String)>,
     }
@@ -685,6 +702,18 @@ mod tests {
 
         fn end_composition(&mut self) -> Result<(), HostError> {
             self.ends += 1;
+            if self.refuse_end {
+                return Err(HostError::Refused); // the composition stays open in the document
+            }
+            self.composing = false;
+            Ok(())
+        }
+
+        fn end_composition_later(&mut self) -> Result<(), HostError> {
+            self.later_ends += 1;
+            if self.refuse_later {
+                return Err(HostError::Refused);
+            }
             self.composing = false;
             Ok(())
         }
@@ -1737,6 +1766,87 @@ mod tests {
         assert!(!rig.ctl.ui().visible);
         assert!(!rig.ctl.host().composing);
         assert!(!rig.plain(vk::ESCAPE));
+    }
+
+    /// A rig in an explicit composition whose synchronous end the host refuses (review finding 6).
+    fn composing_with_a_refusing_host() -> Rig {
+        let mut rig = Rig::defaults();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.chord(Host::Contract));
+        assert!(rig.ctl.host().composing);
+        rig.ctl.host_mut().refuse_end = true;
+        rig
+    }
+
+    #[test]
+    fn a_refused_end_of_the_composition_is_retried_asynchronously_once_not_dropped() {
+        // Esc, commit, a paused input method and the other routes all end in `end_host_composition`: Esc stands for them
+        let mut rig = composing_with_a_refusing_host();
+        assert!(rig.plain(vk::ESCAPE), "Esc cancels the composition");
+        let host = rig.ctl.host();
+        assert_eq!(host.ends, 1, "the synchronous end was tried");
+        assert_eq!(
+            host.later_ends, 1,
+            "and the refusal got its one asynchronous retry"
+        );
+        assert!(
+            !host.composing,
+            "the composition is not left open in the document"
+        );
+        assert_ne!(rig.ctl.machine().state(), State::Composing);
+        assert!(!rig.ctl.ui().visible);
+        assert!(
+            !rig.ctl.is_degraded(),
+            "a refused end is not a host failure"
+        );
+        // nothing is retried again, however many events follow
+        rig.type_text("x", Host::Contract);
+        rig.ctl.focus_changed();
+        rig.ctl.deactivate();
+        assert_eq!((rig.ctl.host().ends, rig.ctl.host().later_ends), (1, 1));
+    }
+
+    #[test]
+    fn a_refused_end_gets_its_retry_on_focus_change_and_on_deactivate_too() {
+        let mut rig = composing_with_a_refusing_host();
+        rig.ctl.focus_changed();
+        assert_eq!(rig.ctl.host().later_ends, 1);
+        assert!(!rig.ctl.host().composing);
+        let mut rig = composing_with_a_refusing_host();
+        rig.ctl.deactivate();
+        assert_eq!(rig.ctl.host().later_ends, 1);
+        assert!(!rig.ctl.host().composing);
+        // a host that ended the composition itself is not asked at all
+        let mut rig = composing_with_a_refusing_host();
+        rig.ctl.composition_terminated();
+        assert_eq!((rig.ctl.host().ends, rig.ctl.host().later_ends), (0, 0));
+    }
+
+    #[test]
+    fn a_host_that_refuses_the_retry_as_well_costs_one_attempt_and_the_next_composition_still_opens()
+     {
+        let mut rig = composing_with_a_refusing_host();
+        rig.ctl.host_mut().refuse_later = true;
+        assert!(rig.plain(vk::ESCAPE));
+        assert_eq!(rig.ctl.host().later_ends, 1, "asked once, then given up");
+        assert!(
+            rig.ctl.host().composing,
+            "the host kept it open: nothing more can be done from here"
+        );
+        rig.type_text("y", Host::Contract);
+        rig.ctl.focus_changed();
+        assert_eq!((rig.ctl.host().ends, rig.ctl.host().later_ends), (1, 1));
+        // the host recovers: the next explicit composition opens and ends normally
+        rig.ctl.host_mut().refuse_end = false;
+        rig.ctl.host_mut().refuse_later = false;
+        rig.ctl.host_mut().doc.clear();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.chord(Host::Contract));
+        assert_eq!(rig.ctl.host().begins, 2);
+        assert!(rig.plain(vk::ESCAPE));
+        assert!(!rig.ctl.host().composing);
+        assert_eq!(rig.ctl.host().ends, 2);
+        assert_eq!(rig.ctl.host().later_ends, 1);
     }
 
     #[test]

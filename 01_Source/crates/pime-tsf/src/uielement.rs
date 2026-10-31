@@ -1248,6 +1248,10 @@ mod tests {
             Ok(())
         }
 
+        fn end_composition_later(&mut self) -> Result<(), HostError> {
+            Ok(())
+        }
+
         fn commit(&mut self, typed: &str, text: &str) -> Result<(), HostError> {
             if !self.doc.ends_with(typed) {
                 return Err(HostError::Mismatch);

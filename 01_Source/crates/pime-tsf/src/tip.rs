@@ -26,7 +26,8 @@ use windows::Win32::UI::TextServices::{
     ITfKeyEventSink_Impl, ITfKeystrokeMgr, ITfRange, ITfSource, ITfTextInputProcessor_Impl,
     ITfTextInputProcessorEx, ITfTextInputProcessorEx_Impl, ITfThreadMgr, ITfThreadMgrEventSink,
     ITfThreadMgrEventSink_Impl, InputScope, TF_AE_NONE, TF_ANCHOR_END, TF_DEFAULT_SELECTION,
-    TF_ES_READ, TF_ES_READWRITE, TF_ES_SYNC, TF_SELECTION, TF_SELECTIONSTYLE, TF_TMAE_SECUREMODE,
+    TF_ES_ASYNCDONTCARE, TF_ES_READ, TF_ES_READWRITE, TF_ES_SYNC, TF_SELECTION, TF_SELECTIONSTYLE,
+    TF_TMAE_SECUREMODE,
 };
 use windows::core::{GUID, IUnknown, IUnknownImpl, Interface, Result, implement};
 
@@ -63,8 +64,9 @@ impl CandidateUi for BoxedUi {
     }
 }
 
-/// One edit session running a closure with the edit cookie. Only synchronous sessions are used, so the closure can
-/// hand its result back through a shared cell.
+/// One edit session running a closure with the edit cookie. The sessions that matter for a key are synchronous
+/// ([`run_session`]), so the closure can hand its result back through a shared cell; the only asynchronous one is the
+/// retry of a refused end of a composition ([`request_async`]), which has no result to hand back.
 #[implement(ITfEditSession)]
 struct EditSession {
     work: RefCell<Option<SessionWork>>,
@@ -109,11 +111,38 @@ fn run_session<T: 'static>(
     }
 }
 
+/// Queue an edit session that nothing waits for. With `TF_ES_ASYNCDONTCARE` TSF runs it at once when the lock is free
+/// and otherwise when it is granted (`TF_S_ASYNC`): that is what makes it fit for a retry after a refused synchronous
+/// session. `work` owns what it needs; TSF drops it with the session. Ok when TSF accepted the request (`S_OK` or
+/// `TF_S_ASYNC`), which says nothing about the work itself.
+fn request_async(
+    ctx: &ITfContext,
+    client_id: u32,
+    flags: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS,
+    work: impl FnOnce(u32) + 'static,
+) -> std::result::Result<(), HostError> {
+    let session: ITfEditSession = EditSession {
+        work: RefCell::new(Some(Box::new(work))),
+    }
+    .into();
+    // SAFETY: `ctx` and `session` are live COM objects; TSF keeps its own reference to the session while it is queued.
+    let requested = unsafe { ctx.RequestEditSession(client_id, &session, flags) };
+    match requested {
+        Ok(hr) if hr.is_ok() => Ok(()),
+        _ => Err(HostError::Refused),
+    }
+}
+
 const SYNC_READ: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS =
     windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS(TF_ES_SYNC.0 | TF_ES_READ.0);
 const SYNC_WRITE: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS =
     windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS(
         TF_ES_SYNC.0 | TF_ES_READWRITE.0,
+    );
+/// Read-write, synchronous when the lock is free and queued otherwise (`TF_ES_ASYNCDONTCARE` is 0 in the headers).
+const ASYNC_WRITE: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS =
+    windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS(
+        TF_ES_ASYNCDONTCARE.0 | TF_ES_READWRITE.0,
     );
 
 fn selection_of(range: ITfRange) -> TF_SELECTION {
@@ -245,6 +274,10 @@ struct TsfHost {
     sink: ITfCompositionSink,
     context: Option<ITfContext>,
     composition: Option<(ITfContext, ITfComposition)>,
+    /// A composition whose synchronous end TSF refused. It waits here, apart from `composition` (so that the next
+    /// `begin_composition` never mistakes it for an open one), for the single asynchronous attempt of
+    /// `end_composition_later`; the controller makes that attempt right after the refusal.
+    stranded: Option<(ITfContext, ITfComposition)>,
 }
 
 impl TsfHost {
@@ -254,6 +287,7 @@ impl TsfHost {
             sink,
             context: None,
             composition: None,
+            stranded: None,
         }
     }
 
@@ -338,9 +372,26 @@ impl HostText for TsfHost {
         let Some((ctx, composition)) = self.composition.take() else {
             return Ok(());
         };
-        run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
+        let ending = composition.clone();
+        let ended = run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
             // SAFETY: `ec` belongs to the running session on the composition's context.
-            unsafe { composition.EndComposition(ec) }.map_err(refused)
+            unsafe { ending.EndComposition(ec) }.map_err(refused)
+        });
+        if ended.is_err() {
+            // refused: do not drop the handle, the composition is still open in that document
+            self.stranded = Some((ctx, composition));
+        }
+        ended
+    }
+
+    fn end_composition_later(&mut self) -> std::result::Result<(), HostError> {
+        let Some((ctx, composition)) = self.stranded.take() else {
+            return Ok(());
+        };
+        request_async(&ctx, self.client_id, ASYNC_WRITE, move |ec| {
+            // SAFETY: `ec` belongs to the running session on the composition's context. A composition that is already
+            // gone (the host ended it meanwhile) only makes this fail, which nobody is waiting for.
+            let _ = unsafe { composition.EndComposition(ec) };
         })
     }
 
