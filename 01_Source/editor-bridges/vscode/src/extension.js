@@ -5,6 +5,7 @@ const path = require('node:path');
 const {rt, cfg, L, errorText, enabled, aiEnabled, workspaceId, refreshSettings, grantProviderId, init} = require('./runtime');
 const lang = require('./languageState');
 const f1 = require('./f1');
+const f2 = require('./f2');
 const languages = require('./core/languages');
 const aiMod = require('./core/ai');
 const settingsMod = require('./core/settings');
@@ -41,6 +42,10 @@ async function updateContextKeys() {
   await vscode.commands.executeCommand('setContext', 'programmingIme.enabled', on);
   await vscode.commands.executeCommand('setContext', 'programmingIme.f1Key.f1', on && binding === 'f1' && !excluded);
   await vscode.commands.executeCommand('setContext', 'programmingIme.f1Key.shiftF1', on && binding === 'shift+f1' && !excluded);
+  const f2Excluded = editor ? (cfg().get('f2ExcludedLanguages') || []).includes(editor.document.languageId) : false;
+  const f2Keys = f2.contextKeys({enabled: on, binding: cfg().get('f2Binding'), excluded: f2Excluded});
+  await vscode.commands.executeCommand('setContext', 'programmingIme.f2Key.f2', f2Keys.f2);
+  await vscode.commands.executeCommand('setContext', 'programmingIme.f2Key.shiftF2', f2Keys.shiftF2);
 }
 
 // ------------------------------------------------------------------ local candidates (JS engine; optional Rust core)
@@ -360,6 +365,7 @@ async function activate(ctx) {
   status.ai.command = 'programmingIme.menu'; status.ai.name = 'Programming IME AI';
   ctx.subscriptions.push(status.lang, status.ai);
   f1.registerPreviewProvider(ctx);
+  f2.init(ctx);
   rt.onEngineChange = onEngineChange;
   await startCore();
   await reloadRules().catch(() => {});
@@ -383,6 +389,7 @@ async function activate(ctx) {
   reg('programmingIme.reloadRules', reloadRules);
   reg('programmingIme.openRulesFolder', async () => { const dir = path.join(rt.ctx.globalStorageUri.fsPath, 'rules'); fs.mkdirSync(dir, {recursive: true}); await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(dir)); });
   reg('programmingIme.f1Edit', () => f1.open());
+  reg('programmingIme.f2Prompt', () => f2.run());
   ctx.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider([{scheme: 'file'}, {scheme: 'untitled'}], inlineProvider));
   ctx.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => { rt.session.noteDocumentChange(); lastScheduled = null; updateStatus(); updateContextKeys(); }),

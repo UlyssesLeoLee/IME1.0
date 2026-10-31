@@ -31,11 +31,14 @@
       {"command": "programmingIme.showDiagnostics", "title": "%cmd.showDiagnostics%"},
       {"command": "programmingIme.reloadRules", "title": "%cmd.reloadRules%"},
       {"command": "programmingIme.openRulesFolder", "title": "%cmd.openRulesFolder%"},
-      {"command": "programmingIme.f1Edit", "title": "%cmd.f1Edit%"}
+      {"command": "programmingIme.f1Edit", "title": "%cmd.f1Edit%"},
+      {"command": "programmingIme.f2Prompt", "title": "%cmd.f2Prompt%"}
     ],
     "keybindings": [
       {"command": "programmingIme.f1Edit", "key": "f1", "when": "editorTextFocus && programmingIme.f1Key.f1"},
       {"command": "programmingIme.f1Edit", "key": "shift+f1", "when": "editorTextFocus && programmingIme.f1Key.shiftF1"},
+      {"command": "programmingIme.f2Prompt", "key": "f2", "when": "editorTextFocus && editorHasSelection && programmingIme.f2Key.f2"},
+      {"command": "programmingIme.f2Prompt", "key": "shift+f2", "when": "editorTextFocus && editorHasSelection && programmingIme.f2Key.shiftF2"},
       {"command": "programmingIme.showCandidates", "key": "ctrl+alt+space", "when": "editorTextFocus && programmingIme.enabled"}
     ],
     "configuration": {
@@ -49,6 +52,8 @@
         "programmingIme.dialects": {"type": "object", "default": {}, "description": "Per profile dialect, e.g. {\"rust\":{\"edition\":\"2021\"},\"c\":{\"std\":\"c23\"},\"powershell\":{\"version\":\"5.1\"},\"assembly\":{\"syntax\":\"att\",\"assembler\":\"gas\"},\"machine-code\":{\"format\":\"compact\"}}"},
         "programmingIme.f1Binding": {"type": "string", "enum": ["f1", "shift+f1", "none"], "default": "f1", "description": "Key that opens the F1 AI edit panel when Programming IME is enabled. Use shift+f1 or none to keep F1 for the Command Palette."},
         "programmingIme.f1ExcludedLanguages": {"type": "array", "items": {"type": "string"}, "default": [], "description": "Language ids in which the F1 binding is never taken over."},
+        "programmingIme.f2Binding": {"type": "string", "enum": ["f2", "shift+f2", "none"], "default": "f2", "description": "Key that copies a 5W1H prompt for the selected text or code when Programming IME is enabled. F2 normally renames a symbol: this binding only applies while the editor has a non-empty selection, so F2 without a selection still renames. Use shift+f2 or none to keep F2 for Rename in every case."},
+        "programmingIme.f2ExcludedLanguages": {"type": "array", "items": {"type": "string"}, "default": [], "description": "Language ids in which the F2 binding is never taken over (F2 keeps renaming, also with a selection)."},
         "programmingIme.engine": {"type": "string", "enum": ["js", "rust"], "default": "js", "markdownDescription": "Who runs the editor logic. `js`: the built-in JavaScript engine (a configured core only speeds up local candidates). `rust`: the Rust core in `programmingIme.coreExecutable` is REQUIRED; if it is missing or stops, the IME features are turned off and a message says why (there is no silent fallback; typing in VS Code is never affected). Reload the window after changing it."},
         "programmingIme.coreExecutable": {"type": "string", "default": "", "description": "Absolute path of a trusted, locally built pime-core executable (protocol 0.2 or 0.3; the Rust engine needs 0.3). Empty uses the built-in JavaScript engine."},
         "programmingIme.aiEnabled": {"type": "boolean", "default": false, "description": "Master switch. While off, no AI request is ever sent, whatever else is configured."},

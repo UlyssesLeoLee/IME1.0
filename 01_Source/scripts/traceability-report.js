@@ -20,8 +20,8 @@ const all = [
   ...cases('Programming_IME_UT_Test_Design_v1.0.md', 'UT'), ...cases('Programming_IME_IT_Test_Design_v1.0.md', 'IT'), ...cases('Programming_IME_ST_Test_Design_v1.0.md', 'ST')
 ];
 const evidence = new Map(all.map(c => [c.id, {js: [], rust: [], uat: [], failed: []}]));
-// Tests for requirements added after the design baseline (ANN-xx annotations, API-xx provider compatibility): no design-case ids exist for them.
-const EXTRA = /\b(?:ANN|API)-\d{2}[a-z]?\b/g;
+// Tests for requirements added after the design baseline (ANN-xx annotations, API-xx provider compatibility, PRM-xx the F2 prompt): no design-case ids exist for them.
+const EXTRA = /\b(?:ANN|API|PRM)-\d{2}[a-z]?\b/g;
 const extras = [];
 const noteExtra = (title, kind, ok) => { for (const id of title.match(EXTRA) || []) extras.push({id, kind, title: title.replace(/\s*\[.*$/, ''), ok}); };
 const note = (id, kind, title, ok) => { const e = evidence.get(id); if (!e) return; (ok ? e[kind] : e.failed).push(`${kind}: ${title}`); if (ok && !e[kind].includes(title)) e[kind].push(title); };
@@ -87,7 +87,7 @@ for (const p of ['UT', 'IT', 'ST']) { const c = summary.cases[p]; md.push(`| ${p
 md.push('', 'Not run does NOT mean passed. Windows TSF, installer, named-pipe IPC, Credential Manager, DPI/multi-monitor, 30-minute soak and plugin cases need environments that were not available.', '');
 md.push('| ID | Title | Status | Evidence / reason |', '|---|---|---|---|');
 for (const r of rows) md.push(`| ${r.id} | ${r.title.replace(/\|/g, '/')} | ${r.status} | ${r.status === 'NOT RUN' ? r.reason : [...new Set(r.via)].join(' + ') + (r.failed.length ? ' ; FAILED: ' + r.failed.join('; ') : '')} |`);
-md.push('', '## Requirements added after the design baseline (no UT/IT/ST ids; see docs/ANNOTATIONS.md and docs/VERSIONS.md)', '', '| ID | Suite | Test | Result |', '|---|---|---|---|');
+md.push('', '## Requirements added after the design baseline (no UT/IT/ST ids; see docs/ANNOTATIONS.md, docs/F2_PROMPT.md and docs/VERSIONS.md)', '', '| ID | Suite | Test | Result |', '|---|---|---|---|');
 for (const x of extras.sort((a, b) => a.id.localeCompare(b.id))) md.push(`| ${x.id} | ${x.kind} | ${x.title.replace(/\|/g, '/')} | ${x.ok ? 'PASS' : 'FAIL'} |`);
 summary.extras = {total: extras.length, pass: extras.filter(x => x.ok).length};
 fs.writeFileSync(path.join(verification, 'test-execution-report.json'), JSON.stringify({summary, rows, extras}, null, 1) + '\n');

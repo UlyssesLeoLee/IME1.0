@@ -15,5 +15,6 @@
   "cmd.showDiagnostics": "Programming IME：查看诊断",
   "cmd.reloadRules": "Programming IME：重新加载用户规则",
   "cmd.openRulesFolder": "Programming IME：打开用户规则文件夹",
-  "cmd.f1Edit": "Programming IME：F1 AI 编辑（整文件 / 光标插入）"
+  "cmd.f1Edit": "Programming IME：F1 AI 编辑（整文件 / 光标插入）",
+  "cmd.f2Prompt": "Programming IME：F2 提示词（5W1H 提示词复制到剪贴板）"
 }
