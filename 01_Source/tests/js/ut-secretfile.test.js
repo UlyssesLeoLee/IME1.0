@@ -34,7 +34,7 @@ pos('private-key', 'id_rsa', 'id_dsa', 'id_ecdsa', 'id_ed25519', 'id_rsa_github'
 pos('keystore', 'release.keystore', 'debug.keystore', 'my.jks', 'store.jceks', 'client.p12', 'cert.pfx', 'a.pkcs12', 'trust.bks', 'login.keychain-db', 'x.keychain',
   'C:\\keys\\Release.JKS', 'android/app/upload-keystore.jks');
 pos('password-db', 'wallet.dat', 'my.wallet', 'vault.kdbx', 'old.kdb', 'pw.psafe3', 'export.1pux', 'passwords.csv', 'passwords.txt', 'Password.xlsx', 'passwd.json',
-  'masterpassword.mpw', 'C:\\Users\\x\\Documents\\Passwords.XLS');
+  'vault-master.mpw', 'C:\\Users\\x\\Documents\\Passwords.XLS');
 pos('cloud-credentials', '/home/x/.aws/credentials', 'C:\\Users\\x\\.aws\\credentials', '/home/x/.aws/sso/cache/abc123.json', '/home/x/.aws/cli/cache/abc123.json',
   '/home/x/.azure/accessTokens.json', 'C:\\Users\\x\\.azure\\msal_token_cache.json', '/home/x/.config/gcloud/credentials.db',
   '/home/x/.config/gcloud/application_default_credentials.json', 'C:\\Users\\x\\AppData\\Roaming\\gcloud\\access_tokens.db', '/home/x/.kube/config', 'kubeconfig',
@@ -47,7 +47,7 @@ pos('credential-file', 'credentials', 'credentials.json', '.credentials.json', '
   'vault_pass.txt', 'office.ovpn', 'keystore.properties', 'key.properties', 'local.settings.json', 'passwd', 'C:\\proj\\SECRETS.JSON', 'C:\\proj\\Secrets.Json.');
 pos('token-store', '.npmrc', '.netrc', '_netrc', '.git-credentials', '.vault-token', '.dockercfg', '/home/x/.docker/config.json', '/home/x/.config/gh/hosts.yml', 'token.json',
   'token.pickle', 'access_token.txt', 'api_key.txt', 'apikey.json', '/home/x/.codex/auth.json', 'C:\\Users\\x\\AppData\\Roaming\\com.vercel.cli\\Data\\auth.json',
-  '.emulator_console_auth_token', 'logout_token', 'x.token', 'Cookies', 'cookies.txt', 'cookies.sqlite', 'Login Data', 'Login Data-journal', 'Cookies-journal', 'logins.json',
+  '.emulator_console_auth_token', 'cli_session_token', 'x.token', 'Cookies', 'cookies.txt', 'cookies.sqlite', 'Login Data', 'Login Data-journal', 'Cookies-journal', 'logins.json',
   'key4.db', 'cookies.sqlite-wal', 'C:\\Users\\x\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Network\\Cookies');
 pos('infra-state', 'terraform.tfstate', 'terraform.tfstate.backup', 'prod.tfstate', 'terraform.tfvars', 'prod.auto.tfvars', 'a.tfvars.json', 'infra/.terraform/terraform.tfstate',
   'terraform.tfstate.1234.backup', 'TERRAFORM.TFSTATE');
@@ -69,11 +69,11 @@ neg( // public material, ciphertext and templates
   'example.env', 'sample.env', 'terraform.tfvars.example', 'prod.tfvars.sample', '.envrc.example', '.dev.vars.example', 'env.example', '.env.example.bak', 'secrets.example.json',
   'credentials.sample.yml', 'token.template.json', 'local.settings.example.json');
 neg( // names that merely contain secret-ish words
-  'secret-cases.json', 'secret-sauce.png', 'secretary.txt', 'keyboard.cnf', 'keybindings.json', 'monkey.png', 'donkey.txt', 'turkey.md', 'keyboard.js', 'keys', 'keystore.ts', 'keystore',
+  'secret-cases.json', 'secret-sauce.png', 'secretary.txt', 'keymap.cnf', 'keybindings.json', 'monkey.png', 'donkey.txt', 'turkey.md', 'keyboard.js', 'keys', 'keystore.ts', 'keystore',
   'sessions.json', 'session.db', 'cookies.py', 'cookies.js', 'cookiecutter.json', 'token_utils.py', 'jwt.ts', 'auth.rs', 'vault.rs', 'wallet.ts', 'wallet.md', 'keychain.ts', 'keychains.json',
   'login.html', 'login data.md', 'passwd.c', 'passwd.md', 'password-reset.html', 'private.md', 'private_key.rs', 'private-key.ts', 'privatekey.js', 'pem.js', 'pemfile.txt', 'p12.md',
   'x.pem.md', 'monkey.key.js', 'tokenizer.json', 'token-list.json', 'tokens.ts', 'token.css', 'keys.properties', 'local.properties', 'settings.json', 'launch.json', 'secretfile.js',
-  'cacert.dat', 'Trust Tokens', 'Safe Browsing Cookies', 'client_secret.ts', 'client_secrets.py', 'firebase.json', 'google-services.json', 'GoogleService-Info.plist',
+  'ca-bundle.dat', 'Trust Tokens', 'Safe Browsing Cookies', 'client_secret.ts', 'client_secrets.py', 'firebase.json', 'google-services.json', 'GoogleService-Info.plist',
   'service-account.yaml', 'serviceaccount.yaml', 'hosts.yml', 'hosts.yaml', 'main.tf', 'variables.tf', 'outputs.tf', 'terraform.lock.hcl', '.terraformrc', 'kubeconfig.ts', 'kube-config.js',
   'kubeconfig.go', 'kubernetes.yaml', 'deployment.yaml', 'cookies.md', 'cookie-banner.js', 'app.sqlite', 'ssh.md', '.ssh-config.md', 'keymap.rs', 'session.rs');
 neg( // by directory: a virtualenv named `.env`, tool folders that hold no secret, directories and degenerate input
@@ -299,6 +299,13 @@ test('SEC-04d glob: a pathological pattern is linear, and a spent step budget fa
   assert.ok(Date.now() - t0 < 8000, 'bounded work');
 });
 
+test('SEC-04d1 a rooted pattern sees the whole path: a long path must not push its root out of view (that would fail open)', () => {
+  assert.equal(cls('D:\\r\\' + 'x\\'.repeat(600) + 'a.txt', ['d:/r/**']).secret, true);
+  assert.equal(cls('/srv/' + 'x/'.repeat(600) + 'a.txt', ['/srv/**']).secret, true);
+  assert.equal(cls('\\\\server\\share\\' + 'x\\'.repeat(600) + 'a.txt', ['//server/share/**']).secret, true);
+  assert.equal(cls('D:\\q\\' + 'x\\'.repeat(600) + 'a.txt', ['d:/r/**']).secret, false);
+});
+
 test('SEC-04e user pattern limits: at most 200 valid patterns, none longer than 300 characters (skipped, not cut), junk does not count', () => {
   const target = 'd/target.txt';
   assert.equal(cls(target, [...Array(199).fill('zzz'), 'target.txt']).secret, true);
@@ -373,6 +380,15 @@ test('SEC-08 the rules are a superset of secrets.js SENSITIVE_FILE; the only nam
   for (const n of ['Keynote deck.key', 'cacert.pem', 'ca-bundle.pem', 'debug.keystore']) assert.equal(cls(n).secret, true, n);
 });
 
+test('SEC-08a the template carve-out in full: a template word as the last or an inner part of an env name is not secret, any other word is', () => {
+  const last = ['example', 'sample', 'template', 'dist', 'default', 'defaults', 'tpl', 'tmpl'], inner = ['example', 'sample', 'template', 'dist', 'tpl', 'tmpl'], dashed = ['example', 'sample', 'template'];
+  for (const w of last) for (const n of ['.env.' + w, '.env.local.' + w, w + '.env']) assert.equal(cls(n).secret, false, n);
+  for (const w of inner) assert.equal(cls('.env.' + w + '.local').secret, false, w + ' as an inner part');
+  for (const w of dashed) for (const n of ['.env-' + w, '.env_' + w]) assert.equal(cls(n).secret, false, n);
+  for (const n of ['.env.local', '.env.prod', '.env.keys', '.env.vault', '.env.exampled', '.env.samples', '.env.templates', '.env.distribution', '.env.default.local', '.env-prod', 'prod.env', 'examples.env', '.env.examplefile']) assert.equal(cls(n).secret, true, n);
+  for (const n of ['secrets.example.json', 'credentials.sample.yml', 'token.template.json', 'a.tfvars.example', 'a.tfvars.json.example', 'service-account.example.json', 'client_secret.sample.json', 'passwords.template.txt', 'local.settings.dist.json']) assert.equal(cls(n).secret, false, n);
+});
+
 test('SEC-09 hostile names cannot make the rules or the key slow (no backtracking anywhere)', () => {
   const hostile = ['a.'.repeat(20000), '.env.'.repeat(8000), ' .'.repeat(20000), 'a'.repeat(100000), ':'.repeat(50000), '\\'.repeat(50000), '../'.repeat(30000), '*'.repeat(5000), '.ssh/'.repeat(10000) + 'x',
     'a'.repeat(30000) + '.example', '.env.' + 'example.'.repeat(5000), 'x'.repeat(30000) + '.bak'.repeat(1000), '/'.repeat(60000) + '.env', 'a.pem' + ' '.repeat(60000), '.'.repeat(60000) + 'x'];
@@ -400,7 +416,7 @@ test('SEC-11 a virtualenv folder named `.env` does not make its contents secret;
 });
 
 test('SEC-12 dogfood on a real machine: .gnupg agent sockets and lock files are not secrets, its keys are', () => {
-  for (const n of ['/home/x/.gnupg/S.keyboxd', '/home/x/.gnupg/S.gpg-agent.extra', '/home/x/.gnupg/public-keys.d/.#lk0x0000000a00007c10.host.926', '/home/x/.gnupg/gpg-agent.conf', '/home/x/.gnupg/pubring.kbx', 'C:\\Users\\x\\AppData\\Roaming\\gnupg\\gpg.conf']) assert.equal(cls(n).secret, false, n);
+  for (const n of ['/home/x/.gnupg/S.keyboxd', '/home/x/.gnupg/S.gpg-agent.extra', '/home/x/.gnupg/public-keys.d/.#lk0x00000001abcdef01.host.123', '/home/x/.gnupg/gpg-agent.conf', '/home/x/.gnupg/pubring.kbx', 'C:\\Users\\x\\AppData\\Roaming\\gnupg\\gpg.conf']) assert.equal(cls(n).secret, false, n);
   for (const n of ['/home/x/.gnupg/private-keys-v1.d/ABCD.key', '/home/x/.gnupg/random_seed', '/home/x/.gnupg/openpgp-revocs.d/ABCD.rev', 'C:\\Users\\x\\AppData\\Roaming\\gnupg\\secring.gpg']) assert.equal(cls(n).secret, true, n);
 });
 
@@ -416,8 +432,8 @@ test('SEC-12b dogfood: key files without an extension (adb, sshd host keys); the
 });
 
 test('SEC-12c dogfood: a login token kept in a file whose name ends in token (no extension); tokens.json, design tokens and code are not', () => {
-  for (const n of ['.emulator_console_auth_token', 'logout_token', '.gh_token', 'npm-token', 'deploy.token', '.token']) assert.equal(cls(n).kind, 'token-store', n);
-  for (const n of ['canvas-tokens.d.ts', 'tokens.json', 'token-utils.ts', 'tokentable.ini', 'refresh_token.rs', 'csrf_token.js', 'token']) assert.equal(cls(n).secret, false, n);
+  for (const n of ['.emulator_console_auth_token', 'cli_session_token', '.gh_token', 'npm-token', 'deploy.token', '.token']) assert.equal(cls(n).kind, 'token-store', n);
+  for (const n of ['canvas-tokens.d.ts', 'tokens.json', 'token-utils.ts', 'token_table.ini', 'refresh_token.rs', 'csrf_token.js', 'token']) assert.equal(cls(n).secret, false, n);
 });
 
 test('SEC-12d dogfood: auth.json is a login store only inside the folders of the CLIs that keep one (a bare auth.json is a locale file)', () => {
@@ -427,8 +443,8 @@ test('SEC-12d dogfood: auth.json is a login store only inside the folders of the
 
 test('SEC-12e dogfood: password stores by name (SourceTree passwd, Xshell .mpw, KeePass-format safes of an IDE); the similar names that are code are not', () => {
   assert.equal(cls('C:\\Users\\x\\AppData\\Local\\Vendor\\Tool\\passwd').secret, true);
-  assert.equal(cls('C:\\Users\\x\\Documents\\Terminal Suite\\MasterPassword.mpw').kind, 'password-db');
-  assert.equal(cls('C:\\Users\\x\\AppData\\Roaming\\IDE2025\\c.kdbx').kind, 'password-db');
+  assert.equal(cls('C:\\Users\\x\\Documents\\Terminal Suite\\Vault-Master.mpw').kind, 'password-db');
+  assert.equal(cls('C:\\Users\\x\\AppData\\Roaming\\IDE2025\\safe.kdbx').kind, 'password-db');
   for (const n of ['passwd.c', 'passwd.h', 'passwd.md', 'mpw.md', 'a.mpw.md', 'passwords.md', 'kdbx.md']) assert.equal(cls(n).secret, false, n);
 });
 
@@ -437,7 +453,7 @@ test('SEC-12f dogfood: names that look like secrets but are this project\'s own 
 });
 
 test('SEC-12g dogfood: a login or license key under a tool folder is a *.key and stays secret (the price of the SENSITIVE_FILE superset)', () => {
-  for (const n of ['C:\\Users\\x\\AppData\\Roaming\\Vendor\\IDE2023\\license.key', '/home/x/.android/maps.key', '/home/x/.tool/sessions/12345.0123abcd.key']) assert.equal(cls(n).secret, true, n);
+  for (const n of ['C:\\Users\\x\\AppData\\Roaming\\Vendor\\IDE2023\\license.key', '/home/x/.android/api-maps.key', '/home/x/.tool/sessions/12345.0123abcd.key']) assert.equal(cls(n).secret, true, n);
 });
 
 test('SEC-13 needsConfirmation: secret and not allowed -> needs; deny means skip silently, once is spent by consume', () => {

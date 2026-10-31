@@ -9,6 +9,10 @@
 //   needs=false but classification.secret -> the gate allows it: still call gate.consume(path) right before the read, so
 //                                             a 'once' grant is spent; consume() is false for a path never recorded
 //
+// Matching semantics that live outside DEFAULT_RULES (a parity port needs them too): ASCII case folding, BACKUP_SUFFIXES peeling,
+// the head/ext split, the `$`-means-NTFS rule for the colon variant (altName), the glob dialect (compileGlob/globMatch) and the
+// user-pattern preparation (prepare).
+//
 // Known limits, by design: a symlink, junction or hard link hides its target behind an innocent name, so the wiring must
 // resolve the real path first; 8.3 short names (`ENV~1`) are out of scope; names are never decoded (`%2E` stays literal),
 // pass an fsPath, not a URI; case is folded for ASCII only, so two non-ASCII spellings are two keys (the user is asked
@@ -47,7 +51,7 @@ const DEFAULT_RULES = Object.freeze([
   // --- env files. A virtualenv directory named `.env` is a directory segment, not a base name, so only the names of the
   // files inside it count.
   {id: 'env-file', kind: 'env', match: {base: ['.env', '.env.*', '.env-*', '.env_*'], not: TEMPLATE}}, // .env, .env.local, .env.production, .env-dev
-  {id: 'env-extension', kind: 'env', match: {base: ['*.env'], not: [...TEMPLATE, 'example.env', 'sample.env', 'template.env', 'default.env', 'defaults.env', 'dist.env']}}, // prod.env, docker.env
+  {id: 'env-extension', kind: 'env', match: {base: ['*.env'], not: [...TEMPLATE, 'example.env', 'sample.env', 'template.env', 'default.env', 'defaults.env', 'dist.env', 'tpl.env', 'tmpl.env']}}, // prod.env, docker.env
   {id: 'envrc', kind: 'env', match: {base: ['.envrc', '.envrc.*'], not: TEMPLATE}}, // direnv: exports secrets
   {id: 'dev-vars', kind: 'env', match: {base: ['.dev.vars', '.dev.vars.*'], not: TEMPLATE}}, // Cloudflare Workers local secrets
   {id: 'local-settings', kind: 'credential-file', match: {base: ['local.settings.json'], not: TEMPLATE}}, // Azure Functions: git-ignored for holding connection strings
@@ -212,7 +216,7 @@ function entryMatches(e, name, dirs) {
 }
 
 // ---------------------------------------------------------------- user patterns
-const MAX_PATTERNS = 200, MAX_PATTERN_LEN = 300, MAX_PATTERN_SCAN = 2000, MAX_MATCH_TEXT = 1024, USER_BUDGET = 2000000;
+const MAX_PATTERNS = 200, MAX_PATTERN_LEN = 300, MAX_PATTERN_SCAN = 2000, USER_BUDGET = 2000000;
 // Backslash is a separator. A pattern with a separator that is not rooted (`/..`, `**..`, `c:..`) is matched from any directory
 // (implicit `**/`), because the setting is written relative to the workspace but the path arrives absolute; a trailing `/` means
 // "everything below". A pattern without a separator is matched against the base name.
@@ -238,7 +242,7 @@ function matchesUser(list, a, names) {
   if (!globs.length) return false;
   const dirPart = a.key.slice(0, a.key.length - a.base.length), budget = {left: USER_BUDGET};
   for (const g of globs) for (const n of names) {
-    const text = g.onBase ? n : (dirPart + n).slice(-MAX_MATCH_TEXT);
+    const text = g.onBase ? n : dirPart + n; // never cut: a cut would drop the root and let a rooted pattern miss; the budget bounds the work
     if (globMatch(g.glob, text, budget) !== false) return true; // null = budget spent: fail closed, ask the user
   }
   return false;
@@ -315,4 +319,4 @@ function needsConfirmation(path, gate, userPatterns) {
   return {needs: classification.secret && state !== 'allow', classification, state};
 }
 
-module.exports = {classifyFile, DEFAULT_RULES, SecretFileGate, needsConfirmation, KINDS};
+module.exports = {classifyFile, DEFAULT_RULES, SecretFileGate, needsConfirmation, KINDS, BACKUP_SUFFIXES};
