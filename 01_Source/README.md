@@ -65,7 +65,7 @@ Rust 核心可选接入扩展：构建 `pime-core`，把 `programmingIme.coreExe
 
 ## 5. Windows TSF 工程
 
-`windows/tsf/` 仍是 v0.1 的实验源码：未编译、未签名、无安装器、按键全部直通。要验证 G0 需要 Windows 11 VM + MSVC + Windows SDK，见 `windows/tsf/README.md`。
+`windows/tsf/` 是 v0.1 的 C++ 实验源码（已被取代，仅作历史参考）。当前的系统输入法是纯 Rust 的 `crates/pime-tsf`（不在主工作区内，用 `tests/run-all.js --tsf` 构建和检查）：按键处理、候选窗、注册代码都已有单元测试，但**从未注册、COM 部分从未在 TSF 里运行过**。要验证 G0 需要一个可丢弃的 Windows 11 虚拟机，步骤见 `docs/TSF_VM_TEST_PLAN.md`。
 
 ## 6. 许可
 

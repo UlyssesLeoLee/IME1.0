@@ -10,7 +10,7 @@ Environment: Windows 11, Node v26.13.0 (installed side by side; the machine defa
 | Golden fixtures (compare only) and frozen `golden-v0.2` cases | PASS, unchanged | `node tests/run-all.js` |
 | Rust core `cargo test --workspace` (zero dependencies) | **PASS 359 / 359** (lib 242 + integration suites 117: parity, protocol 0.3 incl. the AI / privacy / annotate / symbols / scheduler / settings / diagnostics / i18n / UI ops, benchmark) | `rust-test-result.txt` (raw) |
 | Rust `clippy -D warnings`, `fmt --check` | clean (exit code 0 both) | `rust-test-result.txt` |
-| System-IME key map in the input state machine (page-relative digits, PageUp/PageDown, Shift+Tab, Space in COMPOSING, optional punctuation paging, Shift-tap pause; Direct/Observing consume nothing) | **PASS** 11 new tests `key_01..key_11` (part of the 220); pure logic only, no keyboard hook | `rust-test-result.txt` |
+| System-IME key map in the input state machine (page-relative digits, PageUp/PageDown, Shift+Tab, Space in COMPOSING, optional punctuation paging, Shift-tap pause; Direct/Observing consume nothing) | **PASS** tests `key_01..key_13` (15 test functions, part of the 359 Rust tests); pure logic only, no keyboard hook | `rust-test-result.txt` |
 | `crates/pime-tsf` (pure-Rust TSF DLL, `windows` 0.58 on the GNU target): `cargo test` **122 / 122** (TIP controller and key map 63, candidate window layout 28, registration plan 29, base 2), clippy, fmt, release build, PE inspection | **PASS** for build and inspection: x64 PE, exactly `DllCanUnloadNow/DllGetClassObject/DllRegisterServer/DllUnregisterServer`, system DLL imports only. **The DLL is NOT registered, NOT loaded by Windows; the COM glue was only compiled, never run against TSF** (milestones M4-M5 not done) | `tests/smoke/tsf-dll-check.js`, `rust-test-result.txt` section 7 |
 | Real `pime-core.exe` over JSON Lines (health/predict/encode/scan) | PASS (`tests/smoke/core-binary-smoke.js`, stored script) | `node tests/run-all.js` |
 | Playwright UAT on the real VS Code 1.144.0, **JavaScript engine** | **PASS 31 passed, 1 skipped, 0 failed** (4.7 min). The skipped one is ENG-02, which needs the Rust engine | `uat/uat-results.json`, `uat/screenshots/` |
@@ -42,7 +42,7 @@ statements are measured.
 ## Limits of this evidence
 
 - UAT drives VS Code only. Nothing here shows that a Windows input method works in Notepad or any other application: **there is no
-  system-wide input method in this delivery** (see `01_Source/windows/tsf/README.md`).
+  system-wide input method has been shown to work** (`crates/pime-tsf` was never registered and its COM glue never ran under TSF; see `01_Source/docs/TSF_VM_TEST_PLAN.md`).
 - The mock provider certificate is self-signed; the test process disables verification (`NODE_TLS_REJECT_UNAUTHORIZED=0`).
 - Playwright interacts with DOM selectors that can change between VS Code releases (verified on 1.137.0 and 1.144.0 only).
 
