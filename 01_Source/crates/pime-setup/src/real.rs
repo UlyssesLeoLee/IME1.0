@@ -31,6 +31,9 @@ use windows::Win32::Storage::FileSystem::{
 };
 use windows::Win32::System::Com::CoTaskMemFree;
 use windows::Win32::System::Console::{FreeConsole, GetConsoleProcessList};
+use windows::Win32::System::LibraryLoader::{
+    LOAD_LIBRARY_SEARCH_SYSTEM32, SetDefaultDllDirectories,
+};
 use windows::Win32::System::Registry::{
     HKEY, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, KEY_WOW64_64KEY, REG_DWORD, REG_MULTI_SZ,
     REG_OPTION_NON_VOLATILE, REG_SZ, REG_VALUE_TYPE, RegCloseKey, RegCreateKeyExW, RegDeleteTreeW,
@@ -963,6 +966,18 @@ pub fn free_console_if_alone() {
         // SAFETY: no arguments; failing just leaves the console open.
         let _ = unsafe { FreeConsole() };
     }
+}
+
+/// The first thing `main` does: from now on a DLL that is loaded without a full path (by this program, by the shell
+/// when it starts the elevated child, by a COM handler) is looked for in `System32` only, not next to the exe and not
+/// in the current folder. The setup is also copied into the install folder as `uninstall.exe`, which may be a folder that
+/// other users can write to. The DLLs the exe imports at start-up are system DLLs that Windows resolves itself (known
+/// DLLs, API sets) before `main` runs; nothing in the setup loads a DLL from its own folder. The failure of this call
+/// (a Windows without the API) is reported by the caller and is not fatal.
+pub fn harden_dll_search() -> Result<(), String> {
+    // SAFETY: a plain flag argument, no pointers.
+    unsafe { SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32) }
+        .map_err(|e| format!("SetDefaultDllDirectories failed: {e}"))
 }
 
 pub fn current_exe_bytes() -> io::Result<(PathBuf, Vec<u8>)> {

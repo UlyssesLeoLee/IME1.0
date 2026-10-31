@@ -16,14 +16,15 @@ use pime_setup::plan::{
     MANIFEST_NAME, Manifest, UninstallOptions, VscodeMode, install_plan, uninstall_plan,
 };
 use pime_setup::real::{
-    PrivateLog, RealBackend, is_elevated, log_file_name, open_log_for_child, system_paths,
+    PrivateLog, RealBackend, harden_dll_search, is_elevated, log_file_name, open_log_for_child,
+    system_paths,
 };
 use std::io::Write;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use windows::Win32::Foundation::{FreeLibrary, HANDLE, HMODULE};
-use windows::Win32::System::LibraryLoader::{LOAD_LIBRARY_FLAGS, LoadLibraryExW};
+use windows::Win32::System::LibraryLoader::{LOAD_LIBRARY_FLAGS, LoadLibraryExW, LoadLibraryW};
 use windows::core::PCWSTR;
 
 #[test]
@@ -663,4 +664,70 @@ fn st_035_review_4_the_exe_never_creates_or_writes_a_log_it_was_not_given() {
             .contains("install plan (dry run: nothing is changed)")
     );
     assert!(!prefix.exists());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review finding 12(b): after `harden_dll_search` a DLL that is loaded by bare name is only looked for in System32.
+// ---------------------------------------------------------------------------------------------------------------------
+
+const DLL_SEARCH_GATE: &str = "PIME_SETUP_TEST_DLL_SEARCH_CHILD";
+
+/// Runs itself as a child whose current folder holds a copy of a harmless System32 DLL under a name of its own. Before
+/// the call that copy is found by its bare name (the current folder is on the default search path), after it only
+/// System32 is searched. The call changes the process, so it happens in the child, not in the test process.
+#[test]
+fn st_035_review_12_after_the_hardening_a_dll_is_only_found_in_system32() {
+    if let Some(name) = std::env::var_os(DLL_SEARCH_GATE) {
+        let load = |n: &str| -> Result<(), u32> {
+            let w: Vec<u16> = n.encode_utf16().chain(Some(0)).collect();
+            // SAFETY: `w` is NUL-terminated and outlives the call; a loaded module is freed again right away.
+            unsafe { LoadLibraryW(PCWSTR(w.as_ptr())) }
+                .map(|m| {
+                    let _ = unsafe { FreeLibrary(m) };
+                })
+                .map_err(|e| e.code().0 as u32)
+        };
+        let name = name.to_string_lossy().into_owned();
+        let before = load(&name);
+        let hardened = harden_dll_search();
+        let after = load(&name);
+        let system = load("msvcrt.dll");
+        println!("DLLSEARCH|{before:?}|{hardened:?}|{after:?}|{system:?}");
+        return;
+    }
+    let tmp = TempDir::new("dllsearch");
+    let probe = format!("pime-probe-{}.dll", std::process::id());
+    std::fs::copy(system32().join("version.dll"), tmp.0.join(&probe)).unwrap();
+    let out = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "st_035_review_12_after_the_hardening_a_dll_is_only_found_in_system32",
+            "--nocapture",
+            "--test-threads=1",
+        ])
+        .env(DLL_SEARCH_GATE, &probe)
+        .current_dir(&tmp.0)
+        .output()
+        .expect("endpoint protection may block loading a DLL from a temp folder");
+    let text = String::from_utf8_lossy(&out.stdout);
+    let line = text
+        .lines()
+        .find_map(|l| l.find("DLLSEARCH|").map(|at| &l[at..]))
+        .unwrap_or_else(|| {
+            panic!(
+                "the child printed no result: {text}{}",
+                String::from_utf8_lossy(&out.stderr)
+            )
+        });
+    let parts: Vec<&str> = line.split('|').skip(1).collect();
+    assert_eq!(
+        parts[0], "Ok(())",
+        "control: the copy is found before hardening: {line}"
+    );
+    assert_eq!(parts[1], "Ok(())", "the call itself works: {line}");
+    assert!(
+        parts[2].starts_with("Err("),
+        "found after hardening: {line}"
+    );
+    assert_eq!(parts[3], "Ok(())", "System32 is still searched: {line}");
 }
