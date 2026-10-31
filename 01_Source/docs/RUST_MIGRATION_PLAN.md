@@ -423,7 +423,7 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 |---|---|---|
 | M1 | `pime-core` 输入状态机的主流键位：分页、页内数字选词、PageUp/PageDown、Shift+Tab、空格（组合态）、可选标点翻页、Shift 单击暂停/恢复（见 §11） | **完成并测试**：测试 `key_01..key_13`（15 个测试函数；`key_12` 覆盖 `would_consume`，`key_13` 覆盖 `typed_prefix`），当前全部 Rust 测试 359 项通过，clippy/fmt 干净 |
 | M2 | 纯 Rust 的 TSF DLL 能否在本机工具链构建 | **完成**：`crates/pime-tsf`（`windows` 钉 0.58.0），产物 x64、四个 COM 导出、只导入系统 DLL，已内联链接 `pime-core`；`DllRegisterServer`/`DllUnregisterServer` 已由注册计划实现（M3、M5 行），只在内存假后端上测试过 |
-| M3 | TIP：`ITfTextInputProcessorEx`、`ITfKeyEventSink`、保留键、编辑会话中的组合与提交、原生 Win32 候选窗（无需注册即可单独演示） | **代码完成，TSF 部分只做了编译级验证**：TIP 相关 63 项测试（含默认配置不吞代码字符的打字脚本；pime-tsf 合计 122 项 = TIP 63 + 候选窗 28 + 注册 29 + 基础 2），候选窗布局与绘制清单有 28 项测试并用演示程序做过一次 100% 缩放的目视检查；COM 胶水从未在 TSF 里运行 |
+| M3 | TIP：`ITfTextInputProcessorEx`、`ITfKeyEventSink`、保留键、编辑会话中的组合与提交、原生 Win32 候选窗（无需注册即可单独演示） | **代码完成，TSF 部分只做了编译级验证**：TIP 相关 63 项测试（含默认配置不吞代码字符的打字脚本；当时 pime-tsf 合计 122 项 = TIP 63 + 候选窗 28 + 注册 29 + 基础 2；加上 13.11 的 UI 元素后为 156），候选窗布局与绘制清单有 28 项测试并用演示程序做过一次 100% 缩放的目视检查；COM 胶水从未在 TSF 里运行 |
 | M4 | 在 Windows Sandbox / Hyper-V 虚拟机里注册并在 zh-CN / en-US / ja-JP 下激活、输入（G0）；对照 SampleIME 检查注册的类别（含 Immersive 支持类别，否则 Store 应用和开始菜单搜索里不可用） | **未运行**：需要用户提供带管理员权限、可丢弃的测试环境；本机不注册 |
 | M5 | 安装器（HKLM 注册需要管理员权限，故安装器要提权；先确认逐用户注册是否可行）、可干净卸载、不抢占默认输入法 | **第一版已构建**（`crates/pime-setup`，见 13.10）：`--dry-run` 与临时目录安装已验证；注册、提权、卸载、开机删除、虚拟机安装**均未运行** |
 

@@ -21,7 +21,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **118 / 118** 通过；Rust **359 / 359** 通过；Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**。另有各独立 crate 的测试：`pime-tsf` 122、`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）、`pime-setup` 50（集成测试在本机被终端防护拦截，未运行）。
+- JavaScript **118 / 118** 通过；Rust **359 / 359** 通过；Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**。另有各独立 crate 的测试：`pime-tsf` 156、`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）、`pime-setup` 50（集成测试在本机被终端防护拦截，未运行）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器的实际安装/卸载与签名、IPC 的异用户/远程场景、AI Worker 与扩展的对接、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
