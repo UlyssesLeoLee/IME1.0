@@ -10,12 +10,16 @@
 //  - Typing in a TERMINAL, the Explorer, a webview or any other non-text-editor view is not observable either. The
 //    stable API has no key event; Pseudoterminal.handleInput works only for terminals this extension creates itself;
 //    TerminalState.isInteractedWith flips once per terminal (not per key), so it is not used.
-//  - Partial help, used here: WindowState.active (onDidChangeWindowState). The workbench sets it on keydown, mousedown
-//    and touchstart anywhere in the window (terminal included, but not webviews and NOT mousemove) and clears it after
-//    10 s without any of those. So an inactive -> active flip means "the user pressed a key or clicked", reason
-//    'activity'. It can only fire after >= 10 s of idleness, so it is a late safety net, not an instant trigger.
-//    Also used when present: onDidStartTerminalShellExecution (a command was run in a terminal with shell integration)
-//    and onDidChangeActiveTerminal, both reason 'terminal'.
+//  - Weak help, used here: WindowState.active (onDidChangeWindowState). The workbench sets it on keydown, mousedown
+//    and touchstart anywhere in the window (terminal included, but not webviews and NOT mousemove) and clears it only
+//    after a long idle time (read from the sources, not measured: its activity tracker checks every 30 s and gives up
+//    after 2 quiet checks, then a 10 s debounce follows, so roughly 40-70 s). An inactive -> active flip therefore
+//    means "a key or click after a long pause", reason 'activity'. With the default 20 s timeout it practically never
+//    fires (the key that opened the notice keeps the window active); it matters only if show() runs while the window is
+//    already idle, or for a much longer timeout. It is NOT a stand-in for mouse movement or terminal typing.
+//  - Also used when present: onDidStartTerminalShellExecution (a command was run in a terminal with shell integration)
+//    and onDidChangeActiveTerminal, both reason 'terminal'. They also fire for terminals started by tasks or other
+//    extensions, which can close the notice early.
 //
 // PRESENTATION (internal, swappable through PRESENTATIONS; option `presentation`):
 //  'toast' (default): window.withProgress({location: Notification, cancellable: false}) whose task resolves when we close.
@@ -79,7 +83,8 @@ const PRESENTATIONS = {toast: presentToast, statusbar: presentStatusBar};
 // [namespace, event, pick]: pick(e) returns the dismiss reason or a falsy value to ignore the event.
 function triggers(vscode) {
   const w = vscode.window;
-  let wasActive = !(w && w.state && w.state.active === false); // baseline: only an inactive -> active flip counts
+  let wasActive = true; // baseline: only an inactive -> active flip counts. `state` is a getter and may throw: then assume active
+  try { wasActive = !(w && w.state && w.state.active === false); } catch (e) { swallow(e); }
   return [
     ['workspace', 'onDidChangeTextDocument', e => e.contentChanges.length > 0 && !noisy(e.document) && 'input'],
     ['window', 'onDidChangeTextEditorSelection', e => !noisy(e.textEditor && e.textEditor.document) && 'selection'],

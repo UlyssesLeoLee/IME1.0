@@ -348,6 +348,16 @@ test('ANN-49 a throwing VS Code API never escapes: fallback to the other present
     assert.doesNotThrow(() => { vs.fire('onDidChangeTextDocument', {}); vs.fire('onDidChangeTextEditorSelection', undefined); vs.fire('onDidChangeWindowState', undefined); });
     assert.equal(notice.active, true);
   }
+  // window.state is a getter that throws: the baseline defaults to "active", nothing escapes, all triggers stay subscribed, the timeout still fires
+  {
+    const {vs, ft, notice} = rig({timeoutMs: 5000});
+    Object.defineProperty(vs.window, 'state', {get() { throw new Error('state boom'); }});
+    let h; assert.doesNotThrow(() => { h = notice.show({text: 'x'}); });
+    assert.equal(notice.active, true); assert.equal(vs.live(), TRIGGER_COUNT);
+    await ft.advance(5000);
+    assert.equal(await h.dismissed, 'timeout');
+    await assertClean(vs, ft, notice, 'state getter throws');
+  }
 });
 
 test('ANN-50 empty or blank text shows nothing, leaves an open notice alone and returns an already resolved dismissed', async () => {
