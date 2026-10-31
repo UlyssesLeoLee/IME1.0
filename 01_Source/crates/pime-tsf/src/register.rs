@@ -59,8 +59,8 @@ use windows::Win32::System::Registry::{
 use windows::Win32::UI::Input::KeyboardAndMouse::HKL;
 use windows::Win32::UI::TextServices::{
     CLSID_TF_CategoryMgr, CLSID_TF_InputProcessorProfiles, GUID_TFCAT_TIP_KEYBOARD,
-    GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT, ITfCategoryMgr, ITfInputProcessorProfileMgr,
-    ITfInputProcessorProfiles, TF_INPUTPROCESSORPROFILE,
+    GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT, GUID_TFCAT_TIPCAP_UIELEMENTENABLED, ITfCategoryMgr,
+    ITfInputProcessorProfileMgr, ITfInputProcessorProfiles, TF_INPUTPROCESSORPROFILE,
 };
 use windows::core::{GUID, HRESULT, IUnknown, Interface, PCWSTR};
 
@@ -262,15 +262,18 @@ fn product_profiles() -> Vec<ProfileSpec> {
 /// Registered:
 /// - `TIP_KEYBOARD`: required, it makes the service a keyboard TIP at all.
 /// - `TIPCAP_SYSTRAYSUPPORT`: lets it be shown with the other input methods in the notification area (Windows 8+).
+/// - `TIPCAP_UIELEMENTENABLED`: the candidate list is announced through the TSF UI-element protocol
+///   (`ITfUIElementMgr::BeginUIElement` / `UpdateUIElement` / `EndUIElement` with an `ITfCandidateListUIElement`, see
+///   `uielement` and `uielement_com`), and the TIP keeps its own popup hidden when the host answers that it draws. The
+///   claim is that the protocol is implemented; it has been run against a fake host only, never under a real TSF.
 ///
 /// Deliberately NOT registered (each one is a promise to the host; add it together with its implementation):
-/// - `TIPCAP_UIELEMENTENABLED`: promises that the candidate list is shown through the TSF UI-element protocol
-///   (`ITfUIElementMgr` / `ITfCandidateListUIElement`) so that hosts which draw their own candidate UI can take over.
-///   The `tip` module draws its own window (`popup`) and implements no UI element yet, so claiming it would be false.
-/// - `TIPCAP_IMMERSIVESUPPORT`: without it Windows does not offer the TIP in Store (immersive) apps and Start search;
-///   with it the TIP must work there, and immersive hosts only show a TIP's candidates through the UI-element protocol
-///   above. Until that exists the service is simply not offered in those hosts (typing there keeps using the other
-///   input methods), which is safer than being offered and showing nothing.
+/// - `TIPCAP_IMMERSIVESUPPORT`: without it Windows does not offer the TIP in Store (immersive) apps and Start search.
+///   The UI-element protocol is necessary for it but not sufficient: the TIP has never run inside an AppContainer, its
+///   native fallback popup is an unowned top-level window, it raises none of the IME WinEvents nor the UI Automation
+///   candidate-window properties Microsoft requires, and it has no branding icon. The audit is in
+///   docs/RUST_MIGRATION_PLAN.md section 13.11. Until then the service is simply not offered in those hosts (typing
+///   there keeps using the other input methods), which is safer than being offered and misbehaving.
 /// - `TIPCAP_SECUREMODE`: Windows activates only TIPs that declare it on the secure desktop (logon screen, UAC
 ///   prompts, credential UI), and Microsoft requires `ITfTextInputProcessorEx` for it. Declaring it would load this
 ///   unreviewed DLL into those processes; leaving it out is the safe default until the secure-input path has been
@@ -287,6 +290,10 @@ pub fn product_categories() -> Vec<CategorySpec> {
         CategorySpec {
             name: "TIPCAP_SYSTRAYSUPPORT",
             guid: GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT,
+        },
+        CategorySpec {
+            name: "TIPCAP_UIELEMENTENABLED",
+            guid: GUID_TFCAT_TIPCAP_UIELEMENTENABLED,
         },
     ]
 }
@@ -909,17 +916,23 @@ impl Backend for RealBackend {
 // The exported entry points
 // ---------------------------------------------------------------------------------------------------------------
 
-/// Debugger output (DebugView): the failing step and its code. No registry values, no paths, no user data.
-fn trace(message: &str) {
+/// One line of debugger output (DebugView), shared by the modules that trace (the caller adds the `pime-tsf <area>:`
+/// prefix). Callers pass ids, flags and codes only: no registry values, paths or user data, never candidate text.
+pub(crate) fn debug_line(line: &str) {
     // `Win32_System_Diagnostics_Debug` is not an enabled feature of the pinned `windows` crate, so the one function is
     // declared here; kernel32 is a system DLL like all other imports.
     #[link(name = "kernel32")]
     unsafe extern "system" {
         fn OutputDebugStringW(text: *const u16);
     }
-    let text = wide(&format!("pime-tsf register: {message}\n"));
+    let text = wide(&format!("{line}\n"));
     // SAFETY: `text` is a NUL-terminated UTF-16 buffer that outlives the call.
     unsafe { OutputDebugStringW(text.as_ptr()) };
+}
+
+/// Debugger output (DebugView): the failing step and its code. No registry values, no paths, no user data.
+fn trace(message: &str) {
+    debug_line(&format!("pime-tsf register: {message}"));
 }
 
 /// Full path of this DLL (not of the host process): the module that contains this very function.
@@ -997,7 +1010,6 @@ mod tests {
     use windows::Win32::Foundation::E_FAIL;
     use windows::Win32::UI::TextServices::{
         GUID_TFCAT_TIPCAP_IMMERSIVESUPPORT, GUID_TFCAT_TIPCAP_SECUREMODE,
-        GUID_TFCAT_TIPCAP_UIELEMENTENABLED,
     };
 
     use super::*;
@@ -1237,7 +1249,7 @@ mod tests {
         assert_eq!(plan.registry, expected);
         assert_eq!(plan.clsid_key, hklm(&class));
         assert_eq!(plan.scope, Scope::Machine);
-        assert_eq!(plan.step_count(), 3 + 3 + 2);
+        assert_eq!(plan.step_count(), 3 + 3 + 3);
     }
 
     #[test]
@@ -1299,17 +1311,31 @@ mod tests {
         let guids: Vec<GUID> = plan().categories.iter().map(|c| c.guid).collect();
         assert_eq!(
             guids,
-            vec![GUID_TFCAT_TIP_KEYBOARD, GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT]
+            vec![
+                GUID_TFCAT_TIP_KEYBOARD,
+                GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT,
+                GUID_TFCAT_TIPCAP_UIELEMENTENABLED
+            ]
         );
-        // promises the tip cannot keep yet: no UI-element protocol (so no UIELEMENTENABLED / IMMERSIVESUPPORT) and no
-        // reviewed secure-desktop path (so no SECUREMODE)
+        // UIELEMENTENABLED is claimed because `uielement` / `uielement_com` implement the provider side of the protocol.
+        // Promises the tip cannot keep yet stay out: IMMERSIVESUPPORT (never run in an AppContainer; unowned fallback
+        // popup; no IME WinEvents or UI Automation candidate properties; no icon, see plan 13.11) and SECUREMODE (no
+        // reviewed secure-desktop path)
         for unsupported in [
-            GUID_TFCAT_TIPCAP_UIELEMENTENABLED,
             GUID_TFCAT_TIPCAP_IMMERSIVESUPPORT,
             GUID_TFCAT_TIPCAP_SECUREMODE,
         ] {
             assert!(!guids.contains(&unsupported));
         }
+        let names: Vec<&str> = plan().categories.iter().map(|c| c.name).collect();
+        assert_eq!(
+            names,
+            vec![
+                "TIP_KEYBOARD",
+                "TIPCAP_SYSTRAYSUPPORT",
+                "TIPCAP_UIELEMENTENABLED"
+            ]
+        );
     }
 
     #[test]
@@ -1417,7 +1443,7 @@ mod tests {
         let mut fake = FakeBackend::default();
         register_with(&mut fake, &plan()).unwrap();
         let log: Vec<&str> = fake.log.iter().map(String::as_str).collect();
-        assert_eq!(fake.calls, 8);
+        assert_eq!(fake.calls, 9);
         assert_eq!(
             &log[..3],
             [
@@ -1433,11 +1459,12 @@ mod tests {
                 "register profile 0x0409",
                 "register profile 0x0411",
                 "register category TIP_KEYBOARD",
-                "register category TIPCAP_SYSTRAYSUPPORT"
+                "register category TIPCAP_SYSTRAYSUPPORT",
+                "register category TIPCAP_UIELEMENTENABLED"
             ]
         );
         assert_eq!(fake.own_profiles(), 3);
-        assert_eq!(fake.state.categories.len(), 2);
+        assert_eq!(fake.state.categories.len(), 3);
     }
 
     #[test]
@@ -1460,7 +1487,7 @@ mod tests {
             Some(moved.to_string())
         );
         assert_eq!(fake.own_profiles(), 3);
-        assert_eq!(fake.state.categories.len(), 2);
+        assert_eq!(fake.state.categories.len(), 3);
     }
 
     #[test]
@@ -1647,6 +1674,7 @@ mod tests {
         assert_eq!(
             log,
             [
+                "unregister category TIPCAP_UIELEMENTENABLED",
                 "unregister category TIPCAP_SYSTRAYSUPPORT",
                 "unregister category TIP_KEYBOARD",
                 "unregister profile 0x0411",
@@ -1660,13 +1688,13 @@ mod tests {
 
     #[test]
     fn unregister_keeps_going_after_an_error_and_reports_the_first_one() {
-        // call 0 = the SYSTRAYSUPPORT category (removed first), call 3 = profile 0x0409; the first error wins
+        // call 0 = the UIELEMENTENABLED category (removed first), call 4 = profile 0x0409; the first error wins
         let mut fake = installed(FakeBackend::with_other_ime())
             .fail_at(0, BackendError::Failed(E_ACCESSDENIED), false)
-            .fail_at(3, failed(), false);
+            .fail_at(4, failed(), false);
         let error = unregister_with(&mut fake, &removal_plan(Scope::Machine)).unwrap_err();
         assert_eq!(error.code, E_ACCESSDENIED);
-        assert_eq!(error.step, "unregister category TIPCAP_SYSTRAYSUPPORT");
+        assert_eq!(error.step, "unregister category TIPCAP_UIELEMENTENABLED");
         // everything that could be removed was removed
         assert!(fake.state.keys.iter().all(|k| !is_own_key(k)));
         assert_eq!(

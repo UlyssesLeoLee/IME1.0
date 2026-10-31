@@ -35,6 +35,7 @@ use crate::controller::{HostError, HostText, KeyInput, TipConfig, TipController}
 use crate::keymap::{Modifiers, vk};
 use crate::popup::PopupWindow;
 use crate::ui::{Anchor, CandidateUi, CandidateView};
+use crate::uielement_com::candidate_ui;
 
 /// Run a COM entry point so that a panic cannot unwind into the host: it answers `fallback` instead.
 pub(crate) fn guard<T>(fallback: T, f: impl FnOnce() -> T) -> T {
@@ -479,8 +480,11 @@ impl Tip {
                 }
             }
         };
+        // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
+        // `ITfUIElementMgr`; a host that answers "I draw" keeps the popup hidden (see `uielement`).
+        let ui = candidate_ui(&thread_mgr, Box::new(PopupWindow::new()));
         let mut controller = TipController::new(
-            BoxedUi(Box::new(PopupWindow::new())),
+            BoxedUi(Box::new(ui)),
             TsfHost::new(client_id, composition_sink),
             pime_core::input::LocalPredictor,
             TipConfig::default(),

@@ -7,6 +7,8 @@
 > 当前 DLL 的能力：能注册、能被 Windows 加载并激活，**不处理任何按键**（`tip` 模块还是桩：所有按键留给宿主）。
 > 所以第 6 步以前的检查现在就能做；第 7–9 步里“功能”类检查要等 M3（按键、组合、候选窗接入 TIP）完成后才有意义，
 > 在此之前记 `NOT RUN (stub)`，“直通”类检查（打字照常、什么都不吞）现在就能做。
+>
+> TSF UI 元素协议（候选列表告知宿主，第 5.1 步的 `UIELEMENTENABLED` 与第 9.1 步）已经写好，同样**只在假宿主和进程内调用上测过，从未在真实 TSF 里运行**。
 
 ## 0. 安全规则（先读）
 
@@ -165,12 +167,18 @@ reg query "HKLM\SOFTWARE\Microsoft\CTF\TIP\$Clsid" /s
 | 其下 `InprocServer32` 默认值 | `C:\Program Files\PIME\pime_tsf.dll`（**没有引号**） |
 | `InprocServer32` 的 `ThreadingModel` | `Apartment` |
 | `HKLM\SOFTWARE\Microsoft\CTF\TIP\{43F95ED1-...}\LanguageProfile` | 三个语言键 `0x00000804`、`0x00000409`、`0x00000411`，各含一个本产品的 profile GUID |
-| 同一 TIP 键下的 `Category` | 只含下面两个类别；**不含 SECUREMODE、IMMERSIVESUPPORT、UIELEMENTENABLED**（见下） |
+| 同一 TIP 键下的 `Category` | 只含下面三个类别；**不含 SECUREMODE、IMMERSIVESUPPORT**（见下） |
 
-类别 GUID：`TIP_KEYBOARD {34745C63-B2F0-4784-8B67-5E12C8701A31}`、`SYSTRAYSUPPORT {25504FB4-7BAB-4BC1-9C69-CF81890F0EF5}`。
+类别 GUID：`TIP_KEYBOARD {34745C63-B2F0-4784-8B67-5E12C8701A31}`、`SYSTRAYSUPPORT {25504FB4-7BAB-4BC1-9C69-CF81890F0EF5}`、`UIELEMENTENABLED {49D2F9CF-1F5E-11D7-A6D3-00065B84435C}`。
 
-**有意不注册**（每一项都是对宿主的承诺，实现了才加）：`UIELEMENTENABLED`、`IMMERSIVESUPPORT`（商店应用只会通过 TSF UI 元素协议显示候选，而本输入法还没有实现 `ITfUIElementMgr` / `ITfCandidateListUIElement`，自绘候选窗在那里不会出现），`SECUREMODE`（不让未审查的 DLL 被加载进登录界面和 UAC 提示）。
+`UIELEMENTENABLED` 是新增的第三个类别：候选列表通过 TSF UI 元素协议（`ITfUIElementMgr` / `ITfCandidateListUIElement`）告知宿主，宿主回答“我来画”时本输入法的自绘候选窗保持隐藏。
+协议的提供方一侧已实现并只在假宿主上测过，**从未在真实 TSF 里运行**；这一项在虚拟机里怎么查见第 9.1 步。
+
+**有意不注册**（每一项都是对宿主的承诺，实现了才加）：
+`IMMERSIVESUPPORT`（没有它 Windows 不会在商店应用和开始菜单搜索里提供本输入法。UI 元素协议是必要条件但不充分：本输入法从未在 AppContainer 里运行过，自绘候选窗不是被拥有的窗口，也没有 IME WinEvent、UI Automation 候选窗属性和品牌图标；逐项原因见 `RUST_MIGRATION_PLAN.md` 13.11），
+`SECUREMODE`（不让未审查的 DLL 被加载进登录界面和 UAC 提示）。
 **不应出现** `SECUREMODE {49D2F9CE-1F5E-11D7-A6D3-00065B84435C}`（有意不注册：否则 Windows 会在登录界面和 UAC 的安全桌面里加载这个未经审查的 DLL）。
+也**不应出现** `IMMERSIVESUPPORT {13A016DF-560B-46CD-947A-4C3AF1E0E35D}`。
 
 再运行两次注册（共三次，对应 IT-001 的“调用三次注册”），每次都应成功，且键值不变（幂等）：
 
@@ -232,7 +240,7 @@ Set-WinUserLanguageList $l -Force
 | 记事本 | 输入 1000 个字符加换行（ST-005），再保存，比较哈希 | 见下面的脚本 |
 | 浏览器文本框 | Edge 打开一个本地 HTML 页，里面有 `<textarea>` | 浏览器自己也处理 TSF |
 | VS Code | 输入 `fn`，看候选，Esc，接受，Ctrl+Z（ST-006） | 桩阶段只能确认“字符照常输入、没有崩溃” |
-| UWP / 商店应用 | 例如“设置”应用顶部的搜索框，或任意带文本框的商店应用 | **预期不可用**：目前有意不注册 `IMMERSIVESUPPORT`（UI 元素协议未实现），Windows 不会在商店应用里提供本输入法；确认它没有出现、也没有影响其他输入法即可 |
+| UWP / 商店应用 | 例如“设置”应用顶部的搜索框，或任意带文本框的商店应用 | **预期仍然不可用**：UI 元素协议已实现，但 `IMMERSIVESUPPORT` 仍有意不注册（原因见 `RUST_MIGRATION_PLAN.md` 13.11：从未在 AppContainer 里运行、自绘候选窗不是被拥有的窗口、没有 IME WinEvent / UI Automation 属性 / 品牌图标），Windows 不会在商店应用里提供本输入法；确认它没有出现、也没有影响其他输入法即可。**不要把这一行记成“宿主绘制的候选列表已可用”：商店应用不会加载本输入法** |
 | 开始菜单搜索 | 按 Win 键直接输入 | 同上；还可能被代码完整性策略拒绝，见下 |
 | 密码框 | 在本地 HTML 页里放 `<input type=password>`，在 Edge 中输入 | **必须什么都不显示、什么都不吞**（IT-005）：不出现候选窗，字符正常变成圆点，按键没有被消耗 |
 | 登录/锁屏、UAC 提示 | `Win+L`、以管理员运行一个程序 | 键盘列表里**不应**出现本产品（没有注册 SECUREMODE） |
@@ -274,6 +282,36 @@ $text = ('abcdefghij' * 100)
 - DPI：设置 > 系统 > 显示 > 缩放，分别设为 100 %、150 %、200 %（有的应用要注销后重新登录才生效）。每档看窗口大小、文字清晰度和位置。
 - 两个显示器：Hyper-V 增强会话可以用“使用所有显示器”；把记事本拖到第二个显示器再输入，窗口应在第二个显示器上跟随光标。做不到就记 `NOT RUN` 并写明原因。
 - **已知限制（预期，不记为失败）**：只有 x64 版本，32 位应用看不到本输入法；32 位版需要另行构建并用 `SysWOW64\regsvr32.exe` 注册（尚未构建）。
+
+### 9.1 UI 元素协议（`UIELEMENTENABLED`；下面全是设计推断，这条路径从未在真实 TSF 里运行）
+
+候选列表出现时本输入法调用 `ITfUIElementMgr::BeginUIElement`，列表里有宿主看得到的变化时调用 `UpdateUIElement`，列表消失时调用 `EndUIElement`。
+宿主在 `BeginUIElement` 里回答“显示 = FALSE”（它自己画）时，自绘候选窗保持隐藏；回答 TRUE，或线程管理器不提供 `ITfUIElementMgr`，照旧自绘。
+宿主随后调用元素的 `Show(TRUE/FALSE)` 会切换同一个决定，`IsShown` 只在自绘窗确实在屏幕上时回答 TRUE。
+
+**调试痕迹**（DebugView，管理员，Capture > Capture Global Win32；每行只有编号、显示答案和错误码，没有候选文本；`UpdateUIElement` 成功时不记录，失败才记录）：
+
+| 行 | 含义 |
+|---|---|
+| `pime-tsf uielement: ITfUIElementMgr available` | 激活时线程管理器提供了管理器（每个激活的线程一行） |
+| `pime-tsf uielement: no ITfUIElementMgr: the native popup draws` | 没有管理器，只用自绘窗 |
+| `pime-tsf uielement: begin id=N show=1` / `show=0` | 候选列表出现；宿主让本输入法自绘（1）或自己画（0） |
+| `pime-tsf uielement: end id=N` | 这个编号的列表结束 |
+| `pime-tsf uielement: begin failed code=0x........`、`update id=N failed ...`、`end id=N failed ...` | 宿主拒绝；begin 失败时改用自绘窗，且同一个列表不再重试 |
+
+检查（每项都要在 DebugView 里对照，不要只看屏幕）：
+
+1. **Begin/End 配对**：每个 `begin id=N` 恰好有一个 `end id=N`，任何时刻最多一个编号未结束。在记事本里做（提交和取消用的按键见第 8 步；默认配置要先按 `Ctrl+Alt+Space` 进入组合）：
+   (a) 打字出候选，`Esc`；(b) 打字出候选，提交一个候选；(c) 打字出候选，`Alt+Tab` 到别的窗口（失去焦点）；(d) 打字出候选，`Win+Space` 切走输入法（Deactivate）；
+   (e) 打字出候选，翻页、移动高亮、再多打一个字符：这些只能产生 `UpdateUIElement`，不产生新的 `begin`；(f) 候选消失后再打字：新的编号。
+   (g) 杀死宿主进程时没有 `end` 是不可避免的（进程没了），不算失败。
+2. **常规桌面宿主**（记事本、Edge 文本框、VS Code）：预期 `show=1`，候选窗外观和第 9 步完全一致（回归检查：引入协议后自绘路径不应有任何变化）。**记录每个宿主实际回答的 show 值**，这是本次测试要回答的问题（12.3）。
+3. **密码框**：不应出现任何 `begin`（列表的文字会交给宿主，密码框里本来就不显示候选）。
+4. **宿主自己画（`show=0`）**：需要一个对 `BeginUIElement` 回答 FALSE 的宿主，也就是实现 `ITfUIElementSink` 并设置 `*pbShow = FALSE`。**仓库里没有这样的测试宿主**。
+   商店应用本该是这样的宿主，但本输入法不会被提供给它们（`IMMERSIVESUPPORT` 没有注册，见 13.11），所以不能用商店应用代替。没有这样的宿主就记 `NOT RUN`，不要用别的现象代替。
+   有的话预期：`begin id=N show=0`，从 begin 到 end 之间屏幕上**没有**本输入法的自绘窗；宿主的列表显示当前页的行（每行是 `文本 (来源 · 验证状态)`）并高亮当前行；翻页后宿主的列表换成新一页的行。
+   宿主的列表**没有“2/3”页码**（元素只描述当前页，翻页仍由本输入法的按键处理，已知限制），宿主不能改页（`SetPageIndex` 回答 `E_NOTIMPL`）也不能替用户选词（没有实现 `ITfCandidateListUIElementBehavior`）。
+5. **宿主切换绘制者**：同样需要自写宿主。在列表显示期间宿主调用元素的 `Show(FALSE)`：自绘窗立刻消失；再调用 `Show(TRUE)`：用最新一页重新出现；两种情况都不留残影，且不影响 begin/end 配对。
 
 ## 10. 故障测试（ST-037）
 
@@ -345,7 +383,9 @@ Sandbox 里直接关闭窗口。卸载成功不代替回滚：测试完一律还
 | 12 | 杀 Core/Worker/UI 后输入 100 字符并计时（10.3） | ST-037 | 直通可用≤2s；无丢字/重复字符 | NOT RUN | | 需要 P3，当前无故障注入点 |
 | 13 | 按键清单（8）逐项 | 设计书 DD §5.3 / UT-009（按键规则）；ST-006 的候选选择和取消 | 见第 8 步表格 | NOT RUN | | 需要 M3 |
 | 14 | 候选窗位置、100/150/200 % DPI、双显示器（9） | 兼容性分级，不属于上面的用例 | 光标处出现、不抢焦点、大小合适 | NOT RUN | | |
-| 15 | 商店应用、开始菜单搜索的可用性（7） | 兼容性分级 | 记录 可用 / 受限 / 不支持 及原因 | NOT RUN | | 目前**不支持**（有意不注册 `IMMERSIVESUPPORT`）；实现 UI 元素协议后再测 |
+| 15 | 商店应用、开始菜单搜索的可用性（7） | 兼容性分级 | 记录 可用 / 受限 / 不支持 及原因 | NOT RUN | | 仍**不支持**：UI 元素协议已实现，但 `IMMERSIVESUPPORT` 仍有意不注册（13.11 列出了缺项）；补齐缺项之后再测 |
+| 16 | UI 元素 Begin/End 配对，密码框里没有 begin（9.1 的 1、3） | 设计推断，不属于上面的用例 | 每个 `begin id=N` 恰好一个 `end id=N`；常规宿主 `show=1` 且候选窗与第 9 步一致 | NOT RUN | | 需要 M3 接入；证据是 DebugView 日志 |
+| 17 | 宿主回答 FALSE 时自绘窗不出现，`Show(TRUE/FALSE)` 切换无残影（9.1 的 4、5） | 设计推断，不属于上面的用例 | begin 到 end 之间没有自绘窗；切换后没有残影 | NOT RUN | | 没有这样的测试宿主：不要用商店应用代替 |
 
 ### 12.3 这次测试要回答的问题（实测填写）
 
@@ -357,4 +397,6 @@ Sandbox 里直接关闭窗口。卸载成功不代替回滚：测试完一律还
 | 卸载后 HKCU 里有无残留，设置里是否出现“幽灵”键盘？ | DLL 不碰 HKCU 的用户状态 | |
 | 图标显示成什么？ | 目前没有图标资源 | |
 | 商店应用、开始菜单搜索里本输入法是否出现，被拒绝时的原因（签名 / `ITfTextInputProcessorEx` / 其它）？ | 决定下一步要补什么 | |
+| 各桌面宿主对 `BeginUIElement` 回答 `show` 是 1 还是 0？`ITfUIElementMgr` 在每个宿主里都可用吗？ | 宿主自己画的路径（`show=0`）有没有真实使用者；没有管理器时是否确实退回自绘窗 | |
+| 宿主调用元素的 `GetDocumentMgr`、`GetString`、`GetPageIndex` 时有没有拿到合理的答案，有没有 `E_FAIL` / `E_INVALIDARG`？ | 元素的答案（只描述当前页）宿主是否接受 | |
 | 逐用户注册（`Scope::User`）是否可行？ | M5 要先确认；当前没有入口：`regsvr32` 只会走机器级注册，要先在 `lib.rs` 增加 `DllInstall` 导出才能试 | 不在本手册范围 |

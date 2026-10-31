@@ -507,3 +507,48 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 | 安装器（M5） | `crates/pime-setup`、`scripts/{build-installer,package-vsix}.js`、`docs/INSTALLER.md` | 50 项单元测试；构建出 x64 安装器（≈3 MB）与 .vsix（vsce 钉 4.0.0）；`--dry-run` 不改动任何东西 | 临时目录集成测试在本机被终端防护拦截（os error 5），仅有代理的运行记录；注册/提权/UAC/开机删除/`code` 安装/签名/虚拟机安装均未运行；**未签名**，SmartScreen 会提示 |
 
 仍然开放（下一步）：TSF UI 元素协议；1.4 F1 状态机；Rust 引擎 UAT 完整一轮（两次因内存不足被系统中止，最近一次已通过 18 个场景）后再做 1.5；虚拟机里的 M4。
+
+### 13.11 TSF UI 元素协议，提供方一侧（2026-10-31，分支 `wi/tsf-uielement`）
+
+13.10 里 TIP 一行和“仍然开放”里的“TSF UI 元素协议”一项由本节更新（13.10 是当日记录，原文不改）。
+
+| 部分 | 位置 | 内容 |
+|---|---|---|
+| 纯模型与生命周期驱动 | `crates/pime-tsf/src/uielement.rs` | `ListSnapshot`（`ITfCandidateListUIElement` 的全部答案，从 `ui::CandidateView` 派生，行文本复用 `layout::one_line`）、`UiElementHost`（Begin 返回编号和 `show`、Update、End）、`ElementUi`（`CandidateUi` 装饰器：Begin/Update/End 配对，`show=FALSE` 时原生窗保持隐藏）、`Shared`（COM 对象读取、宿主 `Show` 写入的共享状态） |
+| COM 胶水 | `crates/pime-tsf/src/uielement_com.rs` | `#[implement(ITfCandidateListUIElement)]` 的元素对象（`ITfUIElement` 经基接口一起回答）、`ITfUIElementMgr` 适配器；每个入口都包在 `tip::guard` 里；`tip.rs` 的 `activate` 从线程管理器取 `ITfUIElementMgr`，取不到就只用自绘窗 |
+| 注册 | `register.rs` | 类别由 2 个变为 3 个：`TIP_KEYBOARD`、`TIPCAP_SYSTRAYSUPPORT`、`TIPCAP_UIELEMENTENABLED`；`IMMERSIVESUPPORT` 与 `SECUREMODE` 仍然没有注册；`debug_line` 改为 `pub(crate)` 供追踪复用 |
+
+**设计要点**
+
+- **元素只描述 TIP 正在显示的这一页**：`CandidateView` 只有一页，这是每个答案都是真实数据的唯一描述：数量 = 本页行数，选中 = 高亮行，页索引表 `[0]`，当前页 0，每行字符串 = `文本 (来源 · 验证状态)`（状态用文字，沿用 `ui.rs` 的可访问性规则）。
+  代价（已知限制）：宿主画的列表没有“2/3”页码；`SetPageIndex` 回答 `E_NOTIMPL`（分页是 TIP 自己的按键和状态机的事）；不实现 `ITfCandidateListUIElementBehavior`，宿主不能替用户选词；`GetDocumentMgr` 返回线程管理器当前的焦点文档。
+- **生命周期挂在 `CandidateUi` 上，控制器没有改**：控制器里每条结束列表的路径（`hide`、提交、取消、焦点丢失、`composition_terminated`、`degrade`、`deactivate`、`fail_safe`）本来就走 `ui.hide()`，所以 End 自动成对。列表出现时 Begin；`updated_flags` 与上次发布的快照比较，非零才 Update（选择、本页的行、数量、TIP 自己的页码变化各对应 `TF_CLUIE_*` 位）；End 幂等；已有打开的元素时再 Begin 会先结束旧的；宿主没有管理器或 Begin 失败时，同一个列表不重试，直接用自绘窗。
+- **谁来画**：Begin 回答 `show=FALSE` 时原生窗不显示（整个列表期间）；宿主随后调用 `ITfUIElement::Show(TRUE/FALSE)` 切换同一个决定，立即显示最新一页或隐藏，不留残影；`IsShown` 只在自绘窗已被要求显示时为 TRUE。`Show` 在宿主调用（Begin/Update/End）期间到达时只记录，调用返回后应用，并以它为准（它在 Begin 的答案之后）。
+- **重入与借用**：快照和标志在每次调用宿主之前先发布（宿主在 `BeginUIElement` 里就会读元素）；元素的 getter 只读已发布的数据，从不碰 `Tip.inner`；驱动在调用宿主期间不持有任何 `RefCell` 借用（测试里的假宿主在调用内部读元素并重入 `Show`，借用没放开就会 panic）。`Tip.inner` 本身仍在整个控制器调用期间被借用，沿用已有的 `try_borrow_mut` + 待处理标志机制。
+- **调试痕迹**：`OutputDebugStringW`，行首 `pime-tsf uielement:`，只有编号、`show` 答案和错误码（`begin id=N show=1|0`、`end id=N`、失败行）；`UpdateUIElement` 成功时不记录（按键速率）。检查方法见 `TSF_VM_TEST_PLAN.md` 9.1。
+- **未解决的小问题**：`caret_anchor()` 失败时控制器不调用 `ui.show()`，所以没有 Begin，尽管宿主自己画列表并不需要插入点位置；`IsShown` 记录的是“已要求显示”，`PopupWindow::show` 吞掉失败，窗口没建成时它仍为 TRUE；候选的文字（含来源/验证文字）会交给宿主（以及任何订阅了 UI 元素的组件），密码框里控制器从不显示候选，所以那里不会有 Begin。
+
+**`IMMERSIVESUPPORT` 的审计与决定：仍然不注册，只注册 `UIELEMENTENABLED`。**
+先审计 TIP 在运行时碰了什么（AppContainer 里文件、注册表、命名管道、进程创建、网络、窗口创建都受限，Microsoft 的 IME 要求页：被加载进应用时与该应用受同样的 AppContainer 限制）：
+
+| 运行时访问 | 结果 |
+|---|---|
+| 设置文件、注册表、命名管道、网络、创建进程 | **都没有**：`pime-tsf` 只依赖 `pime-core` 和 `windows`，不链接 `pime-ipc`、AI Worker；`TipConfig::default()` 是常量；注册表只在 `DllRegisterServer` 里用，激活后不碰；预测器 `LocalPredictor` 是进程内引擎，语言包用 `include_str!` 编进 DLL，没有任何文件读取（时钟用 `SystemTime`） |
+| DLL 自身的位置 | 由宿主加载；AppContainer 只能读 Program Files 或 Windows 目录（或显式授权的 ACL），VM 手册第 3 步已要求放在 `C:\Program Files\PIME\` |
+| 加载系统 DLL | `popup.rs` 用 `LOAD_LIBRARY_SEARCH_SYSTEM32` 加载 `GetDpiForMonitor`（系统目录），不是问题 |
+| 窗口创建 | `popup.rs` 的 `CreateWindowExW`：`WS_POPUP` + `TOPMOST/TOOLWINDOW/NOACTIVATE`，**没有所有者窗口** |
+| 按键处理 | `GetKeyState`、`ToUnicodeEx`、`GetKeyboardLayout`：在 AppContainer 里是否照常工作**没有验证** |
+
+结论：TIP 的 I/O 本身在 AppContainer 里没有明显会失败的东西，但 UI 元素接口不等于可以声明沉浸式安全。Microsoft 的要求页（2026-10-02 版）和代码对照，缺这些：
+1. **从未在 AppContainer 里运行过**（没有测试环境，整个 TIP 都是如此）。
+2. 自绘候选窗不是被拥有的窗口：要求用 `ITfContextView::GetWnd`（失败则 `GetFocus`）取得所有者；回退路径（宿主没回答 `show=FALSE`，或没有管理器）会在沉浸式宿主里画出无主的置顶窗。
+3. 没有 `EVENT_OBJECT_IME_SHOW` / `HIDE` / `CHANGE` 三个 WinEvent（轻关闭模型需要它们）。
+4. 没有候选窗的 UI Automation 约定（`AutomationId = "IME_Candidate_Window"`、菜单打开/关闭和选中事件、每项的名称）；现在只有窗口名。
+5. 没有检查 `ITfThreadMgrEx::GetActiveFlags` 的 `TF_TMF_IMMERSIVEMODE`，TIP 不知道自己在沉浸式宿主里，也就无法保证那里不自绘。
+6. 没有品牌图标资源（`icon_file` 为空），输入指示器要从 DLL 取图标。
+7. 没有处理触摸键盘（`IFrameworkInputPane`）遮挡候选窗的问题。另外，没有实现搜索集成接口（`ITfIntegratableCandidateListUIElement`）：要求页把它列为“与开始菜单搜索集成”的条件，不是声明沉浸式支持的硬性条件，但没有它搜索框里没有行内候选。
+
+补齐 2 到 6（7 视需要）并在虚拟机里的商店应用和开始菜单搜索里实测通过之前，不得注册 `IMMERSIVESUPPORT`；`SECUREMODE` 的理由不变（13.10 / `register.rs`）。
+
+**验证（本机，2026-10-31，`CARGO_TARGET_DIR` 为本工作项专用目录）**：`cargo test` 在 `crates/pime-tsf`：156 项通过（开始时 122，新增 34：`uielement` 26 项含模型 5 项、驱动 13 项、真实 `TipController` 脚本 8 项；`uielement_com` 8 项含 QI、getter、`GetPageIndex` 的缓冲区规则和 `Show`/`IsShown`；`register` 的类别、步骤数和调用数相关测试按 3 个类别更新，幂等与回滚测试保持通过）；`cargo clippy --all-targets -- -D warnings`、`cargo fmt --check` 干净。
+**没有验证**：COM 胶水从未在真实 TSF 里运行（`ITfUIElementMgr` 的实际获取、宿主在 `BeginUIElement` 里对元素的调用顺序和对答案的接受程度、各宿主的 `show` 回答、`E_UNEXPECTED` 递归保护是否会在真实调用顺序里触发）；`show=FALSE` 路径没有真实宿主可测；`UIELEMENTENABLED` 的注册只在内存假后端上测过。VM 步骤见 `TSF_VM_TEST_PLAN.md` 9.1。
