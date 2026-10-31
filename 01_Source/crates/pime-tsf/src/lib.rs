@@ -2,7 +2,9 @@
 //!
 //! STATUS: the DLL builds with the pure-Rust toolchain and exports the four COM entry points. Module ownership (so that
 //! parallel work does not collide): `tip` + `keymap` (activation, key sink, composition), `popup` + `layout` (candidate
-//! window), `register` (registry and TSF profile registration), `ui` (the shared contract between them).
+//! window), `uielement` + `uielement_com` (the TSF UI-element protocol: announcing the candidate list to the host and
+//! letting a host that draws its own list keep the native popup hidden), `register` (registry and TSF profile
+//! registration), `ui` (the shared contract between them).
 //! Not a working input method until the milestones in docs/RUST_MIGRATION_PLAN.md 13.7 are done AND verified in a
 //! disposable Windows VM: nothing here may be registered on a real machine before that.
 //!
@@ -28,6 +30,8 @@ pub mod popup;
 pub mod register;
 pub mod tip;
 pub mod ui;
+pub mod uielement;
+pub mod uielement_com;
 
 /// Prototype GUIDs (the same values as the C++ skeleton in `windows/tsf`); to be replaced by governed product ids.
 pub const CLSID_PIME: GUID = GUID::from_u128(0x43f95ed1_95b4_421d_8f5a_837128c2d854);
