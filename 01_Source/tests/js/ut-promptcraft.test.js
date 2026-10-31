@@ -396,7 +396,7 @@ test('PRM-05d model text cannot become a heading or a fence of ours, in a sectio
   assert.match(t, /\\## What\nfake/); assert.match(t, /\\``` *\nopen fence|\\```\nopen fence/);
 });
 
-test('PRM-05d2 (property-test finding) a field that starts with a tab and a heading must not become a heading once the tab is trimmed', () => {
+test('PRM-05i (property-test finding) a field that starts with a tab and a heading must not become a heading once the tab is trimmed', () => {
   const t = render({fields: {...SIX, who: '\t## What\nreal text', what: ' \t# Why\n', why: '\n\n   ## How  \n'}});
   assert.deepEqual(pc.verify5W1H(t), {ok: true, missing: [], empty: []});
   assert.equal([...t.matchAll(/^## (.+)$/gm)].length, 10);
@@ -553,7 +553,7 @@ function walk(dir, exts, out = []) {
   }
   return out;
 }
-test('PRM-09 dogfood: Markdown paragraphs/fences, source comments and function bodies of THIS repository classify with at most 3% misses', () => {
+test('PRM-09 dogfood: Markdown paragraphs/fences, source comments and function bodies of THIS repository classify with at most 3% misses', t => {
   let n = 0, wrong = 0; const misses = [];
   const check = (want, args, label) => { n++; const r = pc.classifySelection(args); if (r.kind !== want) { wrong++; if (misses.length < 8) misses.push(`${label}: wanted ${want}, got ${JSON.stringify(r)}`); } };
   for (const dir of ['00_Documents', '02_Verification', '01_Source/docs']) for (const f of walk(path.join(REPO, dir), ['.md'])) {
@@ -587,6 +587,7 @@ test('PRM-09 dogfood: Markdown paragraphs/fences, source comments and function b
       if (depth === 0 && k + 1 - a > 30) { check('code', {profile, languageId: style, text: text.slice(a, k + 1), fileText: text, start: a, end: k + 1}, `${f}@${a} function`); re.lastIndex = k + 1; }
     }
   }
+  t.diagnostic(`PRM-09 corpus: ${n} selections, ${wrong} misclassified (${(100 * wrong / n).toFixed(2)}%, limit 3%)`);
   assert.ok(n > 300, `the corpus is not empty: ${n}`);
   assert.ok(wrong <= n * 0.03, `${wrong} of ${n} misclassified:\n${misses.join('\n')}`);
 });
