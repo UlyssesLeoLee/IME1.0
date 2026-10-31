@@ -398,6 +398,7 @@ async function activate(ctx) {
       f1.onDocumentChanged(e);
     }),
     vscode.window.onDidChangeTextEditorSelection(e => { f1.onSelectionChanged(e); }),
+    vscode.window.onDidChangeVisibleTextEditors(() => f1.onVisibleEditorsChanged()), // the F1 scope highlight follows the editor it belongs to
     vscode.workspace.onDidCloseTextDocument(d => f1.onDocumentClosed(d)),
     vscode.workspace.onDidGrantWorkspaceTrust(() => updateStatus()),
     vscode.workspace.onDidChangeConfiguration(e => {

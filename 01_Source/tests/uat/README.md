@@ -29,7 +29,9 @@ Requirements: Windows, VS Code stable (set `VSCODE_EXE` if not in the default lo
   Anthropic Messages shapes). Request counts are the evidence for "nothing is sent".
 - `helpers/vscode.js`: launch, quick-input, dialog, editor and F1-panel (webview) helpers.
 - `tests/01-local.spec.js` local candidates; `02-ai-f1.spec.js` key lifecycle, consent, F1, Diff, stale, secrets;
-  `03-policy.spec.js` routing/effort, budget/429, untrusted workspace, UI languages, permissions, realtime AI.
+  `03-policy.spec.js` routing/effort, budget/429, untrusted workspace, UI languages, permissions, realtime AI;
+  `06-annotate-scope.spec.js` F1 annotate (UAT-42..49; written, not yet run). The base profile of `helpers/vscode.js` sets
+  `programmingIme.f1Mode` to `edit` so that every older spec keeps driving the whole-file / insert panel; the annotate spec sets `annotate`.
 - Results: `../../02_Verification/uat/uat-results.json`, screenshots in `.../uat/screenshots/`.
 
 Notes: the mock certificate is self-signed and the extension host ignores `NODE_EXTRA_CA_CERTS`, so the harness starts VS Code

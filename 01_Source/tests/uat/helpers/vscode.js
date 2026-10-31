@@ -25,7 +25,10 @@ function engineSettings() {
 const freePort = () => new Promise((resolve, reject) => {
   const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); s.on('error', reject);
 });
+// programmingIme.f1Mode=edit: the default of the product is "annotate" (F1 starts an annotation on its own); every spec written for the
+// whole-file / insert panel keeps running against that panel. A spec that exercises the annotate tab sets 'programmingIme.f1Mode': 'annotate'.
 const BASE_SETTINGS = {
+  'programmingIme.f1Mode': 'edit',
   'window.dialogStyle': 'custom', 'window.titleBarStyle': 'custom', 'workbench.startupEditor': 'none', 'workbench.tips.enabled': false,
   'workbench.enableExperiments': false, 'workbench.welcomePage.walkthroughs.openOnInstall': false, 'workbench.editor.enablePreview': false,
   'update.mode': 'none', 'telemetry.telemetryLevel': 'off', 'extensions.autoUpdate': false, 'extensions.ignoreRecommendations': true,

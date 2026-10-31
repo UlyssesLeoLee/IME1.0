@@ -31,7 +31,8 @@ function ensureCert() {
 }
 
 // handler({task, family, body, headers, n}) -> {status?, delayMs?, json?, text?, hang?}
-//   task: 'full' | 'insert' | 'realtime' | 'unknown' (derived from the instructions the product sent)
+//   task: 'full' | 'insert' | 'realtime' | 'annotate' (comments for an inserted snippet) | 'scope' (anchored comments for the F1 annotate tab) | 'unknown'
+//         (derived from the instructions the product sent)
 async function startMock(name, handler) {
   const c = ensureCert();
   const state = {name, requests: [], handler, delayed: []};
@@ -44,7 +45,7 @@ async function startMock(name, handler) {
       const family = req.url.includes('/chat/completions') ? 'openai-chat' : req.url.includes('/messages') ? 'anthropic-messages' : 'openai-responses';
       const instructions = family === 'openai-chat' ? (body.messages?.[0]?.content || '') : family === 'anthropic-messages' ? (body.system || '') : (body.instructions || '');
       const inputText = family === 'openai-chat' ? (body.messages?.[1]?.content || '') : family === 'anthropic-messages' ? (body.messages?.[0]?.content || '') : (body.input || '');
-      const task = /annotate ONE code snippet/.test(instructions) ? 'annotate' : /fullFile/.test(instructions) ? 'full' : /at most 3 candidates/.test(instructions) ? 'insert' : /short completion/.test(instructions) ? 'realtime' : 'unknown';
+      const task = /annotate ONE code snippet/.test(instructions) ? 'annotate' : /annotate ONE \w+ of the user's file \(the "scope"\)/.test(instructions) ? 'scope' : /fullFile/.test(instructions) ? 'full' : /at most 3 candidates/.test(instructions) ? 'insert' : /short completion/.test(instructions) ? 'realtime' : 'unknown';
       let input = {}; try { input = JSON.parse(inputText); } catch { /* not JSON */ }
       const record = {at: Date.now(), url: req.url, method: req.method, headers: req.headers, family, task, body, input, rawBody: Buffer.concat(chunks).toString('utf8')};
       state.requests.push(record);
