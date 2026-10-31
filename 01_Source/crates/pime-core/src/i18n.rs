@@ -275,7 +275,7 @@ mod tests {
             }
         }
         for loc in LOCALES {
-            assert_eq!(keys().count(), 158);
+            assert_eq!(keys().count(), 189);
             assert_eq!(error_codes().count(), error_table(loc).len());
         }
     }

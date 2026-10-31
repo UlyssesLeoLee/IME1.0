@@ -976,6 +976,208 @@ pub(crate) const S: &[(&str, [&str; 3])] = &[
             "Programming IME 診断（ソースコード、プロンプト、キーは記録されません）",
         ],
     ),
+    (
+        "sec.confirm",
+        [
+            "Programming IME is about to read \"{0}\", which looks like a secret file ({1}). Allow it?",
+            "Programming IME 将要读取“{0}”，它看起来是密钥类文件（{1}）。是否允许？",
+            "Programming IME が「{0}」を読み取ろうとしています。シークレット系のファイルのようです（{1}）。許可しますか？",
+        ],
+    ),
+    (
+        "sec.confirm.detail",
+        [
+            "Reading is local: reading a file sends nothing anywhere. Sending any of it to an AI provider is asked separately, before it happens. Cancel leaves the file unread.",
+            "读取只在本机进行：读取文件本身不会向任何地方发送内容。把其中任何内容发送给 AI 服务商，会在发送前单独询问。取消则不读取该文件。",
+            "読み取りはローカルで行われ、ファイルを読むだけでは何も送信されません。AI プロバイダーへの送信は、送信の前に別途確認します。キャンセルするとファイルは読み取られません。",
+        ],
+    ),
+    (
+        "sec.allowOnce",
+        ["Allow once", "仅允许一次", "今回のみ許可"],
+    ),
+    (
+        "sec.allowSession",
+        [
+            "Allow for this session",
+            "本次会话内允许",
+            "このセッションで許可",
+        ],
+    ),
+    (
+        "sec.notice",
+        [
+            "\"{0}\" looks like a secret file ({1}), so Programming IME is not reading it: no suggestions here.",
+            "“{0}”看起来是密钥类文件（{1}），因此 Programming IME 不读取它：此处没有建议。",
+            "「{0}」はシークレット系のファイルのようです（{1}）。そのため Programming IME は読み取らず、ここでは候補を出しません。",
+        ],
+    ),
+    (
+        "sec.notice.allow",
+        [
+            "Allow this file for this session",
+            "本次会话内允许此文件",
+            "このファイルをこのセッションで許可",
+        ],
+    ),
+    (
+        "sec.notice.keepOff",
+        ["Keep off", "保持关闭", "読み取らない"],
+    ),
+    (
+        "sec.status.text",
+        ["protected file", "受保护文件", "保護ファイル"],
+    ),
+    (
+        "sec.status.tooltip",
+        [
+            "\"{0}\" looks like a secret file, so Programming IME does not read it. Click to allow it for this session or to manage your decisions.",
+            "“{0}”看起来是密钥类文件，因此 Programming IME 不读取它。点击可在本次会话内允许它，或管理你的决定。",
+            "「{0}」はシークレット系のファイルのようなので、Programming IME は読み取りません。クリックすると、このセッションで許可するか、決定を管理できます。",
+        ],
+    ),
+    (
+        "sec.refused.f1",
+        [
+            "F1 did not start: Programming IME may not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it.",
+            "F1 未启动：Programming IME 不得读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。",
+            "F1 を開始しませんでした：Programming IME はこのシークレット系ファイルを読み取れません。「Programming IME: シークレット系ファイル」で許可できます。",
+        ],
+    ),
+    (
+        "sec.refused.f2",
+        [
+            "F2 did not run: Programming IME may not read this secret-class file, and the clipboard was not changed. Run \"Programming IME: Secret Files\" to allow it.",
+            "F2 未运行：Programming IME 不得读取这个密钥类文件，剪贴板未改动。运行“Programming IME：密钥类文件”可允许读取。",
+            "F2 を実行しませんでした：Programming IME はこのシークレット系ファイルを読み取れず、クリップボードは変更していません。「Programming IME: シークレット系ファイル」で許可できます。",
+        ],
+    ),
+    (
+        "sec.refused.candidates",
+        [
+            "No candidates: Programming IME does not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it.",
+            "没有候选：Programming IME 不读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。",
+            "候補はありません：Programming IME はこのシークレット系ファイルを読み取りません。「Programming IME: シークレット系ファイル」で許可できます。",
+        ],
+    ),
+    (
+        "sec.menu",
+        ["Secret files…", "密钥类文件…", "シークレット系ファイル…"],
+    ),
+    (
+        "sec.pick.title",
+        [
+            "Secret-class files - choose one to forget the decision",
+            "密钥类文件 — 选择一项以忘记该决定",
+            "シークレット系ファイル — 決定を取り消す項目を選択",
+        ],
+    ),
+    (
+        "sec.pick.allowActive",
+        [
+            "Allow \"{0}\" for this session",
+            "本次会话内允许“{0}”",
+            "「{0}」をこのセッションで許可",
+        ],
+    ),
+    (
+        "sec.pick.allow",
+        ["allowed until {0}", "允许至 {0}", "{0} まで許可"],
+    ),
+    (
+        "sec.pick.deny",
+        [
+            "kept off until {0}",
+            "保持关闭至 {0}",
+            "{0} まで読み取らない",
+        ],
+    ),
+    (
+        "sec.pick.revokeAll",
+        [
+            "Forget all decisions",
+            "忘记全部决定",
+            "すべての決定を取り消す",
+        ],
+    ),
+    (
+        "sec.pick.none",
+        [
+            "Nothing to manage: the active file is not secret-class and no decision was made in this session.",
+            "没有可管理的内容：当前文件不是密钥类文件，本次会话也没有做过任何决定。",
+            "管理する項目はありません：アクティブなファイルはシークレット系ではなく、このセッションで決定も行われていません。",
+        ],
+    ),
+    (
+        "sec.allowed",
+        [
+            "Allowed \"{0}\" for this session.",
+            "已在本次会话内允许“{0}”。",
+            "「{0}」をこのセッションで許可しました。",
+        ],
+    ),
+    (
+        "sec.revoked",
+        [
+            "Forgot the decision for \"{0}\": it will be asked again.",
+            "已忘记对“{0}”的决定：下次会再次询问。",
+            "「{0}」の決定を取り消しました。次回は再度確認します。",
+        ],
+    ),
+    (
+        "sec.revokedAll",
+        [
+            "Forgot all decisions: secret-class files will be asked again.",
+            "已忘记全部决定：密钥类文件会再次询问。",
+            "すべての決定を取り消しました。シークレット系ファイルは再度確認します。",
+        ],
+    ),
+    (
+        "sec.kind.env",
+        [
+            "environment variables file",
+            "环境变量文件",
+            "環境変数ファイル",
+        ],
+    ),
+    ("sec.kind.private-key", ["private key", "私钥", "秘密鍵"]),
+    ("sec.kind.keystore", ["keystore", "密钥库", "キーストア"]),
+    (
+        "sec.kind.credential-file",
+        ["credentials file", "凭据文件", "認証情報ファイル"],
+    ),
+    (
+        "sec.kind.cloud-credentials",
+        ["cloud credentials", "云凭据", "クラウド認証情報"],
+    ),
+    (
+        "sec.kind.token-store",
+        [
+            "token or login store",
+            "令牌或登录信息",
+            "トークン／ログイン情報",
+        ],
+    ),
+    (
+        "sec.kind.infra-state",
+        [
+            "infrastructure state or variables",
+            "基础设施状态或变量",
+            "インフラの状態／変数",
+        ],
+    ),
+    (
+        "sec.kind.password-db",
+        ["password database", "密码库", "パスワードデータベース"],
+    ),
+    (
+        "sec.kind.user-pattern",
+        [
+            "matches your secretFilePatterns setting",
+            "匹配你的 secretFilePatterns 设置",
+            "secretFilePatterns 設定に一致",
+        ],
+    ),
 ];
 
 /// One human readable sentence per stable error code.

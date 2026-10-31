@@ -163,7 +163,38 @@
   "engine.status",
   "engine.unavailable",
   "engine.reload",
-  "diag.title"
+  "diag.title",
+  "sec.confirm",
+  "sec.confirm.detail",
+  "sec.allowOnce",
+  "sec.allowSession",
+  "sec.notice",
+  "sec.notice.allow",
+  "sec.notice.keepOff",
+  "sec.status.text",
+  "sec.status.tooltip",
+  "sec.refused.f1",
+  "sec.refused.f2",
+  "sec.refused.candidates",
+  "sec.menu",
+  "sec.pick.title",
+  "sec.pick.allowActive",
+  "sec.pick.allow",
+  "sec.pick.deny",
+  "sec.pick.revokeAll",
+  "sec.pick.none",
+  "sec.allowed",
+  "sec.revoked",
+  "sec.revokedAll",
+  "sec.kind.env",
+  "sec.kind.private-key",
+  "sec.kind.keystore",
+  "sec.kind.credential-file",
+  "sec.kind.cloud-credentials",
+  "sec.kind.token-store",
+  "sec.kind.infra-state",
+  "sec.kind.password-db",
+  "sec.kind.user-pattern"
  ],
  "errorCodes": [
   "STALE_DOCUMENT",
@@ -1461,6 +1492,254 @@
     "Programming IME diagnostics (no source code, prompts or keys are recorded)",
     "Programming IME 诊断（不记录源码、提示词或密钥）",
     "Programming IME 診断（ソースコード、プロンプト、キーは記録されません）"
+   ]
+  },
+  {
+   "key": "sec.confirm",
+   "texts": [
+    "Programming IME is about to read \"{0}\", which looks like a secret file ({1}). Allow it?",
+    "Programming IME 将要读取“{0}”，它看起来是密钥类文件（{1}）。是否允许？",
+    "Programming IME が「{0}」を読み取ろうとしています。シークレット系のファイルのようです（{1}）。許可しますか？"
+   ]
+  },
+  {
+   "key": "sec.confirm.detail",
+   "texts": [
+    "Reading is local: reading a file sends nothing anywhere. Sending any of it to an AI provider is asked separately, before it happens. Cancel leaves the file unread.",
+    "读取只在本机进行：读取文件本身不会向任何地方发送内容。把其中任何内容发送给 AI 服务商，会在发送前单独询问。取消则不读取该文件。",
+    "読み取りはローカルで行われ、ファイルを読むだけでは何も送信されません。AI プロバイダーへの送信は、送信の前に別途確認します。キャンセルするとファイルは読み取られません。"
+   ]
+  },
+  {
+   "key": "sec.allowOnce",
+   "texts": [
+    "Allow once",
+    "仅允许一次",
+    "今回のみ許可"
+   ]
+  },
+  {
+   "key": "sec.allowSession",
+   "texts": [
+    "Allow for this session",
+    "本次会话内允许",
+    "このセッションで許可"
+   ]
+  },
+  {
+   "key": "sec.notice",
+   "texts": [
+    "\"{0}\" looks like a secret file ({1}), so Programming IME is not reading it: no suggestions here.",
+    "“{0}”看起来是密钥类文件（{1}），因此 Programming IME 不读取它：此处没有建议。",
+    "「{0}」はシークレット系のファイルのようです（{1}）。そのため Programming IME は読み取らず、ここでは候補を出しません。"
+   ]
+  },
+  {
+   "key": "sec.notice.allow",
+   "texts": [
+    "Allow this file for this session",
+    "本次会话内允许此文件",
+    "このファイルをこのセッションで許可"
+   ]
+  },
+  {
+   "key": "sec.notice.keepOff",
+   "texts": [
+    "Keep off",
+    "保持关闭",
+    "読み取らない"
+   ]
+  },
+  {
+   "key": "sec.status.text",
+   "texts": [
+    "protected file",
+    "受保护文件",
+    "保護ファイル"
+   ]
+  },
+  {
+   "key": "sec.status.tooltip",
+   "texts": [
+    "\"{0}\" looks like a secret file, so Programming IME does not read it. Click to allow it for this session or to manage your decisions.",
+    "“{0}”看起来是密钥类文件，因此 Programming IME 不读取它。点击可在本次会话内允许它，或管理你的决定。",
+    "「{0}」はシークレット系のファイルのようなので、Programming IME は読み取りません。クリックすると、このセッションで許可するか、決定を管理できます。"
+   ]
+  },
+  {
+   "key": "sec.refused.f1",
+   "texts": [
+    "F1 did not start: Programming IME may not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it.",
+    "F1 未启动：Programming IME 不得读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。",
+    "F1 を開始しませんでした：Programming IME はこのシークレット系ファイルを読み取れません。「Programming IME: シークレット系ファイル」で許可できます。"
+   ]
+  },
+  {
+   "key": "sec.refused.f2",
+   "texts": [
+    "F2 did not run: Programming IME may not read this secret-class file, and the clipboard was not changed. Run \"Programming IME: Secret Files\" to allow it.",
+    "F2 未运行：Programming IME 不得读取这个密钥类文件，剪贴板未改动。运行“Programming IME：密钥类文件”可允许读取。",
+    "F2 を実行しませんでした：Programming IME はこのシークレット系ファイルを読み取れず、クリップボードは変更していません。「Programming IME: シークレット系ファイル」で許可できます。"
+   ]
+  },
+  {
+   "key": "sec.refused.candidates",
+   "texts": [
+    "No candidates: Programming IME does not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it.",
+    "没有候选：Programming IME 不读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。",
+    "候補はありません：Programming IME はこのシークレット系ファイルを読み取りません。「Programming IME: シークレット系ファイル」で許可できます。"
+   ]
+  },
+  {
+   "key": "sec.menu",
+   "texts": [
+    "Secret files…",
+    "密钥类文件…",
+    "シークレット系ファイル…"
+   ]
+  },
+  {
+   "key": "sec.pick.title",
+   "texts": [
+    "Secret-class files - choose one to forget the decision",
+    "密钥类文件 — 选择一项以忘记该决定",
+    "シークレット系ファイル — 決定を取り消す項目を選択"
+   ]
+  },
+  {
+   "key": "sec.pick.allowActive",
+   "texts": [
+    "Allow \"{0}\" for this session",
+    "本次会话内允许“{0}”",
+    "「{0}」をこのセッションで許可"
+   ]
+  },
+  {
+   "key": "sec.pick.allow",
+   "texts": [
+    "allowed until {0}",
+    "允许至 {0}",
+    "{0} まで許可"
+   ]
+  },
+  {
+   "key": "sec.pick.deny",
+   "texts": [
+    "kept off until {0}",
+    "保持关闭至 {0}",
+    "{0} まで読み取らない"
+   ]
+  },
+  {
+   "key": "sec.pick.revokeAll",
+   "texts": [
+    "Forget all decisions",
+    "忘记全部决定",
+    "すべての決定を取り消す"
+   ]
+  },
+  {
+   "key": "sec.pick.none",
+   "texts": [
+    "Nothing to manage: the active file is not secret-class and no decision was made in this session.",
+    "没有可管理的内容：当前文件不是密钥类文件，本次会话也没有做过任何决定。",
+    "管理する項目はありません：アクティブなファイルはシークレット系ではなく、このセッションで決定も行われていません。"
+   ]
+  },
+  {
+   "key": "sec.allowed",
+   "texts": [
+    "Allowed \"{0}\" for this session.",
+    "已在本次会话内允许“{0}”。",
+    "「{0}」をこのセッションで許可しました。"
+   ]
+  },
+  {
+   "key": "sec.revoked",
+   "texts": [
+    "Forgot the decision for \"{0}\": it will be asked again.",
+    "已忘记对“{0}”的决定：下次会再次询问。",
+    "「{0}」の決定を取り消しました。次回は再度確認します。"
+   ]
+  },
+  {
+   "key": "sec.revokedAll",
+   "texts": [
+    "Forgot all decisions: secret-class files will be asked again.",
+    "已忘记全部决定：密钥类文件会再次询问。",
+    "すべての決定を取り消しました。シークレット系ファイルは再度確認します。"
+   ]
+  },
+  {
+   "key": "sec.kind.env",
+   "texts": [
+    "environment variables file",
+    "环境变量文件",
+    "環境変数ファイル"
+   ]
+  },
+  {
+   "key": "sec.kind.private-key",
+   "texts": [
+    "private key",
+    "私钥",
+    "秘密鍵"
+   ]
+  },
+  {
+   "key": "sec.kind.keystore",
+   "texts": [
+    "keystore",
+    "密钥库",
+    "キーストア"
+   ]
+  },
+  {
+   "key": "sec.kind.credential-file",
+   "texts": [
+    "credentials file",
+    "凭据文件",
+    "認証情報ファイル"
+   ]
+  },
+  {
+   "key": "sec.kind.cloud-credentials",
+   "texts": [
+    "cloud credentials",
+    "云凭据",
+    "クラウド認証情報"
+   ]
+  },
+  {
+   "key": "sec.kind.token-store",
+   "texts": [
+    "token or login store",
+    "令牌或登录信息",
+    "トークン／ログイン情報"
+   ]
+  },
+  {
+   "key": "sec.kind.infra-state",
+   "texts": [
+    "infrastructure state or variables",
+    "基础设施状态或变量",
+    "インフラの状態／変数"
+   ]
+  },
+  {
+   "key": "sec.kind.password-db",
+   "texts": [
+    "password database",
+    "密码库",
+    "パスワードデータベース"
+   ]
+  },
+  {
+   "key": "sec.kind.user-pattern",
+   "texts": [
+    "matches your secretFilePatterns setting",
+    "匹配你的 secretFilePatterns 设置",
+    "secretFilePatterns 設定に一致"
    ]
   }
  ],
@@ -4560,6 +4839,564 @@
    "expect": "Programming IME 诊断（不记录源码、提示词或密钥）"
   },
   {
+   "locale": "zh-CN",
+   "key": "sec.confirm",
+   "args": [],
+   "expect": "Programming IME 将要读取“”，它看起来是密钥类文件（）。是否允许？"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.confirm",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Programming IME 将要读取“A”，它看起来是密钥类文件（B）。是否允许？"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.confirm.detail",
+   "args": [],
+   "expect": "读取只在本机进行：读取文件本身不会向任何地方发送内容。把其中任何内容发送给 AI 服务商，会在发送前单独询问。取消则不读取该文件。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.confirm.detail",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "读取只在本机进行：读取文件本身不会向任何地方发送内容。把其中任何内容发送给 AI 服务商，会在发送前单独询问。取消则不读取该文件。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.allowOnce",
+   "args": [],
+   "expect": "仅允许一次"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.allowOnce",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "仅允许一次"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.allowSession",
+   "args": [],
+   "expect": "本次会话内允许"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.allowSession",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "本次会话内允许"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.notice",
+   "args": [],
+   "expect": "“”看起来是密钥类文件（），因此 Programming IME 不读取它：此处没有建议。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.notice",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "“A”看起来是密钥类文件（B），因此 Programming IME 不读取它：此处没有建议。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.notice.allow",
+   "args": [],
+   "expect": "本次会话内允许此文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.notice.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "本次会话内允许此文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.notice.keepOff",
+   "args": [],
+   "expect": "保持关闭"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.notice.keepOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "保持关闭"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.status.text",
+   "args": [],
+   "expect": "受保护文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.status.text",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "受保护文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.status.tooltip",
+   "args": [],
+   "expect": "“”看起来是密钥类文件，因此 Programming IME 不读取它。点击可在本次会话内允许它，或管理你的决定。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.status.tooltip",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "“A”看起来是密钥类文件，因此 Programming IME 不读取它。点击可在本次会话内允许它，或管理你的决定。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.refused.f1",
+   "args": [],
+   "expect": "F1 未启动：Programming IME 不得读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.refused.f1",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F1 未启动：Programming IME 不得读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.refused.f2",
+   "args": [],
+   "expect": "F2 未运行：Programming IME 不得读取这个密钥类文件，剪贴板未改动。运行“Programming IME：密钥类文件”可允许读取。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.refused.f2",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 未运行：Programming IME 不得读取这个密钥类文件，剪贴板未改动。运行“Programming IME：密钥类文件”可允许读取。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.refused.candidates",
+   "args": [],
+   "expect": "没有候选：Programming IME 不读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.refused.candidates",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "没有候选：Programming IME 不读取这个密钥类文件。运行“Programming IME：密钥类文件”可允许读取。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.menu",
+   "args": [],
+   "expect": "密钥类文件…"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.menu",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "密钥类文件…"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.title",
+   "args": [],
+   "expect": "密钥类文件 — 选择一项以忘记该决定"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.title",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "密钥类文件 — 选择一项以忘记该决定"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.allowActive",
+   "args": [],
+   "expect": "本次会话内允许“”"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.allowActive",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "本次会话内允许“A”"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.allow",
+   "args": [],
+   "expect": "允许至 "
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "允许至 A"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.deny",
+   "args": [],
+   "expect": "保持关闭至 "
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.deny",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "保持关闭至 A"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.revokeAll",
+   "args": [],
+   "expect": "忘记全部决定"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.revokeAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "忘记全部决定"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.none",
+   "args": [],
+   "expect": "没有可管理的内容：当前文件不是密钥类文件，本次会话也没有做过任何决定。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.pick.none",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "没有可管理的内容：当前文件不是密钥类文件，本次会话也没有做过任何决定。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.allowed",
+   "args": [],
+   "expect": "已在本次会话内允许“”。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.allowed",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已在本次会话内允许“A”。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.revoked",
+   "args": [],
+   "expect": "已忘记对“”的决定：下次会再次询问。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.revoked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已忘记对“A”的决定：下次会再次询问。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.revokedAll",
+   "args": [],
+   "expect": "已忘记全部决定：密钥类文件会再次询问。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.revokedAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已忘记全部决定：密钥类文件会再次询问。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.env",
+   "args": [],
+   "expect": "环境变量文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.env",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "环境变量文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.private-key",
+   "args": [],
+   "expect": "私钥"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.private-key",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "私钥"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.keystore",
+   "args": [],
+   "expect": "密钥库"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.keystore",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "密钥库"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.credential-file",
+   "args": [],
+   "expect": "凭据文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.credential-file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "凭据文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.cloud-credentials",
+   "args": [],
+   "expect": "云凭据"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.cloud-credentials",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "云凭据"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.token-store",
+   "args": [],
+   "expect": "令牌或登录信息"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.token-store",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "令牌或登录信息"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.infra-state",
+   "args": [],
+   "expect": "基础设施状态或变量"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.infra-state",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "基础设施状态或变量"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.password-db",
+   "args": [],
+   "expect": "密码库"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.password-db",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "密码库"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.user-pattern",
+   "args": [],
+   "expect": "匹配你的 secretFilePatterns 设置"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "sec.kind.user-pattern",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "匹配你的 secretFilePatterns 设置"
+  },
+  {
    "locale": "en-US",
    "key": "status.off",
    "args": [],
@@ -7402,6 +8239,564 @@
     "E"
    ],
    "expect": "Programming IME diagnostics (no source code, prompts or keys are recorded)"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.confirm",
+   "args": [],
+   "expect": "Programming IME is about to read \"\", which looks like a secret file (). Allow it?"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.confirm",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Programming IME is about to read \"A\", which looks like a secret file (B). Allow it?"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.confirm.detail",
+   "args": [],
+   "expect": "Reading is local: reading a file sends nothing anywhere. Sending any of it to an AI provider is asked separately, before it happens. Cancel leaves the file unread."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.confirm.detail",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Reading is local: reading a file sends nothing anywhere. Sending any of it to an AI provider is asked separately, before it happens. Cancel leaves the file unread."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.allowOnce",
+   "args": [],
+   "expect": "Allow once"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.allowOnce",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow once"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.allowSession",
+   "args": [],
+   "expect": "Allow for this session"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.allowSession",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow for this session"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.notice",
+   "args": [],
+   "expect": "\"\" looks like a secret file (), so Programming IME is not reading it: no suggestions here."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.notice",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "\"A\" looks like a secret file (B), so Programming IME is not reading it: no suggestions here."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.notice.allow",
+   "args": [],
+   "expect": "Allow this file for this session"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.notice.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow this file for this session"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.notice.keepOff",
+   "args": [],
+   "expect": "Keep off"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.notice.keepOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Keep off"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.status.text",
+   "args": [],
+   "expect": "protected file"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.status.text",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "protected file"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.status.tooltip",
+   "args": [],
+   "expect": "\"\" looks like a secret file, so Programming IME does not read it. Click to allow it for this session or to manage your decisions."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.status.tooltip",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "\"A\" looks like a secret file, so Programming IME does not read it. Click to allow it for this session or to manage your decisions."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.refused.f1",
+   "args": [],
+   "expect": "F1 did not start: Programming IME may not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.refused.f1",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F1 did not start: Programming IME may not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.refused.f2",
+   "args": [],
+   "expect": "F2 did not run: Programming IME may not read this secret-class file, and the clipboard was not changed. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.refused.f2",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 did not run: Programming IME may not read this secret-class file, and the clipboard was not changed. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.refused.candidates",
+   "args": [],
+   "expect": "No candidates: Programming IME does not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.refused.candidates",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No candidates: Programming IME does not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.menu",
+   "args": [],
+   "expect": "Secret files…"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.menu",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Secret files…"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.title",
+   "args": [],
+   "expect": "Secret-class files - choose one to forget the decision"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.title",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Secret-class files - choose one to forget the decision"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.allowActive",
+   "args": [],
+   "expect": "Allow \"\" for this session"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.allowActive",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow \"A\" for this session"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.allow",
+   "args": [],
+   "expect": "allowed until "
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "allowed until A"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.deny",
+   "args": [],
+   "expect": "kept off until "
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.deny",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "kept off until A"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.revokeAll",
+   "args": [],
+   "expect": "Forget all decisions"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.revokeAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Forget all decisions"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.none",
+   "args": [],
+   "expect": "Nothing to manage: the active file is not secret-class and no decision was made in this session."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.pick.none",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Nothing to manage: the active file is not secret-class and no decision was made in this session."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.allowed",
+   "args": [],
+   "expect": "Allowed \"\" for this session."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.allowed",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allowed \"A\" for this session."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.revoked",
+   "args": [],
+   "expect": "Forgot the decision for \"\": it will be asked again."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.revoked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Forgot the decision for \"A\": it will be asked again."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.revokedAll",
+   "args": [],
+   "expect": "Forgot all decisions: secret-class files will be asked again."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.revokedAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Forgot all decisions: secret-class files will be asked again."
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.env",
+   "args": [],
+   "expect": "environment variables file"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.env",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "environment variables file"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.private-key",
+   "args": [],
+   "expect": "private key"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.private-key",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "private key"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.keystore",
+   "args": [],
+   "expect": "keystore"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.keystore",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "keystore"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.credential-file",
+   "args": [],
+   "expect": "credentials file"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.credential-file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "credentials file"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.cloud-credentials",
+   "args": [],
+   "expect": "cloud credentials"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.cloud-credentials",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "cloud credentials"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.token-store",
+   "args": [],
+   "expect": "token or login store"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.token-store",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "token or login store"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.infra-state",
+   "args": [],
+   "expect": "infrastructure state or variables"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.infra-state",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "infrastructure state or variables"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.password-db",
+   "args": [],
+   "expect": "password database"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.password-db",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "password database"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.user-pattern",
+   "args": [],
+   "expect": "matches your secretFilePatterns setting"
+  },
+  {
+   "locale": "en-US",
+   "key": "sec.kind.user-pattern",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "matches your secretFilePatterns setting"
   },
   {
    "locale": "ja-JP",
@@ -10248,6 +11643,564 @@
    "expect": "Programming IME 診断（ソースコード、プロンプト、キーは記録されません）"
   },
   {
+   "locale": "ja-JP",
+   "key": "sec.confirm",
+   "args": [],
+   "expect": "Programming IME が「」を読み取ろうとしています。シークレット系のファイルのようです（）。許可しますか？"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.confirm",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Programming IME が「A」を読み取ろうとしています。シークレット系のファイルのようです（B）。許可しますか？"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.confirm.detail",
+   "args": [],
+   "expect": "読み取りはローカルで行われ、ファイルを読むだけでは何も送信されません。AI プロバイダーへの送信は、送信の前に別途確認します。キャンセルするとファイルは読み取られません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.confirm.detail",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "読み取りはローカルで行われ、ファイルを読むだけでは何も送信されません。AI プロバイダーへの送信は、送信の前に別途確認します。キャンセルするとファイルは読み取られません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.allowOnce",
+   "args": [],
+   "expect": "今回のみ許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.allowOnce",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "今回のみ許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.allowSession",
+   "args": [],
+   "expect": "このセッションで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.allowSession",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "このセッションで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.notice",
+   "args": [],
+   "expect": "「」はシークレット系のファイルのようです（）。そのため Programming IME は読み取らず、ここでは候補を出しません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.notice",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "「A」はシークレット系のファイルのようです（B）。そのため Programming IME は読み取らず、ここでは候補を出しません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.notice.allow",
+   "args": [],
+   "expect": "このファイルをこのセッションで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.notice.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "このファイルをこのセッションで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.notice.keepOff",
+   "args": [],
+   "expect": "読み取らない"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.notice.keepOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "読み取らない"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.status.text",
+   "args": [],
+   "expect": "保護ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.status.text",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "保護ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.status.tooltip",
+   "args": [],
+   "expect": "「」はシークレット系のファイルのようなので、Programming IME は読み取りません。クリックすると、このセッションで許可するか、決定を管理できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.status.tooltip",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "「A」はシークレット系のファイルのようなので、Programming IME は読み取りません。クリックすると、このセッションで許可するか、決定を管理できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.refused.f1",
+   "args": [],
+   "expect": "F1 を開始しませんでした：Programming IME はこのシークレット系ファイルを読み取れません。「Programming IME: シークレット系ファイル」で許可できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.refused.f1",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F1 を開始しませんでした：Programming IME はこのシークレット系ファイルを読み取れません。「Programming IME: シークレット系ファイル」で許可できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.refused.f2",
+   "args": [],
+   "expect": "F2 を実行しませんでした：Programming IME はこのシークレット系ファイルを読み取れず、クリップボードは変更していません。「Programming IME: シークレット系ファイル」で許可できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.refused.f2",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 を実行しませんでした：Programming IME はこのシークレット系ファイルを読み取れず、クリップボードは変更していません。「Programming IME: シークレット系ファイル」で許可できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.refused.candidates",
+   "args": [],
+   "expect": "候補はありません：Programming IME はこのシークレット系ファイルを読み取りません。「Programming IME: シークレット系ファイル」で許可できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.refused.candidates",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "候補はありません：Programming IME はこのシークレット系ファイルを読み取りません。「Programming IME: シークレット系ファイル」で許可できます。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.menu",
+   "args": [],
+   "expect": "シークレット系ファイル…"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.menu",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "シークレット系ファイル…"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.title",
+   "args": [],
+   "expect": "シークレット系ファイル — 決定を取り消す項目を選択"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.title",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "シークレット系ファイル — 決定を取り消す項目を選択"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.allowActive",
+   "args": [],
+   "expect": "「」をこのセッションで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.allowActive",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "「A」をこのセッションで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.allow",
+   "args": [],
+   "expect": " まで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A まで許可"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.deny",
+   "args": [],
+   "expect": " まで読み取らない"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.deny",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A まで読み取らない"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.revokeAll",
+   "args": [],
+   "expect": "すべての決定を取り消す"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.revokeAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "すべての決定を取り消す"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.none",
+   "args": [],
+   "expect": "管理する項目はありません：アクティブなファイルはシークレット系ではなく、このセッションで決定も行われていません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.pick.none",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "管理する項目はありません：アクティブなファイルはシークレット系ではなく、このセッションで決定も行われていません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.allowed",
+   "args": [],
+   "expect": "「」をこのセッションで許可しました。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.allowed",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "「A」をこのセッションで許可しました。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.revoked",
+   "args": [],
+   "expect": "「」の決定を取り消しました。次回は再度確認します。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.revoked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "「A」の決定を取り消しました。次回は再度確認します。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.revokedAll",
+   "args": [],
+   "expect": "すべての決定を取り消しました。シークレット系ファイルは再度確認します。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.revokedAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "すべての決定を取り消しました。シークレット系ファイルは再度確認します。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.env",
+   "args": [],
+   "expect": "環境変数ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.env",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "環境変数ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.private-key",
+   "args": [],
+   "expect": "秘密鍵"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.private-key",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "秘密鍵"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.keystore",
+   "args": [],
+   "expect": "キーストア"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.keystore",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "キーストア"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.credential-file",
+   "args": [],
+   "expect": "認証情報ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.credential-file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "認証情報ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.cloud-credentials",
+   "args": [],
+   "expect": "クラウド認証情報"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.cloud-credentials",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "クラウド認証情報"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.token-store",
+   "args": [],
+   "expect": "トークン／ログイン情報"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.token-store",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "トークン／ログイン情報"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.infra-state",
+   "args": [],
+   "expect": "インフラの状態／変数"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.infra-state",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "インフラの状態／変数"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.password-db",
+   "args": [],
+   "expect": "パスワードデータベース"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.password-db",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "パスワードデータベース"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.user-pattern",
+   "args": [],
+   "expect": "secretFilePatterns 設定に一致"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "sec.kind.user-pattern",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "secretFilePatterns 設定に一致"
+  },
+  {
    "locale": "fr-FR",
    "key": "status.off",
    "args": [],
@@ -13090,6 +15043,564 @@
     "E"
    ],
    "expect": "Programming IME diagnostics (no source code, prompts or keys are recorded)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.confirm",
+   "args": [],
+   "expect": "Programming IME is about to read \"\", which looks like a secret file (). Allow it?"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.confirm",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Programming IME is about to read \"A\", which looks like a secret file (B). Allow it?"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.confirm.detail",
+   "args": [],
+   "expect": "Reading is local: reading a file sends nothing anywhere. Sending any of it to an AI provider is asked separately, before it happens. Cancel leaves the file unread."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.confirm.detail",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Reading is local: reading a file sends nothing anywhere. Sending any of it to an AI provider is asked separately, before it happens. Cancel leaves the file unread."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.allowOnce",
+   "args": [],
+   "expect": "Allow once"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.allowOnce",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow once"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.allowSession",
+   "args": [],
+   "expect": "Allow for this session"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.allowSession",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow for this session"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.notice",
+   "args": [],
+   "expect": "\"\" looks like a secret file (), so Programming IME is not reading it: no suggestions here."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.notice",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "\"A\" looks like a secret file (B), so Programming IME is not reading it: no suggestions here."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.notice.allow",
+   "args": [],
+   "expect": "Allow this file for this session"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.notice.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow this file for this session"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.notice.keepOff",
+   "args": [],
+   "expect": "Keep off"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.notice.keepOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Keep off"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.status.text",
+   "args": [],
+   "expect": "protected file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.status.text",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "protected file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.status.tooltip",
+   "args": [],
+   "expect": "\"\" looks like a secret file, so Programming IME does not read it. Click to allow it for this session or to manage your decisions."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.status.tooltip",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "\"A\" looks like a secret file, so Programming IME does not read it. Click to allow it for this session or to manage your decisions."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.refused.f1",
+   "args": [],
+   "expect": "F1 did not start: Programming IME may not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.refused.f1",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F1 did not start: Programming IME may not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.refused.f2",
+   "args": [],
+   "expect": "F2 did not run: Programming IME may not read this secret-class file, and the clipboard was not changed. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.refused.f2",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 did not run: Programming IME may not read this secret-class file, and the clipboard was not changed. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.refused.candidates",
+   "args": [],
+   "expect": "No candidates: Programming IME does not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.refused.candidates",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No candidates: Programming IME does not read this secret-class file. Run \"Programming IME: Secret Files\" to allow it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.menu",
+   "args": [],
+   "expect": "Secret files…"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.menu",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Secret files…"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.title",
+   "args": [],
+   "expect": "Secret-class files - choose one to forget the decision"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.title",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Secret-class files - choose one to forget the decision"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.allowActive",
+   "args": [],
+   "expect": "Allow \"\" for this session"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.allowActive",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allow \"A\" for this session"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.allow",
+   "args": [],
+   "expect": "allowed until "
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.allow",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "allowed until A"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.deny",
+   "args": [],
+   "expect": "kept off until "
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.deny",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "kept off until A"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.revokeAll",
+   "args": [],
+   "expect": "Forget all decisions"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.revokeAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Forget all decisions"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.none",
+   "args": [],
+   "expect": "Nothing to manage: the active file is not secret-class and no decision was made in this session."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.pick.none",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Nothing to manage: the active file is not secret-class and no decision was made in this session."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.allowed",
+   "args": [],
+   "expect": "Allowed \"\" for this session."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.allowed",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Allowed \"A\" for this session."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.revoked",
+   "args": [],
+   "expect": "Forgot the decision for \"\": it will be asked again."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.revoked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Forgot the decision for \"A\": it will be asked again."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.revokedAll",
+   "args": [],
+   "expect": "Forgot all decisions: secret-class files will be asked again."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.revokedAll",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Forgot all decisions: secret-class files will be asked again."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.env",
+   "args": [],
+   "expect": "environment variables file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.env",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "environment variables file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.private-key",
+   "args": [],
+   "expect": "private key"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.private-key",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "private key"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.keystore",
+   "args": [],
+   "expect": "keystore"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.keystore",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "keystore"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.credential-file",
+   "args": [],
+   "expect": "credentials file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.credential-file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "credentials file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.cloud-credentials",
+   "args": [],
+   "expect": "cloud credentials"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.cloud-credentials",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "cloud credentials"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.token-store",
+   "args": [],
+   "expect": "token or login store"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.token-store",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "token or login store"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.infra-state",
+   "args": [],
+   "expect": "infrastructure state or variables"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.infra-state",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "infrastructure state or variables"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.password-db",
+   "args": [],
+   "expect": "password database"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.password-db",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "password database"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.user-pattern",
+   "args": [],
+   "expect": "matches your secretFilePatterns setting"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "sec.kind.user-pattern",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "matches your secretFilePatterns setting"
   },
   {
    "locale": "zh-cn",
