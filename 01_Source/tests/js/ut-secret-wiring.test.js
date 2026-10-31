@@ -127,6 +127,8 @@ test('SEC-32 "Allow once" is spent by exactly one call; "Allow for this session"
   r.st.modal = ALLOW_ONCE;
   assert.equal(await r.gate.ensure(d, {interactive: true, purpose: 'f1'}), true); assert.equal(r.ui.modals.length, 1);
   assert.deepEqual(r.gate.list(), [], 'spent by that very call');
+  assert.equal(r.changes.n, 0, 'the state is as it was: nothing to redraw, and no re-trigger of the suggestions (they would show the typing-path notification right after the user said yes)');
+  assert.equal(r.ui.notices.length, 0);
   assert.equal(await r.gate.ensure(d, {interactive: false, purpose: 'candidates'}), false, 'a typing call right after is not covered');
   assert.equal(await r.gate.ensure(d, {interactive: true, purpose: 'f1'}), true); assert.equal(r.ui.modals.length, 2, 'asked again');
   // a one-use grant that already exists (recorded in the store) is consumed by the first read and gone for the second
@@ -137,6 +139,7 @@ test('SEC-32 "Allow once" is spent by exactly one call; "Allow for this session"
   // a session grant: no dialog again, typing and commands alike, until the TTL
   const s = gateRig(); s.st.modal = ALLOW_SESSION;
   assert.equal(await s.gate.ensure(e, {interactive: true}), true); assert.equal(s.ui.modals.length, 1);
+  assert.equal(s.changes.n, 1, 'a session grant unlocks the file: the status and the suggestions follow');
   for (let i = 0; i < 5; i++) { assert.equal(await s.gate.ensure(e, {interactive: i % 2 === 0}), true); }
   assert.equal(s.ui.modals.length, 1); assert.equal(s.ui.notices.length, 0);
   assert.deepEqual(s.gate.list().map(x => [x.label, x.state]), [['.env', 'allow']]);

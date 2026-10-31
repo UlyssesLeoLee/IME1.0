@@ -32,8 +32,11 @@ function writeClipboard(text) {
 }
 
 // ---------------------------------------------------------------- fixtures
+// One secret-class file per test: the tests share ONE extension host and a decision (allow for the session, keep off, the "already announced" memory) lives in memory
+// for the whole session, so a file used by an earlier test would not ask again. Each of these names is an `env-file` of core/secretfile.js.
+const SECRET = 'API_KEY=placeholder-value-for-uat\nMODE=dev\n';
 const FILES = {
-  '.env': 'API_KEY=placeholder-value-for-uat\nMODE=dev\n',
+  '.env.type': SECRET, '.env.f1': SECRET, '.env.f2': SECRET, '.env.cmd': SECRET,
   '.env.example': 'API_KEY=\nMODE=dev\n',                       // a template: not secret-class
   'main.rs': 'fn main() {\n    println!("hi");\n}\n',
   'diary.txt': 'Remember to buy milk and call the bank before noon.\n'   // secret-class only through the user setting below
@@ -59,11 +62,11 @@ test.afterAll(async () => { await app.screenshot('end-of-group-8'); await app.cl
 test.beforeEach(async () => { mock.reset(); writeClipboard(SENTINEL); await app.closeAll(); await app.clearNotifications(); });
 
 test('UAT-50 [SEC-33] typing in a .env: never a dialog, ONE notification however much is typed, the status bar shows the lock; Allow this file opens it', async () => {
-  await app.openFile('.env');
+  await app.openFile('.env.type');
   await app.end();
   await app.type('\nEXTRA=1', 25);
   const note = await app.waitNotification(/looks like a secret file/);
-  expect(note).toContain('".env"'); expect(note).toMatch(/not reading it/);
+  expect(note).toContain('".env.type"'); expect(note).toMatch(/not reading it/);
   expect(await app.dialogVisible()).toBe(false);
   await app.type('23456789', 25);                                           // more keystrokes: still the one notification
   await sleep(1500);
@@ -77,9 +80,9 @@ test('UAT-50 [SEC-33] typing in a .env: never a dialog, ONE notification however
 });
 
 test('UAT-51 [SEC-40] F1 on a .env: a modal with exactly Allow once / Allow for this session; Esc opens no panel and remembers nothing; Allow once is spent by one F1', async () => {
-  await pressF1('.env');
+  await pressF1('.env.f1');
   const d = await app.waitDialog();
-  expect(d.message).toContain('.env'); expect(d.message).toMatch(/environment variables file/);
+  expect(d.message).toContain('.env.f1'); expect(d.message).toMatch(/environment variables file/);
   expect(d.detail).toMatch(/Reading is local/); expect(d.detail).toMatch(/AI provider is asked separately/);
   expect(d.buttons).toEqual(expect.arrayContaining([ALLOW_ONCE, ALLOW_SESSION]));
   await app.screenshot('secret-f1-modal');
@@ -92,19 +95,19 @@ test('UAT-51 [SEC-40] F1 on a .env: a modal with exactly Allow once / Allow for 
   await app.waitPanel();
   expect(mock.count()).toBe(0);
   await app.closeAll();
-  await app.openFile('.env'); await app.page.keyboard.press('F1');         // the one-use grant is gone: asked again
+  await app.openFile('.env.f1'); await app.page.keyboard.press('F1');      // the one-use grant is gone: asked again
   const again = await app.waitDialog();
   expect(again.buttons).toEqual(expect.arrayContaining([ALLOW_ONCE, ALLOW_SESSION]));
   await app.dialogClick(ALLOW_SESSION);
   await app.waitPanel();
   await app.closeAll();
-  await app.openFile('.env'); await app.page.keyboard.press('F1');         // a session grant: no dialog any more
+  await app.openFile('.env.f1'); await app.page.keyboard.press('F1');      // a session grant: no dialog any more
   await app.waitPanel();
   expect(await app.dialogVisible()).toBe(false);
 });
 
 test('UAT-52 [SEC-42] F2 on a .env selection: a refusal is a notice and the clipboard is untouched; allowing the READ does not allow the COPY (the content gate still refuses it)', async () => {
-  await app.openFile('.env');
+  await app.openFile('.env.f2');
   await app.page.keyboard.press('Control+A');
   await app.page.keyboard.press('F2');
   const d = await app.waitDialog();
@@ -114,32 +117,30 @@ test('UAT-52 [SEC-42] F2 on a .env selection: a refusal is a notice and the clip
   await app.waitNotification(/F2 did not run/);
   expect(readClipboard()).toBe(SENTINEL);
   await app.closeAll();
-  await app.openFile('.env'); await app.page.keyboard.press('Control+A'); await app.page.keyboard.press('F2');
+  await app.openFile('.env.f2'); await app.page.keyboard.press('Control+A'); await app.page.keyboard.press('F2');   // Esc remembered nothing: it asks again
   await app.waitDialog(); await app.dialogClick(ALLOW_ONCE);
   await app.waitNotification(/Looks sensitive/);                           // read, but never copied: reading and sending/copying are separate questions
   expect(readClipboard()).toBe(SENTINEL); expect(mock.count()).toBe(0);
 });
 
 test('UAT-53 [SEC-39] the command "Programming IME: Secret Files": allow the active file, see the decision, forget it, the status bar follows', async () => {
-  await app.openFile('.env');
-  await app.page.keyboard.press('F1'); await app.waitDialog(); await app.page.keyboard.press('Escape');   // make sure the lock is on screen
-  await app.dialog.waitFor({state: 'hidden', timeout: 5000});
-  await app.waitStatus(protectedStatus, 8000);
+  await app.openFile('.env.cmd');
+  await app.waitStatus(protectedStatus, 8000);                              // the lock is on screen as soon as the file is the active one (no read, no keystroke)
   await app.cmd('Programming IME: Secret Files');
   await app.waitQuick();
   const rows = await app.quickRows();
-  expect(rows[0]).toMatch(/Allow ".env" for this session/);
-  await app.pickRow('Allow ".env" for this session');
-  await app.waitNotification(/Allowed ".env" for this session/);
+  expect(rows[0]).toMatch(/Allow ".env.cmd" for this session/);
+  await app.pickRow('Allow ".env.cmd" for this session');
+  await app.waitNotification(/Allowed ".env.cmd" for this session/);
   await app.waitStatus(/PIME (?!protected)/, 8000);
   await app.cmd('Programming IME: Secret Files');
   await app.waitQuick();
   const listed = await app.quickRows();
-  expect(listed.some(r => /\.env/.test(r) && /allowed until/.test(r))).toBe(true);
+  expect(listed.some(r => /\.env\.cmd/.test(r) && /allowed until/.test(r))).toBe(true);
   expect(listed.some(r => /Forget all decisions/.test(r))).toBe(true);
   await app.screenshot('secret-files-list');
   await app.pickRow('allowed until');
-  await app.waitNotification(/Forgot the decision for ".env"/);
+  await app.waitNotification(/Forgot the decision for ".env.cmd"/);
   await app.waitStatus(protectedStatus, 8000);
 });
 

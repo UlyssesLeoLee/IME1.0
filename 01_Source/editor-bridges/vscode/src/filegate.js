@@ -105,7 +105,7 @@ function createFileGate(env) {
     gate.record(a.path, choice === once ? 'once' : 'session');
     const ok = spend(a); // right after the record, no await in between
     note(choice === once ? 'once' : 'session', a, purpose);
-    emit();
+    if (choice === session) emit(); // a one-use grant leaves the state as it was (still asked): nothing to redraw, and re-triggering the suggestions would only show the typing-path notification
     return ok;
   }
   function notifyOnce(a, purpose) {
