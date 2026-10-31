@@ -246,8 +246,6 @@ struct TsfHost {
     sink: ITfCompositionSink,
     context: Option<ITfContext>,
     composition: Option<(ITfContext, ITfComposition)>,
-    /// Secure-field answer per context (by interface pointer); only successful probes are cached.
-    secure: Option<(usize, bool)>,
 }
 
 impl TsfHost {
@@ -257,20 +255,11 @@ impl TsfHost {
             sink,
             context: None,
             composition: None,
-            secure: None,
         }
     }
 
-    /// The context a key event arrived for; a different context invalidates the cached secure-field answer.
+    /// The context a key event arrived for.
     fn set_context(&mut self, pic: Option<&ITfContext>) {
-        let same = match (&self.context, pic) {
-            (Some(a), Some(b)) => a.as_raw() == b.as_raw(),
-            (None, None) => true,
-            _ => false,
-        };
-        if !same {
-            self.secure = None;
-        }
         self.context = pic.cloned();
     }
 
@@ -278,7 +267,6 @@ impl TsfHost {
     /// `end_composition`, which must reach the context that owns it.
     fn forget_context(&mut self) {
         self.context = None;
-        self.secure = None;
     }
 
     fn probe_secure(&self, ctx: &ITfContext) -> Option<bool> {
@@ -295,23 +283,14 @@ impl TsfHost {
 }
 
 impl HostText for TsfHost {
+    /// Probed afresh every time it is asked: the controller asks once per key event (never on a key-up), and an answer
+    /// kept per context would go stale when a host turns a text field into a password field without a focus event.
     fn is_secure_field(&mut self) -> bool {
         let Some(ctx) = self.context.clone() else {
             return true; // no context to type into or to look at: fail closed
         };
-        let id = ctx.as_raw() as usize;
-        if let Some((cached, answer)) = self.secure
-            && cached == id
-        {
-            return answer;
-        }
-        match self.probe_secure(&ctx) {
-            Some(answer) => {
-                self.secure = Some((id, answer));
-                answer
-            }
-            None => true, // could not tell (session refused): fail closed, DD section 3.3
-        }
+        // could not tell (session refused, no input scope support): fail closed, DD section 3.3
+        self.probe_secure(&ctx).unwrap_or(true)
     }
 
     fn caret_anchor(&mut self) -> Option<Anchor> {

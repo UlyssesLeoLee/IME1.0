@@ -6,8 +6,8 @@
 //! `OnTestKeyDown` reported as eaten. A key that is NOT eaten (ordinary typing) therefore never reaches `OnKeyDown`, yet
 //! the machine has to see it to follow what the user types. So:
 //! * `on_test_key_down` answers with the machine's pure `would_consume`; for a key that is not eaten it also feeds the
-//!   machine (the observation) and remembers the key, so that a host which calls `OnKeyDown` as well does not make the
-//!   machine see it twice;
+//!   machine (the observation) and remembers the key, so that a host which calls `OnKeyDown` as well, or the test again,
+//!   does not make the machine see it twice (the test phase is idempotent: see `SAME_EVENT_MS`);
 //! * `on_key_down` performs eaten keys, and observes keys it has not seen yet (a host that skips the test).
 //!
 //! Default behaviour (DD 5.3, UT-009): the input method never eats a code character. Typing is observed and the window
@@ -44,7 +44,8 @@ pub enum HostError {
 /// tests implement it with a string. Every method may fail; the controller never assumes success.
 pub trait HostText {
     /// True for a password / secure field, and ALSO when the host cannot tell (fail closed, DD section 3.3: collecting
-    /// a password is worse than losing the candidates).
+    /// a password is worse than losing the candidates). The controller asks once per key event and never on a key-up;
+    /// an implementation must not cache the answer across events (a field can change without any focus event).
     fn is_secure_field(&mut self) -> bool;
     /// The caret in screen coordinates; None when the host cannot say.
     fn caret_anchor(&mut self) -> Option<Anchor>;
@@ -102,6 +103,19 @@ pub struct KeyInput {
     pub mods: Modifiers,
     /// Monotonic milliseconds (bookkeeping of the machine's watchdog).
     pub now_ms: u64,
+}
+
+/// Reports of one `(code, lparam)` stamp closer together than this are ONE key event: a host may ask `OnTestKeyDown`
+/// twice for a key, or test and then perform it, within a few milliseconds. A held key repeats with an identical `lparam`
+/// (repeat count 1, "was down" bit set) but never faster than the Windows maximum typematic rate of about 30 per second,
+/// so its repeats are at least ~30 ms apart and stay separate events. Half of that is the margin.
+const SAME_EVENT_MS: u64 = 15;
+
+/// A key event the machine has already observed (it was not eaten, so `OnKeyDown` may or may not follow).
+#[derive(Clone, Copy, Debug)]
+struct Observed {
+    stamp: (u32, isize),
+    at_ms: u64,
 }
 
 const PREVIEW_CHARS: usize = 48;
@@ -197,7 +211,9 @@ pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPred
     host_composing: bool,
     last_anchor: Option<Anchor>,
     /// The key `on_test_key_down` just observed (it is not eaten, so `OnKeyDown` may or may not follow).
-    seen: Option<(u32, isize)>,
+    seen: Option<Observed>,
+    /// The key event the host was last asked about the secure field for (see `refresh_secure`).
+    probed: Option<Observed>,
     now_ms: u64,
 }
 
@@ -217,6 +233,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             host_composing: false,
             last_anchor: None,
             seen: None,
+            probed: None,
             now_ms: 0,
         }
     }
@@ -282,6 +299,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             c.hide();
             c.shift.reset();
             c.seen = None;
+            c.probed = None;
             c.last_anchor = None;
             c.composition_refused = false;
             c.degraded = false;
@@ -344,7 +362,22 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         if self.degraded {
             return false;
         }
-        self.refresh_secure();
+        let stamp = (key.code, key.lparam);
+        let reported_again = if test_only {
+            // the test phase is idempotent: a second `OnTestKeyDown` for an event that was already observed must not feed
+            // the machine again (it would see "aa" for one 'a'). Nothing is cleared, so the `OnKeyDown` that may follow is
+            // still recognised below.
+            self.seen.is_some_and(|s| {
+                s.stamp == stamp && key.now_ms.saturating_sub(s.at_ms) <= SAME_EVENT_MS
+            })
+        } else {
+            // already observed by the OnTestKeyDown of the same event
+            self.seen.take().is_some_and(|s| s.stamp == stamp)
+        };
+        if reported_again {
+            return false;
+        }
+        self.refresh_secure(stamp, key.now_ms);
         if is_compose_chord(key.code, key.mods) && self.can_compose() {
             // the one chord that is ours: it starts an explicit composition, and only while candidates show
             self.seen = None;
@@ -357,10 +390,6 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             }
             return false;
         };
-        let stamp = (key.code, key.lparam);
-        if !test_only && self.seen.take() == Some(stamp) {
-            return false; // already observed by the OnTestKeyDown of the same event
-        }
         self.seen = None;
         self.prepare();
         if test_only {
@@ -368,7 +397,10 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
                 return true;
             }
             self.run_machine(key, ev);
-            self.seen = Some(stamp);
+            self.seen = Some(Observed {
+                stamp,
+                at_ms: key.now_ms,
+            });
             return false;
         }
         self.run_machine(key, ev)
@@ -377,6 +409,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     fn key_up(&mut self, key: KeyInput) -> bool {
         self.now_ms = key.now_ms;
         self.seen = None;
+        self.probed = None; // a key-up asks nothing; it only makes sure the next press of this key asks again
         if self.shift.feed(key.code, false, key.mods) {
             let step = self
                 .machine
@@ -441,7 +474,21 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         true
     }
 
-    fn refresh_secure(&mut self) {
+    /// Ask the host whether the field is a password field: once per key event, never on a key-up. No answer outlives the
+    /// event it was given for, because a host can turn a text field into a password field (or back) without any focus
+    /// event. The perform call of an event (and a repeated report of it, see `SAME_EVENT_MS`) reuses the answer of its
+    /// test call, so one key never probes twice; the next key asks again.
+    fn refresh_secure(&mut self, stamp: (u32, isize), now_ms: u64) {
+        let probed = self
+            .probed
+            .is_some_and(|p| p.stamp == stamp && now_ms.saturating_sub(p.at_ms) <= SAME_EVENT_MS);
+        if probed {
+            return;
+        }
+        self.probed = Some(Observed {
+            stamp,
+            at_ms: now_ms,
+        });
         let secure = self.secure_mode || self.host.is_secure_field();
         if secure != self.secure {
             self.secure = secure;
@@ -1341,6 +1388,58 @@ mod tests {
     }
 
     #[test]
+    fn a_host_that_tests_one_key_twice_does_not_make_the_machine_see_it_twice() {
+        // review finding 8: only OnKeyDown consulted `seen`, so a second OnTestKeyDown for one event ran the machine again
+        // (prefix "aa" for one 'a', wrong candidates, a commit whose read-back no longer matches)
+        for performs in [false, true] {
+            let mut rig = Rig::new();
+            for c in "aab".chars() {
+                rig.t += 40;
+                let down = input(code_of(c), Some(c), NONE, rig.t);
+                assert!(!rig.ctl.on_test_key_down(down), "{c}");
+                assert!(
+                    !rig.ctl.on_test_key_down(down),
+                    "{c}: the same event, reported again"
+                );
+                if performs {
+                    assert!(!rig.ctl.on_key_down(down), "{c}: and then performed");
+                }
+                rig.ctl.host_mut().doc.push(c);
+                rig.t += 1;
+                let up = input(code_of(c), Some(c), NONE, rig.t);
+                rig.ctl.on_test_key_up(up);
+                rig.ctl.on_key_up(up);
+            }
+            assert_eq!(rig.ctl.machine().context(), "aab", "performs: {performs}");
+            assert_eq!(
+                rig.ctl.predictor().calls,
+                ["a", "aa", "aab"],
+                "performs: {performs}: one prediction per typed character"
+            );
+        }
+    }
+
+    #[test]
+    fn a_held_key_is_observed_once_per_repeat_even_when_the_host_sends_no_key_up() {
+        // the guard against the naive fix for finding 8 ("same stamp => ignore"): every autorepeat of a held key carries
+        // the same lparam, and for a key that is not eaten the host calls neither OnKeyDown nor sends a key-up between
+        // the repeats, so only the time between reports tells a repeat from a duplicate
+        let mut rig = Rig::new();
+        let mut t = 100;
+        for repeat in 0..5 {
+            let mut down = input(0x41, Some('a'), NONE, t);
+            if repeat > 0 {
+                down.lparam |= 1 << 30; // "the key was already down"
+            }
+            assert!(!rig.ctl.on_test_key_down(down), "repeat {repeat}");
+            rig.ctl.host_mut().doc.push('a');
+            t += 33; // the fastest typematic rate
+        }
+        assert_eq!(rig.ctl.machine().context(), "aaaaa");
+        assert_eq!(rig.ctl.predictor().calls.len(), 5);
+    }
+
+    #[test]
     fn the_same_character_typed_twice_is_two_observations() {
         for style in [Host::Contract, Host::Always, Host::DownOnly] {
             let mut rig = Rig::new();
@@ -1385,6 +1484,82 @@ mod tests {
         rig.ctl.focus_changed();
         rig.type_text("fn", Host::Contract);
         assert!(rig.ctl.ui().visible);
+    }
+
+    #[test]
+    fn the_host_is_asked_about_the_secure_field_once_per_key_event_and_never_on_a_key_up() {
+        // review finding 7: no answer is kept for the context any more, so the cost is bounded here instead
+        for style in [Host::Contract, Host::Always, Host::DownOnly] {
+            let mut rig = Rig::new();
+            rig.type_text("fn", style);
+            assert_eq!(
+                rig.ctl.host().secure_checks,
+                2,
+                "{style:?}: one probe per typed key, test and perform of one key share it (key-ups are in there too)"
+            );
+            assert!(rig.press(code_of('1'), Some('1'), NONE, style), "{style:?}");
+            assert_eq!(
+                rig.ctl.host().secure_checks,
+                3,
+                "{style:?}: an eaten key is tested and performed on one probe"
+            );
+            rig.t += 40;
+            let down = input(code_of('x'), Some('x'), NONE, rig.t);
+            rig.ctl.on_test_key_down(down);
+            rig.ctl.on_test_key_down(down);
+            assert_eq!(
+                rig.ctl.host().secure_checks,
+                4,
+                "{style:?}: a key reported twice is probed once"
+            );
+            rig.t += 1;
+            let up = input(code_of('x'), Some('x'), NONE, rig.t);
+            rig.ctl.on_test_key_up(up);
+            rig.ctl.on_key_up(up);
+            assert_eq!(
+                rig.ctl.host().secure_checks,
+                4,
+                "{style:?}: a key-up never probes"
+            );
+        }
+    }
+
+    #[test]
+    fn a_field_that_turns_into_a_password_field_inside_one_context_is_noticed_at_the_next_key() {
+        // review finding 7: the glue kept the first answer per context, so a host that swaps a text field for a password
+        // field without a focus event kept being treated as a text field. The fake host here keeps one context throughout.
+        for style in [Host::Contract, Host::Always, Host::DownOnly] {
+            let mut rig = Rig::new();
+            rig.type_text("fn", style);
+            assert!(
+                rig.ctl.ui().visible && rig.ctl.host().composing,
+                "{style:?}"
+            );
+            let (shows, calls) = (rig.ctl.ui().shows, rig.ctl.predictor().calls.len());
+            rig.ctl.host_mut().secure = true; // the same context becomes a password field
+            rig.type_text("hunter2", style);
+            assert!(!rig.ctl.ui().visible, "{style:?}");
+            assert!(
+                !rig.ctl.host().composing,
+                "{style:?}: the composition ended"
+            );
+            assert_eq!(
+                rig.ctl.ui().shows,
+                shows,
+                "{style:?}: no window for a password"
+            );
+            assert_eq!(
+                rig.ctl.predictor().calls.len(),
+                calls,
+                "{style:?}: nothing was predicted from it"
+            );
+            assert!(rig.ctl.machine().context().is_empty(), "{style:?}");
+            assert!(!rig.digit('1'), "{style:?}");
+            // and back to a text field
+            rig.ctl.host_mut().secure = false;
+            rig.type_text("fn", style);
+            assert!(rig.ctl.ui().visible, "{style:?}: suggestions again");
+        }
     }
 
     #[test]
