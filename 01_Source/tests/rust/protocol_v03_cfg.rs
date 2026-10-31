@@ -396,7 +396,7 @@ fn bundles_carry_the_whole_table_or_the_asked_keys() {
     let mut h = Harness::open();
     let all = h.call(r#"{"op":"ui.bundle","locale":"zh-CN"}"#);
     let table = field(&all, "bundle").as_object().unwrap();
-    assert_eq!(table.len(), 104);
+    assert_eq!(table.len(), 122);
     assert_eq!(s(field(&all, "bundle"), "status.off"), "关闭");
     // placeholders are blank unless the raw templates are asked for
     let some = h.call(r#"{"op":"ui.bundle","keys":["f1.hunk","status.off","10","2"]}"#);

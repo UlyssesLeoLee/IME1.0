@@ -106,6 +106,24 @@
   "annotate.done",
   "annotate.kind.comment",
   "annotate.kind.graph",
+  "f2.progress",
+  "f2.noOptCode",
+  "f2.noOptProse",
+  "f2.copied",
+  "f2.template",
+  "f2.why.aiOff",
+  "f2.why.untrusted",
+  "f2.why.noKey",
+  "f2.why.declined",
+  "f2.why.tooLarge",
+  "f2.sensitiveBlocked",
+  "f2.sensitiveName",
+  "f2.selectionRequired",
+  "f2.selectionTooLarge",
+  "f2.replyInvalid",
+  "f2.unverified",
+  "f2.error",
+  "f2.redacted",
   "engine.status",
   "engine.unavailable",
   "engine.reload",
@@ -943,6 +961,150 @@
     "a Cypher relation comment",
     "Cypher 关系注释",
     "Cypher 関係コメント"
+   ]
+  },
+  {
+   "key": "f2.progress",
+   "texts": [
+    "Building the 5W1H prompt with your AI (Cancel leaves the clipboard unchanged)…",
+    "正在请你的 AI 生成 5W1H 提示词（取消则剪贴板保持不变）…",
+    "AI に 5W1H プロンプトを作成させています（キャンセルするとクリップボードは変わりません）…"
+   ]
+  },
+  {
+   "key": "f2.noOptCode",
+   "texts": [
+    "No optimisation needed: the AI found no verified problem in the selected code. The clipboard was not changed.",
+    "无需优化：AI 没有在所选代码中发现经核实的问题。剪贴板未改动。",
+    "最適化は不要です：AI は選択したコードに検証済みの問題を見つけませんでした。クリップボードは変更していません。"
+   ]
+  },
+  {
+   "key": "f2.noOptProse",
+   "texts": [
+    "No optimisation needed: the text already answers who, what, when, where, why and how. The clipboard was not changed.",
+    "无需优化：这段文字已经回答了谁、做什么、何时、何处、为什么、怎么做。剪贴板未改动。",
+    "最適化は不要です：この文章は、誰が・何を・いつ・どこで・なぜ・どのように、にすでに答えています。クリップボードは変更していません。"
+   ]
+  },
+  {
+   "key": "f2.copied",
+   "texts": [
+    "Copied {0} characters: paste it into your AI assistant.",
+    "已复制 {0} 个字符：请粘贴到你的 AI 助手。",
+    "{0} 文字をコピーしました：AI アシスタントに貼り付けてください。"
+   ]
+  },
+  {
+   "key": "f2.template",
+   "texts": [
+    "Copied an UNREVIEWED template ({0} characters). Nothing was analysed: {1}. Answer the <bracketed> questions, then send it.",
+    "已复制【未经审阅】的模板（{0} 个字符）。没有做任何分析：{1}。请先回答尖括号里的问题再发送。",
+    "【未レビュー】のテンプレートをコピーしました（{0} 文字）。分析は行っていません：{1}。山括弧内の質問に答えてから送信してください。"
+   ]
+  },
+  {
+   "key": "f2.why.aiOff",
+   "texts": [
+    "AI is off",
+    "AI 已关闭",
+    "AI がオフです"
+   ]
+  },
+  {
+   "key": "f2.why.untrusted",
+   "texts": [
+    "this workspace is not trusted",
+    "当前工作区不受信任",
+    "このワークスペースは信頼されていません"
+   ]
+  },
+  {
+   "key": "f2.why.noKey",
+   "texts": [
+    "no AI provider, model and key are configured",
+    "尚未配置 AI 服务商、模型和 API Key",
+    "AI プロバイダー、モデル、API キーが未設定です"
+   ]
+  },
+  {
+   "key": "f2.why.declined",
+   "texts": [
+    "sending was not authorised",
+    "没有授权发送",
+    "送信が許可されませんでした"
+   ]
+  },
+  {
+   "key": "f2.why.tooLarge",
+   "texts": [
+    "the file is larger than 2 MiB",
+    "文件超过 2 MiB",
+    "ファイルが 2 MiB を超えています"
+   ]
+  },
+  {
+   "key": "f2.sensitiveBlocked",
+   "texts": [
+    "Looks sensitive ({0}): nothing was sent to an AI and nothing was copied.",
+    "疑似敏感内容（{0}）：未向 AI 发送任何内容，也未复制任何内容。",
+    "機密の可能性があります（{0}）：AI には何も送信せず、何もコピーしていません。"
+   ]
+  },
+  {
+   "key": "f2.sensitiveName",
+   "texts": [
+    "sensitive file name",
+    "敏感文件名",
+    "機密ファイル名"
+   ]
+  },
+  {
+   "key": "f2.selectionRequired",
+   "texts": [
+    "Select some text or code first, then run \"F2 Prompt\".",
+    "请先选中一段文字或代码，再运行“F2 提示词”。",
+    "先にテキストまたはコードを選択してから「F2 プロンプト」を実行してください。"
+   ]
+  },
+  {
+   "key": "f2.selectionTooLarge",
+   "texts": [
+    "The selection has {0} characters; the limit is {1}. Select less.",
+    "选区有 {0} 个字符，上限是 {1}。请缩小选区。",
+    "選択範囲は {0} 文字で、上限は {1} 文字です。範囲を小さくしてください。"
+   ]
+  },
+  {
+   "key": "f2.replyInvalid",
+   "texts": [
+    "The AI did not return the requested JSON object, so nothing was copied. Try again or choose another model.",
+    "AI 没有返回要求的 JSON 对象，所以没有复制任何内容。请重试或换一个模型。",
+    "AI が要求された JSON オブジェクトを返さなかったため、何もコピーしていません。再試行するか別のモデルを選んでください。"
+   ]
+  },
+  {
+   "key": "f2.unverified",
+   "texts": [
+    "The AI reported problems, but none of them could be found in your file, so nothing was copied.",
+    "AI 报告了问题，但在你的文件中找不到其中任何一条，所以没有复制任何内容。",
+    "AI は問題を報告しましたが、どれもファイル内に見つからなかったため、何もコピーしていません。"
+   ]
+  },
+  {
+   "key": "f2.error",
+   "texts": [
+    "F2 prompt failed, the clipboard was not changed: {0}",
+    "F2 提示词失败，剪贴板未改动：{0}",
+    "F2 プロンプトに失敗し、クリップボードは変更していません：{0}"
+   ]
+  },
+  {
+   "key": "f2.redacted",
+   "texts": [
+    "{0} secret-like value(s) replaced by PIME_REDACTED_n markers (not restored)",
+    "{0} 处疑似密钥已替换为 PIME_REDACTED_n 标记（未还原）",
+    "{0} 件の機密候補を PIME_REDACTED_n マーカーに置き換え済み（復元されません）"
    ]
   },
   {
@@ -3031,6 +3193,330 @@
   },
   {
    "locale": "zh-CN",
+   "key": "f2.progress",
+   "args": [],
+   "expect": "正在请你的 AI 生成 5W1H 提示词（取消则剪贴板保持不变）…"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.progress",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "正在请你的 AI 生成 5W1H 提示词（取消则剪贴板保持不变）…"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.noOptCode",
+   "args": [],
+   "expect": "无需优化：AI 没有在所选代码中发现经核实的问题。剪贴板未改动。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.noOptCode",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "无需优化：AI 没有在所选代码中发现经核实的问题。剪贴板未改动。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.noOptProse",
+   "args": [],
+   "expect": "无需优化：这段文字已经回答了谁、做什么、何时、何处、为什么、怎么做。剪贴板未改动。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.noOptProse",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "无需优化：这段文字已经回答了谁、做什么、何时、何处、为什么、怎么做。剪贴板未改动。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.copied",
+   "args": [],
+   "expect": "已复制  个字符：请粘贴到你的 AI 助手。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.copied",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已复制 A 个字符：请粘贴到你的 AI 助手。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.template",
+   "args": [],
+   "expect": "已复制【未经审阅】的模板（ 个字符）。没有做任何分析：。请先回答尖括号里的问题再发送。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.template",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已复制【未经审阅】的模板（A 个字符）。没有做任何分析：B。请先回答尖括号里的问题再发送。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.aiOff",
+   "args": [],
+   "expect": "AI 已关闭"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.aiOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI 已关闭"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.untrusted",
+   "args": [],
+   "expect": "当前工作区不受信任"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.untrusted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "当前工作区不受信任"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.noKey",
+   "args": [],
+   "expect": "尚未配置 AI 服务商、模型和 API Key"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.noKey",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "尚未配置 AI 服务商、模型和 API Key"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.declined",
+   "args": [],
+   "expect": "没有授权发送"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.declined",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "没有授权发送"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.tooLarge",
+   "args": [],
+   "expect": "文件超过 2 MiB"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.why.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "文件超过 2 MiB"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.sensitiveBlocked",
+   "args": [],
+   "expect": "疑似敏感内容（）：未向 AI 发送任何内容，也未复制任何内容。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.sensitiveBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "疑似敏感内容（A）：未向 AI 发送任何内容，也未复制任何内容。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.sensitiveName",
+   "args": [],
+   "expect": "敏感文件名"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.sensitiveName",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "敏感文件名"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.selectionRequired",
+   "args": [],
+   "expect": "请先选中一段文字或代码，再运行“F2 提示词”。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.selectionRequired",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "请先选中一段文字或代码，再运行“F2 提示词”。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.selectionTooLarge",
+   "args": [],
+   "expect": "选区有  个字符，上限是 。请缩小选区。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.selectionTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "选区有 A 个字符，上限是 B。请缩小选区。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.replyInvalid",
+   "args": [],
+   "expect": "AI 没有返回要求的 JSON 对象，所以没有复制任何内容。请重试或换一个模型。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI 没有返回要求的 JSON 对象，所以没有复制任何内容。请重试或换一个模型。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.unverified",
+   "args": [],
+   "expect": "AI 报告了问题，但在你的文件中找不到其中任何一条，所以没有复制任何内容。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.unverified",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI 报告了问题，但在你的文件中找不到其中任何一条，所以没有复制任何内容。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.error",
+   "args": [],
+   "expect": "F2 提示词失败，剪贴板未改动："
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.error",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 提示词失败，剪贴板未改动：A"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.redacted",
+   "args": [],
+   "expect": " 处疑似密钥已替换为 PIME_REDACTED_n 标记（未还原）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f2.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 处疑似密钥已替换为 PIME_REDACTED_n 标记（未还原）"
+  },
+  {
+   "locale": "zh-CN",
    "key": "engine.status",
    "args": [],
    "expect": "核心不可用"
@@ -4900,6 +5386,330 @@
     "E"
    ],
    "expect": "a Cypher relation comment"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.progress",
+   "args": [],
+   "expect": "Building the 5W1H prompt with your AI (Cancel leaves the clipboard unchanged)…"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.progress",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Building the 5W1H prompt with your AI (Cancel leaves the clipboard unchanged)…"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.noOptCode",
+   "args": [],
+   "expect": "No optimisation needed: the AI found no verified problem in the selected code. The clipboard was not changed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.noOptCode",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No optimisation needed: the AI found no verified problem in the selected code. The clipboard was not changed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.noOptProse",
+   "args": [],
+   "expect": "No optimisation needed: the text already answers who, what, when, where, why and how. The clipboard was not changed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.noOptProse",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No optimisation needed: the text already answers who, what, when, where, why and how. The clipboard was not changed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.copied",
+   "args": [],
+   "expect": "Copied  characters: paste it into your AI assistant."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.copied",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Copied A characters: paste it into your AI assistant."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.template",
+   "args": [],
+   "expect": "Copied an UNREVIEWED template ( characters). Nothing was analysed: . Answer the <bracketed> questions, then send it."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.template",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Copied an UNREVIEWED template (A characters). Nothing was analysed: B. Answer the <bracketed> questions, then send it."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.aiOff",
+   "args": [],
+   "expect": "AI is off"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.aiOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI is off"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.untrusted",
+   "args": [],
+   "expect": "this workspace is not trusted"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.untrusted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "this workspace is not trusted"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.noKey",
+   "args": [],
+   "expect": "no AI provider, model and key are configured"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.noKey",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "no AI provider, model and key are configured"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.declined",
+   "args": [],
+   "expect": "sending was not authorised"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.declined",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "sending was not authorised"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.tooLarge",
+   "args": [],
+   "expect": "the file is larger than 2 MiB"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.why.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "the file is larger than 2 MiB"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.sensitiveBlocked",
+   "args": [],
+   "expect": "Looks sensitive (): nothing was sent to an AI and nothing was copied."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.sensitiveBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Looks sensitive (A): nothing was sent to an AI and nothing was copied."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.sensitiveName",
+   "args": [],
+   "expect": "sensitive file name"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.sensitiveName",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "sensitive file name"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.selectionRequired",
+   "args": [],
+   "expect": "Select some text or code first, then run \"F2 Prompt\"."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.selectionRequired",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Select some text or code first, then run \"F2 Prompt\"."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.selectionTooLarge",
+   "args": [],
+   "expect": "The selection has  characters; the limit is . Select less."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.selectionTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The selection has A characters; the limit is B. Select less."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.replyInvalid",
+   "args": [],
+   "expect": "The AI did not return the requested JSON object, so nothing was copied. Try again or choose another model."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The AI did not return the requested JSON object, so nothing was copied. Try again or choose another model."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.unverified",
+   "args": [],
+   "expect": "The AI reported problems, but none of them could be found in your file, so nothing was copied."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.unverified",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The AI reported problems, but none of them could be found in your file, so nothing was copied."
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.error",
+   "args": [],
+   "expect": "F2 prompt failed, the clipboard was not changed: "
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.error",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 prompt failed, the clipboard was not changed: A"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.redacted",
+   "args": [],
+   "expect": " secret-like value(s) replaced by PIME_REDACTED_n markers (not restored)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f2.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A secret-like value(s) replaced by PIME_REDACTED_n markers (not restored)"
   },
   {
    "locale": "en-US",
@@ -6775,6 +7585,330 @@
   },
   {
    "locale": "ja-JP",
+   "key": "f2.progress",
+   "args": [],
+   "expect": "AI に 5W1H プロンプトを作成させています（キャンセルするとクリップボードは変わりません）…"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.progress",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI に 5W1H プロンプトを作成させています（キャンセルするとクリップボードは変わりません）…"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.noOptCode",
+   "args": [],
+   "expect": "最適化は不要です：AI は選択したコードに検証済みの問題を見つけませんでした。クリップボードは変更していません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.noOptCode",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "最適化は不要です：AI は選択したコードに検証済みの問題を見つけませんでした。クリップボードは変更していません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.noOptProse",
+   "args": [],
+   "expect": "最適化は不要です：この文章は、誰が・何を・いつ・どこで・なぜ・どのように、にすでに答えています。クリップボードは変更していません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.noOptProse",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "最適化は不要です：この文章は、誰が・何を・いつ・どこで・なぜ・どのように、にすでに答えています。クリップボードは変更していません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.copied",
+   "args": [],
+   "expect": " 文字をコピーしました：AI アシスタントに貼り付けてください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.copied",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 文字をコピーしました：AI アシスタントに貼り付けてください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.template",
+   "args": [],
+   "expect": "【未レビュー】のテンプレートをコピーしました（ 文字）。分析は行っていません：。山括弧内の質問に答えてから送信してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.template",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "【未レビュー】のテンプレートをコピーしました（A 文字）。分析は行っていません：B。山括弧内の質問に答えてから送信してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.aiOff",
+   "args": [],
+   "expect": "AI がオフです"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.aiOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI がオフです"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.untrusted",
+   "args": [],
+   "expect": "このワークスペースは信頼されていません"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.untrusted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "このワークスペースは信頼されていません"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.noKey",
+   "args": [],
+   "expect": "AI プロバイダー、モデル、API キーが未設定です"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.noKey",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI プロバイダー、モデル、API キーが未設定です"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.declined",
+   "args": [],
+   "expect": "送信が許可されませんでした"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.declined",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "送信が許可されませんでした"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.tooLarge",
+   "args": [],
+   "expect": "ファイルが 2 MiB を超えています"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.why.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "ファイルが 2 MiB を超えています"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.sensitiveBlocked",
+   "args": [],
+   "expect": "機密の可能性があります（）：AI には何も送信せず、何もコピーしていません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.sensitiveBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "機密の可能性があります（A）：AI には何も送信せず、何もコピーしていません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.sensitiveName",
+   "args": [],
+   "expect": "機密ファイル名"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.sensitiveName",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "機密ファイル名"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.selectionRequired",
+   "args": [],
+   "expect": "先にテキストまたはコードを選択してから「F2 プロンプト」を実行してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.selectionRequired",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "先にテキストまたはコードを選択してから「F2 プロンプト」を実行してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.selectionTooLarge",
+   "args": [],
+   "expect": "選択範囲は  文字で、上限は  文字です。範囲を小さくしてください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.selectionTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "選択範囲は A 文字で、上限は B 文字です。範囲を小さくしてください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.replyInvalid",
+   "args": [],
+   "expect": "AI が要求された JSON オブジェクトを返さなかったため、何もコピーしていません。再試行するか別のモデルを選んでください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI が要求された JSON オブジェクトを返さなかったため、何もコピーしていません。再試行するか別のモデルを選んでください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.unverified",
+   "args": [],
+   "expect": "AI は問題を報告しましたが、どれもファイル内に見つからなかったため、何もコピーしていません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.unverified",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI は問題を報告しましたが、どれもファイル内に見つからなかったため、何もコピーしていません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.error",
+   "args": [],
+   "expect": "F2 プロンプトに失敗し、クリップボードは変更していません："
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.error",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 プロンプトに失敗し、クリップボードは変更していません：A"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.redacted",
+   "args": [],
+   "expect": " 件の機密候補を PIME_REDACTED_n マーカーに置き換え済み（復元されません）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f2.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 件の機密候補を PIME_REDACTED_n マーカーに置き換え済み（復元されません）"
+  },
+  {
+   "locale": "ja-JP",
    "key": "engine.status",
    "args": [],
    "expect": "コア利用不可"
@@ -8644,6 +9778,330 @@
     "E"
    ],
    "expect": "a Cypher relation comment"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.progress",
+   "args": [],
+   "expect": "Building the 5W1H prompt with your AI (Cancel leaves the clipboard unchanged)…"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.progress",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Building the 5W1H prompt with your AI (Cancel leaves the clipboard unchanged)…"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.noOptCode",
+   "args": [],
+   "expect": "No optimisation needed: the AI found no verified problem in the selected code. The clipboard was not changed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.noOptCode",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No optimisation needed: the AI found no verified problem in the selected code. The clipboard was not changed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.noOptProse",
+   "args": [],
+   "expect": "No optimisation needed: the text already answers who, what, when, where, why and how. The clipboard was not changed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.noOptProse",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No optimisation needed: the text already answers who, what, when, where, why and how. The clipboard was not changed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.copied",
+   "args": [],
+   "expect": "Copied  characters: paste it into your AI assistant."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.copied",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Copied A characters: paste it into your AI assistant."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.template",
+   "args": [],
+   "expect": "Copied an UNREVIEWED template ( characters). Nothing was analysed: . Answer the <bracketed> questions, then send it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.template",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Copied an UNREVIEWED template (A characters). Nothing was analysed: B. Answer the <bracketed> questions, then send it."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.aiOff",
+   "args": [],
+   "expect": "AI is off"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.aiOff",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "AI is off"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.untrusted",
+   "args": [],
+   "expect": "this workspace is not trusted"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.untrusted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "this workspace is not trusted"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.noKey",
+   "args": [],
+   "expect": "no AI provider, model and key are configured"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.noKey",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "no AI provider, model and key are configured"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.declined",
+   "args": [],
+   "expect": "sending was not authorised"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.declined",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "sending was not authorised"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.tooLarge",
+   "args": [],
+   "expect": "the file is larger than 2 MiB"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.why.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "the file is larger than 2 MiB"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.sensitiveBlocked",
+   "args": [],
+   "expect": "Looks sensitive (): nothing was sent to an AI and nothing was copied."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.sensitiveBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Looks sensitive (A): nothing was sent to an AI and nothing was copied."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.sensitiveName",
+   "args": [],
+   "expect": "sensitive file name"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.sensitiveName",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "sensitive file name"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.selectionRequired",
+   "args": [],
+   "expect": "Select some text or code first, then run \"F2 Prompt\"."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.selectionRequired",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Select some text or code first, then run \"F2 Prompt\"."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.selectionTooLarge",
+   "args": [],
+   "expect": "The selection has  characters; the limit is . Select less."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.selectionTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The selection has A characters; the limit is B. Select less."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.replyInvalid",
+   "args": [],
+   "expect": "The AI did not return the requested JSON object, so nothing was copied. Try again or choose another model."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The AI did not return the requested JSON object, so nothing was copied. Try again or choose another model."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.unverified",
+   "args": [],
+   "expect": "The AI reported problems, but none of them could be found in your file, so nothing was copied."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.unverified",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The AI reported problems, but none of them could be found in your file, so nothing was copied."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.error",
+   "args": [],
+   "expect": "F2 prompt failed, the clipboard was not changed: "
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.error",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "F2 prompt failed, the clipboard was not changed: A"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.redacted",
+   "args": [],
+   "expect": " secret-like value(s) replaced by PIME_REDACTED_n markers (not restored)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f2.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A secret-like value(s) replaced by PIME_REDACTED_n markers (not restored)"
   },
   {
    "locale": "fr-FR",
