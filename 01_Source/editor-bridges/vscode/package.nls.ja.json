@@ -15,5 +15,6 @@
   "cmd.showDiagnostics": "Programming IME: 診断を表示",
   "cmd.reloadRules": "Programming IME: ユーザー規則を再読み込み",
   "cmd.openRulesFolder": "Programming IME: ユーザー規則フォルダーを開く",
-  "cmd.f1Edit": "Programming IME: F1 AI 編集（ファイル全体 / カーソル位置に挿入）"
+  "cmd.f1Edit": "Programming IME: F1 AI 編集（ファイル全体 / カーソル位置に挿入）",
+  "cmd.f2Prompt": "Programming IME: F2 プロンプト（5W1H プロンプトをクリップボードへ）"
 }

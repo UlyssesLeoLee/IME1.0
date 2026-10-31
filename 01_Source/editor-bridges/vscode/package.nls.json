@@ -15,5 +15,6 @@
   "cmd.showDiagnostics": "Programming IME: Show Diagnostics",
   "cmd.reloadRules": "Programming IME: Reload User Rules",
   "cmd.openRulesFolder": "Programming IME: Open User Rules Folder",
-  "cmd.f1Edit": "Programming IME: F1 AI Edit (Whole File / Insert)"
+  "cmd.f1Edit": "Programming IME: F1 AI Edit (Whole File / Insert)",
+  "cmd.f2Prompt": "Programming IME: F2 Prompt (5W1H Prompt to Clipboard)"
 }
