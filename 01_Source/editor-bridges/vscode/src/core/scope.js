@@ -707,9 +707,17 @@ function resolveIn(an, s, e, maxChars, partial) {
       if (o) { const r = an.roots[o - 1]; base = entry(src, 'block', r.first, r.last); }
       else {
         let a = t, b = t;
-        while (a > 0 && src.kind[a - 1] !== 0 && an.owner[a - 1] === 0) a--;
-        while (b < src.L - 1 && src.kind[b + 1] !== 0 && an.owner[b + 1] === 0) b++;
-        base = entry(src, 'block', a, b);
+        while (a > 0 && src.kind[a - 1] !== 0) a--;
+        while (b < src.L - 1 && src.kind[b + 1] !== 0) b++;
+        // never cut a declaration in half: one that has blank lines inside and crosses a border of the paragraph stays out of it
+        // (a declaration that lies wholly inside the paragraph is part of it)
+        for (let moved = true; moved;) {
+          moved = false;
+          const ra = an.owner[a] ? an.roots[an.owner[a] - 1] : null, rb = an.owner[b] ? an.roots[an.owner[b] - 1] : null;
+          if (ra && ra.first < a && ra.last < t) { a = ra.last + 1; moved = true; }
+          if (rb && rb.last > b && rb.first > t) { b = rb.first - 1; moved = true; }
+        }
+        base = entry(src, 'block', Math.min(a, t), Math.max(b, t));
       }
       path = [];
     }
