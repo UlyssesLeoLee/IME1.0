@@ -84,6 +84,36 @@ test('ANN-31a things that must stay on line 1 or 2 of the file: hashbang and the
   assert.equal(mask('python', 'a = 1\nb = 2\n# coding: latin-1\nc = 3'), '1111', 'later than line 2 it is an ordinary comment');
 });
 
+test('ANN-31b a scope that is a slice of a file: one that starts or ends inside a multi-line literal is not trusted', () => {
+  // started inside a docstring / template / block comment: the closing delimiter looks like an opener, so the text ends "inside a string"
+  assert.equal(mask('python', '    more\n    """\n    return 1'), '000');
+  assert.equal(mask('typescript', 'y ${b}\nz`;\nlet c = 1;'), '000');
+  assert.equal(mask('rust', 'still */ let c = 1;\nlet d = 2;'), '00', 'a stray block comment closer');
+  assert.equal(mask('typescript', ' * more\n */\nlet d = 2;'), '000');
+  assert.equal(mask('c', ' * more\n */\nint d;'), '000');
+  assert.equal(mask('powershell', 'more\n<# never closed\n$c = 1'), '000');
+  assert.equal(mask('rust', 'let s = "never closed\nmore'), '00','and a scope cut inside a literal looks the same');
+  assert.equal(mask('python', 'x = """abc\ndef'), '00');
+  // ... while literals that end at the end of the text are fine
+  assert.equal(mask('python', 'def f():\n    """doc"""'), '11');
+  assert.equal(mask('rust', 'let s = "x";'), '1'); assert.equal(mask('rust', '/* a\nb */'), '10'); assert.equal(mask('rust', 'let r = r#"a\nb"#'), '10');
+  assert.equal(mask('typescript', 'let t = `a\nb`'), '10'); assert.equal(mask('c', '/* a\n */'), '10');
+  assert.equal(mask('powershell', '$a = @"\nx\n"@'), '100'); assert.equal(mask('python', "s = 'a\\\\'"), '1');
+  // with the file (the prompt has it: fileText + scope.startLine) the whole file decides, even when both ends of the slice are cut
+  const file = 'def f():\n    """doc\n    more\n    """\n    x = 1\n    y = """\n    tail\n    """\n    return 1\n';
+  const win = '    more\n    """\n    x = 1\n    y = """\n    tail\n';
+  assert.equal(mask('python', win).length, 6);
+  const ctx = {fileText: file, startLine: 3};
+  assert.deepEqual(A.scopeAnchors('python', win, {}, ctx).map(a => a.anchorable), [false, false, false, false, false, true], 'lines 3, 4 and 7 of the file are docstring text; the last entry is the empty segment after the final line break');
+  assert.equal(A.scopeAnchors('python', win, {}, {fileText: file, startLine: 4}).length, 6, 'a context that does not hold the scope there is ignored');
+  assert.equal(mask('python', win), A.scopeAnchors('python', win, {}, {fileText: file, startLine: 2}).map(a => a.anchorable ? '1' : '0').join(''));
+  const r = A.applyScopeReply(reply([{line: 1, text: 'inside the docstring'}, {line: 5, text: 'also inside'}]), {profile: 'python', scopeText: win, comment: true, ...ctx});
+  assert.equal(r.ok, false); assert.equal(r.dropped.invalidAnchor, 2); assert.equal(r.text, win);
+  const p = JSON.parse(A.buildScopePrompt({language: 'python', comment: true, fileText: file, scope: {startLine: 3, endLine: 7, text: win}}).input);
+  assert.deepEqual(p.anchorable, [], 'the prompt offers none of them either');
+  assert.deepEqual(JSON.parse(A.buildScopePrompt({language: 'python', comment: true, fileText: file, scope: {startLine: 5, endLine: 9, text: '    x = 1\n    y = """\n    tail\n    """\n    return 1'}}).input).anchorable, [1, 2, 5]);
+});
+
 test('ANN-32 JSX (tsx): text and tag markup are refused, {expressions} are code again, TypeScript generics are not JSX', () => {
   const tsx = ['function A() {', '  return (', '    <div className="a"', '      id="b">', '      Hello', '      {items.map(i => (', '        <li key={i}>', '          {i}', '        </li>', '      ))}', '    </div>', '  );', '}'].join('\n');
   assert.equal(mask('typescript', tsx, {mode: 'tsx'}), '1110001001011');
@@ -282,7 +312,11 @@ const SAMPLES = [
   ['c', {}, '#include <stdio.h>\n#define SQ(x) \\\n    ((x) * \\\n     (x))\n/* head\n * comment */\nint main(void) {\n    const char *s = "a\\\nb";\n    char c = \'"\';\n    return SQ(2); // done\n}\n'],
   ['assembly', {assembler: 'nasm'}, 'section .text\nglobal _start\n_start:\n    mov rax, 1 ; one\n    mov rdi, msg\n    db "a;b", 0\n    ret\n'],
   ['assembly', {assembler: 'gas'}, '.text\n/* gas block\n   comment */\n_start:\n    movq $1, %rax # one\n    ret\n'],
-  ['machine-code', {}, '48 89 D8 // mov rax, rbx\nC3\n']
+  ['machine-code', {}, '48 89 D8 // mov rax, rbx\nC3\n'],
+  // splits that tempt an anchor into the middle of a construct: attribute arguments, else / { on their own lines, a split call
+  ['rust', {}, '#[derive(\n    Debug,\n    Clone,\n)]\nstruct Q;\n\nfn t(x: bool) -> u8 {\n    if x\n    {\n        1\n    }\n    else\n    {\n        println!(\n            "{}",\n            2\n        );\n        2\n    }\n}\n'],
+  ['c', {}, 'int t(int x)\n{\n    if (x)\n    {\n        return 1;\n    }\n    else\n    {\n        return f(\n            x,\n            2);\n    }\n}\n#if 0\n#else\nint z;\n#endif\n'],
+  ['typescript', {mode: 'ts'}, 'const o = {\n  a: 1,\n  b: `x\n${y}`,\n  c: (z: number) =>\n    z + 1,\n};\nif (o)\n{\n  run();\n}\nelse\n{\n  stop();\n}\n']
 ];
 test('ANN-38 invariant (property): with a comment above every anchorable line the code is the original code and the new lines are comments', () => {
   for (const [profile, dialect, base] of SAMPLES) for (const eol of ['\n', '\r\n']) for (const trailing of [true, false]) {

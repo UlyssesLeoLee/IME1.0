@@ -195,7 +195,7 @@ function cLikeSpans(text, {ts = false, jsx = false, c: isC = false}) {
   };
   function template(i) { // `text ${code} text`, nesting allowed -> end
     for (let j = i + 1, ps = i; ;) {
-      if (j >= n) { push(ps, n, 'string'); return n; }
+      if (j >= n) { push(ps, n, 'string'); spans.open = true; return n; }
       const ch = text[j];
       if (ch === '\\') j += 2;
       else if (ch === '`') { push(ps, j + 1, 'string'); return j + 1; }
@@ -248,7 +248,8 @@ function cLikeSpans(text, {ts = false, jsx = false, c: isC = false}) {
         while (isC && e < n && (text[e - 1] === '\\' || text[e - 1] === '\r' && text[e - 2] === '\\')) e = eolOf(text, e + 1); // a spliced line continues the comment
         push(i, e, 'comment'); i = e; continue;
       }
-      if (c === '/' && d === '*') { const k = text.indexOf('*/', i + 2), e = k < 0 ? n : k + 2; push(i, e, 'comment'); i = e; continue; }
+      if (c === '/' && d === '*') { const k = text.indexOf('*/', i + 2), e = k < 0 ? n : k + 2; if (k < 0) spans.open = true; push(i, e, 'comment'); i = e; continue; }
+      if (c === '*' && d === '/') spans.open = true; // a block comment closer in code: the text started inside a block comment
       if (c === '"' || c === "'") { const e = skipQuoted(i, c); push(i, e, 'string'); i = e; expr = false; continue; }
       if (c === '`' && ts) { i = template(i); expr = false; continue; }
       if (c === '/' && ts && expr) { const e = regexEnd(i); if (e > 0) { i = e; expr = false; continue; } }
@@ -264,7 +265,7 @@ function cLikeSpans(text, {ts = false, jsx = false, c: isC = false}) {
         const digit = c >= '0' && c <= '9';
         while (j < n && (isWord(text[j]) || isC && digit && text[j] === "'" && isWord(text[j + 1]))) j++; // 1'000 is one number in C23 / C++14
         const word = text.slice(i, j), raw = isC && text[j] === '"' && /^(?:u8|u|U|L)?R$/.test(word) ? /^"([^()\\ \t\v\f\n"]{0,16})\(/.exec(text.slice(j, j + 20)) : null;
-        if (raw) { const close = `)${raw[1]}"`, k = text.indexOf(close, j + raw[0].length), e = k < 0 ? n : k + close.length; push(j, e, 'string'); j = e; }
+        if (raw) { const close = `)${raw[1]}"`, k = text.indexOf(close, j + raw[0].length), e = k < 0 ? n : k + close.length; if (k < 0) spans.open = true; push(j, e, 'string'); j = e; }
         expr = ts && REGEX_AFTER.has(word); i = j; continue;
       }
       if (c === ')' || c === ']') expr = false; else if (!/\s/.test(c)) expr = true;
@@ -275,12 +276,32 @@ function cLikeSpans(text, {ts = false, jsx = false, c: isC = false}) {
   scan(0, false);
   return spans;
 }
+// A scope is often a slice of a file. A slice that starts inside a multi-line literal (docstring, template, block comment) is lexed
+// wrongly: the closing delimiter looks like an opener, so the text ends inside a "string", or a block comment closer stands in code.
+// A slice cut inside a literal looks the same. Either way the lexing cannot be trusted and nothing is offered (see analyseScope).
+const closedQuote = b => b.length >= 2 && b.endsWith(b[0]) && (b.length - 1 - b.slice(0, -1).replace(/\\+$/, '').length) % 2 === 0;
+function endsOpen(profile, text, spans) {
+  const s = spans[spans.length - 1];
+  if (!s || s.end !== text.length) return false;
+  const b = text.slice(s.start, s.end);
+  if (profile === 'python') return /^("""|''')/.test(b) ? !(b.length >= 6 && b.endsWith(b.slice(0, 3))) : /^["']/.test(b) && !closedQuote(b);
+  if (profile === 'rust') {
+    if (b.startsWith('/*')) return !(b.length >= 4 && b.endsWith('*/'));
+    const m = /^b?r(#*)"/.exec(b);
+    return m ? !(b.length > m[0].length && b.endsWith('"' + m[1])) : b.startsWith('"') && !closedQuote(b);
+  }
+  if (profile === 'powershell') {
+    if (b.startsWith('<#')) return !(b.length >= 4 && b.endsWith('#>'));
+    return /^@["']/.test(b) ? !/\n["']@$/.test(b) : /^["']/.test(b) && !closedQuote(b);
+  }
+  return false;
+}
 // {start, end, kind} regions in which a comment line would not be a comment line (or would not stay one)
 function scopeSpans(profile, text, dialect) {
   const spans = [];
   if (profile === 'typescript') return cLikeSpans(text, {ts: true, jsx: dialect.mode !== 'ts'});
   if (profile === 'c') return cLikeSpans(text, {c: true});
-  if (STYLE[profile]) { maskSource(text, STYLE[profile], spans); return spans; }
+  if (STYLE[profile]) { const masked = maskSource(text, STYLE[profile], spans); spans.open = endsOpen(profile, text, spans) || (profile === 'rust' && masked.includes('*/')); return spans; }
   // assembly / machine code: strings and comments end with their line, GNU as also has /* */ blocks
   const prefixes = profile === 'assembly' ? [linePrefix(profile, dialect), '//'] : ['//', ';'];
   const blocks = profile === 'assembly' && dialect.assembler === 'gas';
@@ -306,15 +327,15 @@ function spanAt(spans, p) {
 // Line starts that maskSource sees inside a string or block comment. The own lexer above knows better for TypeScript and C, but the
 // codeFingerprint cross-check in applyScopeReply is built on maskSource and would reject a comment there, so such lines are not offered.
 // (maskSource pairs quotes across lines: one regex /"/ or one apostrophe in JSX text blinds it for the rest of the text.)
-function fingerprintBlind(profile, text, lines) {
+function fingerprintBlind(profile, text, lines, always = false) {
   const blocked = new Set();
-  if (!STYLE[profile] || profile !== 'typescript' && profile !== 'c') return blocked;
+  if (!STYLE[profile] || !always && profile !== 'typescript' && profile !== 'c') return blocked;
   const spans = []; maskSource(text, STYLE[profile], spans);
   lines.forEach((l, i) => { const s = l.start > 0 ? spanAt(spans, l.start) : null; if (s && s.start < l.start) blocked.add(i); });
   return blocked;
 }
 
-function analyseScope(profile, text, dialect = {}) {
+function analyseText(profile, text, dialect = {}) {
   text = typeof text === 'string' ? text : '';
   const lines = lineRanges(text), supported = supportsAnnotation(profile);
   const spans = supported ? scopeSpans(profile, text, dialect || {}) : [];
@@ -339,11 +360,31 @@ function analyseScope(profile, text, dialect = {}) {
     const cookie = [0, 1].find(i => i < lines.length && PY_CODING.test(text.slice(lines[i].start, lines[i].end)));
     if (cookie !== undefined) for (let i = 0; i <= cookie; i++) anchors[i].anchorable = false;
   }
-  return {text, lines, spans, anchors};
+  return {text, lines, spans, anchors, suspect: !!spans.open};
+}
+// With {fileText, startLine} (1-based line of the file where the scope starts) the scope's lines are judged by the whole file, which
+// knows when a selection starts inside a docstring or template. Used only when the file really holds the scope at that place.
+function fileView(profile, own, dialect, {fileText, startLine} = {}) {
+  if (typeof fileText !== 'string' || !Number.isSafeInteger(startLine) || startLine < 1 || fileText.length > 4000000) return null;
+  const fileLines = lineRanges(fileText), {text, lines} = own;
+  const shown = text.endsWith('\n') ? lines.length - 1 : lines.length;
+  if (startLine - 1 + shown > fileLines.length) return null;
+  for (let i = 0; i < shown; i++) { const f = fileLines[startLine - 1 + i], l = lines[i]; if (fileText.slice(f.start, f.end) !== text.slice(l.start, l.end)) return null; }
+  const file = analyseText(profile, fileText, dialect);
+  if (file.suspect) return null;
+  return lines.map((_, i) => i < shown ? file.anchors[startLine - 1 + i].anchorable : own.anchors[i].anchorable);
+}
+function analyseScope(profile, text, dialect = {}, context = null) {
+  const own = analyseText(profile, text, dialect), view = context && own.anchors.length ? fileView(profile, own, dialect, context) : null;
+  if (view) { // the whole file is the authority, still limited to what the fingerprint check (maskSource) can judge
+    const blind = fingerprintBlind(profile, own.text, own.lines, true);
+    own.anchors.forEach((a, i) => { a.anchorable = view[i] && !blind.has(i); });
+  } else if (own.suspect) own.anchors.forEach(a => { a.anchorable = false; });
+  return own;
 }
 // -> [{line, anchorable, indent}], one per line of `text` (0-based line). anchorable: a comment line inserted directly above it
 // cannot change the program.
-function scopeAnchors(profile, text, dialect = {}) { return analyseScope(profile, text, dialect).anchors; }
+function scopeAnchors(profile, text, dialect = {}, context = null) { return analyseScope(profile, text, dialect, context).anchors; }
 
 const isBlank = (text, l) => !/\S/.test(text.slice(l.start, l.end));
 // 1-based numbers of the lines a comment may be put above: safe to insert and not blank (a comment above a blank line is detached)
@@ -351,7 +392,7 @@ function commentTargets({lines, text, anchors}) { return anchors.map((a, i) => a
 
 function buildScopePrompt({language, dialect = {}, locale = 'en-US', comment, graph, fileName = '', fileText = '', intent = '', scope = {}, currentSymbols = [], directorySymbols = []}) {
   const {startLine, endLine, label = '', kind = 'declaration', text = ''} = scope || {};
-  const analysis = analyseScope(language, text, dialect), targets = commentTargets(analysis);
+  const analysis = analyseScope(language, text, dialect, {fileText, startLine}), targets = commentTargets(analysis);
   const shown = analysis.text.endsWith('\n') ? analysis.lines.slice(0, -1) : analysis.lines; // the empty segment after a final line break is no line
   const numbered = shown.map((l, i) => `${i + 1}| ${analysis.text.slice(l.start, l.end)}`).join('\n');
   const anchorable = []; targets.forEach((t, i) => { if (t && i < shown.length) anchorable.push(i + 1); });
@@ -393,7 +434,7 @@ const toLine = v => { const n = typeof v === 'string' && /^\s*\d{1,9}\s*$/.test(
 
 // -> {ok, text, notes, added: {comments, graph}, dropped: {invalidAnchor, duplicate, empty, overLimit, malformed}}
 // ok means something was added; otherwise text is the original scope text and notes say why.
-function applyScopeReply(raw, {profile, dialect = {}, scopeText, comment, graph}) {
+function applyScopeReply(raw, {profile, dialect = {}, scopeText, comment, graph, fileText, startLine}) {
   const original = typeof scopeText === 'string' ? scopeText : '';
   const blank = {invalidAnchor: 0, duplicate: 0, empty: 0, overLimit: 0, malformed: 0};
   const result = (ok, text, notes, added = {comments: 0, graph: false}, dropped = {...blank}) => ({ok, text, notes, added, dropped});
@@ -404,7 +445,7 @@ function applyScopeReply(raw, {profile, dialect = {}, scopeText, comment, graph}
   if (!data || typeof data !== 'object' || Array.isArray(data)) return result(false, original, ['reply-invalid']);
   if (!/\S/.test(original)) return result(false, original, ['empty-scope']);
 
-  const analysis = analyseScope(profile, original, dialect), {lines, spans, anchors} = analysis;
+  const analysis = analyseScope(profile, original, dialect, {fileText, startLine}), {lines, spans, anchors} = analysis;
   const targets = commentTargets(analysis), prefix = linePrefix(profile, dialect);
   const nl = original.indexOf('\n'), eol = nl > 0 && original[nl - 1] === '\r' ? '\r\n' : '\n';
   const items = comment && Array.isArray(data.comments) ? data.comments : [];
