@@ -3,6 +3,9 @@
 Requirements added by the project owner after the design baseline (SRS v1.2 has no ids for them; tests use ids `ANN-xx`).
 They extend FR-016 (authorisation), FR-049 (privacy filter) and the AI contract of SRS §6.3 without changing them.
 
+> The same wishes also drive **F1 annotate** (F1 with no selection comments the scope under the cursor, with a selection exactly the selected lines; comments are
+> anchored by our code, reviewed as hunks): see `docs/F1_ANNOTATE.md` (settings `programmingIme.f1Mode`, `programmingIme.f1AnnotateOnOpen`).
+
 ## Settings
 
 | Setting | Default | Meaning |

@@ -1,11 +1,14 @@
 'use strict';
-// F1 panel (SCR-02/03/04): two independent tabs (whole file / insert at cursor), per-hunk selection, exact target
-// positions, text markers (+/-) so meaning never relies on colour alone. The page has no network access (CSP) and
+// F1 panel (SCR-02/03/04): three independent tabs (whole file / insert at cursor / annotate the scope), per-hunk selection,
+// exact target positions, text markers (+/-) so meaning never relies on colour alone. The page has no network access (CSP) and
 // renders model text with textContent only; it cannot write to the document - only the extension can, after Apply.
+// The whole-file tab keeps its element ids (#apply-full, #open-diff, #preview, #validation, #cb-<hunk>, #regen-full); the annotate tab
+// uses the same pieces with the tab name added (#apply-annotate, #open-diff-annotate, #preview-annotate, #cb-annotate-<hunk>, ...).
 const crypto = require('node:crypto');
 
 const I18N_KEYS = ['f1.title', 'f1.intent', 'f1.generate', 'f1.regen', 'f1.cancel', 'f1.tab.full', 'f1.tab.insert', 'f1.idle', 'f1.loading', 'f1.openDiff', 'f1.applySelected', 'f1.applyInsert',
-  'f1.validation.ok', 'f1.validation.bad', 'f1.validation.warn', 'f1.noChange'];
+  'f1.validation.ok', 'f1.validation.bad', 'f1.validation.warn', 'f1.noChange',
+  'f1.ann.tab', 'f1.ann.intent', 'f1.ann.run', 'f1.ann.wider', 'f1.ann.narrower', 'f1.ann.crumbs', 'f1.ann.opt.comment', 'f1.ann.opt.graph'];
 
 function getHtml(cspSource, nonce) {
   return `<!DOCTYPE html>
@@ -39,6 +42,11 @@ function getHtml(cspSource, nonce) {
   pre.preview { max-height: 180px; overflow: auto; border: 1px solid var(--vscode-panel-border); padding: 4px 6px; font-family: var(--vscode-editor-font-family); }
   .cand { border: 1px solid var(--vscode-panel-border); margin: 8px 0; padding: 6px 8px; }
   .cand pre { margin: 4px 0; white-space: pre-wrap; font-family: var(--vscode-editor-font-family); }
+  .ann-scope { font-weight: 600; margin: 8px 0 2px; }
+  .ann-crumbs { color: var(--vscode-descriptionForeground); margin: 2px 0 6px; }
+  .ann-crumbs .crumb.current { color: var(--vscode-foreground); font-weight: 600; }
+  .ann-crumbs .crumb.blocked { text-decoration: line-through; }
+  label.opt { display: inline-flex; gap: 4px; align-items: center; }
   .hidden { display: none; }
 </style></head>
 <body>
@@ -54,14 +62,17 @@ function getHtml(cspSource, nonce) {
   <div role="tablist" aria-label="F1">
     <button role="tab" id="tab-full" aria-controls="panel-full" aria-selected="true"></button>
     <button role="tab" id="tab-insert" aria-controls="panel-insert" aria-selected="false"></button>
+    <button role="tab" id="tab-annotate" aria-controls="panel-annotate" aria-selected="false"></button>
   </div>
   <section role="tabpanel" id="panel-full" aria-labelledby="tab-full"></section>
   <section role="tabpanel" id="panel-insert" aria-labelledby="tab-insert" class="hidden"></section>
+  <section role="tabpanel" id="panel-annotate" aria-labelledby="tab-annotate" class="hidden"></section>
   <div class="meta" id="usage"></div>
 <script nonce="${nonce}">
 (function () {
   const vscode = acquireVsCodeApi();
   const $ = id => document.getElementById(id);
+  const TABS = ['full', 'insert', 'annotate'];
   let S = null, intentTouched = false;
   const post = m => vscode.postMessage(m);
   function mk(tag, props, ...kids) {
@@ -79,21 +90,51 @@ function getHtml(cspSource, nonce) {
     if (tab.scopeText) panel.append(mk('div', {class: 'meta'}, tab.scopeText));
     for (const note of tab.notes || []) panel.append(mk('div', {class: 'meta'}, note));
     if (tab.status !== 'ready') { if (tab.status !== 'unavailable') panel.append(regenRow('full')); return; }   // errors can be retried
-    if (tab.hunks.length) {
-      panel.append(mk('div', {}, tab.hunksText));
-      tab.hunks.forEach(h => {
-        const box = mk('input', {type: 'checkbox', id: 'cb-' + h.id, 'data-hunk': h.id, checked: h.selected, disabled: S.stale || S.busy, onchange: e => post({type: 'toggleHunk', id: h.id, on: e.target.checked})});
-        const diff = mk('div', {class: 'diff'}, mk('div', {class: 'l'}, h.header), h.lines.map(l => mk('span', {class: 'l ' + (l.kind === '+' ? 'add' : l.kind === '-' ? 'del' : '')}, l.kind + ' ' + l.text)));
-        panel.append(mk('fieldset', {class: 'hunk', 'data-hunk': h.id}, mk('legend', {}, box, ' ', mk('label', {for: 'cb-' + h.id}, h.title)), diff));
-      });
-      panel.append(mk('div', {class: 'meta', id: 'preview-title'}, tab.preview.title), mk('pre', {class: 'preview', id: 'preview', tabindex: '0'}, tab.preview.text));
-      const v = tab.validation;
-      panel.append(mk('div', {class: 'banner ' + (v.level === 'bad' ? 'error' : v.level === 'warn' ? 'warn' : ''), id: 'validation', 'data-level': v.level}, v.text, (v.issues || []).map(i => mk('div', {}, '- ' + i))));
-      panel.append(mk('div', {class: 'row'},
-        mk('button', {id: 'open-diff', class: 'secondary', onclick: () => post({type: 'openDiff'})}, S.i18n['f1.openDiff']),
-        mk('button', {id: 'apply-full', disabled: !tab.canApply, onclick: () => post({type: 'applyFull'})}, S.i18n['f1.applySelected'])));
-    }
+    if (tab.hunks.length) proposalBlock(panel, tab, 'full', 'applyFull');
     panel.append(regenRow('full'));
+  }
+  // The reviewable proposal, shared by the whole-file and the annotate tab: hunks with checkboxes, result preview, syntax check, Diff, Apply.
+  function proposalBlock(panel, tab, name, applyType) {
+    const own = base => name === 'full' ? base : base + '-' + name;
+    const cb = hunk => name === 'full' ? 'cb-' + hunk : 'cb-' + name + '-' + hunk;
+    panel.append(mk('div', {}, tab.hunksText));
+    tab.hunks.forEach(h => {
+      const box = mk('input', {type: 'checkbox', id: cb(h.id), 'data-hunk': h.id, checked: h.selected, disabled: S.stale || S.busy, onchange: e => post({type: 'toggleHunk', tab: name, id: h.id, on: e.target.checked})});
+      const diff = mk('div', {class: 'diff'}, mk('div', {class: 'l'}, h.header), h.lines.map(l => mk('span', {class: 'l ' + (l.kind === '+' ? 'add' : l.kind === '-' ? 'del' : '')}, l.kind + ' ' + l.text)));
+      panel.append(mk('fieldset', {class: 'hunk', 'data-hunk': h.id}, mk('legend', {}, box, ' ', mk('label', {for: cb(h.id)}, h.title)), diff));
+    });
+    panel.append(mk('div', {class: 'meta', id: own('preview-title')}, tab.preview.title), mk('pre', {class: 'preview', id: own('preview'), tabindex: '0'}, tab.preview.text));
+    const v = tab.validation;
+    panel.append(mk('div', {class: 'banner ' + (v.level === 'bad' ? 'error' : v.level === 'warn' ? 'warn' : ''), id: own('validation'), 'data-level': v.level}, v.text, (v.issues || []).map(i => mk('div', {}, '- ' + i))));
+    panel.append(mk('div', {class: 'row'},
+      mk('button', {id: own('open-diff'), class: 'secondary', onclick: () => post({type: 'openDiff', tab: name})}, S.i18n['f1.openDiff']),
+      mk('button', {id: 'apply-' + name, disabled: !tab.canApply, onclick: () => post({type: applyType})}, S.i18n['f1.applySelected'])));
+  }
+  // Annotate tab: the target (header, path of widening candidates, Wider / Narrower), what to add, then the proposal.
+  function renderAnnotate(panel, tab) {
+    const I = S.i18n;
+    panel.replaceChildren();
+    if (tab.scope) {
+      panel.append(mk('div', {class: 'ann-scope', id: 'ann-scope'}, tab.scope.text));
+      const crumbs = mk('div', {class: 'ann-crumbs', id: 'ann-crumbs', role: 'group', 'aria-label': I['f1.ann.crumbs']});
+      tab.scope.crumbs.forEach((c, i) => {
+        if (i) crumbs.append(mk('span', {class: 'sep', 'aria-hidden': 'true'}, ' > '));
+        crumbs.append(mk('span', {class: 'crumb' + (c.current ? ' current' : '') + (c.disabled ? ' blocked' : ''), 'aria-current': c.current ? 'true' : null, title: c.title || null}, c.label));
+      });
+      panel.append(crumbs, mk('div', {class: 'row'},
+        mk('button', {id: 'ann-narrower', class: 'secondary', disabled: !tab.scope.canNarrower, onclick: () => post({type: 'scope', move: 'narrower'})}, I['f1.ann.narrower']),
+        mk('button', {id: 'ann-wider', class: 'secondary', disabled: !tab.scope.canWider, onclick: () => post({type: 'scope', move: 'wider'})}, I['f1.ann.wider']),
+        tab.scope.hint ? mk('span', {class: 'meta', id: 'ann-hint'}, tab.scope.hint) : null));
+    }
+    if (tab.status !== 'unavailable') {
+      const opt = (name, label) => mk('label', {class: 'opt'}, mk('input', {type: 'checkbox', id: 'ann-opt-' + name, checked: tab.options[name], disabled: tab.options.locked, onchange: e => post({type: 'option', name, on: e.target.checked})}), ' ', label);
+      panel.append(mk('div', {class: 'row', role: 'group'}, opt('comment', I['f1.ann.opt.comment']), opt('graph', I['f1.ann.opt.graph'])));
+    }
+    panel.append(statusLine(tab));
+    for (const note of tab.notes || []) panel.append(mk('div', {class: 'meta'}, note));
+    if (tab.status === 'ready' && tab.hunks.length) proposalBlock(panel, tab, 'annotate', 'applyAnnotate');
+    if (tab.status !== 'unavailable') panel.append(mk('div', {class: 'row'},
+      mk('button', {class: 'secondary', id: 'regen-annotate', disabled: S.busy || !tab.canRun, onclick: () => post({type: 'regenerate', tab: 'annotate'})}, tab.status === 'idle' ? I['f1.ann.run'] : I['f1.regen'])));
   }
   function regenRow(tab) {
     return mk('div', {class: 'row'}, mk('button', {class: 'secondary', id: 'regen-' + tab, disabled: S.busy, onclick: () => post({type: 'regenerate', tab})}, S.i18n['f1.regen']));
@@ -115,28 +156,32 @@ function getHtml(cspSource, nonce) {
     document.documentElement.lang = S.lang || 'en';
     $('title').textContent = I['f1.title'];
     $('meta').textContent = S.metaText;
-    $('intent-label').textContent = I['f1.intent'];
+    $('intent-label').textContent = S.active === 'annotate' ? I['f1.ann.intent'] : I['f1.intent'];
     if (!intentTouched && $('intent').value === '') $('intent').value = S.intent || '';
     $('generate').textContent = I['f1.generate']; $('generate').disabled = !!S.busy || !S.canGenerate;
     $('cancel').textContent = I['f1.cancel']; $('cancel').disabled = !S.busy;
     const b = $('banner');
     b.className = 'banner' + (S.banner ? (S.banner.kind === 'error' ? ' error' : S.banner.kind === 'warn' ? ' warn' : '') : ' hidden');
     b.textContent = S.banner ? S.banner.text : '';
-    $('tab-full').textContent = I['f1.tab.full']; $('tab-insert').textContent = I['f1.tab.insert'];
-    for (const t of ['full', 'insert']) {
+    $('tab-full').textContent = I['f1.tab.full']; $('tab-insert').textContent = I['f1.tab.insert']; $('tab-annotate').textContent = I['f1.ann.tab'];
+    for (const t of TABS) {
       const active = S.active === t;
       $('tab-' + t).setAttribute('aria-selected', String(active)); $('tab-' + t).tabIndex = active ? 0 : -1;
       $('panel-' + t).classList.toggle('hidden', !active);
     }
+    // the panels are rebuilt on every state: a control that had the keyboard focus (a checkbox, Wider ...) keeps it
+    const focused = document.activeElement && document.activeElement.id && document.activeElement.closest('[role=tabpanel]') ? document.activeElement.id : '';
     renderFull($('panel-full'), S.tabs.full);
     renderInsert($('panel-insert'), S.tabs.insert);
+    renderAnnotate($('panel-annotate'), S.tabs.annotate);
+    if (focused && $(focused) && !$(focused).disabled) $(focused).focus();
     $('usage').textContent = S.usageText || '';
   }
   $('generate').addEventListener('click', () => post({type: 'generate', intent: $('intent').value}));
   $('cancel').addEventListener('click', () => post({type: 'cancel'}));
   $('intent').addEventListener('input', () => { intentTouched = true; });
   $('intent').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('generate').disabled) post({type: 'generate', intent: $('intent').value}); });
-  for (const t of ['full', 'insert']) $('tab-' + t).addEventListener('click', () => post({type: 'tab', tab: t}));
+  for (const t of TABS) $('tab-' + t).addEventListener('click', () => post({type: 'tab', tab: t}));
   window.addEventListener('message', e => { S = e.data; render(); });
   post({type: 'ready'});
 })();
