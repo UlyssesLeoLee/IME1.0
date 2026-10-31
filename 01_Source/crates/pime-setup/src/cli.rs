@@ -30,7 +30,7 @@ pub const USAGE: &str = "Programming IME setup (pre-release, not code signed)
 Usage: pime-setup.exe [options]
   (no options)     interactive install with a few prompts
   --silent, /S     no prompts
-  --prefix <dir>   install folder (default: %ProgramFiles%\\Programming IME)
+  --prefix <dir>   install folder (default: <64-bit Program Files>\\Programming IME)
   --dry-run        print the plan and exit; nothing is changed
   --no-register    do not register the text service (regsvr32)
   --no-arp         do not add the Add/Remove Programs entry
@@ -109,15 +109,12 @@ struct Reporter {
 }
 
 impl Reporter {
-    fn open(path: Option<&Path>) -> Reporter {
-        let file = path.and_then(|p| {
-            std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(p)
-                .ok()
-        });
-        Reporter { file }
+    /// `--log <file>` is the elevated child's report file, created by the parent: the child opens it without creating
+    /// it and refuses anything that is not that plain, empty file (a link or a pre-existing file planted at the name
+    /// would otherwise be written to with administrator rights).
+    fn open(path: Option<&Path>) -> Result<Reporter, String> {
+        let file = path.map(real::open_log_for_child).transpose()?;
+        Ok(Reporter { file })
     }
 
     fn line(&mut self, s: &str) {
@@ -160,13 +157,26 @@ pub fn run(raw: Vec<String>) -> i32 {
         say(USAGE);
         return EXIT_OK;
     }
+    // Before anything else: an elevated child that cannot trust its log file does nothing at all.
+    let mut rep = match Reporter::open(args.log.as_deref()) {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = writeln!(std::io::stderr(), "pime-setup: {e}");
+            return EXIT_FAILED;
+        }
+    };
     let interactive = !args.silent && !args.dry_run;
     if interactive {
         real::free_console_if_alone();
     }
     let lang = real::ui_language();
-    let system = SystemPaths::from_env();
-    let mut rep = Reporter::open(args.log.as_deref());
+    let system = match real::system_paths() {
+        Ok(s) => s,
+        Err(e) => {
+            let _ = writeln!(std::io::stderr(), "pime-setup: {e}");
+            return EXIT_FAILED;
+        }
+    };
     let outcome = if args.uninstall {
         uninstall_flow(&args, &system, lang, interactive, &mut rep)
     } else {
@@ -393,9 +403,16 @@ fn run_child(
     lang: Lang,
     rep: &mut Reporter,
 ) -> Result<Finish, Failure> {
-    let log_path = std::env::temp_dir().join(format!("pime-setup-{}.log", std::process::id()));
+    // The report file is made here, by the person's own process, under a random name, and kept open (nobody can delete
+    // or replace it) until the child is done; the child only opens it, it never creates it.
+    let mut log = real::PrivateLog::create().map_err(|e| {
+        failure(
+            EXIT_FAILED,
+            format!("cannot create the report file for the elevated setup: {e}"),
+        )
+    })?;
     child.push("--log".into());
-    child.push(log_path.display().to_string());
+    child.push(log.path().display().to_string());
     rep.line("administrator rights are needed: asking Windows for permission (UAC prompt)");
     let code = match real::run_elevated(exe, &child) {
         Ok(code) => code as i32,
@@ -413,8 +430,7 @@ fn run_child(
             ));
         }
     };
-    let log = std::fs::read_to_string(&log_path).unwrap_or_default();
-    let _ = std::fs::remove_file(&log_path);
+    let log = log.read_all();
     for l in echoed_lines(&log) {
         rep.line(l);
     }
@@ -493,14 +509,22 @@ fn uninstall_flow(
         return Ok(None);
     }
     if interactive {
+        let notes = plan
+            .warnings
+            .iter()
+            .map(|w| format!("\nWARNING: {w}"))
+            .collect::<String>();
         let ask = text(
             lang,
             Msg::ConfirmUninstall,
-            &[&plan.version, &plan.prefix.display().to_string()],
+            &[&plan.version, &plan.prefix.display().to_string(), &notes],
         );
         if !real::message_box(&text(lang, Msg::Title, &[]), &ask, Icon::Question, true) {
             return Err(failure(EXIT_CANCELLED, "cancelled"));
         }
+    }
+    for w in &plan.warnings {
+        rep.line(&format!("WARNING: {w}"));
     }
     if plan.requires_admin && !real::is_elevated() {
         let mut child = vec![

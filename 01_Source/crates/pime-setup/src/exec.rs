@@ -10,8 +10,8 @@
 use crate::backend::{Backend, RegValue, is_in_use};
 use crate::payload::Payload;
 use crate::plan::{
-    ARP_KEY, Action, FileSource, MANIFEST_NAME, Manifest, Plan, Step, inside_prefix, is_within,
-    path_key, same_path,
+    ARP_KEY, Action, FileSource, MANIFEST_NAME, Manifest, Plan, Step, TEXT_SERVICE_CLSID, arp_path,
+    inside_prefix, is_plain_id, is_within, path_key, same_path,
 };
 use std::fmt;
 use std::io;
@@ -162,12 +162,62 @@ fn read_prior_manifest(
     }
 }
 
+/// Entries of the pending-rename list that would act on a file inside `prefix` at the next restart. Folders (the
+/// prefix itself and its parents) are harmless, Windows only removes a folder that is empty by then, and so are the
+/// names this installer renamed its in-use files to (no install ever writes such a name).
+fn pending_conflicts(entries: &[String], prefix: &Path) -> Vec<String> {
+    entries
+        .iter()
+        .filter(|e| !e.is_empty() && is_within(Path::new(e), prefix, false) && !is_aside_name(e))
+        .cloned()
+        .collect()
+}
+
+/// Windows may still have deletions of files inside the install folder queued for the next restart (from an older
+/// setup that scheduled the paths of live files, or from anything else). Installing now would let them delete the new
+/// files at boot, so the install is refused until the restart. Only plans that need administrator rights look: only an
+/// elevated process can queue such an entry, and an install into a temporary folder stays off HKLM altogether.
+fn refuse_while_deletions_are_pending(
+    plan: &Plan,
+    b: &dyn Backend,
+    log: &mut dyn FnMut(&str),
+) -> Result<(), ExecError> {
+    if !plan.requires_admin {
+        return Ok(());
+    }
+    let entries = match b.pending_file_renames() {
+        Ok(entries) => entries,
+        Err(e) => {
+            log(&format!(
+                "note: could not read the list of file operations Windows has queued for the next restart ({}); continuing",
+                io_text(&e)
+            ));
+            return Ok(());
+        }
+    };
+    let hits = pending_conflicts(&entries, &plan.prefix);
+    let Some(first) = hits.first() else {
+        return Ok(());
+    };
+    Err(ExecError {
+        step: 0,
+        what: "pre-flight check".into(),
+        cause: format!(
+            "Windows still has {} file operation(s) inside {} queued for the next restart (for example {first}), and they would delete or replace the files installed now; restart the computer and run the setup again",
+            hits.len(),
+            plan.prefix.display()
+        ),
+        rollback_problems: Vec::new(),
+    })
+}
+
 fn install(
     plan: &Plan,
     inputs: &Inputs,
     b: &mut dyn Backend,
     log: &mut dyn FnMut(&str),
 ) -> Result<Outcome, ExecError> {
+    refuse_while_deletions_are_pending(plan, b, log)?;
     let prior = read_prior_manifest(b, plan, log);
     // Another install elsewhere owns the Add/Remove Programs entry (and the registration): installing here would orphan it.
     if plan
@@ -224,12 +274,18 @@ fn install(
 impl Runner<'_> {
     fn run_step(&mut self, step: &Step) -> Result<(), String> {
         match step {
-            Step::CreateDir(path) => self.create_dir_all(path),
+            Step::CreateDir(path) => {
+                self.create_dir_all(path)?;
+                // An install folder that already is a junction would send every file somewhere else.
+                self.b.check_plain(path, path)
+            }
             Step::PlaceFile { dest, source } => {
+                self.b.check_plain(&self.plan.prefix, dest)?;
                 let bytes = self.content(source)?;
                 self.place_file(dest, &bytes)
             }
             Step::RegisterTextService { dll } => {
+                self.b.check_plain(&self.plan.prefix, dll)?;
                 // Undo first: a failing regsvr32 may still have written part of the registration.
                 let was_registered = self
                     .prior
@@ -290,17 +346,14 @@ impl Runner<'_> {
             FileSource::SelfExe => Ok(self.inputs.self_exe.to_vec()),
             FileSource::Manifest => {
                 let mut manifest = self.plan.manifest.clone();
-                let mut dirs: Vec<PathBuf> = self
-                    .prior
-                    .iter()
-                    .flat_map(|m| m.directories.iter().cloned())
-                    .collect();
+                if let Some(prior) = &self.prior {
+                    carry_over(&mut manifest, prior);
+                }
                 for d in &self.created_dirs {
-                    if !dirs.iter().any(|x| same_path(x, d)) {
-                        dirs.push(d.clone());
+                    if !manifest.directories.iter().any(|x| same_path(x, d)) {
+                        manifest.directories.push(d.clone());
                     }
                 }
-                manifest.directories = dirs;
                 Ok(manifest.to_json().into_bytes())
             }
         }
@@ -440,6 +493,7 @@ impl Runner<'_> {
     }
 
     fn regsvr32(&mut self, flags: &[&str], dll: &Path) -> Result<(), String> {
+        self.b.check_plain(&self.plan.prefix, dll)?;
         let mut args: Vec<String> = flags.iter().map(|s| s.to_string()).collect();
         args.push(dll.display().to_string());
         match self.b.run(&self.plan.regsvr32, &args) {
@@ -477,28 +531,136 @@ impl Runner<'_> {
             if !self.b.exists(&path) {
                 continue;
             }
+            if let Err(why) = self.b.check_plain(&self.plan.prefix, &path) {
+                self.out.warnings.push(format!(
+                    "{} was left in place (not deleted): {why}",
+                    path.display()
+                ));
+                continue;
+            }
             if let Err(e) = self.b.remove_file(&path) {
-                self.schedule(&path, &e);
+                defer_file_delete(self.b, &path, &e, self.log, &mut self.out);
             }
         }
     }
+}
 
-    fn schedule(&mut self, path: &Path, cause: &io::Error) {
-        match self.b.schedule_delete_on_reboot(path) {
-            Ok(()) => {
-                (self.log)(&format!(
-                    "      {} is in use ({}); it is deleted at the next restart",
-                    path.display(),
-                    io_text(cause)
-                ));
-                self.out.restart_needed = true;
-            }
-            Err(e) => self.out.warnings.push(format!(
-                "could not delete {} ({}) nor schedule its deletion ({})",
+/// What an earlier install of this folder left behind that uninstalling still has to undo, and that this run does not
+/// do again (`--no-register`, `--no-arp`, `--no-vscode`), goes into the new manifest too: a manifest that forgot it
+/// would never unregister the DLL, delete the Add/Remove Programs entry or remove the extension. Only entries that
+/// pass the checks of `Manifest::validate` are carried over (the old manifest sat in a folder that may be writable
+/// by others, and what is written here is read back with administrator rights).
+fn carry_over(manifest: &mut Manifest, prior: &Manifest) {
+    let prefix = manifest.prefix.clone();
+    manifest.directories = prior
+        .directories
+        .iter()
+        .filter(|d| is_within(&prefix, d, true))
+        .cloned()
+        .collect();
+    for dll in &prior.text_service_dlls {
+        if inside_prefix(dll, &prefix, false)
+            && !manifest.text_service_dlls.iter().any(|d| same_path(d, dll))
+        {
+            manifest.text_service_dlls.push(dll.clone());
+        }
+    }
+    let arp = arp_path();
+    for key in &prior.registry_keys {
+        if key.eq_ignore_ascii_case(&arp)
+            && !manifest
+                .registry_keys
+                .iter()
+                .any(|k| k.eq_ignore_ascii_case(key))
+        {
+            manifest.registry_keys.push(key.clone());
+        }
+    }
+    if manifest.vscode_extension.is_none()
+        && let Some(id) = prior.vscode_extension.as_deref().filter(|i| is_plain_id(i))
+    {
+        manifest.vscode_extension = Some(id.to_string());
+    }
+}
+
+/// The marker of a file that was renamed aside to be deleted at the next restart: `<name>.pime-del-<pid>-<n>`.
+const ASIDE_MARK: &str = ".pime-del-";
+
+/// A name next to `path` that nothing uses (the process id keeps two setups apart, `n` two files of one run; a name
+/// that is still around from an earlier run, pids are reused, is skipped).
+fn aside_name(b: &dyn Backend, path: &Path) -> Option<PathBuf> {
+    let pid = std::process::id();
+    (0..1000u32)
+        .map(|n| {
+            let mut name = path.as_os_str().to_owned();
+            name.push(format!("{ASIDE_MARK}{pid}-{n}"));
+            PathBuf::from(name)
+        })
+        .find(|p| !b.exists(p))
+}
+
+/// True for `...<ASIDE_MARK><digits>-<digits>` (any case): a name this installer made up, which no install ever writes.
+fn is_aside_name(entry: &str) -> bool {
+    let lower = entry.to_lowercase();
+    let Some(at) = lower.rfind(ASIDE_MARK) else {
+        return false;
+    };
+    let mut parts = lower[at + ASIDE_MARK.len()..].split('-');
+    let digits =
+        |s: Option<&str>| s.is_some_and(|s| !s.is_empty() && s.bytes().all(|c| c.is_ascii_digit()));
+    digits(parts.next()) && digits(parts.next()) && parts.next().is_none()
+}
+
+/// A file that cannot be deleted right now (a running image such as `uninstall.exe`, a DLL that programs have loaded).
+/// Windows can finish the job at the next restart, but `MoveFileEx(DELAY_UNTIL_REBOOT)` deletes whatever is at the
+/// scheduled PATH by then, so the original path is never scheduled: a setup run before the restart would have its
+/// freshly installed file deleted at boot. The file is renamed to a unique name in the same folder (Windows allows that
+/// for a mapped image) and THAT name is scheduled. Returns the scheduled name; when the file cannot be moved aside it
+/// is left alone, reported, and nothing is scheduled.
+fn defer_file_delete(
+    b: &mut dyn Backend,
+    path: &Path,
+    cause: &io::Error,
+    log: &mut dyn FnMut(&str),
+    out: &mut Outcome,
+) -> Option<PathBuf> {
+    let Some(aside) = aside_name(b, path) else {
+        out.warnings.push(format!(
+            "could not delete {} ({}) and there are too many leftover {ASIDE_MARK}* files next to it to move it aside; delete it yourself after the programs that use it are closed",
+            path.display(),
+            io_text(cause)
+        ));
+        return None;
+    };
+    if let Err(e) = b.rename(path, &aside) {
+        out.warnings.push(format!(
+            "could not delete {} ({}) nor move it aside ({}), so it was NOT scheduled for deletion at the next restart (that would also delete a file installed there later); delete it yourself after the programs that use it are closed",
+            path.display(),
+            io_text(cause),
+            io_text(&e)
+        ));
+        return None;
+    }
+    match b.schedule_delete_on_reboot(&aside) {
+        Ok(()) => {
+            log(&format!(
+                "      {} is in use ({}); it was renamed to {} and that file is deleted at the next restart",
                 path.display(),
                 io_text(cause),
+                aside.display()
+            ));
+            out.restart_needed = true;
+            Some(aside)
+        }
+        Err(e) => {
+            out.warnings.push(format!(
+                "could not delete {} ({}): it was renamed to {} but its deletion at the next restart could not be scheduled ({}); delete that file yourself",
+                path.display(),
+                io_text(cause),
+                aside.display(),
                 io_text(&e)
-            )),
+            ));
+            None
         }
     }
 }
@@ -582,7 +744,30 @@ pub fn uninstall_vscode_extension(
     }
 }
 
+/// `regsvr32 /u` could not be run on `dll`, so its registration may still be in the registry. The installer does not
+/// remove registry keys of the text service itself (that is the DLL's own `DllUnregisterServer`, in crates/pime-tsf);
+/// it tells the person how to finish by hand.
+fn unregister_skipped(dll: &Path, why: &str) -> String {
+    format!(
+        "{}: {why}, so the text service was NOT unregistered and its registration may still be in the registry. To clean up, either run this setup again (it puts the DLL back and registers it) and then uninstall again, or, as administrator: reg delete \"HKLM\\Software\\Classes\\CLSID\\{TEXT_SERVICE_CLSID}\" /f /reg:64 and, as a last resort for the input method entries that Windows keeps for it: reg delete \"HKLM\\SOFTWARE\\Microsoft\\CTF\\TIP\\{TEXT_SERVICE_CLSID}\" /f /reg:64 (see docs/INSTALLER.md, section 6)",
+        dll.display()
+    )
+}
+
+/// Where the checks for links start: the highest folder this installer created (the install folder itself when it
+/// created no parent), so that a link anywhere from there down to the file is found, not only one below the install
+/// folder. The manifest is validated: its folders are the install folder or parents of it.
+fn check_root(plan: &Plan) -> &Path {
+    plan.manifest
+        .directories
+        .iter()
+        .filter(|d| is_within(&plan.prefix, d, true))
+        .min_by_key(|d| path_key(d).len())
+        .map_or(plan.prefix.as_path(), |d| d.as_path())
+}
+
 fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Outcome {
+    let root = check_root(plan);
     let mut out = Outcome::default();
     // Files and folders that Windows will delete at the next restart; a folder that only holds those is scheduled too.
     let mut pending: Vec<PathBuf> = Vec::new();
@@ -599,7 +784,17 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
             }
             Step::UnregisterTextService { dll } => {
                 if !b.exists(dll) {
-                    out.warnings.push(format!("{} is already gone, so the text service could not be unregistered; leftover registry entries of the text service may remain", dll.display()));
+                    out.warnings.push(unregister_skipped(
+                        dll,
+                        "the DLL file is already gone, so regsvr32 /u has nothing to load",
+                    ));
+                    continue;
+                }
+                if let Err(why) = b.check_plain(root, dll) {
+                    out.warnings.push(unregister_skipped(
+                        dll,
+                        &format!("regsvr32 /u was not run on it: {why}"),
+                    ));
                     continue;
                 }
                 let args = [
@@ -626,23 +821,42 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
                 if !b.exists(path) {
                     continue;
                 }
-                if let Err(e) = b.remove_file(path) {
-                    schedule(b, path, &e, log, &mut out, &mut pending);
+                if let Err(why) = b.check_plain(root, path) {
+                    out.warnings.push(format!(
+                        "{} was left in place (not deleted): {why}",
+                        path.display()
+                    ));
+                    continue;
+                }
+                if let Err(e) = b.remove_file(path)
+                    && let Some(aside) = defer_file_delete(b, path, &e, log, &mut out)
+                {
+                    pending.push(aside);
                 }
             }
             Step::RemoveDir(dir) => {
+                if !b.exists(dir) {
+                    continue;
+                }
+                if let Err(why) = b.check_plain(root, dir) {
+                    out.warnings.push(format!(
+                        "folder {} was left in place (not removed): {why}",
+                        dir.display()
+                    ));
+                    continue;
+                }
                 if !b.is_dir(dir) {
                     continue;
                 }
                 match b.dir_is_empty(dir) {
                     Ok(true) => {
                         if let Err(e) = b.remove_dir(dir) {
-                            schedule(b, dir, &e, log, &mut out, &mut pending);
+                            schedule_dir(b, dir, &e, log, &mut out, &mut pending);
                         }
                     }
                     Ok(false) if pending.iter().any(|p| is_within(p, dir, false)) => {
                         let cause = io::Error::from_raw_os_error(145);
-                        schedule(b, dir, &cause, log, &mut out, &mut pending);
+                        schedule_dir(b, dir, &cause, log, &mut out, &mut pending);
                     }
                     Ok(false) => out.warnings.push(format!(
                         "{} was kept: it contains files that this installer did not create",
@@ -664,7 +878,9 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
     out
 }
 
-fn schedule(
+/// A folder is scheduled under its own path: Windows removes a folder at restart only while it is empty, so a
+/// reinstall before the restart (whose files keep the folder non-empty) is safe.
+fn schedule_dir(
     b: &mut dyn Backend,
     path: &Path,
     cause: &io::Error,
@@ -1031,16 +1247,31 @@ mod tests {
             b"pime_tsf.dll@0.2.0",
             "the new DLL is in place at the registered path"
         );
-        let aside = format!("{DLL}.pime-old");
-        assert_eq!(b.file(&aside).unwrap(), b"pime_tsf.dll@0.1.0");
-        assert_eq!(b.state.pending_delete, [k(&aside)]);
+        // the old DLL (still mapped) waits under a name of its own, and only that name is scheduled
+        let scheduled = &b.state.pending_delete;
+        assert_eq!(scheduled.len(), 1, "{scheduled:?}");
+        assert!(is_aside_name(&scheduled[0]) && scheduled[0].starts_with(&k(DLL)));
+        assert_eq!(
+            b.state.files.get(&scheduled[0]).unwrap(),
+            b"pime_tsf.dll@0.1.0"
+        );
+        assert!(
+            b.file(&format!("{DLL}.pime-old")).is_none(),
+            "the backup name is free again"
+        );
         assert!(b.state.registered.contains(&k(DLL)));
         // ... and when Windows refuses to schedule it (not elevated) that is a warning, not a failure
         let mut c = old_install();
         c.lock(DLL);
         c.deny_schedule = true;
         let out = install(&mut c, "0.2.0").unwrap();
-        assert!(!out.restart_needed && out.warnings.iter().any(|w| w.contains("nor schedule")));
+        assert!(
+            !out.restart_needed
+                && out
+                    .warnings
+                    .iter()
+                    .any(|w| w.contains("could not be scheduled"))
+        );
     }
 
     #[test]
@@ -1282,6 +1513,492 @@ mod tests {
             b.file(&format!(r"{PREFIX}\install-manifest.json"))
                 .is_none()
         );
+    }
+
+    fn uninstaller() -> String {
+        format!(r"{PREFIX}\uninstall.exe")
+    }
+
+    #[test]
+    fn st_035_review_1_in_use_files_are_renamed_aside_and_only_that_name_is_scheduled() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.lock(DLL);
+        b.lock(&uninstaller());
+        let out = uninstall(&mut b, VscodeMode::Install);
+        assert!(out.restart_needed && out.warnings.is_empty());
+        let aside: Vec<&String> = b.state.files.keys().filter(|f| is_aside_name(f)).collect();
+        assert_eq!(aside.len(), 2, "{aside:?}");
+        let pending = &b.state.pending_delete;
+        assert_eq!(
+            pending.len(),
+            3,
+            "two renamed files and the folder: {pending:?}"
+        );
+        assert!(aside.iter().all(|a| pending.contains(a)));
+        assert!(
+            !pending.contains(&k(DLL)) && !pending.contains(&k(&uninstaller())),
+            "the original paths are never scheduled: {pending:?}"
+        );
+        assert!(
+            b.file(DLL).is_none() && b.file(&uninstaller()).is_none(),
+            "the original names are free for a new install"
+        );
+    }
+
+    #[test]
+    fn st_035_review_1_a_reinstall_before_the_restart_is_not_undone_by_the_pending_deletions() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.lock(DLL);
+        b.lock(&uninstaller());
+        uninstall(&mut b, VscodeMode::Install);
+        // the person runs the setup again before restarting: the entries that are queued are harmless to it
+        install(&mut b, "0.3.0").unwrap();
+        b.reboot();
+        assert_eq!(b.file(DLL).unwrap(), b"pime_tsf.dll@0.3.0");
+        assert_eq!(b.file(&uninstaller()).unwrap(), b"setup-0.3.0");
+        assert!(
+            b.file(&format!(r"{PREFIX}\install-manifest.json"))
+                .is_some()
+        );
+        assert_eq!(b.state.files.len(), 6, "{:?}", file_names(&b));
+        assert!(
+            b.state.dirs.contains(&k(PREFIX)),
+            "the queued removal of the folder fails while it is not empty"
+        );
+        assert!(b.state.registered.contains(&k(DLL)));
+    }
+
+    #[test]
+    fn st_035_review_1_a_file_that_cannot_be_renamed_is_reported_and_never_scheduled_under_its_own_name()
+     {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.lock_hard(&uninstaller()); // open without delete sharing: not even a rename works
+        let out = uninstall(&mut b, VscodeMode::Install);
+        assert!(!out.restart_needed);
+        assert!(
+            out.warnings
+                .iter()
+                .any(|w| w.contains("uninstall.exe") && w.contains("NOT scheduled")),
+            "{:?}",
+            out.warnings
+        );
+        assert!(
+            b.state.pending_delete.is_empty(),
+            "{:?}",
+            b.state.pending_delete
+        );
+        assert!(b.file(&uninstaller()).is_some());
+    }
+
+    #[test]
+    fn st_035_review_1_a_stale_file_that_is_in_use_is_renamed_aside_before_it_is_scheduled() {
+        let mut b = old_install(); // 0.1.0 ships legacy.dll, 0.2.0 does not
+        let legacy = format!(r"{PREFIX}\legacy.dll");
+        b.lock(&legacy);
+        let out = install(&mut b, "0.2.0").unwrap();
+        assert!(out.restart_needed);
+        assert!(!b.state.pending_delete.contains(&k(&legacy)));
+        // a later release ships legacy.dll again: the restart must not delete that one
+        install_into(&mut b, PREFIX, "0.3.0", &["legacy.dll"], |_| {}).unwrap();
+        b.reboot();
+        assert_eq!(b.file(&legacy).unwrap(), b"legacy.dll@0.3.0");
+    }
+
+    #[test]
+    fn st_035_review_1_an_install_is_refused_while_deletions_inside_the_folder_are_queued() {
+        for entry in [
+            format!(r"{PREFIX}\uninstall.exe"), // a live path, as an older setup scheduled it
+            format!(r"{PREFIX}\pime_tsf.dll.pime-old"),
+            format!(r"{PREFIX}\sub\x.dll"),
+            format!(r"{PREFIX}\x.pime-del-1-0\y.dll"), // not exactly one of our aside names
+            format!(r"{PREFIX}\x.pime-del-1"),
+        ] {
+            let mut b = machine();
+            b.foreign_pending.push(k(&entry));
+            let before = b.state.clone();
+            let e = install(&mut b, "0.2.0").unwrap_err();
+            assert_eq!(e.step, 0, "{entry}");
+            assert!(e.cause.contains("restart the computer"), "{entry}: {e}");
+            assert!(e.cause.contains(&k(&entry)), "{entry}: {e}");
+            assert_eq!(b.state, before, "{entry}: nothing was written");
+        }
+        // harmless: the names this installer made up, the folder and its parents, everything elsewhere
+        let mut b = machine();
+        b.foreign_pending = [
+            format!(r"{PREFIX}\uninstall.exe.pime-del-12-3"),
+            PREFIX.to_string(),
+            r"C:\Program Files".to_string(),
+            r"C:\Program Files\Other\x.dll".to_string(),
+            format!(r"{PREFIX}2\x.dll"),
+        ]
+        .iter()
+        .map(|p| k(p))
+        .collect();
+        assert!(install(&mut b, "0.2.0").is_ok());
+        assert_eq!(b.pending_reads.get(), 1);
+    }
+
+    #[test]
+    fn st_035_review_1_an_install_that_needs_no_administrator_rights_never_reads_the_pending_list()
+    {
+        let flags = |o: &mut crate::plan::InstallOptions| {
+            (o.register, o.arp, o.vscode) = (false, false, VscodeMode::Skip)
+        };
+        let temp = r"C:\Users\me\AppData\Local\Temp\pime-test";
+        let mut b = machine();
+        b.foreign_pending.push(k(&format!(r"{temp}\uninstall.exe")));
+        install_into(&mut b, temp, "0.2.0", &[], flags).unwrap();
+        assert_eq!(
+            b.pending_reads.get(),
+            0,
+            "no HKLM for a temp-folder install"
+        );
+        // the same plan in a protected folder needs administrator rights and does look
+        let mut c = machine();
+        install_into(&mut c, PREFIX, "0.2.0", &[], flags).unwrap();
+        assert_eq!(c.pending_reads.get(), 1);
+    }
+
+    #[test]
+    fn st_035_review_1_aside_names_are_recognised_exactly() {
+        for yes in [
+            r"c:\x\uninstall.exe.pime-del-12-3",
+            r"C:\X\a.dll.pime-old.PIME-DEL-0-0",
+        ] {
+            assert!(is_aside_name(yes), "{yes}");
+        }
+        for no in [
+            r"c:\x\uninstall.exe",
+            r"c:\x\a.pime-del-",
+            r"c:\x\a.pime-del-1",
+            r"c:\x\a.pime-del-1-",
+            r"c:\x\a.pime-del-a-1",
+            r"c:\x\a.pime-del-1-2-3",
+            r"c:\x\a.pime-del-1-2\b.dll",
+            r"c:\x\a.pime-old",
+        ] {
+            assert!(!is_aside_name(no), "{no}");
+        }
+    }
+
+    fn manifest_of(b: &FakeBackend, prefix: &str) -> Manifest {
+        let text = String::from_utf8(b.read_file(&Path::new(prefix).join(MANIFEST_NAME)).unwrap())
+            .unwrap();
+        Manifest::parse(&text, Path::new(prefix)).unwrap()
+    }
+
+    fn uninstall_manifest(b: &mut FakeBackend, m: &Manifest) -> Outcome {
+        let plan = uninstall_plan(
+            m,
+            &UninstallOptions {
+                vscode: VscodeMode::Skip,
+                system: system(),
+            },
+        )
+        .unwrap();
+        let none = Payload {
+            entries: Vec::new(),
+        };
+        execute(
+            &plan,
+            &Inputs {
+                payload: &none,
+                self_exe: &[],
+            },
+            b,
+            &mut |_| {},
+        )
+        .unwrap()
+    }
+
+    fn warned(out: &Outcome, needles: &[&str]) -> bool {
+        out.warnings
+            .iter()
+            .any(|w| needles.iter().all(|n| w.contains(n)))
+    }
+
+    #[test]
+    fn st_035_review_3_a_link_inside_the_install_folder_is_never_followed_by_the_uninstall() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        // `sub` looks like a folder of the install folder but is a junction: what is "below" it belongs elsewhere
+        let sub = format!(r"{PREFIX}\sub");
+        b.state.dirs.insert(k(&sub));
+        b.link(&sub);
+        b.put(&format!(r"{sub}\other.txt"), b"a file that is not ours");
+        b.put(&format!(r"{sub}\pime_tsf.dll"), b"a different dll");
+        let mut m = manifest_of(&b, PREFIX);
+        m.files.push(PathBuf::from(format!(r"{sub}\other.txt")));
+        m.text_service_dlls
+            .push(PathBuf::from(format!(r"{sub}\pime_tsf.dll")));
+        b.commands.clear();
+        let out = uninstall_manifest(&mut b, &m);
+        assert!(b.file(&format!(r"{sub}\other.txt")).is_some());
+        assert!(b.file(&format!(r"{sub}\pime_tsf.dll")).is_some());
+        assert!(b.state.dirs.contains(&k(&sub)));
+        assert!(
+            b.commands.iter().all(|c| !c.contains("sub")),
+            "regsvr32 must not be run on a DLL behind a link: {:?}",
+            b.commands
+        );
+        assert!(warned(
+            &out,
+            &["other.txt", "left in place", "reparse point"]
+        ));
+        assert!(warned(
+            &out,
+            &[r"sub\pime_tsf.dll", "NOT unregistered", "reparse point"]
+        ));
+        // the real files of the install are still removed, and the real DLL was unregistered
+        assert!(b.file(DLL).is_none());
+        assert!(!b.state.registered.contains(&k(DLL)));
+        assert!(b.commands.iter().any(|c| c.contains("/u /s")));
+    }
+
+    #[test]
+    fn st_035_review_3_a_link_in_place_of_a_listed_file_or_of_the_install_folder_is_left_alone() {
+        // the DLL itself is a link
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.link(DLL);
+        b.commands.clear();
+        let out = uninstall(&mut b, VscodeMode::Skip);
+        assert!(b.file(DLL).is_some(), "not deleted");
+        assert!(
+            b.commands.is_empty(),
+            "no regsvr32 /u on a link: {:?}",
+            b.commands
+        );
+        assert!(warned(&out, &["pime_tsf.dll", "NOT unregistered"]));
+        assert!(b.file(&format!(r"{PREFIX}\pime-core.exe")).is_none());
+
+        // the install folder itself is a link: nothing in it is touched, but the registry entry still goes
+        let mut c = machine();
+        install(&mut c, "0.2.0").unwrap();
+        c.link(PREFIX);
+        c.commands.clear();
+        let before = c.state.files.clone();
+        let out = uninstall(&mut c, VscodeMode::Skip);
+        assert_eq!(
+            c.state.files, before,
+            "nothing below a linked install folder is deleted"
+        );
+        assert!(c.commands.is_empty());
+        assert!(c.state.dirs.contains(&k(PREFIX)));
+        assert!(warned(&out, &["reparse point"]));
+        assert!(!c.state.registry.contains_key(&ARP_KEY.to_lowercase()));
+    }
+
+    #[test]
+    fn st_035_review_3_a_link_in_a_parent_folder_the_installer_created_stops_everything_below_it() {
+        let prefix = r"D:\Tools\Deep\PIME";
+        let mut b = machine();
+        install_into(&mut b, prefix, "0.2.0", &[], |o| {
+            o.vscode = VscodeMode::Skip
+        })
+        .unwrap();
+        let m = manifest_of(&b, prefix);
+        assert_eq!(m.directories.len(), 3);
+        // a link at the middle parent: the top parent is fine, the middle one and everything below it is not
+        b.link(r"D:\Tools\Deep");
+        b.commands.clear();
+        let files = b.state.files.clone();
+        let out = uninstall_manifest(&mut b, &m);
+        assert_eq!(b.state.files, files, "nothing below the link is deleted");
+        assert!(b.commands.is_empty(), "{:?}", b.commands);
+        assert!(warned(&out, &[r"folder D:\Tools\Deep", "reparse point"]));
+        assert!(b.state.dirs.contains(&k(r"D:\Tools\Deep")) && b.state.dirs.contains(&k(prefix)));
+        // the top parent is no link, but it still holds the folders below it: kept
+        assert!(b.state.dirs.contains(&k(r"D:\Tools")));
+        assert!(warned(&out, &[r"D:\Tools", "was kept"]));
+    }
+
+    #[test]
+    fn st_035_review_3_an_install_refuses_a_link_as_install_folder_or_as_a_file_to_replace() {
+        // the install folder already is a junction
+        let mut b = machine();
+        b.state.dirs.insert(k(PREFIX));
+        b.link(PREFIX);
+        let before = b.state.clone();
+        let e = install(&mut b, "0.2.0").unwrap_err();
+        assert_eq!(e.step, 1, "{e}");
+        assert!(e.cause.contains("reparse point"), "{e}");
+        assert_eq!(b.state, before, "nothing was written through the link");
+
+        // a file that is to be replaced is a link (a symbolic link would be written through)
+        let mut c = old_install();
+        c.link(DLL);
+        let before = c.state.clone();
+        let e = install(&mut c, "0.2.0").unwrap_err();
+        assert!(e.cause.contains("reparse point"), "{e}");
+        assert_eq!(c.state, before, "rolled back, the linked file untouched");
+        assert!(e.rollback_problems.is_empty(), "{e}");
+
+        // a stale file of an older release that is a link is not deleted by the clean-up
+        let mut d = old_install();
+        d.link(&format!(r"{PREFIX}\legacy.dll"));
+        let out = install(&mut d, "0.2.0").unwrap();
+        assert!(d.file(&format!(r"{PREFIX}\legacy.dll")).is_some());
+        assert!(warned(
+            &out,
+            &["legacy.dll", "left in place", "reparse point"]
+        ));
+    }
+
+    #[test]
+    fn st_035_review_3_every_delete_rename_and_regsvr32_is_preceded_by_a_link_check() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.checks.borrow_mut().clear();
+        uninstall(&mut b, VscodeMode::Skip);
+        let checks = b.checks.borrow();
+        let asked = |p: &str| checks.iter().any(|(_, path)| *path == k(p));
+        for p in [
+            DLL,
+            &format!(r"{PREFIX}\uninstall.exe"),
+            &format!(r"{PREFIX}\install-manifest.json"),
+            PREFIX,
+        ] {
+            assert!(asked(p), "no link check for {p}: {checks:?}");
+        }
+        assert!(checks.iter().all(|(root, _)| *root == k(PREFIX)));
+    }
+
+    #[test]
+    fn st_035_review_12_a_dll_that_is_already_gone_is_reported_with_the_manual_cleanup() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.state.files.remove(&k(DLL));
+        b.commands.clear();
+        let out = uninstall(&mut b, VscodeMode::Skip);
+        assert!(b.commands.is_empty(), "regsvr32 cannot run without the DLL");
+        let w = out
+            .warnings
+            .iter()
+            .find(|w| w.contains("already gone"))
+            .expect("a warning");
+        for needle in [
+            "NOT unregistered",
+            "run this setup again",
+            "reg delete \"HKLM\\Software\\Classes\\CLSID\\{43F95ED1-95B4-421D-8F5A-837128C2D854}\" /f /reg:64",
+            "CTF\\TIP\\{43F95ED1-95B4-421D-8F5A-837128C2D854}",
+            "docs/INSTALLER.md",
+        ] {
+            assert!(w.contains(needle), "{needle} missing from: {w}");
+        }
+        assert!(
+            b.state.files.is_empty(),
+            "the rest of the uninstall still happens"
+        );
+    }
+
+    #[test]
+    fn st_035_review_12_the_clsid_in_the_manual_cleanup_is_the_one_the_text_service_registers() {
+        let lib = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../pime-tsf/src/lib.rs"
+        ))
+        .expect("crates/pime-tsf/src/lib.rs");
+        let d = TEXT_SERVICE_CLSID
+            .trim_matches(['{', '}'])
+            .to_lowercase()
+            .replace('-', "");
+        let grouped = format!(
+            "0x{}_{}_{}_{}_{}",
+            &d[..8],
+            &d[8..12],
+            &d[12..16],
+            &d[16..20],
+            &d[20..]
+        );
+        assert!(
+            lib.contains(&format!("CLSID_PIME: GUID = GUID::from_u128({grouped})")),
+            "CLSID_PIME in pime-tsf differs from TEXT_SERVICE_CLSID {TEXT_SERVICE_CLSID}"
+        );
+    }
+
+    #[test]
+    fn st_035_review_11_rerunning_the_setup_without_register_arp_vscode_keeps_the_earlier_registration()
+     {
+        let mut b = machine();
+        let initial = b.state.clone();
+        install(&mut b, "0.2.0").unwrap();
+        install_into(&mut b, PREFIX, "0.3.0", &[], |o| {
+            (o.register, o.arp, o.vscode) = (false, false, VscodeMode::Skip)
+        })
+        .unwrap();
+        let m = manifest_of(&b, PREFIX);
+        assert_eq!(m.text_service_dlls, [PathBuf::from(DLL)]);
+        assert_eq!(m.registry_keys, [crate::plan::arp_path()]);
+        assert_eq!(m.vscode_extension.as_deref(), Some("pub.ext"));
+        assert_eq!(
+            m.version, "0.3.0",
+            "the rest of the manifest is the new run's"
+        );
+        // ... so that uninstalling still undoes everything the first run did
+        b.commands.clear();
+        let out = uninstall(&mut b, VscodeMode::Install);
+        assert!(out.warnings.is_empty(), "{:?}", out.warnings);
+        assert!(
+            b.commands
+                .iter()
+                .any(|c| c.contains("/u /s") && c.contains("pime_tsf.dll")),
+            "{:?}",
+            b.commands
+        );
+        assert!(
+            b.commands
+                .iter()
+                .any(|c| c.contains("--uninstall-extension pub.ext"))
+        );
+        assert!(b.state.registered.is_empty());
+        assert_eq!(
+            b.state, initial,
+            "the machine is as it was before the first install"
+        );
+    }
+
+    #[test]
+    fn st_035_review_11_only_entries_that_pass_validation_are_carried_into_the_new_manifest() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        // an old manifest in a folder that others could write: foreign entries must not be copied forward
+        let path = format!(r"{PREFIX}\install-manifest.json");
+        let text = String::from_utf8(b.file(&path).unwrap().clone()).unwrap();
+        let tampered = text
+            .replace(
+                "\"registry_keys\": [",
+                "\"registry_keys\": [\n    \"HKLM\\\\SOFTWARE\\\\Microsoft\\\\CTF\\\\TIP\",",
+            )
+            .replace(
+                "\"text_service_dlls\": [",
+                "\"text_service_dlls\": [\n    \"C:\\\\Windows\\\\System32\\\\evil.dll\",",
+            )
+            .replace(
+                "\"vscode_extension\": \"pub.ext\"",
+                "\"vscode_extension\": \"x --evil\"",
+            )
+            .replace(
+                "\"directories\": [",
+                "\"directories\": [\n    \"C:\\\\Windows\",",
+            );
+        assert_ne!(tampered, text);
+        b.put(&path, tampered.as_bytes());
+        install_into(&mut b, PREFIX, "0.3.0", &[], |o| {
+            (o.register, o.arp, o.vscode) = (false, false, VscodeMode::Skip)
+        })
+        .unwrap();
+        let m = manifest_of(&b, PREFIX);
+        assert_eq!(m.text_service_dlls, [PathBuf::from(DLL)]);
+        assert_eq!(m.registry_keys, [crate::plan::arp_path()]);
+        assert_eq!(m.vscode_extension, None);
+        assert_eq!(m.directories, [PathBuf::from(PREFIX)]);
+        // and the manifest that came out is one the uninstaller accepts
+        uninstall(&mut b, VscodeMode::Skip);
+        assert!(b.state.files.is_empty());
     }
 
     #[test]

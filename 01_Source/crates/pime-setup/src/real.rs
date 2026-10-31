@@ -6,6 +6,7 @@
 //! person on a disposable machine.
 
 use crate::backend::{Backend, RegValue};
+use crate::plan::{SystemPaths, is_within};
 use crate::text::Lang;
 use std::ffi::{OsStr, OsString, c_void};
 use std::io;
@@ -15,26 +16,43 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 use windows::Win32::Foundation::{
-    CloseHandle, ERROR_CANCELLED, ERROR_FILE_NOT_FOUND, HANDLE, HWND, WIN32_ERROR,
+    CloseHandle, ERROR_CANCELLED, ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND, HANDLE, HWND,
+    WIN32_ERROR,
 };
-use windows::Win32::Globalization::GetUserDefaultUILanguage;
+use windows::Win32::Globalization::{CSTR_EQUAL, CompareStringOrdinal, GetUserDefaultUILanguage};
 use windows::Win32::Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation};
-use windows::Win32::Storage::FileSystem::{MOVEFILE_DELAY_UNTIL_REBOOT, MoveFileExW};
-use windows::Win32::System::Console::{FreeConsole, GetConsoleProcessList};
-use windows::Win32::System::Registry::{
-    HKEY, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, KEY_WOW64_64KEY, REG_DWORD,
-    REG_OPTION_NON_VOLATILE, REG_SZ, REG_VALUE_TYPE, RegCloseKey, RegCreateKeyExW, RegDeleteTreeW,
-    RegEnumValueW, RegOpenKeyExW, RegQueryInfoKeyW, RegSetValueExW,
+use windows::Win32::Storage::FileSystem::{
+    BY_HANDLE_FILE_INFORMATION, CreateFileW, FILE_ATTRIBUTE_DIRECTORY,
+    FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
+    FILE_NAME_NORMALIZED, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ,
+    FILE_SHARE_WRITE, GETFINALPATHNAMEBYHANDLE_FLAGS, GetFileInformationByHandle,
+    GetFinalPathNameByHandleW, MOVE_FILE_FLAGS, MOVEFILE_DELAY_UNTIL_REBOOT, MoveFileExW,
+    OPEN_EXISTING, VOLUME_NAME_DOS,
 };
+use windows::Win32::System::Com::CoTaskMemFree;
+use windows::Win32::System::Console::{FreeConsole, GetConsoleProcessList};
+use windows::Win32::System::LibraryLoader::{
+    LOAD_LIBRARY_SEARCH_SYSTEM32, SetDefaultDllDirectories,
+};
+use windows::Win32::System::Registry::{
+    HKEY, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, KEY_WOW64_64KEY, REG_DWORD, REG_MULTI_SZ,
+    REG_OPTION_NON_VOLATILE, REG_SZ, REG_VALUE_TYPE, RegCloseKey, RegCreateKeyExW, RegDeleteTreeW,
+    RegEnumValueW, RegOpenKeyExW, RegQueryInfoKeyW, RegQueryValueExW, RegSetValueExW,
+};
+use windows::Win32::System::SystemInformation::{GetSystemDirectoryW, GetSystemWindowsDirectoryW};
 use windows::Win32::System::Threading::{
     GetCurrentProcess, GetExitCodeProcess, INFINITE, OpenProcessToken, WaitForSingleObject,
 };
-use windows::Win32::UI::Shell::{SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW, ShellExecuteExW};
+use windows::Win32::UI::Shell::{
+    FOLDERID_Profile, FOLDERID_ProgramData, FOLDERID_ProgramFilesX64, FOLDERID_ProgramFilesX86,
+    KF_FLAG_DEFAULT, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW, SHGetKnownFolderPath,
+    ShellExecuteExW,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
     IDYES, MB_DEFBUTTON2, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_OK,
     MB_SETFOREGROUND, MB_YESNO, MESSAGEBOX_STYLE, MessageBoxW, SW_HIDE,
 };
-use windows::core::{HRESULT, PCWSTR, PWSTR, w};
+use windows::core::{GUID, HRESULT, PCWSTR, PWSTR, w};
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 /// regsvr32 and `code` finish in seconds; this only stops a hung child from hanging the installer forever.
@@ -46,6 +64,349 @@ fn wide(s: &OsStr) -> Vec<u16> {
 
 fn win_err(e: WIN32_ERROR) -> io::Error {
     io::Error::from_raw_os_error(e.0 as i32)
+}
+
+/// An absolute path on a local drive (`C:\...`), without a trailing separator: the only shape of answer from a Windows
+/// API that is used as a system folder.
+pub fn accept_folder(raw: &str, what: &str) -> io::Result<PathBuf> {
+    let text = raw.trim_end_matches('\\');
+    let b = text.as_bytes();
+    let local = b.len() > 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && b[2] == b'\\';
+    if !local || text.contains(['?', '*', '"', '<', '>', '|']) {
+        return Err(io::Error::other(format!(
+            "Windows reported {raw:?} for {what}, which is not an absolute path on a local drive"
+        )));
+    }
+    Ok(PathBuf::from(text))
+}
+
+/// `GetSystemDirectoryW` and `GetSystemWindowsDirectoryW` share this shape.
+fn directory(call: unsafe fn(Option<&mut [u16]>) -> u32, what: &str) -> io::Result<PathBuf> {
+    let mut buf = vec![0u16; 260];
+    loop {
+        // SAFETY: the buffer is valid for `buf.len()` units for the whole call, which writes no more than that.
+        let n = unsafe { call(Some(&mut buf)) } as usize;
+        if n == 0 {
+            return Err(io::Error::other(format!(
+                "cannot determine {what}: {}",
+                io::Error::last_os_error()
+            )));
+        }
+        if n < buf.len() {
+            return accept_folder(&String::from_utf16_lossy(&buf[..n]), what);
+        }
+        buf = vec![0u16; n + 1]; // too small: `n` is the size needed, terminator included
+    }
+}
+
+fn known_folder(id: &GUID, what: &str) -> io::Result<PathBuf> {
+    // SAFETY: `id` is a valid KNOWNFOLDERID; a null token means the current user; the result is a COM allocation.
+    let path = unsafe { SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, HANDLE::default()) }
+        .map_err(|e| io::Error::other(format!("cannot determine {what}: {e}")))?;
+    // SAFETY: SHGetKnownFolderPath returned a NUL-terminated string, which is freed exactly once right after the copy.
+    let text = unsafe { path.to_string() };
+    unsafe { CoTaskMemFree(Some(path.0 as *const c_void)) };
+    accept_folder(
+        &text.map_err(|e| io::Error::other(format!("{what} is not valid Unicode: {e}")))?,
+        what,
+    )
+}
+
+/// The system folders, from the Windows APIs and never from the environment: the (unelevated) process that started the
+/// setup controls `SystemRoot` and `ProgramFiles`, and the elevated setup runs `<System32>\regsvr32.exe` and decides
+/// from them which folders are protected. Failing to answer is an error, there is no fallback to a guess.
+pub fn system_paths() -> io::Result<SystemPaths> {
+    let system_root = directory(GetSystemWindowsDirectoryW, "the Windows folder")?;
+    let system_dir = directory(GetSystemDirectoryW, "the System32 folder")?;
+    if !is_within(&system_dir, &system_root, false) {
+        return Err(io::Error::other(format!(
+            "the System32 folder {} is not inside the Windows folder {}",
+            system_dir.display(),
+            system_root.display()
+        )));
+    }
+    Ok(SystemPaths {
+        system_root,
+        system_dir,
+        program_files: known_folder(&FOLDERID_ProgramFilesX64, "the Program Files folder")?,
+        program_files_x86: known_folder(
+            &FOLDERID_ProgramFilesX86,
+            "the Program Files (x86) folder",
+        )
+        .ok(),
+        program_data: Some(known_folder(
+            &FOLDERID_ProgramData,
+            "the ProgramData folder",
+        )?),
+        user_profile: Some(known_folder(&FOLDERID_Profile, "the user profile folder")?),
+    })
+}
+
+struct Handle(HANDLE);
+
+impl Drop for Handle {
+    fn drop(&mut self) {
+        // SAFETY: the handle came from a successful CreateFileW and is closed exactly once.
+        unsafe {
+            let _ = CloseHandle(self.0);
+        }
+    }
+}
+
+/// An existing file or folder, opened for attribute queries only.
+struct Opened {
+    handle: Handle,
+    attributes: u32,
+}
+
+/// Opens `path` ITSELF: when its last component is a link, the link is opened and not followed
+/// (`FILE_FLAG_OPEN_REPARSE_POINT`). Folders are opened too (`FILE_FLAG_BACKUP_SEMANTICS`). Everybody keeps access
+/// (all three share modes): this must not disturb a running program. `Ok(None)`: nothing is there.
+fn open_no_follow(path: &Path) -> Result<Option<Opened>, String> {
+    let name = wide(path.as_os_str());
+    // SAFETY: `name` is NUL-terminated and outlives the call; no security attributes, no template.
+    let opened = unsafe {
+        CreateFileW(
+            PCWSTR(name.as_ptr()),
+            FILE_READ_ATTRIBUTES.0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            None,
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            HANDLE::default(),
+        )
+    };
+    let handle = match opened {
+        Ok(h) => Handle(h),
+        Err(e)
+            if [ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND]
+                .iter()
+                .any(|c| e.code() == HRESULT::from_win32(c.0)) =>
+        {
+            return Ok(None);
+        }
+        Err(e) => return Err(format!("cannot examine {}: {e}", path.display())),
+    };
+    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: the handle is open and `info` is a valid out structure.
+    unsafe { GetFileInformationByHandle(handle.0, &mut info) }
+        .map_err(|e| format!("cannot examine {}: {e}", path.display()))?;
+    Ok(Some(Opened {
+        handle,
+        attributes: info.dwFileAttributes,
+    }))
+}
+
+/// The path an open handle really refers to, as `C:\...`; the `\\?\` prefix is removed. A location that is not on a
+/// local drive letter (`\\?\UNC\...`, `\\?\Volume{...}\`) is refused.
+fn final_path(handle: &Handle) -> Result<String, String> {
+    let mut buf = vec![0u16; 1024];
+    loop {
+        // SAFETY: the handle is open; the buffer is valid for `buf.len()` units for the whole call.
+        let n = unsafe {
+            GetFinalPathNameByHandleW(
+                handle.0,
+                &mut buf,
+                GETFINALPATHNAMEBYHANDLE_FLAGS(FILE_NAME_NORMALIZED.0 | VOLUME_NAME_DOS.0),
+            )
+        } as usize;
+        if n == 0 {
+            return Err(format!(
+                "cannot resolve a path: {}",
+                io::Error::last_os_error()
+            ));
+        }
+        if n < buf.len() {
+            return plain_final(&String::from_utf16_lossy(&buf[..n]));
+        }
+        buf = vec![0u16; n + 1];
+    }
+}
+
+pub fn plain_final(raw: &str) -> Result<String, String> {
+    let Some(rest) = raw.strip_prefix(r"\\?\") else {
+        return Ok(raw.to_string());
+    };
+    let b = rest.as_bytes();
+    if b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && b[2] == b'\\' {
+        Ok(rest.to_string())
+    } else {
+        Err(format!(
+            "{raw} is not on a local drive letter (a network or volume path)"
+        ))
+    }
+}
+
+/// Case-insensitive the way NTFS compares names.
+fn same_name(a: &str, b: &str) -> bool {
+    let (a, b): (Vec<u16>, Vec<u16>) = (a.encode_utf16().collect(), b.encode_utf16().collect());
+    // SAFETY: both slices are valid for the call.
+    unsafe { CompareStringOrdinal(&a, &b, true) == CSTR_EQUAL }
+}
+
+/// [`Backend::check_plain`] for the real file system. Walks `root`, then each component down to `path`, opening every
+/// one without following a reparse point: a reparse point, or a name that resolves somewhere other than its place in
+/// the canonical `root`, is refused. A missing component ends the walk with `Ok`: there is nothing to act on.
+pub fn plain_path_check(root: &Path, path: &Path) -> Result<(), String> {
+    let Some(below) = crate::plan::relative_below(root, path) else {
+        return Err(format!(
+            "{} is not inside {}",
+            path.display(),
+            root.display()
+        ));
+    };
+    let link = |p: &Path| {
+        format!(
+            "{} is a junction, symbolic link or other reparse point, which is never followed",
+            p.display()
+        )
+    };
+    let Some(root_opened) = open_no_follow(root)? else {
+        return Ok(());
+    };
+    if root_opened.attributes & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0 {
+        return Err(link(root));
+    }
+    let canonical_root = final_path(&root_opened.handle)?;
+    let mut expected = canonical_root.clone();
+    let mut at = root.to_path_buf();
+    for (i, comp) in below.iter().enumerate() {
+        at.push(comp);
+        let Some(opened) = open_no_follow(&at)? else {
+            return Ok(());
+        };
+        if opened.attributes & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0 {
+            return Err(link(&at));
+        }
+        if i + 1 < below.len() && opened.attributes & FILE_ATTRIBUTE_DIRECTORY.0 == 0 {
+            return Err(format!("{} is not a folder", at.display()));
+        }
+        if !expected.ends_with('\\') {
+            expected.push('\\'); // a drive root already ends in one
+        }
+        expected.push_str(comp);
+        let actual = final_path(&opened.handle)?;
+        if !same_name(&actual, &expected) {
+            return Err(format!(
+                "{} resolves to {actual}, not to {expected} inside {canonical_root}",
+                at.display()
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// `pime-setup-<32 hex digits>.log`.
+pub fn log_file_name(random: [u64; 2]) -> String {
+    format!("pime-setup-{:016x}{:016x}.log", random[0], random[1])
+}
+
+/// 128 bits nobody can predict: `RandomState` is seeded by the operating system's random number generator for every
+/// process (and thread), and what comes out of its keyed hash cannot be computed without the key.
+fn random_pair() -> [u64; 2] {
+    use std::hash::{BuildHasher, Hasher};
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
+    [1u64, 2].map(|salt| {
+        let mut hasher = std::collections::hash_map::RandomState::new().build_hasher();
+        hasher.write_u64(salt);
+        hasher.write_u32(std::process::id());
+        hasher.write_u128(nanos);
+        hasher.finish()
+    })
+}
+
+/// The report file of an elevated child, created by the parent (the unelevated process of the person who started the
+/// setup). Random name in the temp folder, `CREATE_NEW` (an existing name, a link included, is never reused), and kept
+/// open WITHOUT delete sharing until it is dropped: nobody can delete it, rename it or put a link in its place while
+/// the child runs. The child opens it; dropping this removes the file.
+pub struct PrivateLog {
+    path: PathBuf,
+    file: Option<std::fs::File>,
+}
+
+impl PrivateLog {
+    pub fn create() -> io::Result<PrivateLog> {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = std::env::temp_dir();
+        for _ in 0..8 {
+            let path = dir.join(log_file_name(random_pair()));
+            match std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create_new(true)
+                .share_mode(FILE_SHARE_READ.0 | FILE_SHARE_WRITE.0)
+                .open(&path)
+            {
+                Ok(file) => {
+                    return Ok(PrivateLog {
+                        path,
+                        file: Some(file),
+                    });
+                }
+                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {}
+                Err(e) => return Err(e),
+            }
+        }
+        Err(io::Error::other("every random name that was tried exists"))
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// Everything the child wrote (empty when it wrote nothing or the file cannot be read).
+    pub fn read_all(&mut self) -> String {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut text = String::new();
+        if let Some(f) = &mut self.file {
+            let _ = f.seek(SeekFrom::Start(0));
+            let _ = f.read_to_string(&mut text);
+        }
+        text
+    }
+}
+
+impl Drop for PrivateLog {
+    fn drop(&mut self) {
+        drop(self.file.take()); // the handle goes first: it forbids deleting the file
+        let _ = std::fs::remove_file(&self.path);
+    }
+}
+
+/// How the elevated child opens its `--log` file: it must already exist (nothing is created, so a guessed name gets
+/// no file from an administrator), a link is not followed (`FILE_FLAG_OPEN_REPARSE_POINT`), and what was opened has to
+/// be a plain file with one name, still empty, as the parent made it. Anything else is refused.
+pub fn open_log_for_child(path: &Path) -> Result<std::fs::File, String> {
+    use std::os::windows::fs::OpenOptionsExt;
+    use std::os::windows::io::AsRawHandle;
+    let refuse = |why: &str| format!("the log file {} cannot be used: {why}", path.display());
+    let file = std::fs::OpenOptions::new()
+        .append(true)
+        .create(false)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT.0)
+        .open(path)
+        .map_err(|e| refuse(&e.to_string()))?;
+    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: the handle belongs to `file`, which is open for the whole call; `info` is a valid out structure.
+    unsafe { GetFileInformationByHandle(HANDLE(file.as_raw_handle()), &mut info) }
+        .map_err(|e| refuse(&e.to_string()))?;
+    if info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0 {
+        return Err(refuse("it is a link"));
+    }
+    if info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY.0 != 0 {
+        return Err(refuse("it is a folder"));
+    }
+    if info.nNumberOfLinks != 1 {
+        return Err(refuse("it has more than one name (a hard link)"));
+    }
+    if info.nFileSizeHigh != 0 || info.nFileSizeLow != 0 {
+        return Err(refuse(
+            "it is not empty, so the setup that started this one did not just create it",
+        ));
+    }
+    Ok(file)
 }
 
 /// Windows virus scanners briefly hold freshly written files; retry the operations that scanners can collide with.
@@ -121,6 +482,77 @@ fn open(
     }
 }
 
+/// Under HKLM. `MoveFileEx(DELAY_UNTIL_REBOOT)` appends to `PendingFileRenameOperations`; Windows 11 also has a
+/// `PendingFileRenameOperations2` (written by servicing), which is read as well. Neither is ever written to here.
+const SESSION_MANAGER: &str = r"SYSTEM\CurrentControlSet\Control\Session Manager";
+const PENDING_VALUES: [&str; 2] = [
+    "PendingFileRenameOperations",
+    "PendingFileRenameOperations2",
+];
+
+/// The UTF-16 units of a REG_MULTI_SZ value; a missing value (or one of another type) is empty.
+fn read_multi_sz(key: &Key, name: &str) -> io::Result<Vec<u16>> {
+    let wname = wide(OsStr::new(name));
+    let (mut kind, mut len) = (REG_VALUE_TYPE(0), 0u32);
+    // SAFETY: `key` is open; `wname` is NUL-terminated; the out pointers refer to live locals (no data buffer: size query).
+    let status = unsafe {
+        RegQueryValueExW(
+            key.0,
+            PCWSTR(wname.as_ptr()),
+            None,
+            Some(&mut kind),
+            None,
+            Some(&mut len),
+        )
+    };
+    match status {
+        WIN32_ERROR(0) => {}
+        s if s == ERROR_FILE_NOT_FOUND => return Ok(Vec::new()),
+        s => return Err(win_err(s)),
+    }
+    if kind != REG_MULTI_SZ {
+        return Ok(Vec::new());
+    }
+    let mut data = vec![0u8; len as usize + 2];
+    let mut size = data.len() as u32;
+    // SAFETY: the buffer is `size` bytes long and `size` is passed in; the other pointers are as above.
+    let status = unsafe {
+        RegQueryValueExW(
+            key.0,
+            PCWSTR(wname.as_ptr()),
+            None,
+            Some(&mut kind),
+            Some(data.as_mut_ptr()),
+            Some(&mut size),
+        )
+    };
+    if status != WIN32_ERROR(0) {
+        return Err(win_err(status));
+    }
+    data.truncate(size as usize);
+    Ok(data
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|c| u16::from_le_bytes(*c))
+        .collect())
+}
+
+/// Splits a REG_MULTI_SZ of pending renames (source, destination, source, destination ...; the destination of a delete
+/// is empty) into paths: the `\??\` prefix and the `!` (replace existing) marker are removed, empty strings dropped.
+pub fn parse_pending_renames(units: &[u16]) -> Vec<String> {
+    units
+        .split(|&u| u == 0)
+        .map(String::from_utf16_lossy)
+        .map(|s| {
+            s.trim_start_matches('!')
+                .trim_start_matches(r"\??\")
+                .to_string()
+        })
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
 fn utf16_value(bytes: &[u8]) -> String {
     let units: Vec<u16> = bytes
         .as_chunks::<2>()
@@ -158,7 +590,20 @@ impl Backend for RealBackend {
     }
 
     fn rename(&mut self, from: &Path, to: &Path) -> io::Result<()> {
-        retry_in_use(|| std::fs::rename(from, to))
+        // Not `std::fs::rename`: on Windows that replaces an existing destination, and an existing destination here is
+        // a leftover (an earlier file still waiting for the restart) that must not be overwritten.
+        let (from, to) = (wide(from.as_os_str()), wide(to.as_os_str()));
+        retry_in_use(|| {
+            // SAFETY: both names are NUL-terminated and outlive the call; flags 0 mean "rename, never replace".
+            unsafe {
+                MoveFileExW(
+                    PCWSTR(from.as_ptr()),
+                    PCWSTR(to.as_ptr()),
+                    MOVE_FILE_FLAGS(0),
+                )
+            }
+            .map_err(|e| io::Error::from_raw_os_error(e.code().0 & 0xFFFF))
+        })
     }
 
     fn remove_file(&mut self, path: &Path) -> io::Result<()> {
@@ -167,6 +612,10 @@ impl Backend for RealBackend {
 
     fn remove_dir(&mut self, path: &Path) -> io::Result<()> {
         std::fs::remove_dir(path)
+    }
+
+    fn check_plain(&self, root: &Path, path: &Path) -> Result<(), String> {
+        plain_path_check(root, path)
     }
 
     fn schedule_delete_on_reboot(&mut self, path: &Path) -> io::Result<()> {
@@ -185,6 +634,20 @@ impl Backend for RealBackend {
             )
         }
         .map_err(|e| io::Error::from_raw_os_error(e.code().0 & 0xFFFF))
+    }
+
+    fn pending_file_renames(&self) -> io::Result<Vec<String>> {
+        if !self.allow_reboot_schedule {
+            return Ok(Vec::new()); // the temp-folder tests never read HKLM
+        }
+        let Some(k) = open(SESSION_MANAGER, KEY_READ)? else {
+            return Ok(Vec::new());
+        };
+        let mut entries = Vec::new();
+        for value in PENDING_VALUES {
+            entries.extend(parse_pending_renames(&read_multi_sz(&k, value)?));
+        }
+        Ok(entries)
     }
 
     fn reg_read_key(&self, key: &str) -> io::Result<Option<Vec<(String, RegValue)>>> {
@@ -331,7 +794,7 @@ impl Backend for RealBackend {
         find_code(
             std::env::var_os("PATH"),
             var("LOCALAPPDATA"),
-            var("ProgramFiles"),
+            known_folder(&FOLDERID_ProgramFilesX64, "the Program Files folder").ok(),
             &|p| p.is_file(),
         )
     }
@@ -505,6 +968,18 @@ pub fn free_console_if_alone() {
     }
 }
 
+/// The first thing `main` does: from now on a DLL that is loaded without a full path (by this program, by the shell
+/// when it starts the elevated child, by a COM handler) is looked for in `System32` only, not next to the exe and not
+/// in the current folder. The setup is also copied into the install folder as `uninstall.exe`, which may be a folder that
+/// other users can write to. The DLLs the exe imports at start-up are system DLLs that Windows resolves itself (known
+/// DLLs, API sets) before `main` runs; nothing in the setup loads a DLL from its own folder. The failure of this call
+/// (a Windows without the API) is reported by the caller and is not fatal.
+pub fn harden_dll_search() -> Result<(), String> {
+    // SAFETY: a plain flag argument, no pointers.
+    unsafe { SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32) }
+        .map_err(|e| format!("SetDefaultDllDirectories failed: {e}"))
+}
+
 pub fn current_exe_bytes() -> io::Result<(PathBuf, Vec<u8>)> {
     let exe = std::env::current_exe()?;
     let bytes = std::fs::read(&exe)?;
@@ -530,6 +1005,83 @@ mod tests {
             command_line(&["--prefix".into(), r"D:\日本語 フォルダ".into()]),
             r#"--prefix "D:\日本語 フォルダ""#
         );
+    }
+
+    #[test]
+    fn st_035_review_2_only_an_absolute_local_path_is_accepted_as_a_system_folder() {
+        assert_eq!(
+            accept_folder(r"C:\Windows\System32", "x").unwrap(),
+            PathBuf::from(r"C:\Windows\System32")
+        );
+        assert_eq!(
+            accept_folder(r"D:\Program Files\", "x").unwrap(),
+            PathBuf::from(r"D:\Program Files")
+        );
+        for bad in [
+            "",
+            r"C:\",
+            "C:",
+            r"relative\dir",
+            r"\\server\share\x",
+            r"\\?\C:\Windows",
+            r"C:\Win*dows",
+        ] {
+            let e = accept_folder(bad, "the Windows folder")
+                .unwrap_err()
+                .to_string();
+            assert!(e.contains("the Windows folder"), "{bad:?}: {e}");
+        }
+    }
+
+    #[test]
+    fn st_035_review_2_the_resolved_system_paths_are_consistent() {
+        let s = system_paths().unwrap();
+        assert!(is_within(&s.system_dir, &s.system_root, false));
+        assert_eq!(
+            s.regsvr32()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_lowercase(),
+            "regsvr32.exe"
+        );
+        assert_eq!(s.regsvr32().parent(), Some(s.system_dir.as_path()));
+        assert!(
+            s.program_files_x86.is_some() && s.program_data.is_some() && s.user_profile.is_some()
+        );
+    }
+
+    fn multi_sz(items: &[&str]) -> Vec<u16> {
+        let mut v: Vec<u16> = items
+            .iter()
+            .flat_map(|s| s.encode_utf16().chain(Some(0)))
+            .collect();
+        v.push(0); // the empty string that ends a REG_MULTI_SZ
+        v
+    }
+
+    #[test]
+    fn st_035_review_1_the_pending_rename_list_is_read_as_source_and_destination_paths() {
+        // a delete is (source, empty destination); a replacing rename is (source, "!" + destination)
+        let raw = multi_sz(&[
+            r"\??\C:\Program Files\Programming IME\uninstall.exe",
+            "",
+            r"\??\C:\a\old.dll",
+            r"!\??\C:\a\new.dll",
+            r"\??\D:\日本語\x.dll",
+            "",
+        ]);
+        assert_eq!(
+            parse_pending_renames(&raw),
+            [
+                r"C:\Program Files\Programming IME\uninstall.exe",
+                r"C:\a\old.dll",
+                r"C:\a\new.dll",
+                r"D:\日本語\x.dll"
+            ]
+        );
+        assert!(parse_pending_renames(&[]).is_empty());
+        assert!(parse_pending_renames(&[0, 0]).is_empty());
     }
 
     #[test]
