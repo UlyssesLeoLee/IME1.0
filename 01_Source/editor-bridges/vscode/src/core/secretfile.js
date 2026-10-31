@@ -23,21 +23,81 @@ const KINDS = Object.freeze(['env', 'private-key', 'keystore', 'credential-file'
 //   base: [glob]               any glob matches the whole base name
 //   head: [text], ext: [text]  head = text before the first dot (a leading dot is skipped), ext = text after the last dot
 //   not:  [glob]               none may match (an exclusion always beats the inclusion of its own entry)
-//   dir:  [segment, ...]       these parent segments sit next to each other, in this order, somewhere above the file
+//   dir:  [a/b, c, ...]        alternatives; each is a run of parent segments (joined by `/`) that sit next to each other, in this
+//                              order, somewhere above the file (`.aws/sso/cache` is also inside `.aws`)
 // Glob: `*` any characters, `?` one character (neither crosses a separator), `**` anything including separators.
 const freeze = rule => Object.freeze({id: rule.id, kind: rule.kind, match: Object.freeze(Object.fromEntries(Object.entries(rule.match).map(([k, v]) => [k, Object.freeze([...v])])))});
 
 // Template names carry no secrets by convention: they are committed with placeholder values on purpose.
-const TEMPLATE = Object.freeze(['*.example', '*.sample', '*.template', '*.dist', '*.default', '*.defaults', '*.tpl', '*.tmpl', '*-example', '*_example', '*-sample', '*_sample', '*-template', '*_template']);
+const TEMPLATE = Object.freeze(['*.example', '*.sample', '*.template', '*.dist', '*.default', '*.defaults', '*.tpl', '*.tmpl', '*-example', '*_example', '*-sample', '*_sample', '*-template', '*_template',
+  '*.example.*', '*.sample.*', '*.template.*', '*.dist.*', '*.tpl.*', '*.tmpl.*']); // the last row: secrets.example.json
 
+// Data formats that can hold a secret; source code and documents (ts, js, rs, py, md ...) are deliberately absent.
+const DATA_EXT = Object.freeze(['json', 'yaml', 'yml', 'toml', 'ini', 'env', 'txt', 'properties', 'xml', 'conf', 'cfg', 'plist']);
+const PUBLIC = Object.freeze(['*.pub']); // a public key is not a secret
+const LOGS = Object.freeze(['*.log']);
+
+// Not secret by name, on purpose (a name check cannot see inside them): source and docs (credentials.ts, secrets.rs, keys.js,
+// env.ts, token.js, README.md, passwords.md), key.txt, settings_local.py, application-prod.properties, appsettings.*.json,
+// .yarnrc.yml and nuget.config (every project has one), ciphertext (credentials.yml.enc, *.sops.yaml, sealed secrets),
+// public material (*.pub, *.crt, *.cer, *.csr, *.mobileprovision, known_hosts, .aws/config), design tokens (tokens.json),
+// locale files (auth.json) and templates (.env.example). The superset rule of secrets.js forces a few false positives that
+// stay: Keynote `*.key`, public CA bundles `*.pem`, Android `debug.keystore`.
 const DEFAULT_RULES = Object.freeze([
-  // .env, .env.local, .env.production, .env-dev ...; templates are carved out. A virtualenv directory named `.env` is a
-  // directory segment, not a base name, so only the names of the files inside it count.
-  {id: 'env-file', kind: 'env', match: {base: ['.env', '.env.*', '.env-*', '.env_*'], not: TEMPLATE}}
+  // --- env files. A virtualenv directory named `.env` is a directory segment, not a base name, so only the names of the
+  // files inside it count.
+  {id: 'env-file', kind: 'env', match: {base: ['.env', '.env.*', '.env-*', '.env_*'], not: TEMPLATE}}, // .env, .env.local, .env.production, .env-dev
+  {id: 'env-extension', kind: 'env', match: {base: ['*.env'], not: [...TEMPLATE, 'example.env', 'sample.env', 'template.env', 'default.env', 'defaults.env', 'dist.env']}}, // prod.env, docker.env
+  {id: 'envrc', kind: 'env', match: {base: ['.envrc', '.envrc.*'], not: TEMPLATE}}, // direnv: exports secrets
+  {id: 'dev-vars', kind: 'env', match: {base: ['.dev.vars', '.dev.vars.*'], not: TEMPLATE}}, // Cloudflare Workers local secrets
+  {id: 'local-settings', kind: 'credential-file', match: {base: ['local.settings.json'], not: TEMPLATE}}, // Azure Functions: git-ignored for holding connection strings
+  // --- private keys
+  {id: 'ssh-dir', kind: 'private-key', match: {dir: ['.ssh'], base: ['*'], not: [...PUBLIC, 'known_hosts*', 'authorized_keys*', 'config', 'allowed_signers']}},
+  {id: 'ssh-private-key', kind: 'private-key', match: {base: ['id_rsa*', 'id_dsa*', 'id_ecdsa*', 'id_ed25519*'], not: PUBLIC}}, // id_ed25519_work too
+  {id: 'ssh-named-key', kind: 'private-key', match: {base: ['*_rsa', '*-rsa', '*_dsa', '*-dsa', '*_ecdsa', '*-ecdsa', '*_ed25519', '*-ed25519']}}, // deploy_ed25519
+  {id: 'key-extension', kind: 'private-key', match: {base: ['*.pem', '*.key', '*.ppk', '*.p8', '*.pk8', '*.snk']}}, // p8 = Apple AuthKey_*.p8, pk8 = Android, snk = .NET strong-name pair, key = Rails master.key
+  {id: 'key-material', kind: 'private-key', match: {base: ['adbkey', 'ssh_host_*_key', 'private_key', 'private-key', 'privatekey', 'secret_key', 'secret-key', 'secretkey', 'master_key', 'master-key', 'encryption_key', 'encryption-key', 'signing_key', 'signing-key']}}, // extension-less key files: adb (Android) private key, sshd host keys
+  {id: 'gnupg-dir', kind: 'private-key', match: {dir: ['.gnupg', 'appdata/roaming/gnupg'], base: ['*'], not: ['*.conf', 'pubring.*', 'trustdb.gpg', 's.*', '.#lk*', ...PUBLIC, ...LOGS]}}, // s.* are agent sockets, .#lk* lock files (found in a real ~/.gnupg); the second location is Gpg4win
+  // --- keystores and password databases
+  {id: 'keystore-extension', kind: 'keystore', match: {base: ['*.pfx', '*.p12', '*.pkcs12', '*.jks', '*.jceks', '*.keystore', '*.bks', '*.keychain', '*.keychain-db']}},
+  {id: 'keystore-properties', kind: 'credential-file', match: {base: ['keystore.properties', 'key.properties']}}, // Android / Flutter signing passwords
+  {id: 'wallet', kind: 'password-db', match: {base: ['wallet.dat', '*.wallet']}},
+  {id: 'password-database', kind: 'password-db', match: {base: ['*.kdbx', '*.kdb', '*.psafe3', '*.1pux', '*.1pif', '*.mpw']}},
+  {id: 'password-list', kind: 'password-db', match: {head: ['password', 'passwords', 'passwd'], ext: ['txt', 'csv', 'json', 'xlsx', 'xls', 'yml', 'yaml', 'ini'], not: TEMPLATE}},
+  // --- cloud credentials (specific places first, so their kind wins over the generic `credentials` rule)
+  {id: 'aws-credentials', kind: 'cloud-credentials', match: {dir: ['.aws'], base: ['credentials']}}, // .aws/config is not secret
+  {id: 'aws-sso-cache', kind: 'cloud-credentials', match: {dir: ['.aws/sso/cache'], base: ['*']}},
+  {id: 'aws-cli-cache', kind: 'cloud-credentials', match: {dir: ['.aws/cli/cache'], base: ['*']}},
+  {id: 'azure-dir', kind: 'cloud-credentials', match: {dir: ['.azure'], base: ['*'], not: LOGS}},
+  {id: 'gcloud-dir', kind: 'cloud-credentials', match: {dir: ['.config/gcloud', 'appdata/roaming/gcloud'], base: ['*'], not: LOGS}}, // the second is the Windows location
+  {id: 'kube-config', kind: 'cloud-credentials', match: {dir: ['.kube'], base: ['config']}},
+  {id: 'kubeconfig', kind: 'cloud-credentials', match: {base: ['kubeconfig', '*.kubeconfig', 'kubeconfig.yaml', 'kubeconfig.yml', 'kubeconfig.json']}},
+  {id: 'service-account-key', kind: 'cloud-credentials', match: {base: ['*service-account*.json', '*service_account*.json', 'serviceaccount*.json', '*serviceaccountkey*.json', '*firebase-adminsdk*.json'], not: TEMPLATE}},
+  {id: 'oauth-client-secret', kind: 'cloud-credentials', match: {base: ['client_secret*.json', 'client-secret*.json'], not: TEMPLATE}}, // Google client_secret_<id>.json
+  // --- credential files by name
+  {id: 'credentials-file', kind: 'credential-file', match: {base: ['credentials', '*credentials.json', 'credentials.tfrc.json']}}, // .aws/credentials, .claude/.credentials.json, gcp-credentials.json
+  {id: 'credentials-data', kind: 'credential-file', match: {head: ['credentials', 'credential'], ext: DATA_EXT, not: TEMPLATE}}, // credentials.toml (cargo), credentials.xml (Jenkins); credentials.yml.enc is ciphertext, credentials.ts is code
+  {id: 'secret-data', kind: 'credential-file', match: {head: ['secret', 'secrets'], ext: DATA_EXT, not: TEMPLATE}}, // secrets.yml, secret.json, secrets.dev.json
+  {id: 'secret-extension', kind: 'credential-file', match: {base: ['*.secret', '*.secrets']}},
+  {id: 'token-data', kind: 'token-store', match: {head: ['token', 'access_token', 'access-token', 'refresh_token', 'auth_token', 'auth-token', 'api_key', 'apikey', 'api-key'], ext: [...DATA_EXT, 'pickle'], not: TEMPLATE}}, // token.json (Google quickstart); tokens.json is design tokens, token.js is code
+  {id: 'token-file', kind: 'token-store', match: {base: ['.token', '*.token', '*_token', '*-token']}}, // .emulator_console_auth_token, logout_token: a name with no extension that ends in token
+  {id: 'token-store', kind: 'token-store', match: {base: ['.npmrc', '.netrc', '_netrc', '.git-credentials', '.vault-token', '.dockercfg']}},
+  {id: 'docker-config', kind: 'token-store', match: {dir: ['.docker'], base: ['config.json']}},
+  {id: 'gh-hosts', kind: 'token-store', match: {dir: ['.config/gh', 'appdata/roaming/github cli'], base: ['hosts.yml']}},
+  {id: 'cli-auth-json', kind: 'token-store', match: {dir: ['.codex', 'com.vercel.cli', '.vercel', '.now', '.composer', 'appdata/roaming/composer'], base: ['auth.json']}}, // a bare auth.json is a locale file in half the web projects, so only where a CLI keeps its login
+  {id: 'password-file', kind: 'credential-file', match: {base: ['.pypirc', '.htpasswd', '.htdigest', '.pgpass', 'pgpass.conf', '.my.cnf', '.mylogin.cnf', '.s3cfg', '.boto', 'rclone.conf', 'settings-security.xml', 'passwd']}},
+  {id: 'git-config', kind: 'credential-file', match: {dir: ['.git'], base: ['config']}}, // remote URLs may embed a token
+  {id: 'maven-settings', kind: 'credential-file', match: {dir: ['.m2'], base: ['settings.xml']}}, // server passwords
+  {id: 'gradle-home-properties', kind: 'credential-file', match: {dir: ['.gradle'], base: ['gradle.properties']}}, // signing and repository tokens
+  {id: 'vault-password', kind: 'credential-file', match: {base: ['.vault_pass*', '.vault-pass*', 'vault_pass*', 'vault-pass*']}}, // Ansible vault password files
+  {id: 'vpn-profile', kind: 'credential-file', match: {base: ['*.ovpn']}}, // inline keys and auth-user-pass
+  {id: 'browser-secrets', kind: 'token-store', match: {base: ['cookies', 'cookies.txt', 'cookies.sqlite', 'login data', 'login data for account', 'logins.json', 'key3.db', 'key4.db', 'signons.sqlite']}},
+  // --- infrastructure state and variables
+  {id: 'infra-state', kind: 'infra-state', match: {base: ['terraform.tfstate*', '*.tfstate', '*.tfstate.*', '*.tfvars', '*.tfvars.json'], not: TEMPLATE}} // state holds every secret value in clear
 ].map(freeze));
 
 // A backup or editor-swap copy of a secret file is as secret as the file (`.env.swp` holds its text): peel these first.
-const BACKUP_SUFFIXES = Object.freeze(['~', '.bak', '.backup', '.old', '.orig', '.save', '.swp', '.swo', '.tmp']);
+const BACKUP_SUFFIXES = Object.freeze(['~', '.bak', '.backup', '.old', '.orig', '.save', '.swp', '.swo', '.tmp', '-journal', '-wal', '-shm']); // the last three: SQLite sidecars keep copies of pages (Cookies-journal)
 
 // ---------------------------------------------------------------- name normalisation (shared by classify and key)
 // Linear scans only: no RegExp over untrusted text with nested or overlapping quantifiers.
@@ -73,8 +133,11 @@ function analyse(input) {
   if (!segs.length) return input.length ? {...NO_NAME, root, key: root} : NO_NAME;
   const last = segs[segs.length - 1];
   return {root, key: root + segs.map(x => lowerAscii(x.v)).join('/'), label: cleanLabel(last.v), base: lowerAscii(last.v),
-    alt: last.w !== last.v ? lowerAscii(last.w) : '', dirs: segs.slice(0, -1).map(x => lowerAscii(x.v))};
+    alt: altName(last.w), dirs: segs.slice(0, -1).map(x => lowerAscii(x.v))};
 }
+// The colon kept, for a POSIX name that really contains one (`foo:bar.pem`); not when it is NTFS syntax (`$DATA` in it), so
+// `.env.example::$DATA` stays the template it is.
+const altName = w => { const c = w.indexOf(':'); return c >= 0 && !w.includes('$', c) ? lowerAscii(w) : ''; };
 const peel = name => {
   for (let n = 0; n < 2; n++) {
     const suffix = BACKUP_SUFFIXES.find(x => name.length > x.length && name.endsWith(x));
@@ -137,9 +200,10 @@ function globMatch(g, text, budget) {
 
 // ---------------------------------------------------------------- built-in rules
 const COMPILED = DEFAULT_RULES.map(r => ({id: r.id, kind: r.kind, base: (r.match.base || []).map(compileGlob), not: (r.match.not || []).map(compileGlob),
-  head: r.match.head || [], ext: r.match.ext || [], dir: r.match.dir || []}));
+  head: r.match.head || [], ext: r.match.ext || [], dir: (r.match.dir || []).map(d => d.split('/'))}));
 const splitName = n => { const h = n[0] === '.' ? n.slice(1) : n, f = h.indexOf('.'), l = n.lastIndexOf('.'); return f < 0 || l <= 0 ? null : {head: h.slice(0, f), ext: n.slice(l + 1)}; };
-const hasDirs = (dirs, seq) => { for (let i = 0; i + seq.length <= dirs.length; i++) if (seq.every((s, k) => dirs[i + k] === s)) return true; return seq.length === 0; };
+const hasRun = (dirs, seq) => { for (let i = 0; i + seq.length <= dirs.length; i++) if (seq.every((s, k) => dirs[i + k] === s)) return true; return false; };
+const hasDirs = (dirs, alts) => alts.length === 0 || alts.some(seq => hasRun(dirs, seq));
 function entryMatches(e, name, dirs) {
   if (!hasDirs(dirs, e.dir)) return false;
   const p = e.base.length ? null : splitName(name);
