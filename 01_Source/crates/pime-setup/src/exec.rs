@@ -10,8 +10,8 @@
 use crate::backend::{Backend, RegValue, is_in_use};
 use crate::payload::Payload;
 use crate::plan::{
-    ARP_KEY, Action, FileSource, MANIFEST_NAME, Manifest, Plan, Step, TEXT_SERVICE_CLSID,
-    inside_prefix, is_within, path_key, same_path,
+    ARP_KEY, Action, FileSource, MANIFEST_NAME, Manifest, Plan, Step, TEXT_SERVICE_CLSID, arp_path,
+    inside_prefix, is_plain_id, is_within, path_key, same_path,
 };
 use std::fmt;
 use std::io;
@@ -346,17 +346,14 @@ impl Runner<'_> {
             FileSource::SelfExe => Ok(self.inputs.self_exe.to_vec()),
             FileSource::Manifest => {
                 let mut manifest = self.plan.manifest.clone();
-                let mut dirs: Vec<PathBuf> = self
-                    .prior
-                    .iter()
-                    .flat_map(|m| m.directories.iter().cloned())
-                    .collect();
+                if let Some(prior) = &self.prior {
+                    carry_over(&mut manifest, prior);
+                }
                 for d in &self.created_dirs {
-                    if !dirs.iter().any(|x| same_path(x, d)) {
-                        dirs.push(d.clone());
+                    if !manifest.directories.iter().any(|x| same_path(x, d)) {
+                        manifest.directories.push(d.clone());
                     }
                 }
-                manifest.directories = dirs;
                 Ok(manifest.to_json().into_bytes())
             }
         }
@@ -545,6 +542,44 @@ impl Runner<'_> {
                 defer_file_delete(self.b, &path, &e, self.log, &mut self.out);
             }
         }
+    }
+}
+
+/// What an earlier install of this folder left behind that uninstalling still has to undo, and that this run does not
+/// do again (`--no-register`, `--no-arp`, `--no-vscode`), goes into the new manifest too: a manifest that forgot it
+/// would never unregister the DLL, delete the Add/Remove Programs entry or remove the extension. Only entries that
+/// pass the checks of `Manifest::validate` are carried over (the old manifest sat in a folder that may be writable
+/// by others, and what is written here is read back with administrator rights).
+fn carry_over(manifest: &mut Manifest, prior: &Manifest) {
+    let prefix = manifest.prefix.clone();
+    manifest.directories = prior
+        .directories
+        .iter()
+        .filter(|d| is_within(&prefix, d, true))
+        .cloned()
+        .collect();
+    for dll in &prior.text_service_dlls {
+        if inside_prefix(dll, &prefix, false)
+            && !manifest.text_service_dlls.iter().any(|d| same_path(d, dll))
+        {
+            manifest.text_service_dlls.push(dll.clone());
+        }
+    }
+    let arp = arp_path();
+    for key in &prior.registry_keys {
+        if key.eq_ignore_ascii_case(&arp)
+            && !manifest
+                .registry_keys
+                .iter()
+                .any(|k| k.eq_ignore_ascii_case(key))
+        {
+            manifest.registry_keys.push(key.clone());
+        }
+    }
+    if manifest.vscode_extension.is_none()
+        && let Some(id) = prior.vscode_extension.as_deref().filter(|i| is_plain_id(i))
+    {
+        manifest.vscode_extension = Some(id.to_string());
     }
 }
 
@@ -1883,6 +1918,87 @@ mod tests {
             lib.contains(&format!("CLSID_PIME: GUID = GUID::from_u128({grouped})")),
             "CLSID_PIME in pime-tsf differs from TEXT_SERVICE_CLSID {TEXT_SERVICE_CLSID}"
         );
+    }
+
+    #[test]
+    fn st_035_review_11_rerunning_the_setup_without_register_arp_vscode_keeps_the_earlier_registration()
+     {
+        let mut b = machine();
+        let initial = b.state.clone();
+        install(&mut b, "0.2.0").unwrap();
+        install_into(&mut b, PREFIX, "0.3.0", &[], |o| {
+            (o.register, o.arp, o.vscode) = (false, false, VscodeMode::Skip)
+        })
+        .unwrap();
+        let m = manifest_of(&b, PREFIX);
+        assert_eq!(m.text_service_dlls, [PathBuf::from(DLL)]);
+        assert_eq!(m.registry_keys, [crate::plan::arp_path()]);
+        assert_eq!(m.vscode_extension.as_deref(), Some("pub.ext"));
+        assert_eq!(
+            m.version, "0.3.0",
+            "the rest of the manifest is the new run's"
+        );
+        // ... so that uninstalling still undoes everything the first run did
+        b.commands.clear();
+        let out = uninstall(&mut b, VscodeMode::Install);
+        assert!(out.warnings.is_empty(), "{:?}", out.warnings);
+        assert!(
+            b.commands
+                .iter()
+                .any(|c| c.contains("/u /s") && c.contains("pime_tsf.dll")),
+            "{:?}",
+            b.commands
+        );
+        assert!(
+            b.commands
+                .iter()
+                .any(|c| c.contains("--uninstall-extension pub.ext"))
+        );
+        assert!(b.state.registered.is_empty());
+        assert_eq!(
+            b.state, initial,
+            "the machine is as it was before the first install"
+        );
+    }
+
+    #[test]
+    fn st_035_review_11_only_entries_that_pass_validation_are_carried_into_the_new_manifest() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        // an old manifest in a folder that others could write: foreign entries must not be copied forward
+        let path = format!(r"{PREFIX}\install-manifest.json");
+        let text = String::from_utf8(b.file(&path).unwrap().clone()).unwrap();
+        let tampered = text
+            .replace(
+                "\"registry_keys\": [",
+                "\"registry_keys\": [\n    \"HKLM\\\\SOFTWARE\\\\Microsoft\\\\CTF\\\\TIP\",",
+            )
+            .replace(
+                "\"text_service_dlls\": [",
+                "\"text_service_dlls\": [\n    \"C:\\\\Windows\\\\System32\\\\evil.dll\",",
+            )
+            .replace(
+                "\"vscode_extension\": \"pub.ext\"",
+                "\"vscode_extension\": \"x --evil\"",
+            )
+            .replace(
+                "\"directories\": [",
+                "\"directories\": [\n    \"C:\\\\Windows\",",
+            );
+        assert_ne!(tampered, text);
+        b.put(&path, tampered.as_bytes());
+        install_into(&mut b, PREFIX, "0.3.0", &[], |o| {
+            (o.register, o.arp, o.vscode) = (false, false, VscodeMode::Skip)
+        })
+        .unwrap();
+        let m = manifest_of(&b, PREFIX);
+        assert_eq!(m.text_service_dlls, [PathBuf::from(DLL)]);
+        assert_eq!(m.registry_keys, [crate::plan::arp_path()]);
+        assert_eq!(m.vscode_extension, None);
+        assert_eq!(m.directories, [PathBuf::from(PREFIX)]);
+        // and the manifest that came out is one the uninstaller accepts
+        uninstall(&mut b, VscodeMode::Skip);
+        assert!(b.state.files.is_empty());
     }
 
     #[test]

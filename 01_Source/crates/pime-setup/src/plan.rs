@@ -245,8 +245,17 @@ pub struct Manifest {
     pub vscode_extension: Option<String>,
 }
 
-fn arp_path() -> String {
+/// The one registry key an install owns, with the hive, as the manifest records it.
+pub fn arp_path() -> String {
     format!(r"HKLM\{ARP_KEY}")
+}
+
+/// A VS Code extension id the uninstaller may hand to `code --uninstall-extension`: letters, digits, `.`, `-`, `_`.
+pub fn is_plain_id(id: &str) -> bool {
+    !id.is_empty()
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
 }
 
 impl Manifest {
@@ -358,10 +367,7 @@ impl Manifest {
             }
         }
         if let Some(id) = &self.vscode_extension
-            && !(!id.is_empty()
-                && id
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_')))
+            && !is_plain_id(id)
         {
             return Err(PlanError::Manifest(
                 "the VS Code extension id is not a plain identifier".into(),
