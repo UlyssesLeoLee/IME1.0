@@ -487,8 +487,9 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             return; // cannot place the window: `settle` then cancels, because nothing may be eaten behind a hidden window
         };
         self.last_anchor = Some(anchor);
-        self.ui.show(&view, anchor);
-        self.visible = true;
+        // `visible` is what the USER sees, not what was asked for: a window that could not be drawn (creation failed, no
+        // monitor, nothing to lay out) is a hidden window, and `settle` cancels exactly as for a missing anchor
+        self.visible = self.ui.show(&view, anchor);
     }
 
     fn hide(&mut self) {
@@ -1492,7 +1493,7 @@ mod tests {
 
         struct PanickyUi;
         impl CandidateUi for PanickyUi {
-            fn show(&mut self, _: &CandidateView, _: Anchor) {
+            fn show(&mut self, _: &CandidateView, _: Anchor) -> bool {
                 panic!("window panicked (test)");
             }
             fn hide(&mut self) {}
@@ -1576,6 +1577,67 @@ mod tests {
         assert!(!rig.digit('1'), "so the digit is typed");
         assert!(!rig.plain(vk::ESCAPE));
         assert!(!rig.ctl.host().composing);
+    }
+
+    #[test]
+    fn a_window_that_could_not_be_drawn_means_no_eaten_keys_behind_it() {
+        // review finding 5: the popup failed (no window, no monitor, nothing to lay out), the controller used to believe
+        // the list was on screen and ate Space/Enter/Tab/digits and the chord behind a window nobody sees
+        for config in [TipConfig::default(), sogou()] {
+            for style in [Host::Contract, Host::Always, Host::DownOnly] {
+                let what = format!("{style:?} (capture {})", config.candidate_capture);
+                let mut rig = Rig::with(config.clone());
+                rig.ctl.ui.refuse = true;
+                rig.type_text("fn", style);
+                assert!(rig.ctl.ui().shows > 0, "{what}: the window was asked");
+                assert!(!rig.ctl.ui().visible, "{what}");
+                assert!(
+                    rig.ctl.machine().candidates().is_empty(),
+                    "{what}: the candidates were dropped, as for a missing caret position"
+                );
+                for code in [vk::TAB, vk::RETURN, vk::ESCAPE, vk::NEXT, vk::DOWN] {
+                    assert!(!rig.press(code, None, NONE, style), "{what}: {code:#x}");
+                    rig.type_text("fn", style);
+                }
+                assert!(!rig.press(vk::SPACE, Some(' '), NONE, style), "{what}");
+                assert!(!rig.press(code_of('1'), Some('1'), NONE, style), "{what}");
+                assert!(!rig.chord(style), "{what}: not even the chord");
+                assert_eq!(rig.ctl.host().begins, 0, "{what}: no composition");
+                assert!(!rig.ctl.host().composing, "{what}");
+                assert!(rig.ctl.host().commits.is_empty(), "{what}");
+                assert!(
+                    !rig.ctl.is_degraded(),
+                    "{what}: a missing window is not a host failure"
+                );
+                // a window that works again brings the suggestions back
+                rig.ctl.ui.refuse = false;
+                rig.ctl.host_mut().doc.clear();
+                rig.type_text("fn", style);
+                assert!(rig.ctl.ui().visible, "{what}");
+                assert!(!rig.ctl.machine().candidates().is_empty(), "{what}");
+            }
+        }
+    }
+
+    #[test]
+    fn a_window_that_fails_in_the_middle_of_a_composition_ends_it_and_hands_the_keys_back() {
+        let mut rig = Rig::new();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.ctl.ui().visible && rig.ctl.host().composing);
+        rig.ctl.ui.refuse = true;
+        // the key was decided while the list was still visible; what matters is the state it leaves behind
+        rig.plain(vk::NEXT);
+        assert!(!rig.ctl.ui().visible);
+        assert!(!rig.ctl.host().composing, "the composition was ended");
+        assert_ne!(rig.ctl.machine().state(), State::Composing);
+        assert!(rig.ctl.machine().candidates().is_empty());
+        assert!(!rig.digit('1') && !rig.plain(vk::ESCAPE) && !rig.plain(vk::TAB));
+        assert!(rig.ctl.host().commits.is_empty());
+        assert_eq!(
+            rig.ctl.host().doc,
+            "fn1",
+            "nothing was written but the typed digit"
+        );
     }
 
     #[test]

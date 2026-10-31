@@ -307,8 +307,9 @@ impl Shared {
     }
 
     /// Make the native popup match the decision: shown with the latest view while the TIP draws (or no element is open),
-    /// hidden while the host draws. `now` is the view the caller has at hand, else the stored one is used.
-    fn sync_native(&self, now: Option<(&CandidateView, Anchor)>) {
+    /// hidden while the host draws. `now` is the view the caller has at hand, else the stored one is used. Returns
+    /// whether the native popup is on screen afterwards (what the popup answered, not what was asked of it).
+    fn sync_native(&self, now: Option<(&CandidateView, Anchor)>) -> bool {
         let (tip_draws, visible, stored) = {
             let state = self.state.borrow();
             let stored = if now.is_none() {
@@ -323,10 +324,10 @@ impl Shared {
             )
         };
         let Ok(mut native) = self.native.try_borrow_mut() else {
-            return; // the window is being drawn right now; the next show or hide settles it
+            return false; // the window is being drawn right now; the next show or hide settles it (fail closed: not visible)
         };
         let Some(native) = native.as_mut() else {
-            return;
+            return false;
         };
         let target = match (&stored, now) {
             (_, Some((view, anchor))) => Some((view, anchor)),
@@ -335,15 +336,25 @@ impl Shared {
         };
         match target {
             Some((view, anchor)) if tip_draws => {
-                native.show(view, anchor);
-                self.state.borrow_mut().native_visible = true;
+                // a popup that could not be drawn has hidden itself: `native_visible` follows its answer
+                let shown = native.show(view, anchor);
+                self.state.borrow_mut().native_visible = shown;
+                shown
             }
             _ if visible => {
                 native.hide();
                 self.state.borrow_mut().native_visible = false;
+                false
             }
-            _ => {}
+            _ => false, // not drawn by the TIP and not visible before either (`visible` is false here)
         }
+    }
+
+    /// The host has taken the open list over (`BeginUIElement` answered "I draw", or `Show(FALSE)` later): the user sees
+    /// it even though the native popup stays hidden.
+    fn host_draws(&self) -> bool {
+        let state = self.state.borrow();
+        state.open.is_some() && state.drawer == Drawer::Host
     }
 
     fn hide_native(&self) {
@@ -420,7 +431,9 @@ impl<H: UiElementHost> ElementUi<H> {
 }
 
 impl<H: UiElementHost> CandidateUi for ElementUi<H> {
-    fn show(&mut self, view: &CandidateView, anchor: Anchor) {
+    /// Visible when the host draws the list, else exactly when the native popup was drawn (a popup that failed leaves the
+    /// element open, but nobody sees the list: the controller then cancels and its `hide` ends the element).
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
         let list = ListSnapshot::from_view(view);
         let (open, failed) = {
             let mut state = self.shared.state.borrow_mut();
@@ -434,7 +447,8 @@ impl<H: UiElementHost> CandidateUi for ElementUi<H> {
         }
         // a `Show` that arrived inside the host call counts after the host's answer (the host asked for it later)
         self.shared.apply_pending();
-        self.shared.sync_native(Some((view, anchor)));
+        let native_shown = self.shared.sync_native(Some((view, anchor)));
+        native_shown || self.shared.host_draws()
     }
 
     fn hide(&mut self) {
@@ -770,8 +784,8 @@ mod tests {
     struct Spy(Rc<RefCell<RecordingUi>>);
 
     impl CandidateUi for Spy {
-        fn show(&mut self, view: &CandidateView, anchor: Anchor) {
-            self.0.borrow_mut().show(view, anchor);
+        fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
+            self.0.borrow_mut().show(view, anchor)
         }
 
         fn hide(&mut self) {
@@ -1110,6 +1124,71 @@ mod tests {
     }
 
     #[test]
+    fn show_answers_whether_the_user_sees_the_list_when_the_tip_draws() {
+        let mut rig = Rig::new(true);
+        assert!(
+            rig.ui.show(&view(5, 0, 0, 1), ANCHOR),
+            "the popup drew the list"
+        );
+        assert!(rig.shared.is_shown());
+        // the popup cannot be drawn (window creation, monitor, font, layout): nobody sees the list
+        rig.native.0.borrow_mut().refuse = true;
+        assert!(!rig.ui.show(&view(5, 1, 0, 1), ANCHOR));
+        assert!(!rig.native_visible());
+        assert!(
+            !rig.shared.is_shown(),
+            "IsShown tells the truth: our window is not on screen"
+        );
+        assert_eq!(
+            rig.calls(),
+            vec![Call::Begin, Call::Update(1)],
+            "the host is still told about the list: the controller's hide ends it"
+        );
+        rig.ui.hide();
+        assert_eq!(rig.calls().last(), Some(&Call::End(1)));
+        assert!(rig.wire.borrow().open.is_empty());
+        // and the popup works again with the next list
+        rig.native.0.borrow_mut().refuse = false;
+        assert!(rig.ui.show(&view(5, 0, 0, 1), ANCHOR));
+        assert!(rig.shared.is_shown());
+    }
+
+    #[test]
+    fn show_answers_true_while_the_host_draws_whatever_the_native_popup_could_do() {
+        let mut rig = Rig::new(false); // BeginUIElement answers "I draw"
+        rig.native.0.borrow_mut().refuse = true;
+        assert!(
+            rig.ui.show(&view(5, 0, 0, 1), ANCHOR),
+            "the host's list is the one the user sees"
+        );
+        assert!(rig.ui.show(&view(5, 1, 0, 1), ANCHOR));
+        assert_eq!(rig.native_shows(), 0, "the popup was never asked");
+        // the host takes a TIP-drawn list over in the middle of it
+        let mut rig = Rig::new(true);
+        assert!(rig.ui.show(&view(5, 0, 0, 1), ANCHOR));
+        rig.native.0.borrow_mut().refuse = true;
+        rig.shared.host_show(false);
+        assert!(rig.ui.show(&view(5, 1, 0, 1), ANCHOR));
+        // and gives it back: now the popup's answer counts
+        rig.shared.host_show(true);
+        assert!(!rig.ui.show(&view(5, 2, 0, 1), ANCHOR));
+        assert!(!rig.shared.is_shown());
+    }
+
+    #[test]
+    fn show_answers_with_the_native_popup_when_there_is_no_manager() {
+        let mut rig = Rig::new(true);
+        rig.wire.borrow_mut().unavailable = true;
+        assert!(rig.ui.show(&view(5, 0, 0, 1), ANCHOR));
+        rig.native.0.borrow_mut().refuse = true;
+        assert!(
+            !rig.ui.show(&view(5, 1, 0, 1), ANCHOR),
+            "no host to take over: a failed popup is no list at all"
+        );
+        assert_eq!(ends(&rig.wire), 0);
+    }
+
+    #[test]
     fn dropping_the_window_ends_an_open_list_and_destroys_the_native_window() {
         let mut rig = Rig::new(true);
         rig.show(&view(2, 0, 0, 1));
@@ -1365,6 +1444,29 @@ mod tests {
         s.ctl.deactivate();
         assert!(s.balanced());
         assert!(!s.native.0.borrow().visible);
+    }
+
+    #[test]
+    fn a_popup_that_cannot_draw_cancels_the_list_under_the_controller_and_begin_still_pairs_with_end()
+     {
+        let mut s = Session::new(true);
+        s.native.0.borrow_mut().refuse = true;
+        s.type_text("fn");
+        assert!(!s.shared.is_shown());
+        assert!(
+            !s.press(vk::NEXT, None),
+            "nobody sees a list: PageDown is the host's"
+        );
+        assert!(!s.press(0x31, Some('1')), "and so is the digit");
+        assert_eq!(s.ctl.host().doc, "fn1");
+        assert!(s.balanced(), "{:?}", s.wire.borrow().calls);
+        // a host that draws makes the same popup failure irrelevant: its list is on screen
+        let mut s = Session::new(false);
+        s.native.0.borrow_mut().refuse = true;
+        s.type_text("fn");
+        assert!(s.press(vk::NEXT, None));
+        assert!(s.press(0x31, Some('1')));
+        assert!(s.balanced());
     }
 
     #[test]

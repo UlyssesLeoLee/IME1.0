@@ -55,8 +55,8 @@ fn refused<E>(_: E) -> HostError {
 struct BoxedUi(Box<dyn CandidateUi>);
 
 impl CandidateUi for BoxedUi {
-    fn show(&mut self, view: &CandidateView, anchor: Anchor) {
-        self.0.show(view, anchor);
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
+        self.0.show(view, anchor)
     }
 
     fn hide(&mut self) {

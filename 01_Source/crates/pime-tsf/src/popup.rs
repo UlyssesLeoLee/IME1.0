@@ -3,8 +3,9 @@
 //! touch the host's text.
 //!
 //! Threading: a [`PopupWindow`] belongs to the thread that first shows it (a window has thread affinity); that thread's
-//! message loop, which the host owns, delivers its paint messages. Every failure (no monitor, no font, window creation)
-//! ends as "not shown": the popup never panics and never reports an error to the TIP, which keeps working without it.
+//! message loop, which the host owns, delivers its paint messages. Every failure (no monitor, no font, window creation,
+//! a layout that leaves nothing to draw) ends as "not shown": the popup never panics, and `show` answers `false` so that
+//! the TIP knows nobody sees the list (it then lets every key through, see `controller`).
 //!
 //! Colours are system colours (`GetSysColor`), so high-contrast themes apply; the selected row is additionally marked
 //! by a text marker (see `layout::draw_ops`). DPI comes from the monitor under the caret.
@@ -118,8 +119,7 @@ impl PopupWindow {
             layout::compute_scaled(view, anchor, work, &metrics, dpi as f32 / 96.0)
         };
         if !layout.is_visible() {
-            self.hide();
-            return Ok(());
+            return Err(NotShown); // `show` hides the window and reports "not visible"
         }
         let window = layout.window;
         // The borrow ends before any window call: SetWindowPos/UpdateWindow re-enter `wnd_proc` synchronously.
@@ -198,10 +198,12 @@ impl PopupWindow {
 }
 
 impl CandidateUi for PopupWindow {
-    fn show(&mut self, view: &CandidateView, anchor: Anchor) {
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
         if self.try_show(view, anchor).is_err() {
             self.hide();
+            return false;
         }
+        true
     }
 
     fn hide(&mut self) {

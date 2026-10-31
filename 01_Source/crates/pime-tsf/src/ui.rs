@@ -37,8 +37,10 @@ pub struct Anchor {
 }
 
 pub trait CandidateUi {
-    /// Show or update the window. Must not take focus.
-    fn show(&mut self, view: &CandidateView, anchor: Anchor);
+    /// Show or update the window. Must not take focus. Returns whether the list is VISIBLE to the user afterwards:
+    /// false when it could not be drawn (no window, no monitor, no font, nothing to lay out) or when the implementation
+    /// cannot tell. The caller treats false like a hidden window: nothing may be eaten behind a list nobody sees.
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool;
     /// Hide it (idempotent).
     fn hide(&mut self);
 }
@@ -50,13 +52,16 @@ pub struct RecordingUi {
     pub visible: bool,
     pub shows: usize,
     pub hides: usize,
+    /// Set by a test: `show` records the request but reports "not visible", like a popup that could not be drawn.
+    pub refuse: bool,
 }
 
 impl CandidateUi for RecordingUi {
-    fn show(&mut self, view: &CandidateView, anchor: Anchor) {
+    fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool {
         self.last = Some((view.clone(), anchor));
-        self.visible = true;
+        self.visible = !self.refuse;
         self.shows += 1;
+        self.visible
     }
 
     fn hide(&mut self) {
