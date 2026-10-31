@@ -30,7 +30,7 @@ pub const USAGE: &str = "Programming IME setup (pre-release, not code signed)
 Usage: pime-setup.exe [options]
   (no options)     interactive install with a few prompts
   --silent, /S     no prompts
-  --prefix <dir>   install folder (default: %ProgramFiles%\\Programming IME)
+  --prefix <dir>   install folder (default: <64-bit Program Files>\\Programming IME)
   --dry-run        print the plan and exit; nothing is changed
   --no-register    do not register the text service (regsvr32)
   --no-arp         do not add the Add/Remove Programs entry
@@ -165,7 +165,13 @@ pub fn run(raw: Vec<String>) -> i32 {
         real::free_console_if_alone();
     }
     let lang = real::ui_language();
-    let system = SystemPaths::from_env();
+    let system = match real::system_paths() {
+        Ok(s) => s,
+        Err(e) => {
+            let _ = writeln!(std::io::stderr(), "pime-setup: {e}");
+            return EXIT_FAILED;
+        }
+    };
     let mut rep = Reporter::open(args.log.as_deref());
     let outcome = if args.uninstall {
         uninstall_flow(&args, &system, lang, interactive, &mut rep)

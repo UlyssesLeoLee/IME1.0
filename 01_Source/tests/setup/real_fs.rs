@@ -10,10 +10,10 @@ use pime_setup::backend::Backend;
 use pime_setup::exec::{Inputs, execute};
 use pime_setup::payload::{self, Payload};
 use pime_setup::plan::{
-    InstallOptions, MANIFEST_NAME, Manifest, SystemPaths, UninstallOptions, VscodeMode,
-    install_plan, uninstall_plan,
+    InstallOptions, MANIFEST_NAME, Manifest, UninstallOptions, VscodeMode, install_plan,
+    uninstall_plan,
 };
-use pime_setup::real::{RealBackend, is_elevated};
+use pime_setup::real::{RealBackend, is_elevated, system_paths};
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -76,7 +76,7 @@ fn offline_options(version: &str) -> InstallOptions {
         arp: false,
         vscode: VscodeMode::Skip,
         release: payload.release().unwrap(),
-        system: SystemPaths::from_env(),
+        system: system_paths().unwrap(),
     }
 }
 
@@ -161,7 +161,7 @@ fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() 
         &manifest,
         &UninstallOptions {
             vscode: VscodeMode::Skip,
-            system: SystemPaths::from_env(),
+            system: system_paths().unwrap(),
         },
     )
     .unwrap();
@@ -214,7 +214,7 @@ fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() 
         &manifest,
         &UninstallOptions {
             vscode: VscodeMode::Skip,
-            system: SystemPaths::from_env(),
+            system: system_paths().unwrap(),
         },
     )
     .unwrap();
@@ -420,7 +420,7 @@ fn st_035_the_real_exe_installs_and_uninstalls_in_a_temp_folder_with_all_three_n
 // ---------------------------------------------------------------------------------------------------------------------
 
 fn system32() -> PathBuf {
-    PathBuf::from(std::env::var_os("SystemRoot").expect("SystemRoot")).join("System32")
+    system_paths().unwrap().system_dir
 }
 
 /// A DLL mapped into this process, like pime_tsf.dll in the programs that used the input method.
@@ -498,7 +498,7 @@ fn st_035_review_1_a_mapped_dll_is_renamed_aside_and_its_original_path_is_never_
         &manifest,
         &UninstallOptions {
             vscode: VscodeMode::Skip,
-            system: SystemPaths::from_env(),
+            system: system_paths().unwrap(),
         },
     )
     .unwrap();
@@ -531,4 +531,73 @@ fn st_035_review_1_a_mapped_dll_is_renamed_aside_and_its_original_path_is_never_
     );
     assert!(!out.restart_needed);
     drop(mapped);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review finding 2: the system folders come from the Windows APIs, never from environment variables.
+// ---------------------------------------------------------------------------------------------------------------------
+
+fn describe(p: &pime_setup::plan::SystemPaths) -> String {
+    format!(
+        "RESOLVED|{}|{}|{}|{}|{:?}|{:?}|{:?}",
+        p.system_root.display(),
+        p.system_dir.display(),
+        p.regsvr32().display(),
+        p.program_files.display(),
+        p.program_files_x86,
+        p.program_data,
+        p.user_profile
+    )
+}
+
+const CHILD_GATE: &str = "PIME_SETUP_TEST_RESOLVE_CHILD";
+
+/// Runs itself twice: once as the test, once (gated by an environment variable) as a child that was started with bogus
+/// `SystemRoot` / `ProgramFiles` values. No `set_var` in this process, so no race with the other tests.
+#[test]
+fn st_035_review_2_the_system_paths_do_not_come_from_environment_variables() {
+    if std::env::var_os(CHILD_GATE).is_some() {
+        println!("{}", describe(&system_paths().unwrap()));
+        return;
+    }
+    let ours = system_paths().unwrap();
+    let evil = r"C:\pime-evil";
+    let out = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "st_035_review_2_the_system_paths_do_not_come_from_environment_variables",
+            "--nocapture",
+            "--test-threads=1",
+        ])
+        .env(CHILD_GATE, "1")
+        .env("SystemRoot", format!(r"{evil}\root"))
+        .env("windir", format!(r"{evil}\root"))
+        .env("ProgramFiles", format!(r"{evil}\pf"))
+        .env("ProgramW6432", format!(r"{evil}\pf"))
+        .env("ProgramFiles(x86)", format!(r"{evil}\pf86"))
+        .env("ProgramData", format!(r"{evil}\pd"))
+        .env("USERPROFILE", format!(r"{evil}\user"))
+        .output()
+        .unwrap();
+    let text = String::from_utf8_lossy(&out.stdout);
+    // (the harness prints "test <name> ... " in front of the first line of captured output)
+    let line = text
+        .lines()
+        .find_map(|l| l.find("RESOLVED|").map(|at| &l[at..]))
+        .unwrap_or_else(|| {
+            panic!(
+                "the child printed no result: {text}{}",
+                String::from_utf8_lossy(&out.stderr)
+            )
+        });
+    assert_eq!(
+        line,
+        describe(&ours),
+        "bogus environment variables changed the answer"
+    );
+    assert!(!line.contains("pime-evil"), "{line}");
+    // and what it answered is the real thing: absolute, existing, regsvr32 in the folder GetSystemDirectoryW names
+    assert!(ours.regsvr32().is_file(), "{}", ours.regsvr32().display());
+    assert!(ours.system_dir.starts_with(&ours.system_root));
+    assert!(ours.program_files.is_dir() && ours.program_files.is_absolute());
 }

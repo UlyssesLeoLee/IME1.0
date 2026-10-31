@@ -6,6 +6,7 @@
 //! person on a disposable machine.
 
 use crate::backend::{Backend, RegValue};
+use crate::plan::{SystemPaths, is_within};
 use crate::text::Lang;
 use std::ffi::{OsStr, OsString, c_void};
 use std::io;
@@ -22,21 +23,27 @@ use windows::Win32::Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY
 use windows::Win32::Storage::FileSystem::{
     MOVE_FILE_FLAGS, MOVEFILE_DELAY_UNTIL_REBOOT, MoveFileExW,
 };
+use windows::Win32::System::Com::CoTaskMemFree;
 use windows::Win32::System::Console::{FreeConsole, GetConsoleProcessList};
 use windows::Win32::System::Registry::{
     HKEY, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, KEY_WOW64_64KEY, REG_DWORD, REG_MULTI_SZ,
     REG_OPTION_NON_VOLATILE, REG_SZ, REG_VALUE_TYPE, RegCloseKey, RegCreateKeyExW, RegDeleteTreeW,
     RegEnumValueW, RegOpenKeyExW, RegQueryInfoKeyW, RegQueryValueExW, RegSetValueExW,
 };
+use windows::Win32::System::SystemInformation::{GetSystemDirectoryW, GetSystemWindowsDirectoryW};
 use windows::Win32::System::Threading::{
     GetCurrentProcess, GetExitCodeProcess, INFINITE, OpenProcessToken, WaitForSingleObject,
 };
-use windows::Win32::UI::Shell::{SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW, ShellExecuteExW};
+use windows::Win32::UI::Shell::{
+    FOLDERID_Profile, FOLDERID_ProgramData, FOLDERID_ProgramFilesX64, FOLDERID_ProgramFilesX86,
+    KF_FLAG_DEFAULT, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW, SHGetKnownFolderPath,
+    ShellExecuteExW,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
     IDYES, MB_DEFBUTTON2, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_OK,
     MB_SETFOREGROUND, MB_YESNO, MESSAGEBOX_STYLE, MessageBoxW, SW_HIDE,
 };
-use windows::core::{HRESULT, PCWSTR, PWSTR, w};
+use windows::core::{GUID, HRESULT, PCWSTR, PWSTR, w};
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 /// regsvr32 and `code` finish in seconds; this only stops a hung child from hanging the installer forever.
@@ -48,6 +55,82 @@ fn wide(s: &OsStr) -> Vec<u16> {
 
 fn win_err(e: WIN32_ERROR) -> io::Error {
     io::Error::from_raw_os_error(e.0 as i32)
+}
+
+/// An absolute path on a local drive (`C:\...`), without a trailing separator: the only shape of answer from a Windows
+/// API that is used as a system folder.
+pub fn accept_folder(raw: &str, what: &str) -> io::Result<PathBuf> {
+    let text = raw.trim_end_matches('\\');
+    let b = text.as_bytes();
+    let local = b.len() > 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && b[2] == b'\\';
+    if !local || text.contains(['?', '*', '"', '<', '>', '|']) {
+        return Err(io::Error::other(format!(
+            "Windows reported {raw:?} for {what}, which is not an absolute path on a local drive"
+        )));
+    }
+    Ok(PathBuf::from(text))
+}
+
+/// `GetSystemDirectoryW` and `GetSystemWindowsDirectoryW` share this shape.
+fn directory(call: unsafe fn(Option<&mut [u16]>) -> u32, what: &str) -> io::Result<PathBuf> {
+    let mut buf = vec![0u16; 260];
+    loop {
+        // SAFETY: the buffer is valid for `buf.len()` units for the whole call, which writes no more than that.
+        let n = unsafe { call(Some(&mut buf)) } as usize;
+        if n == 0 {
+            return Err(io::Error::other(format!(
+                "cannot determine {what}: {}",
+                io::Error::last_os_error()
+            )));
+        }
+        if n < buf.len() {
+            return accept_folder(&String::from_utf16_lossy(&buf[..n]), what);
+        }
+        buf = vec![0u16; n + 1]; // too small: `n` is the size needed, terminator included
+    }
+}
+
+fn known_folder(id: &GUID, what: &str) -> io::Result<PathBuf> {
+    // SAFETY: `id` is a valid KNOWNFOLDERID; a null token means the current user; the result is a COM allocation.
+    let path = unsafe { SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, HANDLE::default()) }
+        .map_err(|e| io::Error::other(format!("cannot determine {what}: {e}")))?;
+    // SAFETY: SHGetKnownFolderPath returned a NUL-terminated string, which is freed exactly once right after the copy.
+    let text = unsafe { path.to_string() };
+    unsafe { CoTaskMemFree(Some(path.0 as *const c_void)) };
+    accept_folder(
+        &text.map_err(|e| io::Error::other(format!("{what} is not valid Unicode: {e}")))?,
+        what,
+    )
+}
+
+/// The system folders, from the Windows APIs and never from the environment: the (unelevated) process that started the
+/// setup controls `SystemRoot` and `ProgramFiles`, and the elevated setup runs `<System32>\regsvr32.exe` and decides
+/// from them which folders are protected. Failing to answer is an error, there is no fallback to a guess.
+pub fn system_paths() -> io::Result<SystemPaths> {
+    let system_root = directory(GetSystemWindowsDirectoryW, "the Windows folder")?;
+    let system_dir = directory(GetSystemDirectoryW, "the System32 folder")?;
+    if !is_within(&system_dir, &system_root, false) {
+        return Err(io::Error::other(format!(
+            "the System32 folder {} is not inside the Windows folder {}",
+            system_dir.display(),
+            system_root.display()
+        )));
+    }
+    Ok(SystemPaths {
+        system_root,
+        system_dir,
+        program_files: known_folder(&FOLDERID_ProgramFilesX64, "the Program Files folder")?,
+        program_files_x86: known_folder(
+            &FOLDERID_ProgramFilesX86,
+            "the Program Files (x86) folder",
+        )
+        .ok(),
+        program_data: Some(known_folder(
+            &FOLDERID_ProgramData,
+            "the ProgramData folder",
+        )?),
+        user_profile: Some(known_folder(&FOLDERID_Profile, "the user profile folder")?),
+    })
 }
 
 /// Windows virus scanners briefly hold freshly written files; retry the operations that scanners can collide with.
@@ -431,7 +514,7 @@ impl Backend for RealBackend {
         find_code(
             std::env::var_os("PATH"),
             var("LOCALAPPDATA"),
-            var("ProgramFiles"),
+            known_folder(&FOLDERID_ProgramFilesX64, "the Program Files folder").ok(),
             &|p| p.is_file(),
         )
     }
@@ -629,6 +712,50 @@ mod tests {
         assert_eq!(
             command_line(&["--prefix".into(), r"D:\日本語 フォルダ".into()]),
             r#"--prefix "D:\日本語 フォルダ""#
+        );
+    }
+
+    #[test]
+    fn st_035_review_2_only_an_absolute_local_path_is_accepted_as_a_system_folder() {
+        assert_eq!(
+            accept_folder(r"C:\Windows\System32", "x").unwrap(),
+            PathBuf::from(r"C:\Windows\System32")
+        );
+        assert_eq!(
+            accept_folder(r"D:\Program Files\", "x").unwrap(),
+            PathBuf::from(r"D:\Program Files")
+        );
+        for bad in [
+            "",
+            r"C:\",
+            "C:",
+            r"relative\dir",
+            r"\\server\share\x",
+            r"\\?\C:\Windows",
+            r"C:\Win*dows",
+        ] {
+            let e = accept_folder(bad, "the Windows folder")
+                .unwrap_err()
+                .to_string();
+            assert!(e.contains("the Windows folder"), "{bad:?}: {e}");
+        }
+    }
+
+    #[test]
+    fn st_035_review_2_the_resolved_system_paths_are_consistent() {
+        let s = system_paths().unwrap();
+        assert!(is_within(&s.system_dir, &s.system_root, false));
+        assert_eq!(
+            s.regsvr32()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_lowercase(),
+            "regsvr32.exe"
+        );
+        assert_eq!(s.regsvr32().parent(), Some(s.system_dir.as_path()));
+        assert!(
+            s.program_files_x86.is_some() && s.program_data.is_some() && s.user_profile.is_some()
         );
     }
 

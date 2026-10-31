@@ -50,9 +50,15 @@ pub enum VscodeMode {
     Install,
 }
 
+/// The folders that decide which program the (elevated) installer runs and which folders it treats as protected.
+/// `real::system_paths()` fills it from the Windows APIs (GetSystemDirectoryW, SHGetKnownFolderPath), never from
+/// environment variables, which the unelevated process that started the setup controls; tests build it by hand.
 #[derive(Clone, Debug)]
 pub struct SystemPaths {
+    /// The Windows folder (`C:\Windows`).
     pub system_root: PathBuf,
+    /// The native `System32` folder: this installer is a 64-bit process, so it is the 64-bit one.
+    pub system_dir: PathBuf,
     pub program_files: PathBuf,
     pub program_files_x86: Option<PathBuf>,
     pub program_data: Option<PathBuf>,
@@ -60,21 +66,9 @@ pub struct SystemPaths {
 }
 
 impl SystemPaths {
-    pub fn from_env() -> SystemPaths {
-        let var = |n: &str| std::env::var_os(n).map(PathBuf::from);
-        SystemPaths {
-            system_root: var("SystemRoot").unwrap_or_else(|| PathBuf::from(r"C:\Windows")),
-            program_files: var("ProgramFiles")
-                .unwrap_or_else(|| PathBuf::from(r"C:\Program Files")),
-            program_files_x86: var("ProgramFiles(x86)"),
-            program_data: var("ProgramData"),
-            user_profile: var("USERPROFILE"),
-        }
-    }
-
-    /// The 64-bit regsvr32. This installer is a 64-bit process, so `System32` is the native folder.
+    /// The 64-bit regsvr32, the only program the installer ever runs elevated.
     pub fn regsvr32(&self) -> PathBuf {
-        self.system_root.join("System32").join("regsvr32.exe")
+        self.system_dir.join("regsvr32.exe")
     }
 
     pub fn default_prefix(&self) -> PathBuf {
@@ -720,6 +714,7 @@ pub mod tests {
     pub fn system() -> SystemPaths {
         SystemPaths {
             system_root: PathBuf::from(r"C:\Windows"),
+            system_dir: PathBuf::from(r"C:\Windows\System32"),
             program_files: PathBuf::from(r"C:\Program Files"),
             program_files_x86: Some(PathBuf::from(r"C:\Program Files (x86)")),
             program_data: Some(PathBuf::from(r"C:\ProgramData")),
@@ -806,6 +801,16 @@ pub mod tests {
         );
         assert_eq!(m.text_service_dlls, [p(&format!(r"{PREFIX}\pime_tsf.dll"))]);
         assert_eq!(m.vscode_extension.as_deref(), Some("pub.ext"));
+    }
+
+    #[test]
+    fn st_035_review_2_regsvr32_is_the_one_in_the_system_directory_the_plan_was_given() {
+        let mut o = options();
+        o.system.system_dir = p(r"D:\Elsewhere\System32");
+        let plan = install_plan(Path::new(PREFIX), &o).unwrap();
+        assert_eq!(plan.regsvr32, p(r"D:\Elsewhere\System32\regsvr32.exe"));
+        // and it does not depend on the Windows folder being the parent of that directory
+        assert_eq!(plan.regsvr32, o.system.regsvr32());
     }
 
     #[test]
