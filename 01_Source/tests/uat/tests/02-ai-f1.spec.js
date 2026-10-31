@@ -231,7 +231,9 @@ test('UAT-28 [AT-050/ST-036/IT-040] secrets in the file: the user must choose; "
   // a .env file needs the same explicit decision
   mock.reset();
   await app.openFile('.env');
-  await app.page.keyboard.press('F1'); await app.waitPanel();
+  await app.page.keyboard.press('F1');
+  await app.waitDialog(); await app.dialogClick('Allow once');                 // the secret-file read gate (file name rule) asks before anything is read
+  await app.waitPanel();
   await app.panelFrame.locator('#generate').click();
   await app.waitDialog(); await app.dialogClick('Authorize this request');
   expect((await app.waitDialog()).message).toMatch(/Possible secrets found/);
