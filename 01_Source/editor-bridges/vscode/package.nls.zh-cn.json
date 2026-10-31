@@ -16,5 +16,7 @@
   "cmd.reloadRules": "Programming IME：重新加载用户规则",
   "cmd.openRulesFolder": "Programming IME：打开用户规则文件夹",
   "cmd.f1Edit": "Programming IME：F1 AI（范围注释 / 整文件 / 光标插入）",
-  "cmd.f2Prompt": "Programming IME：F2 提示词（5W1H 提示词复制到剪贴板）"
+  "cmd.f2Prompt": "Programming IME：F2 提示词（5W1H 提示词复制到剪贴板）",
+  "cmd.secretFiles": "Programming IME：密钥类文件",
+  "cfg.secretFilePatterns": "额外的文件名或路径模式（glob，例如“*.cred”或“config/private/**”），Programming IME 会把匹配的文件当作密钥类文件：读取前先询问。它们是在内置规则（.env、私钥、密钥库、凭据等）之上追加的，内置规则无法关闭。不含斜杠的模式匹配文件名；含斜杠的模式从任意文件夹起匹配路径；以斜杠结尾表示其下的全部内容。仅限用户设置：工作区无法削弱这份列表。"
 }

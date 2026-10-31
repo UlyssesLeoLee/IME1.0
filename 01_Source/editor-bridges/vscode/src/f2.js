@@ -8,7 +8,10 @@
 // The clipboard is overwritten only when a prompt (reviewed or template) is really copied. Pure logic: core/promptcraft.js. This file is the glue:
 // availability, consent, the outbound sensitivity gate, the request, the clipboard and the notices. `vscode` and the runtime are injected
 // (createF2), so the flow is tested against fakes; init() wires the real ones.
+// A secret-class file (.env, keys ...) is not read at all until the user confirmed it (src/filegate.js): the check comes before the selection
+// or the file text is read, and a refusal is a notice with the clipboard untouched.
 const {fail, codeOf} = require('./core/errors');
+const {gateFor} = require('./filegate');
 const settingsMod = require('./core/settings');
 const promptcraft = require('./core/promptcraft');
 const {LANGUAGES} = require('./core/languages');
@@ -44,6 +47,7 @@ function selectionInRedacted(orig, red, a, ca, b, cb) {
 
 function createF2(env) {
   const {vscode, rt, L, errorText, enabled, aiEnabled, workspaceId, grantProviderId, infoFor, notice} = env;
+  const fileGate = gateFor(env);
   let current = null;
 
   const show = (text, kind = 'info') => { notice.show({text, kind}); }; // always the LAST step of a flow: see the header of ui/notice.js
@@ -226,8 +230,11 @@ function createF2(env) {
       notice.dismiss('api'); // an older notice must not outlive the next F2
       if (!enabled()) { vscode.window.showWarningMessage(L('f1.disabledHere')); return; }
       const editor = vscode.window.activeTextEditor;
-      const c = editor ? capture(editor) : null;
-      if (!c) { say('f2.selectionRequired'); return; } // from the palette; the F2 key only reaches us with a selection (when clause)
+      if (!editor || !editor.selection || editor.selection.isEmpty) { say('f2.selectionRequired'); return; } // from the palette; the F2 key only reaches us with a selection (when clause)
+      // an explicit command: a secret-class file may be read only after the user confirmed it; nothing of the document is read before that
+      if (!await fileGate.ensure(editor.document, {interactive: true, purpose: 'f2'})) { say('sec.refused.f2'); return; }
+      const c = capture(editor);
+      if (!c) { say('f2.selectionRequired'); return; }
       if (c.tooLarge) { say('f2.selectionTooLarge', [c.tooLarge, LIMITS.selectionChars], 'warn'); return; }
       if (current) current.controller.abort(); // one request at a time: the newest F2 wins, the older one ends silently
       current = mine;
@@ -264,7 +271,7 @@ function init(ctx) {
   const lang = require('./languageState');
   const notice = new TransientNotice(vscode);
   const f2 = instance = createF2({vscode, rt: runtime.rt, L: runtime.L, errorText: runtime.errorText, enabled: runtime.enabled, aiEnabled: runtime.aiEnabled,
-    workspaceId: runtime.workspaceId, grantProviderId: runtime.grantProviderId, infoFor: lang.infoFor, notice});
+    workspaceId: runtime.workspaceId, grantProviderId: runtime.grantProviderId, infoFor: lang.infoFor, notice, fileGate: require('./filegate').get()});
   ctx.subscriptions.push(notice, {dispose: () => f2.cancel()}); // the notice must be disposed with the extension (see ui/notice.js)
 }
 const run = () => instance ? instance.run() : Promise.resolve();

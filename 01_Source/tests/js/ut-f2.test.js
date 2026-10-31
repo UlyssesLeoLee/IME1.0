@@ -270,8 +270,8 @@ test('PRM-28 a sensitive selection or file is never copied and never sent when t
   await a.run(selectAll(SECRET_HIGH));
   assert.equal(a.fetch.calls.length, 0); assert.equal(a.clip.writes.length, 0);
   assert.equal(a.ui.toasts[0].kind, 'warn'); assert.match(a.ui.toasts[0].text, /^Looks sensitive \(api-key×1\): nothing was sent to an AI and nothing was copied\.$/);
-  // a credential file by name, harmless text
-  const b = rig({language: 'unknown'}); b.ui.choose.sensitive = undefined;
+  // a credential file by name, harmless text. The read gate (src/filegate.js) asks first and the user allows reading; the OUTBOUND gate still refuses
+  const b = rig({language: 'unknown'}); b.ui.choose.sensitive = undefined; b.ui.choose.consent = msg => /secret file/.test(msg) ? 'Allow once' : ONCE;
   await b.run(selectAll('API_KEY=placeholder\nMODE=dev\n', {languageId: 'properties', fileName: 'C:\\proj\\.env'}));
   assert.equal(b.fetch.calls.length, 0); assert.equal(b.clip.writes.length, 0); assert.match(b.ui.toasts[0].text, /sensitive file name/);
   // AI off: the offline template is a clipboard write too, so a high-risk selection is refused there as well (no dialog)

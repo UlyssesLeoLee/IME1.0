@@ -16,5 +16,7 @@
   "cmd.reloadRules": "Programming IME: ユーザー規則を再読み込み",
   "cmd.openRulesFolder": "Programming IME: ユーザー規則フォルダーを開く",
   "cmd.f1Edit": "Programming IME: F1 AI（範囲にコメント / ファイル全体 / カーソル位置に挿入）",
-  "cmd.f2Prompt": "Programming IME: F2 プロンプト（5W1H プロンプトをクリップボードへ）"
+  "cmd.f2Prompt": "Programming IME: F2 プロンプト（5W1H プロンプトをクリップボードへ）",
+  "cmd.secretFiles": "Programming IME: シークレット系ファイル",
+  "cfg.secretFilePatterns": "Programming IME がシークレット系ファイルとして扱う追加のファイル名／パスのパターン（glob。例：「*.cred」「config/private/**」）。該当するファイルは読み取る前に確認します。組み込みの規則（.env、秘密鍵、キーストア、認証情報など）に追加されるもので、組み込みの規則は無効にできません。スラッシュを含まないパターンはファイル名に、含むパターンはどのフォルダーからでもパスに一致し、末尾のスラッシュはその下のすべてを意味します。ユーザー設定のみ：ワークスペースからこの一覧を弱めることはできません。"
 }

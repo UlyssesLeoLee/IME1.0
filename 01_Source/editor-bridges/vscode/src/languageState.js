@@ -23,13 +23,18 @@ function dialectFor(profile, hints = {}) {
   const user = (cfg().get('dialects') || {})[profile] || {};
   return resolveDialect(profile, {...user, ...hints}).values;
 }
+// A secret-class file that the user has not allowed (src/filegate.js) is detected from its NAME only: its text is never read here. The check
+// is the shared gate unless a test replaces it.
+let lockCheck = doc => require('./filegate').get().isLocked(doc);
+function setLockCheck(fn) { lockCheck = typeof fn === 'function' ? fn : () => false; cache = null; }
 // Result: {language, dialect, uncertain, suggestion, reason, locked}
 function infoFor(doc) {
-  if (cache && cache.uri === doc.uri.toString() && cache.version === doc.version && cache.locks === lockSignature() && cache.epoch === rt.session.profileEpoch) return cache.info;
-  const head = doc.getText(new vscode.Range(0, 0, Math.min(doc.lineCount, 400), 0));
+  const secret = !!lockCheck(doc); // part of the cache key: allowing the file must not keep the name-only answer alive
+  if (cache && cache.uri === doc.uri.toString() && cache.version === doc.version && cache.locks === lockSignature() && cache.epoch === rt.session.profileEpoch && cache.secret === secret) return cache.info;
+  const head = secret ? '' : doc.getText(new vscode.Range(0, 0, Math.min(doc.lineCount, 400), 0));
   const d = rt.session.resolve({languageId: doc.languageId, fileName: doc.fileName, text: head, fileKey: fileKey(doc)});
   const info = {language: d.language, dialect: dialectFor(d.language, d.dialectHints), uncertain: !!d.uncertain, suggestion: d.suggestion, reason: d.reason, locked: !!d.locked};
-  cache = {uri: doc.uri.toString(), version: doc.version, locks: lockSignature(), epoch: rt.session.profileEpoch, info};
+  cache = {uri: doc.uri.toString(), version: doc.version, locks: lockSignature(), epoch: rt.session.profileEpoch, secret, info};
   return info;
 }
 const lockSignature = () => JSON.stringify([...rt.session.fileLocks]) + (rt.session.globalLock || '');
@@ -40,4 +45,4 @@ function lock(doc, profile, scope) {
   persistLocks(); cache = null;
 }
 function unlock(doc) { rt.session.unlock('file', fileKey(doc)); rt.session.unlock('global'); persistLocks(); cache = null; }
-module.exports = {initLocks, infoFor, dialectFor, lock, unlock, fileKey, invalidate: () => { cache = null; }};
+module.exports = {initLocks, infoFor, dialectFor, lock, unlock, fileKey, setLockCheck, invalidate: () => { cache = null; }};

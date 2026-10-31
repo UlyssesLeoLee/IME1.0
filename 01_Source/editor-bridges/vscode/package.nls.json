@@ -16,5 +16,7 @@
   "cmd.reloadRules": "Programming IME: Reload User Rules",
   "cmd.openRulesFolder": "Programming IME: Open User Rules Folder",
   "cmd.f1Edit": "Programming IME: F1 AI (Annotate Scope / Whole File / Insert)",
-  "cmd.f2Prompt": "Programming IME: F2 Prompt (5W1H Prompt to Clipboard)"
+  "cmd.f2Prompt": "Programming IME: F2 Prompt (5W1H Prompt to Clipboard)",
+  "cmd.secretFiles": "Programming IME: Secret Files",
+  "cfg.secretFilePatterns": "Extra file name or path patterns (globs, for example \"*.cred\" or \"config/private/**\") that Programming IME treats as secret-class files: it asks before it reads such a file. They add to the built-in rules (.env, private keys, keystores, credentials ...), which cannot be switched off. A pattern without a slash matches the file name; with a slash it matches the path from any folder; a trailing slash means everything below. User settings only: a workspace cannot weaken this list."
 }

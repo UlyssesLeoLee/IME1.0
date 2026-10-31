@@ -673,28 +673,30 @@ test('ANN-76 auto-start only in annotate mode, with f1AnnotateOnOpen, AI availab
 });
 
 test('ANN-77 the annotate tab is unavailable, with a clear message, wherever it cannot work; no request is sent', async () => {
+  // 4th entry: only the language / the content is the reason and AI works, so F1 opens on the Whole file tab (ANN-86); the annotate tab still says why
   const cases = [
-    ['unsupported language', {language: 'unknown', languageId: 'plaintext'}, /^Adding comments to a scope is not available for the language "unknown"\.$/],
-    ['empty document', {text: ''}, /^The document is empty: there is nothing to comment\.$/],
-    ['whitespace only', {text: '  \n\n  '}, /^The document is empty/],
+    ['unsupported language', {language: 'unknown', languageId: 'plaintext'}, /^Adding comments to a scope is not available for the language "unknown"\.$/, true],
+    ['empty document', {text: ''}, /^The document is empty: there is nothing to comment\.$/, true],
+    ['whitespace only', {text: '  \n\n  '}, /^The document is empty/, true],
     ['AI off', {setup: r => { r.st.aiEnabled = false; }}, /^AI off - Programming IME: Toggle AI$/],
     ['untrusted', {setup: r => { r.st.trusted = false; }}, /^This workspace is not trusted, so AI is disabled\.$/],
     ['not a file or an untitled buffer', {scheme: 'git'}, /^Whole-file edits need the full editor buffer/],
     ['file over 2 MiB', {text: RUST + '// ' + 'x'.repeat(2 * 1024 * 1024) + '\n'}, /^The file exceeds 2 MiB; adding comments to a scope is disabled \(nothing is truncated\)\.$/]
   ];
-  for (const [label, {setup, ...opts}, re] of cases) {
+  for (const [label, {setup, ...opts}, re, fallsBack = false] of cases) {
     const r = rig(opts); if (setup) setup(r);
     await r.open(Math.min(opts.text === undefined ? atText(RUST, 'n += 1', 3) : 0, (opts.text === undefined ? RUST : opts.text).length));
     const t = r.tab();
     assert.equal(t.status, 'unavailable', label); assert.match(t.message, re, label);
     assert.equal(r.requests(), 0, label); assert.equal(r.highlight(), null, `${label}: nothing to highlight`);
-    assert.equal(t.scope, null, label); assert.equal(r.state().canGenerate, false, `${label}: Generate has nothing to run on the tab on screen`);
+    assert.equal(r.state().active, fallsBack ? 'full' : 'annotate', `${label}: the tab on screen`);
+    assert.equal(t.scope, null, label); assert.equal(r.state().canGenerate, fallsBack, `${label}: ${fallsBack ? 'Generate runs the whole-file tab on screen' : 'Generate has nothing to run on the tab on screen'}`);
     assert.equal(r.ui.dialogs.length, 0, label);
   }
-  // an unavailable annotate tab does not take the other tabs down (language unknown, AI on): they say their own thing
+  // an unavailable annotate tab does not take the other tabs down (language unknown, AI on): they say their own thing, and F1 opens on the Whole file tab
   const u = rig({language: 'unknown', languageId: 'plaintext'}); await u.open(0);
-  assert.equal(u.tab('full').status, 'idle'); assert.equal(u.tab('insert').status, 'idle'); assert.equal(u.state().active, 'annotate');
-  await u.send({type: 'tab', tab: 'full'}); assert.equal(u.state().canGenerate, true);
+  assert.equal(u.tab('full').status, 'idle'); assert.equal(u.tab('insert').status, 'idle'); assert.equal(u.state().active, 'full'); assert.equal(u.state().canGenerate, true);
+  await u.send({type: 'tab', tab: 'annotate'}); assert.equal(u.state().canGenerate, false, 'the annotate tab is still reachable and still unavailable');
 });
 
 test('ANN-78 every supported language: scope + a reply + apply gives comment-only hunks and the same code, on snippets and on real files of this repository', () => {

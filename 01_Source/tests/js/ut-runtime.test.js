@@ -200,6 +200,7 @@ test('FR-029 / NFR-302 the package exposes provider/model/effort/budget as separ
   const p = pkg.contributes.configuration.properties;
   for (const k of ['providers', 'scenarios', 'budget', 'debounceMs', 'aiEnabled', 'realtimeAI']) assert.ok(p['programmingIme.' + k], k);
   assert.equal(p['programmingIme.debounceMs'].minimum, 150); assert.equal(p['programmingIme.debounceMs'].maximum, 1000); assert.equal(p['programmingIme.debounceMs'].default, 350);
-  assert.ok(!Object.keys(p).some(k => /apiKey|secret|token/i.test(k)));
+  // the one allowed name is the list of FILE NAME patterns of the secret-file gate (docs/SECRET_FILES.md): a list of globs, never a secret
+  assert.ok(!Object.keys(p).filter(k => k !== 'programmingIme.secretFilePatterns').some(k => /apiKey|secret|token/i.test(k)));
   assert.equal(S.DEFAULT_BUDGET.maxRequests, 200);
 });

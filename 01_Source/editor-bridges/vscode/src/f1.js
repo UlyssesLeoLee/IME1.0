@@ -9,8 +9,11 @@
 // Apply machinery as the whole-file tab (kind 'full').
 // `vscode` and the runtime are injected (createF1), so the flow is tested against fakes (tests/js/ut-f1-annotate.test.js); the exports at
 // the end wire the real ones the first time they are used.
+// A secret-class file (.env, keys ...) is not read at all until the user confirmed it (src/filegate.js): open() asks before openSession()
+// takes the first byte of the document, and a refusal opens no panel.
 const crypto = require('node:crypto');
 const {fail, codeOf} = require('./core/errors');
+const {gateFor} = require('./filegate');
 const settingsMod = require('./core/settings');
 const scopeMod = require('./core/scope');
 const annotateMod = require('./core/annotate');
@@ -66,6 +69,7 @@ function resolveTarget({profile, dialect, text, start, end}, maxChars = MAX_SCOP
 function createF1(env) {
   const {vscode, rt, L, errorText, enabled, aiEnabled, workspaceId, grantProviderId, cfg, infoFor, annotation} = env;
   const Panel = env.Panel || F1Panel;
+  const fileGate = gateFor(env);
   const previews = new Map();
   let session = null;
   let opening = false;
@@ -109,17 +113,19 @@ function createF1(env) {
     Object.assign(t, {status: 'idle', message: '', notes: [], hunks: [], review: null, selected: new Set(), proposed: '', result: null, grantId: null, validation: {level: 'none', text: '', issues: []}});
   }
   // Apply goes through kind 'full', so the tab is unavailable wherever the whole-file tab is; plus what only this tab needs.
+  // `because` marks the two reasons that belong to the CONTENT only (the language has no annotation, the document is empty): the other tabs work there,
+  // so F1 opens on the whole-file tab instead (see openSession). Every other reason (AI off, untrusted, not a file, too large) hits all tabs alike.
   function newAnnotateTab(doc, snapshot, info, offsets, carried) {
     const w = annotation.wanted();
-    const tab = {...proposalTab(), scope: null, options: carried ? {...carried} : {comment: w.comment, graph: w.graph}, graphScope: w.scope};
-    const off = why => { tab.status = 'unavailable'; tab.message = why; return tab; };
+    const tab = {...proposalTab(), scope: null, options: carried ? {...carried} : {comment: w.comment, graph: w.graph}, graphScope: w.scope, because: null};
+    const off = (why, because = null) => { tab.status = 'unavailable'; tab.message = why; tab.because = because; return tab; };
     if (!vscode.workspace.isTrusted) return off(L('consent.untrusted'));
     if (!aiEnabled()) return off(`${L('ai.off')} - Programming IME: Toggle AI`);
     if (!['file', 'untitled'].includes(doc.uri.scheme)) return off(errorText(fail('FULL_CONTEXT_REQUIRED')));
     if (Buffer.byteLength(snapshot.content, 'utf8') > MAX_FULL_BYTES) return off(L('f1.ann.fileTooLarge'));
-    if (!annotateMod.supportsAnnotation(info.language)) return off(L('f1.ann.unsupported', info.language));
+    if (!annotateMod.supportsAnnotation(info.language)) return off(L('f1.ann.unsupported', info.language), 'language');
     const r = resolveTarget({profile: info.language, dialect: info.dialect, text: snapshot.content, start: offsets.start, end: offsets.end});
-    if (!r.ok) return off(r.reason === 'empty-document' ? L('f1.ann.empty') : L('f1.ann.unsupported', info.language));
+    if (!r.ok) return r.reason === 'empty-document' ? off(L('f1.ann.empty'), 'empty') : off(L('f1.ann.unsupported', info.language), 'language');
     tab.scope = {all: r.all, allowed: r.allowed, blocked: r.blocked, index: 0};
     if (r.tooLarge) return off(sizeMessage('f1.ann.tooLarge', r.all[0]));
     return tab;
@@ -249,7 +255,11 @@ function createF1(env) {
     if (opening) return; // the engine call below is asynchronous: a second F1 must not start a second session
     opening = true;
     let opened = null;
-    try { opened = await openSession(editor, opts); } catch (e) { vscode.window.showErrorMessage(L('f1.error', errorText(e))); } finally { opening = false; }
+    try {
+      // before the first byte of the document is read, and before an open session on another file is closed: a refusal changes nothing
+      if (!await fileGate.ensure(editor.document, {interactive: true, purpose: 'f1'})) { vscode.window.showInformationMessage(L('sec.refused.f1')); return; }
+      opened = await openSession(editor, opts);
+    } catch (e) { vscode.window.showErrorMessage(L('f1.error', errorText(e))); } finally { opening = false; }
     // After the lock is released: the request can take a while and F1 must stay usable meanwhile (a second F1 starts a fresh session).
     if (opened && opts.autoStart !== false) opened.autostart = autoStart(opened);
   }
@@ -275,6 +285,8 @@ function createF1(env) {
       tabs: newTabs(doc, snapshot)
     };
     s.tabs.annotate = newAnnotateTab(doc, snapshot, info, s.offsets, carry && carry.options);
+    // annotate mode, but the annotate tab cannot work only because of the language (or an empty document) while AI is available: the whole-file tab can, so F1 opens on it
+    if (s.active === 'annotate' && s.tabs.annotate.status === 'unavailable' && s.tabs.annotate.because && s.tabs.full.status !== 'unavailable') s.active = 'full';
     if (doc.version !== version) { s.stale = true; s.banner = {kind: 'warn', text: L('f1.stale')}; } // typed while the snapshot was being taken
     for (const [name, sc] of [['full', 'f1Full'], ['insert', 'f1Insert']]) { try { s.models[name] = settingsMod.resolveScenario(rt.settings, sc).model; } catch { /* shown on generate */ } }
     s.panel = new Panel(vscode, {onMessage: m => { const p = onMessage(m).catch(e => fatal(e)); inflight.add(p); p.finally(() => inflight.delete(p)); }, onDispose: () => { if (session === s) closeSession(true); }});
@@ -297,7 +309,7 @@ function createF1(env) {
   async function reopen(tabs) {
     const old = session, intent = old.intent, editor = visibleEditorFor(old.doc) || vscode.window.activeTextEditor;
     await open(editor, {autoStart: false, carry: {active: old.active, options: old.tabs.annotate.options}});
-    if (session) { session.intent = intent; await generate(tabs); }
+    if (session && session !== old) { session.intent = intent; await generate(tabs); } // not when the new session was refused (a secret-class file the user declined): the old one stays stale
   }
   function fatal(e) { if (session) { session.banner = {kind: 'error', text: L('f1.error', errorText(e))}; session.busy = false; render(); } }
   function closeSession(fromPanel = false) {
@@ -633,7 +645,7 @@ function real() {
   const runtime = require('./runtime');
   const lang = require('./languageState');
   instance = createF1({vscode, rt: runtime.rt, L: runtime.L, errorText: runtime.errorText, enabled: runtime.enabled, aiEnabled: runtime.aiEnabled, workspaceId: runtime.workspaceId,
-    grantProviderId: runtime.grantProviderId, cfg: runtime.cfg, infoFor: lang.infoFor, annotation: require('./annotate')});
+    grantProviderId: runtime.grantProviderId, cfg: runtime.cfg, infoFor: lang.infoFor, annotation: require('./annotate'), fileGate: require('./filegate').get()});
   return instance;
 }
 module.exports = {
