@@ -13,7 +13,6 @@
 use std::cell::{Cell, RefCell};
 use std::ffi::c_void;
 use std::mem::ManuallyDrop;
-use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -37,10 +36,10 @@ use crate::popup::PopupWindow;
 use crate::ui::{Anchor, CandidateUi, CandidateView};
 use crate::uielement_com::candidate_ui;
 
-/// Run a COM entry point so that a panic cannot unwind into the host: it answers `fallback` instead.
-pub(crate) fn guard<T>(fallback: T, f: impl FnOnce() -> T) -> T {
-    catch_unwind(AssertUnwindSafe(f)).unwrap_or(fallback)
-}
+/// Run a COM entry point so that a panic cannot unwind into the host: it answers `fallback` instead. Defined in `ui`
+/// (plain `std`) because the popup's window procedure needs the same containment and is also compiled on its own by
+/// `examples/popup_demo.rs`, which has no `tip` module.
+pub(crate) use crate::ui::guard;
 
 /// `ActivateEx` flag: TSF runs on a secure desktop (logon, UAC): collect nothing there.
 fn is_secure_mode(flags: u32) -> bool {

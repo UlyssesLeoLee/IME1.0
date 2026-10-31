@@ -1,5 +1,5 @@
 //! The contract between the text input processor (`tip`) and any candidate-window implementation (`popup`).
-//! Pure data and one trait: no Windows API here, so the TIP logic is testable with [`RecordingUi`].
+//! Pure data, one trait and the panic guard: no Windows API here, so the TIP logic is testable with [`RecordingUi`].
 //!
 //! Rules (design DD-02 / SRS NFR accessibility): a row is described by text (source, validation), never by colour
 //! alone; the window never steals focus and never changes the host's text; the host is only changed by the TIP through
@@ -34,6 +34,13 @@ pub struct Anchor {
     pub x: i32,
     pub y: i32,
     pub line_height: i32,
+}
+
+/// Run a callback so that a panic cannot unwind out of it: it answers `fallback` instead. Every COM method of the text
+/// service and the popup's window procedure go through this, because a panic that unwinds out of a COM method or an
+/// `extern "system"` frame takes the host application down with it. Plain `std`, so the popup demo can share this file.
+pub(crate) fn guard<T>(fallback: T, f: impl FnOnce() -> T) -> T {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).unwrap_or(fallback)
 }
 
 pub trait CandidateUi {
