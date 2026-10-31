@@ -15,7 +15,10 @@ use pime_setup::payload::Payload;
 use pime_setup::plan::{
     MANIFEST_NAME, Manifest, UninstallOptions, VscodeMode, install_plan, uninstall_plan,
 };
-use pime_setup::real::{RealBackend, is_elevated, system_paths};
+use pime_setup::real::{
+    PrivateLog, RealBackend, is_elevated, log_file_name, open_log_for_child, system_paths,
+};
+use std::io::Write;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -534,4 +537,130 @@ fn st_035_review_2_the_system_paths_do_not_come_from_environment_variables() {
     assert!(ours.regsvr32().is_file(), "{}", ours.regsvr32().display());
     assert!(ours.system_dir.starts_with(&ours.system_root));
     assert!(ours.program_files.is_dir() && ours.program_files.is_absolute());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review finding 4: the report file of the elevated child is made by the parent under a random name; the child only
+// opens it, and refuses a link, a folder, a second name (hard link) or a file that already has content.
+// ---------------------------------------------------------------------------------------------------------------------
+
+#[test]
+fn st_035_review_4_the_parent_creates_the_log_under_a_random_name_and_nobody_can_swap_it() {
+    assert_eq!(
+        log_file_name([1, 2]),
+        "pime-setup-00000000000000010000000000000002.log"
+    );
+    let mut a = PrivateLog::create().unwrap();
+    let b = PrivateLog::create().unwrap();
+    assert_ne!(a.path(), b.path(), "a random name, not the process id");
+    assert_eq!(a.path().parent(), Some(std::env::temp_dir().as_path()));
+    let name = a.path().file_name().unwrap().to_string_lossy().into_owned();
+    let digits = name
+        .strip_prefix("pime-setup-")
+        .and_then(|n| n.strip_suffix(".log"))
+        .unwrap();
+    assert!(
+        digits.len() == 32 && digits.bytes().all(|c| c.is_ascii_hexdigit()),
+        "{name}"
+    );
+    assert_eq!(std::fs::metadata(a.path()).unwrap().len(), 0);
+
+    // the child's way in works, and what it writes is read back through the parent's own handle
+    {
+        let mut child = open_log_for_child(a.path()).unwrap();
+        writeln!(child, "DONE: x").unwrap();
+    }
+    assert_eq!(a.read_all(), "DONE: x\n");
+    // while the parent holds it nobody (the same person's other programs included) can delete or rename it
+    assert!(std::fs::remove_file(a.path()).is_err(), "no delete sharing");
+    assert!(std::fs::rename(a.path(), a.path().with_extension("moved")).is_err());
+    let path = a.path().to_path_buf();
+    drop(a);
+    assert!(!path.exists(), "removed when the parent is done");
+    drop(b);
+}
+
+#[test]
+fn st_035_review_4_the_child_opens_only_a_plain_empty_existing_file() {
+    let tmp = TempDir::new("childlog");
+    let refused = |p: &Path, needle: &str| {
+        let e = open_log_for_child(p).unwrap_err();
+        assert!(e.contains("cannot be used") && e.contains(needle), "{e}");
+    };
+    // nothing there: not created
+    let missing = tmp.0.join("missing.log");
+    refused(&missing, "os error 2"); // ERROR_FILE_NOT_FOUND (the text of the message depends on the language)
+    assert!(!missing.exists(), "a guessed name gets no file");
+    // a folder
+    let folder = tmp.0.join("folder.log");
+    std::fs::create_dir(&folder).unwrap();
+    assert!(open_log_for_child(&folder).is_err());
+    // a file that already has content was not just created by the parent
+    let full = tmp.0.join("full.log");
+    std::fs::write(&full, "x").unwrap();
+    refused(&full, "not empty");
+    // a plain empty file is what the parent makes
+    let fresh = tmp.0.join("fresh.log");
+    std::fs::write(&fresh, "").unwrap();
+    open_log_for_child(&fresh).unwrap();
+    // a second name for the same file (a hard link needs no privilege)
+    let alias = tmp.0.join("alias.log");
+    match std::fs::hard_link(&fresh, &alias) {
+        Ok(()) => refused(&alias, "hard link"),
+        Err(e) => eprintln!("SKIPPED (hard link): {e}"),
+    }
+    // a symbolic link needs a privilege (Developer Mode or administrator): checked when this account has it
+    let link = tmp.0.join("link.log");
+    match std::os::windows::fs::symlink_file(&fresh, &link) {
+        Ok(()) => refused(&link, "link"),
+        Err(e) => eprintln!("SKIPPED (symbolic link): {e}"),
+    }
+}
+
+#[test]
+fn st_035_review_4_the_exe_never_creates_or_writes_a_log_it_was_not_given() {
+    let tmp = TempDir::new("exelog");
+    let exe = installer_exe(&tmp.0, "0.3.0");
+    let prefix = tmp.0.join("would-be-installed-here");
+    let run = |log: &Path| {
+        setup(
+            &exe,
+            &[
+                "--dry-run",
+                "--prefix",
+                prefix.to_str().unwrap(),
+                "--log",
+                log.to_str().unwrap(),
+            ],
+        )
+    };
+    // a name that does not exist: the setup stops before doing anything and does not create it
+    let planted = tmp.0.join("planted.log");
+    let (code, text) = run(&planted);
+    assert_eq!(code, 1, "{text}");
+    assert!(text.contains("cannot be used"), "{text}");
+    assert!(!planted.exists(), "the file was created");
+    // a second name for somebody else's file: not appended to
+    let victim = tmp.0.join("victim.txt");
+    std::fs::write(&victim, "keep").unwrap();
+    let alias = tmp.0.join("alias.log");
+    match std::fs::hard_link(&victim, &alias) {
+        Ok(()) => {
+            let (code, text) = run(&alias);
+            assert_eq!(code, 1, "{text}");
+            assert_eq!(std::fs::read(&victim).unwrap(), b"keep");
+        }
+        Err(e) => eprintln!("SKIPPED (hard link): {e}"),
+    }
+    // the empty file a parent made: the report goes into it
+    let made = tmp.0.join("made.log");
+    std::fs::write(&made, "").unwrap();
+    let (code, text) = run(&made);
+    assert_eq!(code, 0, "{text}");
+    assert!(
+        std::fs::read_to_string(&made)
+            .unwrap()
+            .contains("install plan (dry run: nothing is changed)")
+    );
+    assert!(!prefix.exists());
 }

@@ -293,6 +293,119 @@ pub fn plain_path_check(root: &Path, path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// `pime-setup-<32 hex digits>.log`.
+pub fn log_file_name(random: [u64; 2]) -> String {
+    format!("pime-setup-{:016x}{:016x}.log", random[0], random[1])
+}
+
+/// 128 bits nobody can predict: `RandomState` is seeded by the operating system's random number generator for every
+/// process (and thread), and what comes out of its keyed hash cannot be computed without the key.
+fn random_pair() -> [u64; 2] {
+    use std::hash::{BuildHasher, Hasher};
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
+    [1u64, 2].map(|salt| {
+        let mut hasher = std::collections::hash_map::RandomState::new().build_hasher();
+        hasher.write_u64(salt);
+        hasher.write_u32(std::process::id());
+        hasher.write_u128(nanos);
+        hasher.finish()
+    })
+}
+
+/// The report file of an elevated child, created by the parent (the unelevated process of the person who started the
+/// setup). Random name in the temp folder, `CREATE_NEW` (an existing name, a link included, is never reused), and kept
+/// open WITHOUT delete sharing until it is dropped: nobody can delete it, rename it or put a link in its place while
+/// the child runs. The child opens it; dropping this removes the file.
+pub struct PrivateLog {
+    path: PathBuf,
+    file: Option<std::fs::File>,
+}
+
+impl PrivateLog {
+    pub fn create() -> io::Result<PrivateLog> {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = std::env::temp_dir();
+        for _ in 0..8 {
+            let path = dir.join(log_file_name(random_pair()));
+            match std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create_new(true)
+                .share_mode(FILE_SHARE_READ.0 | FILE_SHARE_WRITE.0)
+                .open(&path)
+            {
+                Ok(file) => {
+                    return Ok(PrivateLog {
+                        path,
+                        file: Some(file),
+                    });
+                }
+                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {}
+                Err(e) => return Err(e),
+            }
+        }
+        Err(io::Error::other("every random name that was tried exists"))
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// Everything the child wrote (empty when it wrote nothing or the file cannot be read).
+    pub fn read_all(&mut self) -> String {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut text = String::new();
+        if let Some(f) = &mut self.file {
+            let _ = f.seek(SeekFrom::Start(0));
+            let _ = f.read_to_string(&mut text);
+        }
+        text
+    }
+}
+
+impl Drop for PrivateLog {
+    fn drop(&mut self) {
+        drop(self.file.take()); // the handle goes first: it forbids deleting the file
+        let _ = std::fs::remove_file(&self.path);
+    }
+}
+
+/// How the elevated child opens its `--log` file: it must already exist (nothing is created, so a guessed name gets
+/// no file from an administrator), a link is not followed (`FILE_FLAG_OPEN_REPARSE_POINT`), and what was opened has to
+/// be a plain file with one name, still empty, as the parent made it. Anything else is refused.
+pub fn open_log_for_child(path: &Path) -> Result<std::fs::File, String> {
+    use std::os::windows::fs::OpenOptionsExt;
+    use std::os::windows::io::AsRawHandle;
+    let refuse = |why: &str| format!("the log file {} cannot be used: {why}", path.display());
+    let file = std::fs::OpenOptions::new()
+        .append(true)
+        .create(false)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT.0)
+        .open(path)
+        .map_err(|e| refuse(&e.to_string()))?;
+    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: the handle belongs to `file`, which is open for the whole call; `info` is a valid out structure.
+    unsafe { GetFileInformationByHandle(HANDLE(file.as_raw_handle()), &mut info) }
+        .map_err(|e| refuse(&e.to_string()))?;
+    if info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0 {
+        return Err(refuse("it is a link"));
+    }
+    if info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY.0 != 0 {
+        return Err(refuse("it is a folder"));
+    }
+    if info.nNumberOfLinks != 1 {
+        return Err(refuse("it has more than one name (a hard link)"));
+    }
+    if info.nFileSizeHigh != 0 || info.nFileSizeLow != 0 {
+        return Err(refuse(
+            "it is not empty, so the setup that started this one did not just create it",
+        ));
+    }
+    Ok(file)
+}
+
 /// Windows virus scanners briefly hold freshly written files; retry the operations that scanners can collide with.
 fn retry_in_use<T>(mut op: impl FnMut() -> io::Result<T>) -> io::Result<T> {
     let mut attempt = 0;
