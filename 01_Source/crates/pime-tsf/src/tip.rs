@@ -379,6 +379,88 @@ struct Inner {
 /// The three interfaces of the object that TSF is given to call back.
 type Sinks = (ITfKeyEventSink, ITfThreadMgrEventSink, ITfCompositionSink);
 
+/// The two advises `activate` makes and their undo, as a trait so that the rollback is tested without a thread manager.
+trait Advises {
+    fn advise_keys(&self) -> Result<()>;
+    fn unadvise_keys(&self);
+    /// The cookie of the thread-manager event sink.
+    fn advise_thread(&self) -> Result<u32>;
+    fn unadvise_thread(&self, cookie: u32);
+}
+
+/// [`Advises`] on the thread manager TSF handed to `Activate`.
+struct TsfAdvises<'a> {
+    thread_mgr: &'a ITfThreadMgr,
+    client_id: u32,
+    key_sink: &'a ITfKeyEventSink,
+    thread_sink: &'a ITfThreadMgrEventSink,
+}
+
+impl Advises for TsfAdvises<'_> {
+    fn advise_keys(&self) -> Result<()> {
+        let keystrokes: ITfKeystrokeMgr = self.thread_mgr.cast()?;
+        // SAFETY: plain COM call on the thread manager TSF handed us; the sink is a live object of ours.
+        unsafe { keystrokes.AdviseKeyEventSink(self.client_id, self.key_sink, BOOL(1)) }
+    }
+
+    fn unadvise_keys(&self) {
+        if let Ok(keystrokes) = self.thread_mgr.cast::<ITfKeystrokeMgr>() {
+            // SAFETY: undoes `advise_keys`; a failure cannot be acted on.
+            let _ = unsafe { keystrokes.UnadviseKeyEventSink(self.client_id) };
+        }
+    }
+
+    fn advise_thread(&self) -> Result<u32> {
+        let source: ITfSource = self.thread_mgr.cast()?;
+        // SAFETY: plain COM call; the sink is a live object of ours.
+        unsafe { source.AdviseSink(&ITfThreadMgrEventSink::IID, self.thread_sink) }
+    }
+
+    fn unadvise_thread(&self, cookie: u32) {
+        if let Ok(source) = self.thread_mgr.cast::<ITfSource>() {
+            // SAFETY: undoes `advise_thread` with the cookie it returned; a failure cannot be acted on.
+            let _ = unsafe { source.UnadviseSink(cookie) };
+        }
+    }
+}
+
+/// What has been advised so far; dropped armed, it undoes it in reverse order. Disarmed once `deactivate` owns the advises.
+struct Rollback<'a, A: Advises> {
+    advises: &'a A,
+    keys: bool,
+    thread: Option<u32>,
+}
+
+impl<A: Advises> Drop for Rollback<'_, A> {
+    fn drop(&mut self) {
+        if let Some(cookie) = self.thread.take() {
+            self.advises.unadvise_thread(cookie);
+        }
+        if std::mem::take(&mut self.keys) {
+            self.advises.unadvise_keys();
+        }
+    }
+}
+
+/// Advise both sinks, then run `build` with the thread-sink cookie. When an advise fails, or `build` panics (the unwind
+/// goes on to the caller's `guard`), every advise made so far is undone, so a retry starts clean: TSF refuses a second
+/// key-event sink for the same client id. After a normal return the advises stay, to be undone by `deactivate`.
+fn advised<A: Advises, T>(advises: &A, build: impl FnOnce(u32) -> T) -> Result<T> {
+    let mut undo = Rollback {
+        advises,
+        keys: false,
+        thread: None,
+    };
+    advises.advise_keys()?;
+    undo.keys = true;
+    let cookie = advises.advise_thread()?;
+    undo.thread = Some(cookie);
+    let built = build(cookie);
+    undo.keys = false;
+    undo.thread = None;
+    Ok(built)
+}
+
 const PENDING_FOCUS: u8 = 1;
 const PENDING_COMPOSITION_ENDED: u8 = 2;
 
@@ -443,39 +525,33 @@ impl Tip {
         if self.inner.try_borrow().map(|s| s.is_some()).unwrap_or(true) {
             return Err(E_FAIL.into()); // activated twice (or re-entered): refuse rather than double-advise
         }
-        // SAFETY: plain COM calls on the thread manager TSF handed us; the advises are undone in `deactivate` or below.
-        let thread_sink_cookie = unsafe {
-            let keystrokes: ITfKeystrokeMgr = thread_mgr.cast()?;
-            keystrokes.AdviseKeyEventSink(client_id, &key_sink, BOOL(1))?;
-            let advised = thread_mgr
-                .cast::<ITfSource>()
-                .and_then(|source| source.AdviseSink(&ITfThreadMgrEventSink::IID, &thread_sink));
-            match advised {
-                Ok(cookie) => cookie,
-                Err(e) => {
-                    let _ = keystrokes.UnadviseKeyEventSink(client_id);
-                    return Err(e);
-                }
-            }
-        };
-        // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
-        // `ITfUIElementMgr`; a host that answers "I draw" keeps the popup hidden (see `uielement`).
-        let ui = candidate_ui(&thread_mgr, Box::new(PopupWindow::new()));
-        let mut controller = TipController::new(
-            BoxedUi(Box::new(ui)),
-            TsfHost::new(client_id, composition_sink),
-            pime_core::input::LocalPredictor,
-            TipConfig::default(),
-        );
-        controller.activate(is_secure_mode(flags));
-        *self.inner.borrow_mut() = Some(Inner {
-            thread_mgr,
+        let tsf = TsfAdvises {
+            thread_mgr: &thread_mgr,
             client_id,
-            thread_sink_cookie,
-            controller,
-            started: Instant::now(),
-        });
-        Ok(())
+            key_sink: &key_sink,
+            thread_sink: &thread_sink,
+        };
+        // Everything after the advises runs inside `advised`: an error or a panic there (the popup, the controller, the
+        // store below) undoes both advises, so that TSF's retry of `Activate` is not refused as "already advised".
+        advised(&tsf, |thread_sink_cookie| {
+            // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
+            // `ITfUIElementMgr`; a host that answers "I draw" keeps the popup hidden (see `uielement`).
+            let ui = candidate_ui(&thread_mgr, Box::new(PopupWindow::new()));
+            let mut controller = TipController::new(
+                BoxedUi(Box::new(ui)),
+                TsfHost::new(client_id, composition_sink),
+                pime_core::input::LocalPredictor,
+                TipConfig::default(),
+            );
+            controller.activate(is_secure_mode(flags));
+            *self.inner.borrow_mut() = Some(Inner {
+                thread_mgr: thread_mgr.clone(),
+                client_id,
+                thread_sink_cookie,
+                controller,
+                started: Instant::now(),
+            });
+        })
     }
 
     fn deactivate(&self) -> Result<()> {
@@ -728,6 +804,8 @@ impl ITfCompositionSink_Impl for Tip_Impl {
 /// # Safety
 /// `iid` and `object` must be valid pointers (the class factory checks them for null).
 pub(crate) unsafe fn create_instance(iid: *const GUID, object: *mut *mut c_void) -> Result<()> {
+    // SAFETY: valid per the contract. NULL after every failure, including a panic below that is turned into E_FAIL.
+    unsafe { *object = std::ptr::null_mut() };
     guard(Err(E_FAIL.into()), || {
         let tip: ITfTextInputProcessorEx = Tip::new().into();
         // SAFETY: forwarded from the caller's contract.
@@ -752,6 +830,120 @@ mod tests {
         );
         // the guard is reusable after a panic
         assert_eq!(guard(1, || 2), 2);
+    }
+
+    /// Advises as TSF keeps them: a second advise while one is outstanding is refused (a key-event sink per client id).
+    #[derive(Default)]
+    struct FakeAdvises {
+        keys: Cell<bool>,
+        thread: Cell<Option<u32>>,
+        next_cookie: Cell<u32>,
+        fail_thread: Cell<bool>,
+        calls: RefCell<Vec<&'static str>>,
+    }
+
+    impl FakeAdvises {
+        fn outstanding(&self) -> bool {
+            self.keys.get() || self.thread.get().is_some()
+        }
+    }
+
+    impl Advises for FakeAdvises {
+        fn advise_keys(&self) -> Result<()> {
+            self.calls.borrow_mut().push("advise_keys");
+            if self.keys.replace(true) {
+                return Err(E_FAIL.into()); // "already advised"
+            }
+            Ok(())
+        }
+
+        fn unadvise_keys(&self) {
+            self.calls.borrow_mut().push("unadvise_keys");
+            self.keys.set(false);
+        }
+
+        fn advise_thread(&self) -> Result<u32> {
+            self.calls.borrow_mut().push("advise_thread");
+            if self.fail_thread.get() || self.thread.get().is_some() {
+                return Err(E_FAIL.into());
+            }
+            self.next_cookie.set(self.next_cookie.get() + 1);
+            self.thread.set(Some(self.next_cookie.get()));
+            Ok(self.next_cookie.get())
+        }
+
+        fn unadvise_thread(&self, cookie: u32) {
+            self.calls.borrow_mut().push("unadvise_thread");
+            assert_eq!(
+                self.thread.get(),
+                Some(cookie),
+                "the cookie that was advised"
+            );
+            self.thread.set(None);
+        }
+    }
+
+    #[test]
+    fn a_panic_after_the_advises_unadvises_both_sinks_and_the_retry_succeeds() {
+        // review finding 13: PopupWindow::new / TipController::new could panic after the advises; the guard answered
+        // E_FAIL and left both sinks advised, so TSF's retry of Activate was refused
+        let tsf = FakeAdvises::default();
+        let got = guard(Err(E_FAIL.into()), || {
+            advised(&tsf, |_| -> () {
+                panic!("popup or controller panicked (test)")
+            })
+        });
+        assert!(got.is_err());
+        assert!(!tsf.outstanding(), "{:?}", tsf.calls.borrow());
+        assert_eq!(
+            *tsf.calls.borrow(),
+            [
+                "advise_keys",
+                "advise_thread",
+                "unadvise_thread",
+                "unadvise_keys"
+            ],
+            "undone in reverse order"
+        );
+        // the retry is not refused, and its advises are the live ones
+        let cookie = advised(&tsf, |cookie| cookie).expect("the retry succeeds");
+        assert_eq!(tsf.thread.get(), Some(cookie));
+        assert!(tsf.keys.get());
+    }
+
+    #[test]
+    fn a_successful_build_keeps_the_advises_for_deactivate() {
+        let tsf = FakeAdvises::default();
+        let seen = advised(&tsf, |cookie| cookie).unwrap();
+        assert_eq!(
+            tsf.thread.get(),
+            Some(seen),
+            "build got the cookie of the advise"
+        );
+        assert!(tsf.keys.get());
+        assert_eq!(*tsf.calls.borrow(), ["advise_keys", "advise_thread"]);
+        // a second activation without a deactivate is refused by the advise itself, and changes nothing
+        assert!(advised(&tsf, |_| ()).is_err());
+        assert!(
+            tsf.keys.get(),
+            "the live advises are not undone by the refused second attempt"
+        );
+    }
+
+    #[test]
+    fn a_refused_thread_sink_unadvises_the_key_sink_and_a_refused_key_sink_undoes_nothing() {
+        let tsf = FakeAdvises::default();
+        tsf.fail_thread.set(true);
+        assert!(advised(&tsf, |_| ()).is_err());
+        assert!(!tsf.outstanding(), "{:?}", tsf.calls.borrow());
+        tsf.fail_thread.set(false);
+        assert!(advised(&tsf, |_| ()).is_ok(), "the retry is not refused");
+        // the key sink is refused (already advised): nothing of this attempt exists, so nothing is undone
+        let tsf = FakeAdvises::default();
+        tsf.keys.set(true);
+        assert!(advised(&tsf, |_| ()).is_err());
+        assert_eq!(*tsf.calls.borrow(), ["advise_keys"]);
+        assert!(tsf.keys.get(), "someone else's advise stays");
     }
 
     #[test]
@@ -821,11 +1013,12 @@ mod tests {
                 drop(IUnknown::from_raw(out));
             }
         }
-        let mut out: *mut c_void = std::ptr::null_mut();
-        // SAFETY: as above; an interface the object does not implement is an error, not a crash.
+        // SAFETY: as above; an interface the object does not implement is an error, not a crash, and the out pointer
+        // is NULL afterwards even when it held something before (a sentinel that is never dereferenced).
         unsafe {
+            let mut out = std::ptr::NonNull::<c_void>::dangling().as_ptr();
             assert!(create_instance(&GUID::from_u128(7), &mut out).is_err());
+            assert!(out.is_null());
         }
-        assert!(out.is_null());
     }
 }
