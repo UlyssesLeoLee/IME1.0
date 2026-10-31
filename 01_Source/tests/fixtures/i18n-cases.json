@@ -92,6 +92,42 @@
   "f1.usage",
   "f1.noEditor",
   "f1.disabledHere",
+  "f1.ann.tab",
+  "f1.ann.intent",
+  "f1.ann.run",
+  "f1.ann.range.one",
+  "f1.ann.range.many",
+  "f1.ann.count.one",
+  "f1.ann.count.many",
+  "f1.ann.scope.decl",
+  "f1.ann.scope.selection",
+  "f1.ann.scope.block",
+  "f1.ann.scope.file",
+  "f1.ann.crumb.selection",
+  "f1.ann.crumb.block",
+  "f1.ann.crumb.file",
+  "f1.ann.crumbs",
+  "f1.ann.wider",
+  "f1.ann.narrower",
+  "f1.ann.widerBlocked",
+  "f1.ann.opt.comment",
+  "f1.ann.opt.graph",
+  "f1.ann.nothingRequested",
+  "f1.ann.unsupported",
+  "f1.ann.empty",
+  "f1.ann.tooLarge",
+  "f1.ann.fileTooLarge",
+  "f1.ann.consent",
+  "f1.ann.redacted",
+  "f1.ann.summary",
+  "f1.ann.commentCount",
+  "f1.ann.nothingToAdd",
+  "f1.ann.replyInvalid",
+  "f1.ann.unsafe",
+  "f1.ann.skippedPosition",
+  "f1.ann.skippedDuplicate",
+  "f1.ann.skippedOther",
+  "f1.ann.graphEmpty",
   "ai.configured",
   "ai.keyDeleted",
   "ai.realtimeOn",
@@ -849,6 +885,294 @@
     "Programming IME is disabled. Run \"Programming IME: Enable / Disable\".",
     "Programming IME 未启用。请运行“Programming IME: Enable / Disable”。",
     "Programming IME は無効です。「Programming IME: Enable / Disable」を実行してください。"
+   ]
+  },
+  {
+   "key": "f1.ann.tab",
+   "texts": [
+    "C. Annotate scope",
+    "C. 为范围加注释",
+    "C. 範囲にコメント"
+   ]
+  },
+  {
+   "key": "f1.ann.intent",
+   "texts": [
+    "What should the comments focus on? (optional)",
+    "注释要侧重什么？（可选）",
+    "コメントで重点を置く点は？（任意）"
+   ]
+  },
+  {
+   "key": "f1.ann.run",
+   "texts": [
+    "Add comments",
+    "添加注释",
+    "コメントを追加"
+   ]
+  },
+  {
+   "key": "f1.ann.range.one",
+   "texts": [
+    "line {0}",
+    "第 {0} 行",
+    "{0} 行目"
+   ]
+  },
+  {
+   "key": "f1.ann.range.many",
+   "texts": [
+    "lines {0}-{1}",
+    "第 {0}-{1} 行",
+    "{0}-{1} 行目"
+   ]
+  },
+  {
+   "key": "f1.ann.count.one",
+   "texts": [
+    "1 line",
+    "1 行",
+    "1 行"
+   ]
+  },
+  {
+   "key": "f1.ann.count.many",
+   "texts": [
+    "{0} lines",
+    "{0} 行",
+    "{0} 行"
+   ]
+  },
+  {
+   "key": "f1.ann.scope.decl",
+   "texts": [
+    "Scope: {0} ({1}, {2})",
+    "范围：{0}（{1}，{2}）",
+    "範囲：{0}（{1}、{2}）"
+   ]
+  },
+  {
+   "key": "f1.ann.scope.selection",
+   "texts": [
+    "Selection: {0} ({1})",
+    "选区：{0}（{1}）",
+    "選択範囲：{0}（{1}）"
+   ]
+  },
+  {
+   "key": "f1.ann.scope.block",
+   "texts": [
+    "Block around the cursor: {0} ({1})",
+    "光标所在的代码块：{0}（{1}）",
+    "カーソル周辺のブロック：{0}（{1}）"
+   ]
+  },
+  {
+   "key": "f1.ann.scope.file",
+   "texts": [
+    "Whole file: {0} ({1})",
+    "整个文件：{0}（{1}）",
+    "ファイル全体：{0}（{1}）"
+   ]
+  },
+  {
+   "key": "f1.ann.crumb.selection",
+   "texts": [
+    "selection",
+    "选区",
+    "選択範囲"
+   ]
+  },
+  {
+   "key": "f1.ann.crumb.block",
+   "texts": [
+    "block",
+    "代码块",
+    "ブロック"
+   ]
+  },
+  {
+   "key": "f1.ann.crumb.file",
+   "texts": [
+    "file",
+    "文件",
+    "ファイル"
+   ]
+  },
+  {
+   "key": "f1.ann.crumbs",
+   "texts": [
+    "Scope path, innermost first",
+    "范围路径（由内到外）",
+    "範囲のパス（内側から）"
+   ]
+  },
+  {
+   "key": "f1.ann.wider",
+   "texts": [
+    "Wider",
+    "更宽",
+    "広げる"
+   ]
+  },
+  {
+   "key": "f1.ann.narrower",
+   "texts": [
+    "Narrower",
+    "更窄",
+    "狭める"
+   ]
+  },
+  {
+   "key": "f1.ann.widerBlocked",
+   "texts": [
+    "The next wider scope ({0}) is too large ({1} characters, {2} lines; the limits are {3} characters and {4} lines).",
+    "更宽的范围（{0}）过大（{1} 个字符、{2} 行；上限是 {3} 个字符和 {4} 行）。",
+    "次に広い範囲（{0}）は大きすぎます（{1} 文字、{2} 行。上限は {3} 文字と {4} 行）。"
+   ]
+  },
+  {
+   "key": "f1.ann.opt.comment",
+   "texts": [
+    "Comments",
+    "注释",
+    "コメント"
+   ]
+  },
+  {
+   "key": "f1.ann.opt.graph",
+   "texts": [
+    "Cypher graph",
+    "Cypher 关系图",
+    "Cypher グラフ"
+   ]
+  },
+  {
+   "key": "f1.ann.nothingRequested",
+   "texts": [
+    "Tick Comments or Cypher graph to say what to add.",
+    "请勾选“注释”或“Cypher 关系图”，说明要添加什么。",
+    "追加する内容として「コメント」または「Cypher グラフ」を選んでください。"
+   ]
+  },
+  {
+   "key": "f1.ann.unsupported",
+   "texts": [
+    "Adding comments to a scope is not available for the language \"{0}\".",
+    "语言“{0}”不支持为范围添加注释。",
+    "言語「{0}」では範囲へのコメント追加は利用できません。"
+   ]
+  },
+  {
+   "key": "f1.ann.empty",
+   "texts": [
+    "The document is empty: there is nothing to comment.",
+    "文档为空：没有可加注释的内容。",
+    "ドキュメントが空です。コメントを付ける対象がありません。"
+   ]
+  },
+  {
+   "key": "f1.ann.tooLarge",
+   "texts": [
+    "The scope {0} is too large ({1} characters, {2} lines; the limits are {3} characters and {4} lines). Select a smaller part of the code and press F1 again.",
+    "范围 {0} 过大（{1} 个字符、{2} 行；上限是 {3} 个字符和 {4} 行）。请选中更小的一段代码后再按 F1。",
+    "範囲 {0} は大きすぎます（{1} 文字、{2} 行。上限は {3} 文字と {4} 行）。より小さいコード範囲を選択してから F1 を押し直してください。"
+   ]
+  },
+  {
+   "key": "f1.ann.fileTooLarge",
+   "texts": [
+    "The file exceeds 2 MiB; adding comments to a scope is disabled (nothing is truncated).",
+    "文件超过 2 MiB，已禁用为范围添加注释（不会截断）。",
+    "ファイルが 2 MiB を超えるため、範囲へのコメント追加は無効です（切り詰めません）。"
+   ]
+  },
+  {
+   "key": "f1.ann.consent",
+   "texts": [
+    "Send the COMPLETE current file to {0} so the AI can write comments for the chosen scope? Only comment lines are added; your code is never rewritten.",
+    "把【整个当前文件】发送到 {0}，让 AI 为所选范围写注释？只会添加注释行，不会改写你的代码。",
+    "選択した範囲のコメントを AI に書かせるため、【現在のファイル全体】を {0} に送信しますか？追加されるのはコメント行のみで、コードは書き換えられません。"
+   ]
+  },
+  {
+   "key": "f1.ann.redacted",
+   "texts": [
+    "{0} secret-like value(s) were redacted before sending; a marker in a comment reads <redacted> and is never restored.",
+    "发送前已对 {0} 处疑似密钥脱敏；注释中的标记显示为 <redacted>，不会还原。",
+    "送信前に {0} 件の機密候補を伏せ字にしました。コメント内のマーカーは <redacted> と表示され、復元されません。"
+   ]
+  },
+  {
+   "key": "f1.ann.summary",
+   "texts": [
+    "Proposed: {0}. Only comment lines are added; select the blocks to apply.",
+    "建议：{0}。只会添加注释行；请勾选要应用的修改块。",
+    "提案：{0}。追加されるのはコメント行のみです。適用するブロックを選択してください。"
+   ]
+  },
+  {
+   "key": "f1.ann.commentCount",
+   "texts": [
+    "{0} comment(s)",
+    "{0} 条注释",
+    "{0} 件のコメント"
+   ]
+  },
+  {
+   "key": "f1.ann.nothingToAdd",
+   "texts": [
+    "Nothing to add: no new comment was proposed for this scope.",
+    "没有可添加的内容：模型没有为此范围提出新的注释。",
+    "追加する内容はありません：この範囲に新しいコメントは提案されませんでした。"
+   ]
+  },
+  {
+   "key": "f1.ann.replyInvalid",
+   "texts": [
+    "The model reply could not be used (it is not the expected JSON). Nothing was changed. Try Regenerate or another model.",
+    "无法使用模型的回复（不是要求的 JSON）。未做任何修改。请重新生成或换一个模型。",
+    "モデルの応答を使用できませんでした（期待された JSON ではありません）。何も変更していません。再生成するか別のモデルを試してください。"
+   ]
+  },
+  {
+   "key": "f1.ann.unsafe",
+   "texts": [
+    "The comments could not be placed without touching your code, so they were discarded. Nothing was changed.",
+    "这些注释无法在不触及代码的前提下放置，已被丢弃。未做任何修改。",
+    "コードに触れずにコメントを配置できなかったため、破棄しました。何も変更していません。"
+   ]
+  },
+  {
+   "key": "f1.ann.skippedPosition",
+   "texts": [
+    "{0} comment(s) skipped: not a safe position.",
+    "已跳过 {0} 条注释：位置不安全。",
+    "{0} 件のコメントをスキップしました：安全な位置ではありません。"
+   ]
+  },
+  {
+   "key": "f1.ann.skippedDuplicate",
+   "texts": [
+    "{0} comment(s) skipped: duplicates of a comment that is already there or already proposed.",
+    "已跳过 {0} 条注释：与已有或已提出的注释重复。",
+    "{0} 件のコメントをスキップしました：既にある、または既に提案済みのコメントと重複しています。"
+   ]
+  },
+  {
+   "key": "f1.ann.skippedOther",
+   "texts": [
+    "{0} comment(s) skipped: empty, malformed or over the size limits.",
+    "已跳过 {0} 条注释：为空、格式错误或超过大小限制。",
+    "{0} 件のコメントをスキップしました：空、形式不正、またはサイズ上限超過です。"
+   ]
+  },
+  {
+   "key": "f1.ann.graphEmpty",
+   "texts": [
+    "No Cypher graph comment was added (none returned, or no safe position at the top of the scope).",
+    "未添加 Cypher 关系图注释（模型没有返回，或范围顶部没有安全位置）。",
+    "Cypher グラフのコメントは追加されませんでした（返されなかったか、範囲の先頭に安全な位置がありません）。"
    ]
   },
   {
@@ -2938,6 +3262,654 @@
     "E"
    ],
    "expect": "Programming IME 未启用。请运行“Programming IME: Enable / Disable”。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.tab",
+   "args": [],
+   "expect": "C. 为范围加注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.tab",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "C. 为范围加注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.intent",
+   "args": [],
+   "expect": "注释要侧重什么？（可选）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.intent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "注释要侧重什么？（可选）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.run",
+   "args": [],
+   "expect": "添加注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.run",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "添加注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.range.one",
+   "args": [],
+   "expect": "第  行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.range.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "第 A 行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.range.many",
+   "args": [],
+   "expect": "第 - 行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.range.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "第 A-B 行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.count.one",
+   "args": [],
+   "expect": "1 行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.count.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "1 行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.count.many",
+   "args": [],
+   "expect": " 行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.count.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 行"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.decl",
+   "args": [],
+   "expect": "范围：（，）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.decl",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "范围：A（B，C）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.selection",
+   "args": [],
+   "expect": "选区：（）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "选区：A（B）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.block",
+   "args": [],
+   "expect": "光标所在的代码块：（）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "光标所在的代码块：A（B）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.file",
+   "args": [],
+   "expect": "整个文件：（）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.scope.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "整个文件：A（B）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumb.selection",
+   "args": [],
+   "expect": "选区"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumb.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "选区"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumb.block",
+   "args": [],
+   "expect": "代码块"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumb.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "代码块"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumb.file",
+   "args": [],
+   "expect": "文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumb.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "文件"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumbs",
+   "args": [],
+   "expect": "范围路径（由内到外）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.crumbs",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "范围路径（由内到外）"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.wider",
+   "args": [],
+   "expect": "更宽"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.wider",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "更宽"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.narrower",
+   "args": [],
+   "expect": "更窄"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.narrower",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "更窄"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.widerBlocked",
+   "args": [],
+   "expect": "更宽的范围（）过大（ 个字符、 行；上限是  个字符和  行）。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.widerBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "更宽的范围（A）过大（B 个字符、C 行；上限是 D 个字符和 E 行）。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.opt.comment",
+   "args": [],
+   "expect": "注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.opt.comment",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.opt.graph",
+   "args": [],
+   "expect": "Cypher 关系图"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.opt.graph",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Cypher 关系图"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.nothingRequested",
+   "args": [],
+   "expect": "请勾选“注释”或“Cypher 关系图”，说明要添加什么。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.nothingRequested",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "请勾选“注释”或“Cypher 关系图”，说明要添加什么。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.unsupported",
+   "args": [],
+   "expect": "语言“”不支持为范围添加注释。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.unsupported",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "语言“A”不支持为范围添加注释。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.empty",
+   "args": [],
+   "expect": "文档为空：没有可加注释的内容。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.empty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "文档为空：没有可加注释的内容。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.tooLarge",
+   "args": [],
+   "expect": "范围  过大（ 个字符、 行；上限是  个字符和  行）。请选中更小的一段代码后再按 F1。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "范围 A 过大（B 个字符、C 行；上限是 D 个字符和 E 行）。请选中更小的一段代码后再按 F1。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.fileTooLarge",
+   "args": [],
+   "expect": "文件超过 2 MiB，已禁用为范围添加注释（不会截断）。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.fileTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "文件超过 2 MiB，已禁用为范围添加注释（不会截断）。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.consent",
+   "args": [],
+   "expect": "把【整个当前文件】发送到 ，让 AI 为所选范围写注释？只会添加注释行，不会改写你的代码。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.consent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "把【整个当前文件】发送到 A，让 AI 为所选范围写注释？只会添加注释行，不会改写你的代码。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.redacted",
+   "args": [],
+   "expect": "发送前已对  处疑似密钥脱敏；注释中的标记显示为 <redacted>，不会还原。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "发送前已对 A 处疑似密钥脱敏；注释中的标记显示为 <redacted>，不会还原。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.summary",
+   "args": [],
+   "expect": "建议：。只会添加注释行；请勾选要应用的修改块。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.summary",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "建议：A。只会添加注释行；请勾选要应用的修改块。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.commentCount",
+   "args": [],
+   "expect": " 条注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.commentCount",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 条注释"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.nothingToAdd",
+   "args": [],
+   "expect": "没有可添加的内容：模型没有为此范围提出新的注释。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.nothingToAdd",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "没有可添加的内容：模型没有为此范围提出新的注释。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.replyInvalid",
+   "args": [],
+   "expect": "无法使用模型的回复（不是要求的 JSON）。未做任何修改。请重新生成或换一个模型。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "无法使用模型的回复（不是要求的 JSON）。未做任何修改。请重新生成或换一个模型。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.unsafe",
+   "args": [],
+   "expect": "这些注释无法在不触及代码的前提下放置，已被丢弃。未做任何修改。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.unsafe",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "这些注释无法在不触及代码的前提下放置，已被丢弃。未做任何修改。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.skippedPosition",
+   "args": [],
+   "expect": "已跳过  条注释：位置不安全。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.skippedPosition",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已跳过 A 条注释：位置不安全。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [],
+   "expect": "已跳过  条注释：与已有或已提出的注释重复。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已跳过 A 条注释：与已有或已提出的注释重复。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.skippedOther",
+   "args": [],
+   "expect": "已跳过  条注释：为空、格式错误或超过大小限制。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.skippedOther",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "已跳过 A 条注释：为空、格式错误或超过大小限制。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.graphEmpty",
+   "args": [],
+   "expect": "未添加 Cypher 关系图注释（模型没有返回，或范围顶部没有安全位置）。"
+  },
+  {
+   "locale": "zh-CN",
+   "key": "f1.ann.graphEmpty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "未添加 Cypher 关系图注释（模型没有返回，或范围顶部没有安全位置）。"
   },
   {
    "locale": "zh-CN",
@@ -5137,6 +6109,654 @@
   },
   {
    "locale": "en-US",
+   "key": "f1.ann.tab",
+   "args": [],
+   "expect": "C. Annotate scope"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.tab",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "C. Annotate scope"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.intent",
+   "args": [],
+   "expect": "What should the comments focus on? (optional)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.intent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "What should the comments focus on? (optional)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.run",
+   "args": [],
+   "expect": "Add comments"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.run",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Add comments"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.range.one",
+   "args": [],
+   "expect": "line "
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.range.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "line A"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.range.many",
+   "args": [],
+   "expect": "lines -"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.range.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "lines A-B"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.count.one",
+   "args": [],
+   "expect": "1 line"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.count.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "1 line"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.count.many",
+   "args": [],
+   "expect": " lines"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.count.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A lines"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.decl",
+   "args": [],
+   "expect": "Scope:  (, )"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.decl",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Scope: A (B, C)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.selection",
+   "args": [],
+   "expect": "Selection:  ()"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Selection: A (B)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.block",
+   "args": [],
+   "expect": "Block around the cursor:  ()"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Block around the cursor: A (B)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.file",
+   "args": [],
+   "expect": "Whole file:  ()"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.scope.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Whole file: A (B)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumb.selection",
+   "args": [],
+   "expect": "selection"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumb.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "selection"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumb.block",
+   "args": [],
+   "expect": "block"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumb.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "block"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumb.file",
+   "args": [],
+   "expect": "file"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumb.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "file"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumbs",
+   "args": [],
+   "expect": "Scope path, innermost first"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.crumbs",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Scope path, innermost first"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.wider",
+   "args": [],
+   "expect": "Wider"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.wider",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Wider"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.narrower",
+   "args": [],
+   "expect": "Narrower"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.narrower",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Narrower"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.widerBlocked",
+   "args": [],
+   "expect": "The next wider scope () is too large ( characters,  lines; the limits are  characters and  lines)."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.widerBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The next wider scope (A) is too large (B characters, C lines; the limits are D characters and E lines)."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.opt.comment",
+   "args": [],
+   "expect": "Comments"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.opt.comment",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Comments"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.opt.graph",
+   "args": [],
+   "expect": "Cypher graph"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.opt.graph",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Cypher graph"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.nothingRequested",
+   "args": [],
+   "expect": "Tick Comments or Cypher graph to say what to add."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.nothingRequested",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Tick Comments or Cypher graph to say what to add."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.unsupported",
+   "args": [],
+   "expect": "Adding comments to a scope is not available for the language \"\"."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.unsupported",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Adding comments to a scope is not available for the language \"A\"."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.empty",
+   "args": [],
+   "expect": "The document is empty: there is nothing to comment."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.empty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The document is empty: there is nothing to comment."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.tooLarge",
+   "args": [],
+   "expect": "The scope  is too large ( characters,  lines; the limits are  characters and  lines). Select a smaller part of the code and press F1 again."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The scope A is too large (B characters, C lines; the limits are D characters and E lines). Select a smaller part of the code and press F1 again."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.fileTooLarge",
+   "args": [],
+   "expect": "The file exceeds 2 MiB; adding comments to a scope is disabled (nothing is truncated)."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.fileTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The file exceeds 2 MiB; adding comments to a scope is disabled (nothing is truncated)."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.consent",
+   "args": [],
+   "expect": "Send the COMPLETE current file to  so the AI can write comments for the chosen scope? Only comment lines are added; your code is never rewritten."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.consent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Send the COMPLETE current file to A so the AI can write comments for the chosen scope? Only comment lines are added; your code is never rewritten."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.redacted",
+   "args": [],
+   "expect": " secret-like value(s) were redacted before sending; a marker in a comment reads <redacted> and is never restored."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A secret-like value(s) were redacted before sending; a marker in a comment reads <redacted> and is never restored."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.summary",
+   "args": [],
+   "expect": "Proposed: . Only comment lines are added; select the blocks to apply."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.summary",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Proposed: A. Only comment lines are added; select the blocks to apply."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.commentCount",
+   "args": [],
+   "expect": " comment(s)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.commentCount",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s)"
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.nothingToAdd",
+   "args": [],
+   "expect": "Nothing to add: no new comment was proposed for this scope."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.nothingToAdd",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Nothing to add: no new comment was proposed for this scope."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.replyInvalid",
+   "args": [],
+   "expect": "The model reply could not be used (it is not the expected JSON). Nothing was changed. Try Regenerate or another model."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The model reply could not be used (it is not the expected JSON). Nothing was changed. Try Regenerate or another model."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.unsafe",
+   "args": [],
+   "expect": "The comments could not be placed without touching your code, so they were discarded. Nothing was changed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.unsafe",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The comments could not be placed without touching your code, so they were discarded. Nothing was changed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.skippedPosition",
+   "args": [],
+   "expect": " comment(s) skipped: not a safe position."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.skippedPosition",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s) skipped: not a safe position."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [],
+   "expect": " comment(s) skipped: duplicates of a comment that is already there or already proposed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s) skipped: duplicates of a comment that is already there or already proposed."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.skippedOther",
+   "args": [],
+   "expect": " comment(s) skipped: empty, malformed or over the size limits."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.skippedOther",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s) skipped: empty, malformed or over the size limits."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.graphEmpty",
+   "args": [],
+   "expect": "No Cypher graph comment was added (none returned, or no safe position at the top of the scope)."
+  },
+  {
+   "locale": "en-US",
+   "key": "f1.ann.graphEmpty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No Cypher graph comment was added (none returned, or no safe position at the top of the scope)."
+  },
+  {
+   "locale": "en-US",
    "key": "ai.configured",
    "args": [],
    "expect": "API key saved in VS Code SecretStorage. AI stays off until you authorize a transfer."
@@ -7333,6 +8953,654 @@
   },
   {
    "locale": "ja-JP",
+   "key": "f1.ann.tab",
+   "args": [],
+   "expect": "C. 範囲にコメント"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.tab",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "C. 範囲にコメント"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.intent",
+   "args": [],
+   "expect": "コメントで重点を置く点は？（任意）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.intent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "コメントで重点を置く点は？（任意）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.run",
+   "args": [],
+   "expect": "コメントを追加"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.run",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "コメントを追加"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.range.one",
+   "args": [],
+   "expect": " 行目"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.range.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 行目"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.range.many",
+   "args": [],
+   "expect": "- 行目"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.range.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A-B 行目"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.count.one",
+   "args": [],
+   "expect": "1 行"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.count.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "1 行"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.count.many",
+   "args": [],
+   "expect": " 行"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.count.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 行"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.decl",
+   "args": [],
+   "expect": "範囲：（、）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.decl",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "範囲：A（B、C）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.selection",
+   "args": [],
+   "expect": "選択範囲：（）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "選択範囲：A（B）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.block",
+   "args": [],
+   "expect": "カーソル周辺のブロック：（）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "カーソル周辺のブロック：A（B）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.file",
+   "args": [],
+   "expect": "ファイル全体：（）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.scope.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "ファイル全体：A（B）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumb.selection",
+   "args": [],
+   "expect": "選択範囲"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumb.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "選択範囲"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumb.block",
+   "args": [],
+   "expect": "ブロック"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumb.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "ブロック"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumb.file",
+   "args": [],
+   "expect": "ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumb.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "ファイル"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumbs",
+   "args": [],
+   "expect": "範囲のパス（内側から）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.crumbs",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "範囲のパス（内側から）"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.wider",
+   "args": [],
+   "expect": "広げる"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.wider",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "広げる"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.narrower",
+   "args": [],
+   "expect": "狭める"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.narrower",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "狭める"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.widerBlocked",
+   "args": [],
+   "expect": "次に広い範囲（）は大きすぎます（ 文字、 行。上限は  文字と  行）。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.widerBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "次に広い範囲（A）は大きすぎます（B 文字、C 行。上限は D 文字と E 行）。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.opt.comment",
+   "args": [],
+   "expect": "コメント"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.opt.comment",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "コメント"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.opt.graph",
+   "args": [],
+   "expect": "Cypher グラフ"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.opt.graph",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Cypher グラフ"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.nothingRequested",
+   "args": [],
+   "expect": "追加する内容として「コメント」または「Cypher グラフ」を選んでください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.nothingRequested",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "追加する内容として「コメント」または「Cypher グラフ」を選んでください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.unsupported",
+   "args": [],
+   "expect": "言語「」では範囲へのコメント追加は利用できません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.unsupported",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "言語「A」では範囲へのコメント追加は利用できません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.empty",
+   "args": [],
+   "expect": "ドキュメントが空です。コメントを付ける対象がありません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.empty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "ドキュメントが空です。コメントを付ける対象がありません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.tooLarge",
+   "args": [],
+   "expect": "範囲  は大きすぎます（ 文字、 行。上限は  文字と  行）。より小さいコード範囲を選択してから F1 を押し直してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "範囲 A は大きすぎます（B 文字、C 行。上限は D 文字と E 行）。より小さいコード範囲を選択してから F1 を押し直してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.fileTooLarge",
+   "args": [],
+   "expect": "ファイルが 2 MiB を超えるため、範囲へのコメント追加は無効です（切り詰めません）。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.fileTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "ファイルが 2 MiB を超えるため、範囲へのコメント追加は無効です（切り詰めません）。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.consent",
+   "args": [],
+   "expect": "選択した範囲のコメントを AI に書かせるため、【現在のファイル全体】を  に送信しますか？追加されるのはコメント行のみで、コードは書き換えられません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.consent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "選択した範囲のコメントを AI に書かせるため、【現在のファイル全体】を A に送信しますか？追加されるのはコメント行のみで、コードは書き換えられません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.redacted",
+   "args": [],
+   "expect": "送信前に  件の機密候補を伏せ字にしました。コメント内のマーカーは <redacted> と表示され、復元されません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "送信前に A 件の機密候補を伏せ字にしました。コメント内のマーカーは <redacted> と表示され、復元されません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.summary",
+   "args": [],
+   "expect": "提案：。追加されるのはコメント行のみです。適用するブロックを選択してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.summary",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "提案：A。追加されるのはコメント行のみです。適用するブロックを選択してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.commentCount",
+   "args": [],
+   "expect": " 件のコメント"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.commentCount",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 件のコメント"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.nothingToAdd",
+   "args": [],
+   "expect": "追加する内容はありません：この範囲に新しいコメントは提案されませんでした。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.nothingToAdd",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "追加する内容はありません：この範囲に新しいコメントは提案されませんでした。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.replyInvalid",
+   "args": [],
+   "expect": "モデルの応答を使用できませんでした（期待された JSON ではありません）。何も変更していません。再生成するか別のモデルを試してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "モデルの応答を使用できませんでした（期待された JSON ではありません）。何も変更していません。再生成するか別のモデルを試してください。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.unsafe",
+   "args": [],
+   "expect": "コードに触れずにコメントを配置できなかったため、破棄しました。何も変更していません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.unsafe",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "コードに触れずにコメントを配置できなかったため、破棄しました。何も変更していません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.skippedPosition",
+   "args": [],
+   "expect": " 件のコメントをスキップしました：安全な位置ではありません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.skippedPosition",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 件のコメントをスキップしました：安全な位置ではありません。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [],
+   "expect": " 件のコメントをスキップしました：既にある、または既に提案済みのコメントと重複しています。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 件のコメントをスキップしました：既にある、または既に提案済みのコメントと重複しています。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.skippedOther",
+   "args": [],
+   "expect": " 件のコメントをスキップしました：空、形式不正、またはサイズ上限超過です。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.skippedOther",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A 件のコメントをスキップしました：空、形式不正、またはサイズ上限超過です。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.graphEmpty",
+   "args": [],
+   "expect": "Cypher グラフのコメントは追加されませんでした（返されなかったか、範囲の先頭に安全な位置がありません）。"
+  },
+  {
+   "locale": "ja-JP",
+   "key": "f1.ann.graphEmpty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Cypher グラフのコメントは追加されませんでした（返されなかったか、範囲の先頭に安全な位置がありません）。"
+  },
+  {
+   "locale": "ja-JP",
    "key": "ai.configured",
    "args": [],
    "expect": "API キーを SecretStorage に保存しました。送信を許可するまで AI は動作しません。"
@@ -9526,6 +11794,654 @@
     "E"
    ],
    "expect": "Programming IME is disabled. Run \"Programming IME: Enable / Disable\"."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.tab",
+   "args": [],
+   "expect": "C. Annotate scope"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.tab",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "C. Annotate scope"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.intent",
+   "args": [],
+   "expect": "What should the comments focus on? (optional)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.intent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "What should the comments focus on? (optional)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.run",
+   "args": [],
+   "expect": "Add comments"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.run",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Add comments"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.range.one",
+   "args": [],
+   "expect": "line "
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.range.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "line A"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.range.many",
+   "args": [],
+   "expect": "lines -"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.range.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "lines A-B"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.count.one",
+   "args": [],
+   "expect": "1 line"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.count.one",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "1 line"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.count.many",
+   "args": [],
+   "expect": " lines"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.count.many",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A lines"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.decl",
+   "args": [],
+   "expect": "Scope:  (, )"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.decl",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Scope: A (B, C)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.selection",
+   "args": [],
+   "expect": "Selection:  ()"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Selection: A (B)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.block",
+   "args": [],
+   "expect": "Block around the cursor:  ()"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Block around the cursor: A (B)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.file",
+   "args": [],
+   "expect": "Whole file:  ()"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.scope.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Whole file: A (B)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumb.selection",
+   "args": [],
+   "expect": "selection"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumb.selection",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "selection"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumb.block",
+   "args": [],
+   "expect": "block"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumb.block",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "block"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumb.file",
+   "args": [],
+   "expect": "file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumb.file",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "file"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumbs",
+   "args": [],
+   "expect": "Scope path, innermost first"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.crumbs",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Scope path, innermost first"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.wider",
+   "args": [],
+   "expect": "Wider"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.wider",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Wider"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.narrower",
+   "args": [],
+   "expect": "Narrower"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.narrower",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Narrower"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.widerBlocked",
+   "args": [],
+   "expect": "The next wider scope () is too large ( characters,  lines; the limits are  characters and  lines)."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.widerBlocked",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The next wider scope (A) is too large (B characters, C lines; the limits are D characters and E lines)."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.opt.comment",
+   "args": [],
+   "expect": "Comments"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.opt.comment",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Comments"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.opt.graph",
+   "args": [],
+   "expect": "Cypher graph"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.opt.graph",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Cypher graph"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.nothingRequested",
+   "args": [],
+   "expect": "Tick Comments or Cypher graph to say what to add."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.nothingRequested",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Tick Comments or Cypher graph to say what to add."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.unsupported",
+   "args": [],
+   "expect": "Adding comments to a scope is not available for the language \"\"."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.unsupported",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Adding comments to a scope is not available for the language \"A\"."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.empty",
+   "args": [],
+   "expect": "The document is empty: there is nothing to comment."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.empty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The document is empty: there is nothing to comment."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.tooLarge",
+   "args": [],
+   "expect": "The scope  is too large ( characters,  lines; the limits are  characters and  lines). Select a smaller part of the code and press F1 again."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.tooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The scope A is too large (B characters, C lines; the limits are D characters and E lines). Select a smaller part of the code and press F1 again."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.fileTooLarge",
+   "args": [],
+   "expect": "The file exceeds 2 MiB; adding comments to a scope is disabled (nothing is truncated)."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.fileTooLarge",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The file exceeds 2 MiB; adding comments to a scope is disabled (nothing is truncated)."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.consent",
+   "args": [],
+   "expect": "Send the COMPLETE current file to  so the AI can write comments for the chosen scope? Only comment lines are added; your code is never rewritten."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.consent",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Send the COMPLETE current file to A so the AI can write comments for the chosen scope? Only comment lines are added; your code is never rewritten."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.redacted",
+   "args": [],
+   "expect": " secret-like value(s) were redacted before sending; a marker in a comment reads <redacted> and is never restored."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.redacted",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A secret-like value(s) were redacted before sending; a marker in a comment reads <redacted> and is never restored."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.summary",
+   "args": [],
+   "expect": "Proposed: . Only comment lines are added; select the blocks to apply."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.summary",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Proposed: A. Only comment lines are added; select the blocks to apply."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.commentCount",
+   "args": [],
+   "expect": " comment(s)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.commentCount",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s)"
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.nothingToAdd",
+   "args": [],
+   "expect": "Nothing to add: no new comment was proposed for this scope."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.nothingToAdd",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "Nothing to add: no new comment was proposed for this scope."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.replyInvalid",
+   "args": [],
+   "expect": "The model reply could not be used (it is not the expected JSON). Nothing was changed. Try Regenerate or another model."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.replyInvalid",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The model reply could not be used (it is not the expected JSON). Nothing was changed. Try Regenerate or another model."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.unsafe",
+   "args": [],
+   "expect": "The comments could not be placed without touching your code, so they were discarded. Nothing was changed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.unsafe",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "The comments could not be placed without touching your code, so they were discarded. Nothing was changed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.skippedPosition",
+   "args": [],
+   "expect": " comment(s) skipped: not a safe position."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.skippedPosition",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s) skipped: not a safe position."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [],
+   "expect": " comment(s) skipped: duplicates of a comment that is already there or already proposed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.skippedDuplicate",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s) skipped: duplicates of a comment that is already there or already proposed."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.skippedOther",
+   "args": [],
+   "expect": " comment(s) skipped: empty, malformed or over the size limits."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.skippedOther",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "A comment(s) skipped: empty, malformed or over the size limits."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.graphEmpty",
+   "args": [],
+   "expect": "No Cypher graph comment was added (none returned, or no safe position at the top of the scope)."
+  },
+  {
+   "locale": "fr-FR",
+   "key": "f1.ann.graphEmpty",
+   "args": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "expect": "No Cypher graph comment was added (none returned, or no safe position at the top of the scope)."
   },
   {
    "locale": "fr-FR",

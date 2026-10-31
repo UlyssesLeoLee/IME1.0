@@ -506,6 +506,208 @@ pub(crate) const S: &[(&str, [&str; 3])] = &[
         ],
     ),
     (
+        "f1.ann.tab",
+        ["C. Annotate scope", "C. 为范围加注释", "C. 範囲にコメント"],
+    ),
+    (
+        "f1.ann.intent",
+        [
+            "What should the comments focus on? (optional)",
+            "注释要侧重什么？（可选）",
+            "コメントで重点を置く点は？（任意）",
+        ],
+    ),
+    ("f1.ann.run", ["Add comments", "添加注释", "コメントを追加"]),
+    ("f1.ann.range.one", ["line {0}", "第 {0} 行", "{0} 行目"]),
+    (
+        "f1.ann.range.many",
+        ["lines {0}-{1}", "第 {0}-{1} 行", "{0}-{1} 行目"],
+    ),
+    ("f1.ann.count.one", ["1 line", "1 行", "1 行"]),
+    ("f1.ann.count.many", ["{0} lines", "{0} 行", "{0} 行"]),
+    (
+        "f1.ann.scope.decl",
+        [
+            "Scope: {0} ({1}, {2})",
+            "范围：{0}（{1}，{2}）",
+            "範囲：{0}（{1}、{2}）",
+        ],
+    ),
+    (
+        "f1.ann.scope.selection",
+        [
+            "Selection: {0} ({1})",
+            "选区：{0}（{1}）",
+            "選択範囲：{0}（{1}）",
+        ],
+    ),
+    (
+        "f1.ann.scope.block",
+        [
+            "Block around the cursor: {0} ({1})",
+            "光标所在的代码块：{0}（{1}）",
+            "カーソル周辺のブロック：{0}（{1}）",
+        ],
+    ),
+    (
+        "f1.ann.scope.file",
+        [
+            "Whole file: {0} ({1})",
+            "整个文件：{0}（{1}）",
+            "ファイル全体：{0}（{1}）",
+        ],
+    ),
+    ("f1.ann.crumb.selection", ["selection", "选区", "選択範囲"]),
+    ("f1.ann.crumb.block", ["block", "代码块", "ブロック"]),
+    ("f1.ann.crumb.file", ["file", "文件", "ファイル"]),
+    (
+        "f1.ann.crumbs",
+        [
+            "Scope path, innermost first",
+            "范围路径（由内到外）",
+            "範囲のパス（内側から）",
+        ],
+    ),
+    ("f1.ann.wider", ["Wider", "更宽", "広げる"]),
+    ("f1.ann.narrower", ["Narrower", "更窄", "狭める"]),
+    (
+        "f1.ann.widerBlocked",
+        [
+            "The next wider scope ({0}) is too large ({1} characters, {2} lines; the limits are {3} characters and {4} lines).",
+            "更宽的范围（{0}）过大（{1} 个字符、{2} 行；上限是 {3} 个字符和 {4} 行）。",
+            "次に広い範囲（{0}）は大きすぎます（{1} 文字、{2} 行。上限は {3} 文字と {4} 行）。",
+        ],
+    ),
+    ("f1.ann.opt.comment", ["Comments", "注释", "コメント"]),
+    (
+        "f1.ann.opt.graph",
+        ["Cypher graph", "Cypher 关系图", "Cypher グラフ"],
+    ),
+    (
+        "f1.ann.nothingRequested",
+        [
+            "Tick Comments or Cypher graph to say what to add.",
+            "请勾选“注释”或“Cypher 关系图”，说明要添加什么。",
+            "追加する内容として「コメント」または「Cypher グラフ」を選んでください。",
+        ],
+    ),
+    (
+        "f1.ann.unsupported",
+        [
+            "Adding comments to a scope is not available for the language \"{0}\".",
+            "语言“{0}”不支持为范围添加注释。",
+            "言語「{0}」では範囲へのコメント追加は利用できません。",
+        ],
+    ),
+    (
+        "f1.ann.empty",
+        [
+            "The document is empty: there is nothing to comment.",
+            "文档为空：没有可加注释的内容。",
+            "ドキュメントが空です。コメントを付ける対象がありません。",
+        ],
+    ),
+    (
+        "f1.ann.tooLarge",
+        [
+            "The scope {0} is too large ({1} characters, {2} lines; the limits are {3} characters and {4} lines). Select a smaller part of the code and press F1 again.",
+            "范围 {0} 过大（{1} 个字符、{2} 行；上限是 {3} 个字符和 {4} 行）。请选中更小的一段代码后再按 F1。",
+            "範囲 {0} は大きすぎます（{1} 文字、{2} 行。上限は {3} 文字と {4} 行）。より小さいコード範囲を選択してから F1 を押し直してください。",
+        ],
+    ),
+    (
+        "f1.ann.fileTooLarge",
+        [
+            "The file exceeds 2 MiB; adding comments to a scope is disabled (nothing is truncated).",
+            "文件超过 2 MiB，已禁用为范围添加注释（不会截断）。",
+            "ファイルが 2 MiB を超えるため、範囲へのコメント追加は無効です（切り詰めません）。",
+        ],
+    ),
+    (
+        "f1.ann.consent",
+        [
+            "Send the COMPLETE current file to {0} so the AI can write comments for the chosen scope? Only comment lines are added; your code is never rewritten.",
+            "把【整个当前文件】发送到 {0}，让 AI 为所选范围写注释？只会添加注释行，不会改写你的代码。",
+            "選択した範囲のコメントを AI に書かせるため、【現在のファイル全体】を {0} に送信しますか？追加されるのはコメント行のみで、コードは書き換えられません。",
+        ],
+    ),
+    (
+        "f1.ann.redacted",
+        [
+            "{0} secret-like value(s) were redacted before sending; a marker in a comment reads <redacted> and is never restored.",
+            "发送前已对 {0} 处疑似密钥脱敏；注释中的标记显示为 <redacted>，不会还原。",
+            "送信前に {0} 件の機密候補を伏せ字にしました。コメント内のマーカーは <redacted> と表示され、復元されません。",
+        ],
+    ),
+    (
+        "f1.ann.summary",
+        [
+            "Proposed: {0}. Only comment lines are added; select the blocks to apply.",
+            "建议：{0}。只会添加注释行；请勾选要应用的修改块。",
+            "提案：{0}。追加されるのはコメント行のみです。適用するブロックを選択してください。",
+        ],
+    ),
+    (
+        "f1.ann.commentCount",
+        ["{0} comment(s)", "{0} 条注释", "{0} 件のコメント"],
+    ),
+    (
+        "f1.ann.nothingToAdd",
+        [
+            "Nothing to add: no new comment was proposed for this scope.",
+            "没有可添加的内容：模型没有为此范围提出新的注释。",
+            "追加する内容はありません：この範囲に新しいコメントは提案されませんでした。",
+        ],
+    ),
+    (
+        "f1.ann.replyInvalid",
+        [
+            "The model reply could not be used (it is not the expected JSON). Nothing was changed. Try Regenerate or another model.",
+            "无法使用模型的回复（不是要求的 JSON）。未做任何修改。请重新生成或换一个模型。",
+            "モデルの応答を使用できませんでした（期待された JSON ではありません）。何も変更していません。再生成するか別のモデルを試してください。",
+        ],
+    ),
+    (
+        "f1.ann.unsafe",
+        [
+            "The comments could not be placed without touching your code, so they were discarded. Nothing was changed.",
+            "这些注释无法在不触及代码的前提下放置，已被丢弃。未做任何修改。",
+            "コードに触れずにコメントを配置できなかったため、破棄しました。何も変更していません。",
+        ],
+    ),
+    (
+        "f1.ann.skippedPosition",
+        [
+            "{0} comment(s) skipped: not a safe position.",
+            "已跳过 {0} 条注释：位置不安全。",
+            "{0} 件のコメントをスキップしました：安全な位置ではありません。",
+        ],
+    ),
+    (
+        "f1.ann.skippedDuplicate",
+        [
+            "{0} comment(s) skipped: duplicates of a comment that is already there or already proposed.",
+            "已跳过 {0} 条注释：与已有或已提出的注释重复。",
+            "{0} 件のコメントをスキップしました：既にある、または既に提案済みのコメントと重複しています。",
+        ],
+    ),
+    (
+        "f1.ann.skippedOther",
+        [
+            "{0} comment(s) skipped: empty, malformed or over the size limits.",
+            "已跳过 {0} 条注释：为空、格式错误或超过大小限制。",
+            "{0} 件のコメントをスキップしました：空、形式不正、またはサイズ上限超過です。",
+        ],
+    ),
+    (
+        "f1.ann.graphEmpty",
+        [
+            "No Cypher graph comment was added (none returned, or no safe position at the top of the scope).",
+            "未添加 Cypher 关系图注释（模型没有返回，或范围顶部没有安全位置）。",
+            "Cypher グラフのコメントは追加されませんでした（返されなかったか、範囲の先頭に安全な位置がありません）。",
+        ],
+    ),
+    (
         "ai.configured",
         [
             "API key saved in VS Code SecretStorage. AI stays off until you authorize a transfer.",
