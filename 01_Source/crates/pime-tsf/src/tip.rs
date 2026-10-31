@@ -68,6 +68,10 @@ impl CandidateUi for BoxedUi {
     fn hide(&mut self) {
         self.0.hide();
     }
+
+    fn is_visible(&self) -> bool {
+        self.0.is_visible()
+    }
 }
 
 /// One edit session running a closure with the edit cookie. The sessions that matter for a key are synchronous

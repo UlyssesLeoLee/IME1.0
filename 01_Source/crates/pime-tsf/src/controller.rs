@@ -385,6 +385,12 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             return false;
         }
         self.refresh_secure(stamp, key.now_ms);
+        if self.visible && !self.ui.is_visible() {
+            // the list went away without a `hide` from us (a host that drew it handed it back through
+            // `ITfUIElement::Show(TRUE)` and the popup could not be drawn): nothing may be eaten behind it
+            self.visible = false;
+            self.settle();
+        }
         if is_compose_chord(key.code, key.mods) && self.can_compose() {
             // the one chord that is ours: it starts an explicit composition, and only while candidates show
             self.seen = None;
@@ -1701,6 +1707,9 @@ mod tests {
                 panic!("window panicked (test)");
             }
             fn hide(&mut self) {}
+            fn is_visible(&self) -> bool {
+                false
+            }
         }
         let host = FakeHost {
             anchor: Some(ANCHOR),
@@ -1901,6 +1910,43 @@ mod tests {
                 assert!(rig.ctl.ui().visible, "{what}");
                 assert!(!rig.ctl.machine().candidates().is_empty(), "{what}");
             }
+        }
+    }
+
+    #[test]
+    fn a_list_that_disappears_without_a_hide_is_not_eaten_behind() {
+        // review finding 5, the path that has no `show`: a host that drew the list hands it back and the popup cannot be
+        // drawn (here: the double reports "not visible" on its own)
+        for style in [Host::Contract, Host::Always, Host::DownOnly] {
+            // inside the Sogou-style composition: a digit would commit a candidate nobody sees
+            let mut rig = Rig::new();
+            rig.type_text("fn", style);
+            assert!(
+                rig.ctl.ui().visible && rig.ctl.host().composing,
+                "{style:?}"
+            );
+            rig.ctl.ui.visible = false;
+            assert!(
+                !rig.press(code_of('1'), Some('1'), NONE, style),
+                "{style:?}: the digit is the host's"
+            );
+            assert!(rig.ctl.host().commits.is_empty(), "{style:?}");
+            assert!(
+                !rig.ctl.host().composing,
+                "{style:?}: the composition ended"
+            );
+            assert_eq!(rig.ctl.host().doc, "fn1", "{style:?}");
+            // the shipped defaults: the chord must not start a composition behind it
+            let mut rig = Rig::defaults();
+            rig.type_text("fn", style);
+            assert!(rig.ctl.ui().visible, "{style:?}");
+            rig.ctl.ui.visible = false;
+            assert!(!rig.chord(style), "{style:?}: the chord is the host's");
+            assert_eq!(rig.ctl.host().begins, 0, "{style:?}");
+            assert!(!rig.ctl.is_degraded(), "{style:?}");
+            // and the suggestions come back with the next typed character
+            rig.type_text("m", style);
+            assert!(rig.ctl.ui().visible, "{style:?}");
         }
     }
 

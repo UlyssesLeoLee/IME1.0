@@ -214,6 +214,10 @@ impl CandidateUi for PopupWindow {
             let _ = unsafe { ShowWindow(self.hwnd, SW_HIDE) };
         }
     }
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    }
 }
 
 impl Drop for PopupWindow {

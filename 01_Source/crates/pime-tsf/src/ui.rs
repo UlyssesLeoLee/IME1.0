@@ -50,6 +50,10 @@ pub trait CandidateUi {
     fn show(&mut self, view: &CandidateView, anchor: Anchor) -> bool;
     /// Hide it (idempotent).
     fn hide(&mut self);
+    /// Whether the list is visible to the user RIGHT NOW. It can change without a `show` or `hide`: a host that draws the
+    /// list itself may hand it back (`ITfUIElement::Show(TRUE)`) to a popup that then cannot be drawn. The controller asks
+    /// before it eats a key.
+    fn is_visible(&self) -> bool;
 }
 
 /// Test double: remembers what it was asked to show.
@@ -74,5 +78,9 @@ impl CandidateUi for RecordingUi {
     fn hide(&mut self) {
         self.visible = false;
         self.hides += 1;
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visible
     }
 }

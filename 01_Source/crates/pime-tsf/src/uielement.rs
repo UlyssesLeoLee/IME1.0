@@ -357,6 +357,12 @@ impl Shared {
         state.open.is_some() && state.drawer == Drawer::Host
     }
 
+    /// Whether the user sees a list right now: the host's, or the native popup as it was last drawn. This moves without a
+    /// `show` (`host_show(true)` hands the list back to a popup that may fail to draw).
+    fn visible_to_user(&self) -> bool {
+        self.host_draws() || self.state.borrow().native_visible
+    }
+
     fn hide_native(&self) {
         if let Ok(mut native) = self.native.try_borrow_mut()
             && let Some(native) = native.as_mut()
@@ -449,6 +455,10 @@ impl<H: UiElementHost> CandidateUi for ElementUi<H> {
         self.shared.apply_pending();
         let native_shown = self.shared.sync_native(Some((view, anchor)));
         native_shown || self.shared.host_draws()
+    }
+
+    fn is_visible(&self) -> bool {
+        self.shared.visible_to_user()
     }
 
     fn hide(&mut self) {
@@ -790,6 +800,10 @@ mod tests {
 
         fn hide(&mut self) {
             self.0.borrow_mut().hide();
+        }
+
+        fn is_visible(&self) -> bool {
+            self.0.borrow().is_visible()
         }
     }
 
@@ -1471,6 +1485,35 @@ mod tests {
         assert!(s.press(vk::NEXT, None));
         assert!(s.press(0x31, Some('1')));
         assert!(s.balanced());
+    }
+
+    #[test]
+    fn a_list_the_host_hands_back_to_a_popup_that_cannot_draw_is_not_eaten_behind() {
+        // review finding 5, the path without a `show`: the host calls Show(FALSE) and later Show(TRUE) on the element while
+        // the popup can no longer be drawn; the controller must not go on eating keys for a list nobody sees
+        let mut s = Session::new(true);
+        s.type_text("fn");
+        assert!(s.native.0.borrow().visible);
+        s.native.0.borrow_mut().refuse = true;
+        s.shared.host_show(false);
+        assert!(
+            s.press(vk::NEXT, None),
+            "while the host draws, its list is the one on screen: keys work"
+        );
+        s.shared.host_show(true);
+        assert!(!s.native.0.borrow().visible, "the popup could not be drawn");
+        assert!(
+            !s.press(vk::NEXT, None),
+            "nobody sees a list any more: PageDown is the host's"
+        );
+        assert!(!s.press(0x31, Some('1')), "and so is the digit");
+        assert_eq!(s.ctl.host().doc, "fn1", "nothing was committed");
+        assert!(s.balanced(), "{:?}", s.wire.borrow().calls);
+        // the next typed character starts a new list, and the popup works again
+        s.native.0.borrow_mut().refuse = false;
+        s.type_text("fn");
+        assert!(s.native.0.borrow().visible);
+        assert!(s.press(vk::NEXT, None));
     }
 
     #[test]
