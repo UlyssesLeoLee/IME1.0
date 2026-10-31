@@ -6,6 +6,7 @@
 //! These belong with the other integration tests under 01_Source/tests/ (see docs/INSTALLER.md); they live here because
 //! the installer crate is self-contained and tests/rust is wired to pime-core only.
 
+use pime_setup::backend::Backend;
 use pime_setup::exec::{Inputs, execute};
 use pime_setup::payload::{self, Payload};
 use pime_setup::plan::{
@@ -13,8 +14,12 @@ use pime_setup::plan::{
     install_plan, uninstall_plan,
 };
 use pime_setup::real::{RealBackend, is_elevated};
+use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use windows::Win32::Foundation::{FreeLibrary, HANDLE, HMODULE};
+use windows::Win32::System::LibraryLoader::{LOAD_LIBRARY_FLAGS, LoadLibraryExW};
+use windows::core::PCWSTR;
 
 struct TempDir(PathBuf);
 
@@ -407,4 +412,123 @@ fn st_035_the_real_exe_installs_and_uninstalls_in_a_temp_folder_with_all_three_n
     );
     assert_eq!(code, 1);
     assert!(text.contains("no install manifest"), "{text}");
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review finding 1: a file that programs have mapped cannot be deleted, but it can be renamed, and only the renamed
+// file may be handed to Windows for deletion at the next restart.
+// ---------------------------------------------------------------------------------------------------------------------
+
+fn system32() -> PathBuf {
+    PathBuf::from(std::env::var_os("SystemRoot").expect("SystemRoot")).join("System32")
+}
+
+/// A DLL mapped into this process, like pime_tsf.dll in the programs that used the input method.
+struct LoadedDll(HMODULE);
+
+impl LoadedDll {
+    fn load(path: &Path) -> LoadedDll {
+        let name: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+        // SAFETY: `name` is NUL-terminated and outlives the call.
+        let module = unsafe { LoadLibraryExW(PCWSTR(name.as_ptr()), HANDLE::default(), LOAD_LIBRARY_FLAGS(0)) }
+            .expect("a copy of a system DLL in a temp folder can be loaded (endpoint protection may block this)");
+        LoadedDll(module)
+    }
+}
+
+impl Drop for LoadedDll {
+    fn drop(&mut self) {
+        // SAFETY: the handle came from LoadLibraryExW and is freed once.
+        let _ = unsafe { FreeLibrary(self.0) };
+    }
+}
+
+fn names_in(dir: &Path) -> Vec<String> {
+    let mut v: Vec<String> = std::fs::read_dir(dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    v.sort();
+    v
+}
+
+#[test]
+fn st_035_review_1_the_real_rename_never_replaces_an_existing_file() {
+    let tmp = TempDir::new("rename");
+    let (a, b) = (tmp.0.join("a.txt"), tmp.0.join("b.txt"));
+    std::fs::write(&a, "a").unwrap();
+    std::fs::write(&b, "b").unwrap();
+    let mut backend = RealBackend::without_reboot_schedule();
+    assert!(
+        backend.rename(&a, &b).is_err(),
+        "an existing destination is an error"
+    );
+    assert_eq!(std::fs::read(&a).unwrap(), b"a");
+    assert_eq!(std::fs::read(&b).unwrap(), b"b");
+    let c = tmp.0.join("c.txt");
+    backend.rename(&a, &c).unwrap();
+    assert!(!a.exists() && std::fs::read(&c).unwrap() == b"a");
+}
+
+#[test]
+fn st_035_review_1_a_mapped_dll_is_renamed_aside_and_its_original_path_is_never_scheduled() {
+    let tmp = TempDir::new("mapped");
+    let prefix = tmp.0.join("Programming IME");
+    std::fs::create_dir_all(&prefix).unwrap();
+    let dll = prefix.join("pime_tsf.dll");
+    std::fs::copy(system32().join("version.dll"), &dll).unwrap();
+    let mapped = LoadedDll::load(&dll);
+    let mut backend = RealBackend::without_reboot_schedule();
+    // control: this is what a mapped image does to a delete
+    assert!(
+        std::fs::remove_file(&dll).is_err(),
+        "a mapped DLL cannot be deleted"
+    );
+
+    let manifest = Manifest {
+        version: "0.0.0".into(),
+        prefix: prefix.clone(),
+        files: vec![dll.clone()],
+        directories: Vec::new(),
+        registry_keys: Vec::new(),
+        text_service_dlls: Vec::new(),
+        vscode_extension: None,
+    };
+    let plan = uninstall_plan(
+        &manifest,
+        &UninstallOptions {
+            vscode: VscodeMode::Skip,
+            system: SystemPaths::from_env(),
+        },
+    )
+    .unwrap();
+    let none = Payload {
+        entries: Vec::new(),
+    };
+    let out = execute(
+        &plan,
+        &Inputs {
+            payload: &none,
+            self_exe: &[],
+        },
+        &mut backend,
+        &mut |_| {},
+    )
+    .unwrap();
+
+    // the original name is free for a new install; the old image waits under a name nothing else will use
+    assert!(!dll.exists(), "{:?}", names_in(&prefix));
+    let aside: Vec<String> = names_in(&prefix);
+    assert_eq!(aside.len(), 1, "{aside:?}");
+    assert!(aside[0].starts_with("pime_tsf.dll.pime-del-"), "{aside:?}");
+    // this backend cannot schedule (it never touches HKLM): that is reported, naming the renamed file
+    assert!(
+        out.warnings
+            .iter()
+            .any(|w| w.contains(&aside[0]) && w.contains("could not be scheduled")),
+        "{:?}",
+        out.warnings
+    );
+    assert!(!out.restart_needed);
+    drop(mapped);
 }

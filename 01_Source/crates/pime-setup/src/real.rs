@@ -19,12 +19,14 @@ use windows::Win32::Foundation::{
 };
 use windows::Win32::Globalization::GetUserDefaultUILanguage;
 use windows::Win32::Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation};
-use windows::Win32::Storage::FileSystem::{MOVEFILE_DELAY_UNTIL_REBOOT, MoveFileExW};
+use windows::Win32::Storage::FileSystem::{
+    MOVE_FILE_FLAGS, MOVEFILE_DELAY_UNTIL_REBOOT, MoveFileExW,
+};
 use windows::Win32::System::Console::{FreeConsole, GetConsoleProcessList};
 use windows::Win32::System::Registry::{
-    HKEY, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, KEY_WOW64_64KEY, REG_DWORD,
+    HKEY, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, KEY_WOW64_64KEY, REG_DWORD, REG_MULTI_SZ,
     REG_OPTION_NON_VOLATILE, REG_SZ, REG_VALUE_TYPE, RegCloseKey, RegCreateKeyExW, RegDeleteTreeW,
-    RegEnumValueW, RegOpenKeyExW, RegQueryInfoKeyW, RegSetValueExW,
+    RegEnumValueW, RegOpenKeyExW, RegQueryInfoKeyW, RegQueryValueExW, RegSetValueExW,
 };
 use windows::Win32::System::Threading::{
     GetCurrentProcess, GetExitCodeProcess, INFINITE, OpenProcessToken, WaitForSingleObject,
@@ -121,6 +123,77 @@ fn open(
     }
 }
 
+/// Under HKLM. `MoveFileEx(DELAY_UNTIL_REBOOT)` appends to `PendingFileRenameOperations`; Windows 11 also has a
+/// `PendingFileRenameOperations2` (written by servicing), which is read as well. Neither is ever written to here.
+const SESSION_MANAGER: &str = r"SYSTEM\CurrentControlSet\Control\Session Manager";
+const PENDING_VALUES: [&str; 2] = [
+    "PendingFileRenameOperations",
+    "PendingFileRenameOperations2",
+];
+
+/// The UTF-16 units of a REG_MULTI_SZ value; a missing value (or one of another type) is empty.
+fn read_multi_sz(key: &Key, name: &str) -> io::Result<Vec<u16>> {
+    let wname = wide(OsStr::new(name));
+    let (mut kind, mut len) = (REG_VALUE_TYPE(0), 0u32);
+    // SAFETY: `key` is open; `wname` is NUL-terminated; the out pointers refer to live locals (no data buffer: size query).
+    let status = unsafe {
+        RegQueryValueExW(
+            key.0,
+            PCWSTR(wname.as_ptr()),
+            None,
+            Some(&mut kind),
+            None,
+            Some(&mut len),
+        )
+    };
+    match status {
+        WIN32_ERROR(0) => {}
+        s if s == ERROR_FILE_NOT_FOUND => return Ok(Vec::new()),
+        s => return Err(win_err(s)),
+    }
+    if kind != REG_MULTI_SZ {
+        return Ok(Vec::new());
+    }
+    let mut data = vec![0u8; len as usize + 2];
+    let mut size = data.len() as u32;
+    // SAFETY: the buffer is `size` bytes long and `size` is passed in; the other pointers are as above.
+    let status = unsafe {
+        RegQueryValueExW(
+            key.0,
+            PCWSTR(wname.as_ptr()),
+            None,
+            Some(&mut kind),
+            Some(data.as_mut_ptr()),
+            Some(&mut size),
+        )
+    };
+    if status != WIN32_ERROR(0) {
+        return Err(win_err(status));
+    }
+    data.truncate(size as usize);
+    Ok(data
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|c| u16::from_le_bytes(*c))
+        .collect())
+}
+
+/// Splits a REG_MULTI_SZ of pending renames (source, destination, source, destination ...; the destination of a delete
+/// is empty) into paths: the `\??\` prefix and the `!` (replace existing) marker are removed, empty strings dropped.
+pub fn parse_pending_renames(units: &[u16]) -> Vec<String> {
+    units
+        .split(|&u| u == 0)
+        .map(String::from_utf16_lossy)
+        .map(|s| {
+            s.trim_start_matches('!')
+                .trim_start_matches(r"\??\")
+                .to_string()
+        })
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
 fn utf16_value(bytes: &[u8]) -> String {
     let units: Vec<u16> = bytes
         .as_chunks::<2>()
@@ -158,7 +231,20 @@ impl Backend for RealBackend {
     }
 
     fn rename(&mut self, from: &Path, to: &Path) -> io::Result<()> {
-        retry_in_use(|| std::fs::rename(from, to))
+        // Not `std::fs::rename`: on Windows that replaces an existing destination, and an existing destination here is
+        // a leftover (an earlier file still waiting for the restart) that must not be overwritten.
+        let (from, to) = (wide(from.as_os_str()), wide(to.as_os_str()));
+        retry_in_use(|| {
+            // SAFETY: both names are NUL-terminated and outlive the call; flags 0 mean "rename, never replace".
+            unsafe {
+                MoveFileExW(
+                    PCWSTR(from.as_ptr()),
+                    PCWSTR(to.as_ptr()),
+                    MOVE_FILE_FLAGS(0),
+                )
+            }
+            .map_err(|e| io::Error::from_raw_os_error(e.code().0 & 0xFFFF))
+        })
     }
 
     fn remove_file(&mut self, path: &Path) -> io::Result<()> {
@@ -185,6 +271,20 @@ impl Backend for RealBackend {
             )
         }
         .map_err(|e| io::Error::from_raw_os_error(e.code().0 & 0xFFFF))
+    }
+
+    fn pending_file_renames(&self) -> io::Result<Vec<String>> {
+        if !self.allow_reboot_schedule {
+            return Ok(Vec::new()); // the temp-folder tests never read HKLM
+        }
+        let Some(k) = open(SESSION_MANAGER, KEY_READ)? else {
+            return Ok(Vec::new());
+        };
+        let mut entries = Vec::new();
+        for value in PENDING_VALUES {
+            entries.extend(parse_pending_renames(&read_multi_sz(&k, value)?));
+        }
+        Ok(entries)
     }
 
     fn reg_read_key(&self, key: &str) -> io::Result<Option<Vec<(String, RegValue)>>> {
@@ -530,6 +630,39 @@ mod tests {
             command_line(&["--prefix".into(), r"D:\日本語 フォルダ".into()]),
             r#"--prefix "D:\日本語 フォルダ""#
         );
+    }
+
+    fn multi_sz(items: &[&str]) -> Vec<u16> {
+        let mut v: Vec<u16> = items
+            .iter()
+            .flat_map(|s| s.encode_utf16().chain(Some(0)))
+            .collect();
+        v.push(0); // the empty string that ends a REG_MULTI_SZ
+        v
+    }
+
+    #[test]
+    fn st_035_review_1_the_pending_rename_list_is_read_as_source_and_destination_paths() {
+        // a delete is (source, empty destination); a replacing rename is (source, "!" + destination)
+        let raw = multi_sz(&[
+            r"\??\C:\Program Files\Programming IME\uninstall.exe",
+            "",
+            r"\??\C:\a\old.dll",
+            r"!\??\C:\a\new.dll",
+            r"\??\D:\日本語\x.dll",
+            "",
+        ]);
+        assert_eq!(
+            parse_pending_renames(&raw),
+            [
+                r"C:\Program Files\Programming IME\uninstall.exe",
+                r"C:\a\old.dll",
+                r"C:\a\new.dll",
+                r"D:\日本語\x.dll"
+            ]
+        );
+        assert!(parse_pending_renames(&[]).is_empty());
+        assert!(parse_pending_renames(&[0, 0]).is_empty());
     }
 
     #[test]
