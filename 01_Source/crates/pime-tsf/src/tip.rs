@@ -34,8 +34,14 @@ use windows::core::{GUID, IUnknown, IUnknownImpl, Interface, Result, implement};
 use crate::controller::{HostError, HostText, KeyInput, TipConfig, TipController};
 use crate::keymap::{Modifiers, vk};
 use crate::popup::PopupWindow;
+use crate::register::debug_line;
 use crate::ui::{Anchor, CandidateUi, CandidateView};
 use crate::uielement_com::candidate_ui;
+
+/// Debugger output (DebugView) for the rare host behaviours the VM test has to see: codes and words only, never text.
+fn trace(message: &str) {
+    debug_line(&format!("pime-tsf tip: {message}"));
+}
 
 /// Run a COM entry point so that a panic cannot unwind into the host: it answers `fallback` instead. Defined in `ui`
 /// (plain `std`) because the popup's window procedure needs the same containment and is also compiled on its own by
@@ -388,11 +394,23 @@ impl HostText for TsfHost {
         let Some((ctx, composition)) = self.stranded.take() else {
             return Ok(());
         };
-        request_async(&ctx, self.client_id, ASYNC_WRITE, move |ec| {
+        let requested = request_async(&ctx, self.client_id, ASYNC_WRITE, move |ec| {
             // SAFETY: `ec` belongs to the running session on the composition's context. A composition that is already
             // gone (the host ended it meanwhile) only makes this fail, which nobody is waiting for.
-            let _ = unsafe { composition.EndComposition(ec) };
-        })
+            match unsafe { composition.EndComposition(ec) } {
+                Ok(()) => trace("asynchronous end ran: composition ended"),
+                Err(e) => trace(&format!(
+                    "asynchronous end ran and failed code={:#010x}",
+                    e.code().0
+                )),
+            }
+        });
+        trace(if requested.is_ok() {
+            "end of the composition refused, asynchronous end requested"
+        } else {
+            "end of the composition refused, asynchronous end refused too (composition left to the host)"
+        });
+        requested
     }
 
     fn commit(&mut self, typed: &str, text: &str) -> std::result::Result<(), HostError> {
