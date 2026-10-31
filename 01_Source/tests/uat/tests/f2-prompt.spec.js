@@ -8,7 +8,8 @@
 //
 // The clipboard is the REAL operating-system clipboard (Windows PowerShell Get-Clipboard / Set-Clipboard): VS Code writes it through Electron, so
 // reading it back from the test process is the honest check. The spec saves the clipboard text at the start and restores it at the end;
-// it needs an interactive Windows desktop session (the same one that runs VS Code).
+// it needs an interactive Windows desktop session (the same one that runs VS Code). PowerShell is started with windowsHide: a console window that
+// took the focus would also dismiss the notice (it closes when VS Code loses focus).
 const {test, expect} = require('@playwright/test');
 const fs = require('node:fs');
 const {spawnSync} = require('node:child_process');
@@ -25,11 +26,11 @@ let app, mock, behaviour, savedClipboard = '';
 // ---------------------------------------------------------------- clipboard (OS level, Windows PowerShell 5.1)
 const PS = ['-NoProfile', '-NonInteractive', '-STA'];
 function readClipboard() {
-  const r = spawnSync('powershell.exe', [...PS, '-Command', '[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false; $t = Get-Clipboard -Raw; if ($null -ne $t) { [Console]::Out.Write($t) }'], {encoding: 'buffer', timeout: 20000});
+  const r = spawnSync('powershell.exe', [...PS, '-Command', '[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false; $t = Get-Clipboard -Raw; if ($null -ne $t) { [Console]::Out.Write($t) }'], {encoding: 'buffer', timeout: 20000, windowsHide: true});
   return r.stdout.toString('utf8').split(String.fromCharCode(0xfeff)).join('').replace(/\r\n/g, '\n');
 }
 function writeClipboard(text) {
-  spawnSync('powershell.exe', [...PS, '-Command', 'Set-Clipboard -Value $env:PIME_UAT_CLIP'], {env: {...process.env, PIME_UAT_CLIP: text}, timeout: 20000});
+  spawnSync('powershell.exe', [...PS, '-Command', 'Set-Clipboard -Value $env:PIME_UAT_CLIP'], {env: {...process.env, PIME_UAT_CLIP: text}, timeout: 20000, windowsHide: true});
 }
 async function waitClipboard(pred, timeout = 20000) {
   const end = Date.now() + timeout; let last = '';
@@ -73,9 +74,11 @@ test.beforeEach(async () => { behaviour = () => ({json: NO_CHANGE}); mock.reset(
 
 async function selectAllIn(file) { await app.openFile(file); await app.page.keyboard.press('Control+A'); }
 // the first F2 of a scope asks for the consent; later ones find the workspace grant. Returns the dialog (or null when none was asked).
+// Only a CONSENT dialog is answered here; any other dialog (the sensitive-data question) is left open for the caller's own waitDialog().
 async function consentIfAsked(re) {
   let d = null;
-  try { d = await app.waitDialog(4000); } catch { return null; }
+  try { d = await app.waitDialog(3000); } catch { return null; }
+  if (!/Send the COMPLETE|Send a nearby/.test(d.message)) return null;
   if (re) expect(d.message).toMatch(re);
   await app.dialogClick(WORKSPACE_BUTTON);
   return d;
@@ -142,13 +145,12 @@ test('UAT-38 [PRM-42] nothing to optimise: a bottom-right notice with the right 
   expect(box.x).toBeGreaterThan(win.w * 0.5); expect(box.x + box.width).toBeGreaterThan(win.w - 90); expect(box.x + box.width).toBeLessThanOrEqual(win.w + 1);
   expect(box.y).toBeGreaterThan(win.h * 0.45); expect(box.y + box.height).toBeLessThanOrEqual(win.h + 1);
   await app.screenshot('f2-no-optimisation-toast');
-  expect(readClipboard()).toBe(SENTINEL);                                                            // never overwritten by "nothing to do"
-  expect(f2Requests().length).toBe(1);
+  expect(f2Requests().length).toBe(1);                                                               // (the clipboard is read after the toast is gone: no process is started while it is on screen)
   await sleep(1300);                                                                                 // past the 600 ms grace period and VS Code's minimum display time
   await expect(t).toBeVisible();
   await app.page.keyboard.type('x');                                                                 // the next input
   await expect(t).toBeHidden({timeout: 8000});
-  expect(readClipboard()).toBe(SENTINEL);
+  expect(readClipboard()).toBe(SENTINEL);                                                            // never overwritten by "nothing to do"
   expect((await app.notifications()).some(n => /No optimisation needed/.test(n))).toBe(false);
 });
 
