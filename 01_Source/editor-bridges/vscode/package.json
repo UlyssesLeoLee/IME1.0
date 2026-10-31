@@ -32,7 +32,8 @@
       {"command": "programmingIme.reloadRules", "title": "%cmd.reloadRules%"},
       {"command": "programmingIme.openRulesFolder", "title": "%cmd.openRulesFolder%"},
       {"command": "programmingIme.f1Edit", "title": "%cmd.f1Edit%"},
-      {"command": "programmingIme.f2Prompt", "title": "%cmd.f2Prompt%"}
+      {"command": "programmingIme.f2Prompt", "title": "%cmd.f2Prompt%"},
+      {"command": "programmingIme.secretFiles", "title": "%cmd.secretFiles%"}
     ],
     "keybindings": [
       {"command": "programmingIme.f1Edit", "key": "f1", "when": "editorTextFocus && programmingIme.f1Key.f1"},
@@ -56,6 +57,7 @@
         "programmingIme.f1AnnotateOnOpen": {"type": "boolean", "default": true, "description": "With programmingIme.f1Mode=annotate: start the annotation as soon as F1 opens (one request to your AI provider, after you have authorised the transfer). Off: F1 only shows the scope and waits for Generate. Needs AI on and a configured provider; the Comments / Cypher graph choice comes from autoComment / graphComment."},
         "programmingIme.f2Binding": {"type": "string", "enum": ["f2", "shift+f2", "none"], "default": "f2", "description": "Key that copies a 5W1H prompt for the selected text or code when Programming IME is enabled. F2 normally renames a symbol: this binding only applies while the editor has a non-empty selection, so F2 without a selection still renames. Use shift+f2 or none to keep F2 for Rename in every case."},
         "programmingIme.f2ExcludedLanguages": {"type": "array", "items": {"type": "string"}, "default": [], "description": "Language ids in which the F2 binding is never taken over (F2 keeps renaming, also with a selection)."},
+        "programmingIme.secretFilePatterns": {"type": "array", "items": {"type": "string"}, "default": [], "scope": "application", "description": "%cfg.secretFilePatterns%"},
         "programmingIme.engine": {"type": "string", "enum": ["js", "rust"], "default": "js", "markdownDescription": "Who runs the editor logic. `js`: the built-in JavaScript engine (a configured core only speeds up local candidates). `rust`: the Rust core in `programmingIme.coreExecutable` is REQUIRED; if it is missing or stops, the IME features are turned off and a message says why (there is no silent fallback; typing in VS Code is never affected). Reload the window after changing it."},
         "programmingIme.coreExecutable": {"type": "string", "default": "", "description": "Absolute path of a trusted, locally built pime-core executable (protocol 0.2 or 0.3; the Rust engine needs 0.3). Empty uses the built-in JavaScript engine."},
         "programmingIme.aiEnabled": {"type": "boolean", "default": false, "description": "Master switch. While off, no AI request is ever sent, whatever else is configured."},

@@ -13,6 +13,7 @@ const {fail, codeOf} = require('./core/errors');
 const {sha256} = require('./core/context');
 const {statusModel} = require('./core/uimodel');
 const {annotateInsertion} = require('./annotate');
+const fileGate = require('./filegate').get(); // the one secret-file gate: no document is read before it says yes (docs/SECRET_FILES.md)
 
 const status = {lang: null, ai: null};
 let lastScheduled = null;
@@ -22,14 +23,17 @@ let engineNotified = false;
 function updateStatus() {
   if (!status.lang) return;
   const editor = vscode.window.activeTextEditor;
-  const info = editor ? lang.infoFor(editor.document) : null;
+  const info = editor ? lang.infoFor(editor.document) : null; // a secret-class file that is not allowed is detected from its name only
   // the texts come from one pure function (core/uimodel.js); the redraw is synchronous, so it stays on the JS side for both engines
   const m = statusModel(rt.locale, {
     coreDown: cfg().get('enabled') === true && !rt.engine.available(), // Rust engine without a core: IME features are off
     reason: rt.engine.reason, enabled: enabled(), info, sessionLanguage: rt.session.language, paused: rt.session.paused,
     aiEnabled: aiEnabled(), scenario: safeScenario('realtime'), budget: rt.budget.snapshot()
   });
-  status.lang.text = m.lang.text; status.lang.tooltip = m.lang.tooltip;
+  const lock = editor ? fileGate.lockInfo(editor.document) : null; // the active file is secret-class and not allowed: say so, and click = allow / manage
+  if (lock) {
+    status.lang.text = `$(lock) PIME ${L('sec.status.text')}`; status.lang.tooltip = L('sec.status.tooltip', lock.label); status.lang.command = 'programmingIme.secretFiles';
+  } else { status.lang.text = m.lang.text; status.lang.tooltip = m.lang.tooltip; status.lang.command = 'programmingIme.chooseLanguage'; }
   status.ai.text = m.ai.text; status.ai.tooltip = m.ai.tooltip;
   status.lang.show(); status.ai.show();
 }
@@ -129,6 +133,9 @@ function cachedAi(doc) {
 const inlineProvider = {
   async provideInlineCompletionItems(doc, position, _ictx, token) {
     if (!enabled() || rt.session.paused || cfg().get('suggestMode') !== 'auto') return [];
+    // typing path: never a modal (it would steal keystrokes). A secret-class file the user has not allowed yields nothing and nothing of it is read
+    // (one non-modal notification per file and session offers "allow this file for this session" / "keep off")
+    if (!await fileGate.ensure(doc, {interactive: false, purpose: 'candidates'})) return [];
     const info = lang.infoFor(doc);
     if (info.language === 'unknown') return [];
     const {prefix, range, candidates} = await localCandidates(doc, position, info);
@@ -166,7 +173,9 @@ async function showCandidates() {
   if (!editor) return;
   if (!enabled()) { vscode.window.showWarningMessage(L('f1.disabledHere')); return; }
   if (rt.session.paused) { vscode.window.showInformationMessage(L('cand.paused')); return; }
-  const doc = editor.document, info = lang.infoFor(doc);
+  const doc = editor.document;
+  if (!await fileGate.ensure(doc, {interactive: false, purpose: 'candidates'})) { vscode.window.showInformationMessage(L('sec.refused.candidates')); return; }
+  const info = lang.infoFor(doc);
   const version0 = doc.version, selection0 = editor.selection;
   const {prefix, range, candidates} = await localCandidates(doc, editor.selection.active, info);
   const all = [...candidates, ...cachedAi(doc)];
@@ -202,8 +211,9 @@ async function chooseLanguage() {
 }
 async function menu() {
   const model = await rt.engine.menuModel(rt.locale, {paused: rt.session.paused, aiEnabled: aiEnabled()});
-  const actions = {language: chooseLanguage, pause: async () => togglePause(), ai: toggleAI, usage: showUsage, permissions: managePermissions, diagnostics: showDiagnostics, f1: () => f1.open()};
-  const pick = await vscode.window.showQuickPick(model.items.map(i => ({label: i.label, id: i.id})), {title: model.title});
+  const actions = {language: chooseLanguage, pause: async () => togglePause(), ai: toggleAI, usage: showUsage, permissions: managePermissions, diagnostics: showDiagnostics, f1: () => f1.open(), secretFiles: () => fileGate.manage()};
+  // the secret-file entry is added here, on the JS side: the engine's menu model (core/uimodel.js, Rust mirror) is shared and stays as it is
+  const pick = await vscode.window.showQuickPick([...model.items.map(i => ({label: i.label, id: i.id})), {label: L('sec.menu'), id: 'secretFiles'}], {title: model.title});
   if (pick) await actions[pick.id]();
 }
 function togglePause() {
@@ -367,6 +377,8 @@ async function activate(ctx) {
   f1.registerPreviewProvider(ctx);
   f2.init(ctx);
   rt.onEngineChange = onEngineChange;
+  // an allow / keep-off / forget decision changes what may be read: the language of the active file and the status bar follow, the suggestions are asked again
+  fileGate.onChange(() => { lang.invalidate(); updateStatus(); Promise.resolve(vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')).then(undefined, () => {}); });
   await startCore();
   await reloadRules().catch(() => {});
   await updateContextKeys();
@@ -390,6 +402,7 @@ async function activate(ctx) {
   reg('programmingIme.openRulesFolder', async () => { const dir = path.join(rt.ctx.globalStorageUri.fsPath, 'rules'); fs.mkdirSync(dir, {recursive: true}); await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(dir)); });
   reg('programmingIme.f1Edit', () => f1.open());
   reg('programmingIme.f2Prompt', () => f2.run());
+  reg('programmingIme.secretFiles', () => fileGate.manage());
   ctx.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider([{scheme: 'file'}, {scheme: 'untitled'}], inlineProvider));
   ctx.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => { rt.session.noteDocumentChange(); lastScheduled = null; updateStatus(); updateContextKeys(); }),
