@@ -2,10 +2,11 @@
 // Versioned settings, v0.1 -> v1 migration, atomic persistence and user rule loading (FR-045/046, NFR-401,
 // DD §11). Settings never contain keys; keys live in SecretStorage and are referenced by provider id only.
 const fs = require('node:fs');
+const path = require('node:path');
 const {fail} = require('./errors');
 const secrets = require('./secrets');
 const ai = require('./ai');
-const {loadRegistry, LIMITS} = require('./languages');
+const {loadRegistry, LIMITS, DEFAULT_PLUGIN_LANGUAGES} = require('./languages');
 
 const SCHEMA_VERSION = 1;
 const SCENARIOS = Object.freeze(['realtime', 'f1Full', 'f1Insert']);
@@ -140,7 +141,41 @@ function buildRegistryWithUserRules(files, makeBase = () => loadRegistry()) {
   }
   return {registry: reg, accepted, rejected};
 }
+
+// Plugin packs (a whole new language) and user rule packs together: the plugin packs are validated like the
+// shipped ones, the enabled set decides which of them are active, and a bad pack is reported and skipped.
+// The caller replaces the active registry only with the returned one, so a failure never degrades the old rules.
+function buildRegistryWithPlugins(pluginFiles, {enabled = DEFAULT_PLUGIN_LANGUAGES, ruleFiles = [], makeBase = () => loadRegistry()} = {}) {
+  const reg = makeBase(), accepted = [], rejected = [];
+  for (const f of pluginFiles) {
+    try {
+      if (Buffer.byteLength(f.text) > LIMITS.packBytes) throw fail('RULEPACK_INVALID', 'pack exceeds size limit');
+      let pack; try { pack = JSON.parse(f.text); } catch { throw fail('RULEPACK_INVALID', 'not valid JSON'); }
+      reg.addPlugin(pack, Buffer.byteLength(f.text));
+      accepted.push(f.name);
+    } catch (e) { rejected.push({name: f.name, code: e.code || 'RULEPACK_INVALID', message: e.message}); }
+  }
+  reg.setEnabledPlugins(enabled); // the user's set decides which plugin profiles are active
+  const rules = buildRegistryWithUserRules(ruleFiles, () => reg);
+  return {registry: reg, accepted, rejected, rules: {accepted: rules.accepted, rejected: rules.rejected}};
+}
+// Import plugin packs: every file is validated first and only an accepted pack is copied into the plugin folder.
+// A rejected pack is reported and not copied; the accepted ones are written exactly as they were.
+function importPluginPacks(files, destDir, validate) {
+  const accepted = [], rejected = [];
+  fs.mkdirSync(destDir, {recursive: true});
+  for (const f of files) {
+    try {
+      let pack; try { pack = JSON.parse(f.text); } catch { throw fail('RULEPACK_INVALID', 'not valid JSON'); }
+      validate(pack, Buffer.byteLength(f.text));
+      fs.writeFileSync(path.join(destDir, f.name), f.text, 'utf8');
+      accepted.push(f.name);
+    } catch (e) { rejected.push({name: f.name, code: e.code || 'RULEPACK_INVALID', message: e.message}); }
+  }
+  return {accepted, rejected};
+}
 module.exports = {
   SCHEMA_VERSION, SCENARIOS, DEFAULT_PROVIDERS, DEFAULT_SCENARIOS, DEFAULT_BUDGET, effective, resolveScenario, validateSettings,
-  migrateV0, migrate, migrateStore, writeFileAtomic, readJsonRecovering, exportSettings, importSettings, buildRegistryWithUserRules
+  migrateV0, migrate, migrateStore, writeFileAtomic, readJsonRecovering, exportSettings, importSettings, buildRegistryWithUserRules,
+  buildRegistryWithPlugins, importPluginPacks
 };

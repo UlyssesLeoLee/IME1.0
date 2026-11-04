@@ -37,6 +37,8 @@ pub fn entries(version: &str) -> Vec<(&'static str, Vec<u8>)> {
             format!(r#"{{"version":"{version}","extension_id":"pub.name"}}"#).into_bytes(),
         ),
         (payload::VSIX, format!("vsix-{version}").into_bytes()),
+        (payload::TRAY, format!("tray-{version}").into_bytes()),
+        (payload::WORKER, format!("worker-{version}").into_bytes()),
     ]
 }
 

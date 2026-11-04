@@ -49,6 +49,10 @@ function stage(stagingDir, log) {
   const packs = path.join(ROOT, 'language-packs');
   if (!fs.existsSync(path.join(packs, 'rust.json'))) throw new Error(`${packs} has no rule packs`);
   copyTree(packs, path.join(stagingDir, 'language-packs'));
+  // the shipped plugin packs (a whole new language each) sit next to the built-in ones
+  const plugins = path.join(ROOT, 'language-plugins');
+  if (fs.existsSync(plugins)) copyTree(plugins, path.join(stagingDir, 'language-plugins'));
+  else log('note: there is no language-plugins/ folder yet: the extension ships without plugin languages');
 }
 
 // ---------------------------------------------------------------- running vsce
@@ -130,12 +134,14 @@ function verifyVsix(file, {expectedVersion, log = console.log} = {}) {
   const need = ['[Content_Types].xml', 'extension.vsixmanifest', 'extension/package.json', 'extension/src/extension.js'];
   const nls = fs.readdirSync(EXT).filter(n => /^package\.nls(\..+)?\.json$/.test(n)).map(n => `extension/${n}`);
   const packs = fs.readdirSync(path.join(ROOT, 'language-packs')).filter(n => n.endsWith('.json')).map(n => `extension/language-packs/${n}`);
-  const missing = [...need, ...nls, ...packs].filter(n => !set.has(n));
+  const pluginDir = path.join(ROOT, 'language-plugins');
+  const pluginPacks = fs.existsSync(pluginDir) ? fs.readdirSync(pluginDir).filter(n => n.endsWith('.json')).map(n => `extension/language-plugins/${n}`) : [];
+  const missing = [...need, ...nls, ...packs, ...pluginPacks].filter(n => !set.has(n));
   if (!names.some(n => /^extension\/LICENSE(\.txt|\.md)?$/.test(n))) missing.push('extension/LICENSE');
   const srcFiles = []; (function walk(d, rel) { for (const e of fs.readdirSync(d, {withFileTypes: true})) e.isDirectory() ? walk(path.join(d, e.name), `${rel}/${e.name}`) : srcFiles.push(`${rel}/${e.name}`); })(path.join(EXT, 'src'), 'extension/src');
   missing.push(...srcFiles.filter(n => !set.has(n)));
   if (fs.existsSync(path.join(EXT, 'media')) && !names.some(n => n.startsWith('extension/media/'))) missing.push('extension/media/*');
-  missing.length ? fail(`missing from the package: ${missing.join(', ')}`) : ok(`contains src/ (${srcFiles.length} files), package.nls*.json (${nls.length}), LICENSE, language-packs/ (${packs.length})`);
+  missing.length ? fail(`missing from the package: ${missing.join(', ')}`) : ok(`contains src/ (${srcFiles.length} files), package.nls*.json (${nls.length}), LICENSE, language-packs/ (${packs.length}), language-plugins/ (${pluginPacks.length})`);
   if (!names.some(n => n.startsWith('extension/media/'))) log('note: no media/ in the package (the extension folder has none yet)');
   const forbidden = names.filter(n => /^extension\/(scripts|\.vscode|node_modules|tests?)\//.test(n) || /\.map$/.test(n));
   forbidden.length ? fail(`must not be packaged: ${forbidden.join(', ')}`) : ok('no scripts/, .vscode/, node_modules/, tests or source maps');
@@ -179,11 +185,14 @@ function verifyVsix(file, {expectedVersion, log = console.log} = {}) {
     refProblems.length ? fail(refProblems.join('; ')) : ok('every relative require() and __dirname path resolves inside the package');
     for (const note of notes) log(`note: ${note}`);
 
-    // behaviour: the rule packs load from the package itself (the environment override removed, run from the extracted copy)
-    const loader = `const {loadRegistry} = require(${JSON.stringify(path.join(tmp, 'extension', 'src', 'core', 'languages.js'))}); const r = loadRegistry(); console.log(r.packs.size);`;
-    const env = {...process.env}; delete env.PIME_LANGUAGE_PACKS;
+    // behaviour: the rule packs and the plugin packs load from the package itself (the environment override removed, run from the extracted copy)
+    const loader = `const {loadRegistry} = require(${JSON.stringify(path.join(tmp, 'extension', 'src', 'core', 'languages.js'))}); const r = loadRegistry(); console.log([r.packs.size, r.plugins.size].join(':'));`;
+    const env = {...process.env}; delete env.PIME_LANGUAGE_PACKS; delete env.PIME_LANGUAGE_PLUGINS;
     const withPacks = spawnSync(process.execPath, ['-e', loader], {encoding: 'utf8', env});
-    withPacks.status === 0 && Number(withPacks.stdout.trim()) === packs.length ? ok(`loadRegistry() from the extracted package finds ${packs.length} rule packs`) : fail(`loadRegistry() from the extracted package failed: ${(withPacks.stderr || withPacks.stdout).trim().split('\n')[0]}`);
+    const counts = (withPacks.stdout || '').trim().split(':').map(Number);
+    withPacks.status === 0 && counts[0] === packs.length && counts[1] === pluginPacks.length
+      ? ok(`loadRegistry() from the extracted package finds ${packs.length} rule packs and ${pluginPacks.length} plugin packs`)
+      : fail(`loadRegistry() from the extracted package failed: ${(withPacks.stderr || withPacks.stdout).trim().split('\n')[0]}`);
     fs.renameSync(path.join(tmp, 'extension', 'language-packs'), path.join(tmp, 'extension', 'language-packs.off'));
     const withoutPacks = spawnSync(process.execPath, ['-e', loader], {encoding: 'utf8', env});
     withoutPacks.status !== 0 ? ok('negative control: without the packaged language-packs/ the same call fails (it does not find the repository copy)') : fail('negative control failed: the check passed without the packaged rule packs, so it proves nothing');

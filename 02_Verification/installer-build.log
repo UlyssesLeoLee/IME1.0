@@ -1,0 +1,145 @@
+﻿IME1.0 installer 0.2.0
+  cargo target dir: D:\cargo-target-ime
+
+== pime-core: cargo build --release --target x86_64-pc-windows-gnu -p pime-core --bin pime-core  (.)
+Compiling pime-core v0.2.0 (E:\IME1.0\01_Source\crates\pime-core)
+    Finished `release` profile [optimized] target(s) in 42.17s
+
+== pime-tsf (text service DLL): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tsf)
+   Compiling pime-tsf v0.2.0 (E:\IME1.0\01_Source\crates\pime-tsf)
+    Finished `release` profile [optimized] target(s) in 38.76s
+
+== pime-tray (resident tray): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tray)
+   Compiling pime-tray v0.1.0 (E:\IME1.0\01_Source\crates\pime-tray)
+    Finished `release` profile [optimized] target(s) in 1m 00s
+
+== pime-ai-worker (speech service client): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-ai-worker)
+   Compiling pime-ai-worker v0.2.0 (E:\IME1.0\01_Source\crates\pime-ai-worker)
+    Finished `release` profile [optimized] target(s) in 30.42s
+
+== VS Code extension
+  note: the extension has no media/ folder yet (P6 produces it); the .vsix is built without one
+  vsce 4.0.0: npx --yes @vscode/vsce@4.0.0 package --no-dependencies --allow-missing-repository --out E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.2.0.vsix
+    | INFO  Files included in the VSIX:
+  | programming-ime-vscode-bridge-0.2.0.vsix
+  | ├─ [Content_Types].xml 
+  | ├─ extension.vsixmanifest 
+  | └─ extension/
+  |    ├─ LICENSE.txt [1.08 KB]
+  |    ├─ package.json [11.33 KB]
+  |    ├─ package.nls.ja.json [2.86 KB]
+  |    ├─ package.nls.json [2.25 KB]
+  |    ├─ package.nls.zh-cn.json [2.27 KB]
+  |    ├─ language-packs/
+  |    │  ├─ assembly.json [3.54 KB]
+  |    │  ├─ c.json [3.19 KB]
+  |    │  ├─ machine-code.json [0.49 KB]
+  |    │  ├─ powershell.json [3.2 KB]
+  |    │  ├─ python.json [3.21 KB]
+  |    │  ├─ rust.json [4.96 KB]
+  |    │  └─ typescript.json [3.59 KB]
+  |    ├─ language-plugins/
+  |    │  ├─ cypher.json [7.42 KB]
+  |    │  ├─ plsql.json [8.15 KB]
+  |    │  └─ tsql.json [8.87 KB]
+  |    └─ src/
+  |       ├─ annotate.js [8.78 KB]
+  |       ├─ coreprocess.js [2.92 KB]
+  |       ├─ engine.js [33.17 KB]
+  |       ├─ extension.js [33.27 KB]
+  |       ├─ f1.js [45.96 KB]
+  |       ├─ f2.js [18.69 KB]
+  |       ├─ filegate.js [12.89 KB]
+  |       ├─ languageState.js [3.12 KB]
+  |       ├─ runtime.js [3.83 KB]
+  |       ├─ core/ (21 files) [343.19 KB]
+  |       └─ ui/ (2 files) [26.48 KB]
+  | 
+  | => Run vsce ls --tree to see all included files.
+  | 
+  |  DONE  Packaged: E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.2.0.vsix (49 files, 206.19 KB)
+  programming-ime-vscode-bridge-0.2.0.vsix: 211136 bytes, 49 files
+         [Content_Types].xml
+         extension.vsixmanifest
+         extension/LICENSE.txt
+         extension/language-packs/assembly.json
+         extension/language-packs/c.json
+         extension/language-packs/machine-code.json
+         extension/language-packs/powershell.json
+         extension/language-packs/python.json
+         extension/language-packs/rust.json
+         extension/language-packs/typescript.json
+         extension/language-plugins/cypher.json
+         extension/language-plugins/plsql.json
+         extension/language-plugins/tsql.json
+         extension/package.json
+         extension/package.nls.ja.json
+         extension/package.nls.json
+         extension/package.nls.zh-cn.json
+         extension/src/annotate.js
+         extension/src/core/ai.js
+         extension/src/core/annotate.js
+         extension/src/core/context.js
+         extension/src/core/diagnostics.js
+         extension/src/core/diff.js
+         extension/src/core/errors.js
+         extension/src/core/grants.js
+         extension/src/core/i18n.js
+         extension/src/core/languages.js
+         extension/src/core/promptcraft.js
+         extension/src/core/scheduler.js
+         extension/src/core/scope.js
+         extension/src/core/secretfile.js
+         extension/src/core/secrets.js
+         extension/src/core/settings.js
+         extension/src/core/symbols.js
+         extension/src/core/textrange.js
+         extension/src/core/transaction.js
+         extension/src/core/uimodel.js
+         extension/src/core/validators.js
+         extension/src/core/x86.js
+         extension/src/coreprocess.js
+         extension/src/engine.js
+         extension/src/extension.js
+         extension/src/f1.js
+         extension/src/f2.js
+         extension/src/filegate.js
+         extension/src/languageState.js
+         extension/src/runtime.js
+         extension/src/ui/f1panel.js
+         extension/src/ui/notice.js
+  ok   every entry stays inside the archive
+  ok   contains src/ (32 files), package.nls*.json (3), LICENSE, language-packs/ (7), language-plugins/ (3)
+  note: no media/ in the package (the extension folder has none yet)
+  ok   no scripts/, .vscode/, node_modules/, tests or source maps
+  ok   package.json version 0.2.0
+  ok   extension.vsixmanifest: pime-local-prototype.programming-ime-vscode-bridge 0.2.0
+  ok   32 JavaScript files pass node --check
+  ok   every relative require() and __dirname path resolves inside the package
+  note: extension/src/core/languages.js: ../../../../language-packs leaves the extension (development-layout fallback of findPackDir() (the in-package language-packs/ is tried first))
+  ok   loadRegistry() from the extracted package finds 7 rule packs and 3 plugin packs
+  ok   negative control: without the packaged language-packs/ the same call fails (it does not find the repository copy)
+
+== pime-setup (installer stub): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-setup)
+   Compiling pime-setup v0.2.0 (E:\IME1.0\01_Source\crates\pime-setup)
+    Finished `release` profile [optimized] target(s) in 38.16s
+
+== checks on the result
+ok   machine is x64 (0x8664), found x64 (AMD64)
+ok   an EXE for the console subsystem
+ok   imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, gdi32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, ole32.dll, oleaut32.dll, shell32.dll, user32.dll)
+ok   payload footer and hashes verify (8 entries, read by an independent reader)
+ok   the payload program pime_tsf.dll is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, api-ms-win-core-winrt-error-l1-1-0.dll, bcryptprimitives.dll, gdi32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, ole32.dll, oleaut32.dll, propsys.dll, user32.dll, userenv.dll, ws2_32.dll)
+ok   the payload program pime-core.exe is x64 and imports only Windows system DLLs (api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, kernel32.dll, msvcrt.dll, ntdll.dll, userenv.dll, ws2_32.dll)
+ok   the payload program pime-tray.exe is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, gdi32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, ole32.dll, oleaut32.dll, propsys.dll, shell32.dll, user32.dll, winmm.dll)
+ok   the payload program pime-ai-worker.exe is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, crypt32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, winhttp.dll)
+ok   --dry-run finds and verifies the payload (exit 0)
+ok   --dry-run created nothing
+
+build-installer: OK
+  installer   E:\IME1.0\01_Source\dist\ProgrammingIME-0.2.0-win-x64-setup.exe
+              7714135 bytes   sha256 59a2f8fe3178b5827310366800b970545cd7795eb59ff7cb64e42059c0b57e48   (ProgrammingIME-0.2.0-win-x64-setup.exe.sha256 written)
+  stub        787968 bytes (pime-setup.exe, x64 console, unsigned)
+  payload     pime_tsf.dll 2377216, pime-core.exe 2986351, LICENSE 1085, programming-ime.vsix 211136, pime.ico 66724, pime-tray.exe 882176, pime-ai-worker.exe 400896, meta.json 87
+  extension   programming-ime-vscode-bridge-0.2.0.vsix 211136 bytes, 49 files, id pime-local-prototype.programming-ime-vscode-bridge
+  NOT signed (SmartScreen will warn). NOT run: the text service DLL is unverified in a VM, so this is a pre-release.

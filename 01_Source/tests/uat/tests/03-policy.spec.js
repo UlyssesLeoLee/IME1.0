@@ -17,7 +17,7 @@ files['rt.rs'] = 'fn base() {}\n';
 let appA = null;
 const settingsPath = a => `${a.userDir}\\User\\settings.json`;
 const patchSettings = (a, patch) => { const s = JSON.parse(fs.readFileSync(settingsPath(a), 'utf8')); Object.assign(s, patch); fs.writeFileSync(settingsPath(a), JSON.stringify(s, null, 2)); };
-async function openF1(app, file, intent = 'x') { await app.closeAll(); await app.openFile(file); await app.page.keyboard.press('F1'); await app.waitPanel(); await app.panelFrame.locator('#intent').fill(intent); }
+async function openF1(app, file, intent = 'x') { await app.closeAll(); await app.openFile(file); await app.page.keyboard.press('Control+F1'); await app.waitPanel(); await app.panelFrame.locator('#intent').fill(intent); }
 async function generate(app, choice = 'Authorize this request') { await app.panelFrame.locator('#generate').click(); if (choice) { await app.waitDialog(); await app.dialogClick(choice); } }
 
 test.afterEach(async () => { if (appA) { await appA.close(); appA = null; } });
@@ -98,7 +98,7 @@ test('UAT-32 [ST-013/FR-015/FR-039] untrusted workspace: AI paths are unavailabl
       'programmingIme.providers': {mockA: {api: 'openai-responses', endpoint: M.endpoint('openai-responses')}},
       'programmingIme.scenarios': {f1Full: {provider: 'mockA', model: 'm'}, f1Insert: {provider: 'mockA', model: 'm'}, realtime: {provider: 'mockA', model: 'm'}}}});
     await appA.openFile('p5.rs');
-    await appA.page.keyboard.press('F1'); await appA.waitPanel();
+    await appA.page.keyboard.press('Control+F1'); await appA.waitPanel();
     await expect(appA.panelFrame.locator('#panel-full .status')).toHaveAttribute('data-status', 'unavailable');
     expect(await appA.panelText('#panel-full .status')).toMatch(/not trusted/i);
     expect(await appA.panelText('#generate')).toBeTruthy();
@@ -119,7 +119,7 @@ test('UAT-33 [ST-032/FR-044/UT-056] UI language is independent: zh-CN and ja-JP 
   const title = await appA.quickTitle(); expect(title).toMatch(/本地候选/);
   await appA.pickRow('main function');
   const codeZh = await appA.waitEditorText('fn main() {');
-  await appA.page.keyboard.press('F1'); await appA.waitPanel();
+  await appA.page.keyboard.press('Control+F1'); await appA.waitPanel();
   expect(await appA.panelText('#tab-full')).toMatch(/整文件修改/); expect(await appA.panelText('#tab-insert')).toMatch(/光标处插入/);
   await appA.screenshot('ui-zh-CN');
   patchSettings(appA, {'programmingIme.uiLocale': 'ja-JP'});
@@ -131,7 +131,7 @@ test('UAT-33 [ST-032/FR-044/UT-056] UI language is independent: zh-CN and ja-JP 
   const codeJa = await appA.waitEditorText('fn main() {');
   expect(codeJa.replace('p8', '')).toContain('fn main() {'); expect(codeZh).toContain('fn main() {');        // same Rust code in every UI language
   expect(await appA.statusText()).toMatch(/PIME rust/);
-  await appA.page.keyboard.press('F1'); await appA.waitPanel();
+  await appA.page.keyboard.press('Control+F1'); await appA.waitPanel();
   expect(await appA.panelText('#tab-full')).toMatch(/ファイル全体/);
   await appA.screenshot('ui-ja-JP');
 });

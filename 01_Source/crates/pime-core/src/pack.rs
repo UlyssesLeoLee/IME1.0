@@ -9,6 +9,7 @@ use crate::util::utf16_len;
 use crate::validators::Dialect;
 use std::collections::{HashMap, HashSet};
 
+/// The seven built-in profiles. They are always on and are never toggled.
 pub const LANGUAGES: [&str; 7] = [
     "rust",
     "python",
@@ -18,6 +19,14 @@ pub const LANGUAGES: [&str; 7] = [
     "assembly",
     "machine-code",
 ];
+
+/// The plugin profiles shipped with the product. A plugin pack adds a whole new language (not only triggers
+/// for an existing one); the built-in seven always stay on, a plugin profile is switched on and off by the user.
+pub const PLUGIN_LANGUAGES: [&str; 3] = ["cypher", "plsql", "tsql"];
+
+/// The plugin profiles that are on out of the box. T-SQL shares the `.sql` extension with PL/SQL, so it stays
+/// off until the user asks for it; PL/SQL owns `.sql` by default.
+pub const DEFAULT_PLUGIN_LANGUAGES: [&str; 2] = ["cypher", "plsql"];
 
 const PACK_KEYS: [&str; 11] = [
     "schema_version",
@@ -140,11 +149,48 @@ pub struct Pack {
     pub profile_id: String,
     pub version: String,
     pub display_name: String,
+    /// The validator family the pack asks for (for example `sql`). The built-in packs keep values that are
+    /// not family names: they keep their per-profile validators.
+    pub validator: String,
     pub language_ids: Vec<String>,
     pub accepted_extensions: Vec<String>,
     pub dialects: Vec<DialectAxis>,
     pub keywords: Vec<String>,
     pub triggers: Vec<Trigger>,
+}
+
+/// What kind of pack is parsed: it decides which fields the pack may carry and which profile ids it may name.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackKind {
+    /// One of the seven built-in profiles (the full pack shape).
+    Builtin,
+    /// A plugin pack: the full pack shape, but a profile id of its own.
+    Plugin,
+    /// A user rule pack: only keywords and triggers for an already loaded profile.
+    User,
+}
+
+impl PackKind {
+    /// Whether this kind of pack may name the profile id.
+    fn accepts_profile(self, id: &str) -> bool {
+        match self {
+            PackKind::Builtin => LANGUAGES.contains(&id),
+            PackKind::Plugin => is_plugin_profile(id),
+            // a user pack may only target a profile the core knows; the registry checks that it is active
+            PackKind::User => LANGUAGES.contains(&id) || PLUGIN_LANGUAGES.contains(&id),
+        }
+    }
+}
+
+/// A plugin profile id: `^[a-z][a-z0-9-]{0,31}$` and not a built-in profile id.
+pub fn is_plugin_profile(id: &str) -> bool {
+    !LANGUAGES.contains(&id)
+        && !id.is_empty()
+        && id.len() <= 32
+        && id.chars().next().is_some_and(|c| c.is_ascii_lowercase())
+        && id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
 fn invalid<T>(message: impl Into<String>) -> Result<T> {
@@ -400,7 +446,8 @@ fn parse_trigger(t: &Json, ids: &mut HashSet<String>, user: bool) -> Result<Trig
 }
 
 /// Port of `validatePack`: validates and converts. `bytes` is the raw size of the pack file.
-pub fn parse_pack(pack: &Json, builtin: bool, bytes: usize) -> Result<Pack> {
+/// `kind` decides the allowed fields and the profile ids the pack may name.
+pub fn parse_pack(pack: &Json, kind: PackKind, bytes: usize) -> Result<Pack> {
     let Some(obj) = pack.as_object() else {
         return invalid("pack must be an object");
     };
@@ -409,14 +456,17 @@ pub fn parse_pack(pack: &Json, builtin: bool, bytes: usize) -> Result<Pack> {
     }
     check_keys(
         obj,
-        if builtin { &PACK_KEYS } else { &USER_PACK_KEYS },
+        match kind {
+            PackKind::User => &USER_PACK_KEYS,
+            PackKind::Builtin | PackKind::Plugin => &PACK_KEYS,
+        },
         "pack",
     )?;
     if pack.get("schema_version").and_then(Json::as_f64) != Some(1.0) {
         return invalid("unsupported schema_version (migration required)");
     }
     let profile_id = match pack.get("profile_id").and_then(Json::as_str) {
-        Some(p) if LANGUAGES.contains(&p) => p.to_string(),
+        Some(p) if kind.accepts_profile(p) => p.to_string(),
         _ => return invalid("unknown profile_id"),
     };
     let version = match pack.get("version").and_then(Json::as_str) {
@@ -449,7 +499,7 @@ pub fn parse_pack(pack: &Json, builtin: bool, bytes: usize) -> Result<Pack> {
     let mut ids = HashSet::new();
     let triggers = trigger_list
         .iter()
-        .map(|t| parse_trigger(t, &mut ids, !builtin))
+        .map(|t| parse_trigger(t, &mut ids, kind == PackKind::User))
         .collect::<Result<Vec<_>>>()?;
     let mut out = Pack {
         profile_id,
@@ -459,13 +509,18 @@ pub fn parse_pack(pack: &Json, builtin: bool, bytes: usize) -> Result<Pack> {
             .and_then(Json::as_str)
             .unwrap_or("")
             .to_string(),
+        validator: pack
+            .get("validator")
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .to_string(),
         language_ids: Vec::new(),
         accepted_extensions: Vec::new(),
         dialects: Vec::new(),
         keywords,
         triggers,
     };
-    if builtin {
+    if kind != PackKind::User {
         let (Some(ids), Some(exts), Some(dialects)) = (
             pack.get("language_ids").and_then(string_list),
             pack.get("accepted_extensions").and_then(string_list),
@@ -524,12 +579,56 @@ const BUILTIN_SOURCES: [(&str, &str); 7] = [
     ),
 ];
 
+/// The plugin packs shipped with the product. They are data like the built-in packs, never scripts.
+const PLUGIN_SOURCES: [(&str, &str); 3] = [
+    (
+        "cypher",
+        include_str!("../../../language-plugins/cypher.json"),
+    ),
+    (
+        "plsql",
+        include_str!("../../../language-plugins/plsql.json"),
+    ),
+    ("tsql", include_str!("../../../language-plugins/tsql.json")),
+];
+
 #[derive(Clone, Debug, Default)]
 pub struct Registry {
+    /// The seven built-in packs. They are always active.
     packs: Vec<Pack>,
+    /// The plugin packs the core knows, enabled or not.
+    plugins: Vec<Pack>,
+    /// The enabled plugin profiles (in the order of [`PLUGIN_LANGUAGES`]).
+    enabled: Vec<String>,
     user_triggers: HashMap<String, Vec<Trigger>>,
     user_keywords: HashMap<String, Vec<String>>,
     by_language_id: HashMap<String, String>,
+}
+
+/// The default enabled plugin ids as owned strings.
+pub fn default_plugin_ids() -> Vec<String> {
+    DEFAULT_PLUGIN_LANGUAGES
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+/// Parses one pack source and checks that it declares the profile it is filed under.
+fn parse_source(id: &str, raw: &str) -> Result<Json> {
+    let parsed = json::parse(
+        raw,
+        Limits {
+            max_bytes: PackLimits::PACK_BYTES,
+            max_depth: 16,
+        },
+    );
+    let Ok(value) = parsed else {
+        return invalid(format!("{id}.json is not valid JSON"));
+    };
+    if value.get("profile_id").and_then(Json::as_str) != Some(id) {
+        return invalid(format!("{id}.json declares another profile"));
+    }
+    Ok(value)
 }
 
 impl Registry {
@@ -537,31 +636,31 @@ impl Registry {
         Registry::default()
     }
 
-    /// The seven built-in packs compiled into the binary.
+    /// The seven built-in packs compiled into the binary plus the default plugin set (Cypher and PL/SQL).
     pub fn builtin() -> Result<Registry> {
+        Registry::builtin_with_plugins(&default_plugin_ids())
+    }
+
+    /// The seven built-in packs plus the named plugin profiles. The three shipped plugin packs are always
+    /// known; unknown ids are ignored.
+    pub fn builtin_with_plugins(ids: &[String]) -> Result<Registry> {
         let mut reg = Registry::new();
         for (id, raw) in BUILTIN_SOURCES {
-            let parsed = json::parse(
-                raw,
-                Limits {
-                    max_bytes: PackLimits::PACK_BYTES,
-                    max_depth: 16,
-                },
-            );
-            let Ok(value) = parsed else {
-                return invalid(format!("{id}.json is not valid JSON"));
-            };
-            if value.get("profile_id").and_then(Json::as_str) != Some(id) {
-                return invalid(format!("{id}.json declares another profile"));
-            }
-            reg.add(&value, raw.len())?;
+            reg.add(&parse_source(id, raw)?, raw.len())?;
         }
+        for (id, raw) in PLUGIN_SOURCES {
+            reg.add_plugin(&parse_source(id, raw)?, raw.len())?;
+        }
+        reg.activate_plugins(ids);
         Ok(reg)
     }
 
+    /// Adds a built-in pack.
     pub fn add(&mut self, pack: &Json, bytes: usize) -> Result<()> {
-        let pack = parse_pack(pack, true, bytes)?;
-        if self.get(&pack.profile_id).is_some() {
+        let pack = parse_pack(pack, PackKind::Builtin, bytes)?;
+        if self.packs.iter().any(|p| p.profile_id == pack.profile_id)
+            || self.plugins.iter().any(|p| p.profile_id == pack.profile_id)
+        {
             return invalid(format!("duplicate profile {}", pack.profile_id));
         }
         for id in &pack.language_ids {
@@ -572,10 +671,96 @@ impl Registry {
         Ok(())
     }
 
+    /// Adds a plugin pack. A plugin pack may not claim a language id or an extension that a built-in pack
+    /// owns: the built-in seven always win.
+    pub fn add_plugin(&mut self, pack: &Json, bytes: usize) -> Result<()> {
+        let pack = parse_pack(pack, PackKind::Plugin, bytes)?;
+        if self.packs.iter().any(|p| p.profile_id == pack.profile_id)
+            || self.plugins.iter().any(|p| p.profile_id == pack.profile_id)
+        {
+            return invalid(format!("duplicate profile {}", pack.profile_id));
+        }
+        for id in &pack.language_ids {
+            if self.by_language_id.contains_key(id) {
+                return invalid(format!(
+                    "plugin pack claims the language id of a built-in profile: {id}"
+                ));
+            }
+        }
+        for ext in &pack.accepted_extensions {
+            if self
+                .packs
+                .iter()
+                .any(|p| p.accepted_extensions.iter().any(|e| e == ext))
+            {
+                return invalid(format!(
+                    "plugin pack claims the extension of a built-in profile: {ext}"
+                ));
+            }
+        }
+        self.plugins.push(pack);
+        Ok(())
+    }
+
+    /// Replaces the enabled plugin set. Unknown ids are ignored; the order is always the canonical one.
+    pub fn activate_plugins(&mut self, ids: &[String]) {
+        self.enabled = self
+            .plugins
+            .iter()
+            .filter(|p| ids.iter().any(|id| id == &p.profile_id))
+            .map(|p| p.profile_id.clone())
+            .collect();
+    }
+
+    /// The enabled plugin profiles.
+    pub fn enabled_plugins(&self) -> Vec<String> {
+        self.enabled.clone()
+    }
+
+    /// Every plugin profile the core knows (enabled or not).
+    pub fn available_plugins(&self) -> Vec<String> {
+        self.plugins.iter().map(|p| p.profile_id.clone()).collect()
+    }
+
+    /// Whether the profile is active: a built-in profile always is, a plugin profile only when it is enabled.
+    pub fn has_profile(&self, profile: &str) -> bool {
+        LANGUAGES.contains(&profile) || self.enabled.iter().any(|id| id == profile)
+    }
+
+    /// The active profiles that own an extension (an extension may be owned by more than one plugin).
+    pub fn extension_owners(&self, ext: &str) -> Vec<&str> {
+        let mut out: Vec<&str> = self
+            .packs
+            .iter()
+            .filter(|p| p.accepted_extensions.iter().any(|e| e == ext))
+            .map(|p| p.profile_id.as_str())
+            .collect();
+        out.extend(
+            self.plugins
+                .iter()
+                .filter(|p| self.enabled.iter().any(|id| id == &p.profile_id))
+                .filter(|p| p.accepted_extensions.iter().any(|e| e == ext))
+                .map(|p| p.profile_id.as_str()),
+        );
+        out
+    }
+
+    /// The validator family of an active plugin profile (the `validator` field of its pack). A built-in
+    /// profile has none: it keeps its own per-profile validator.
+    pub fn plugin_family(&self, profile: &str) -> Option<&str> {
+        self.plugins
+            .iter()
+            .find(|p| p.profile_id == profile && self.enabled.iter().any(|e| e == &p.profile_id))
+            .map(|p| p.validator.as_str())
+    }
+
     /// User packs only add triggers/keywords; they cannot replace or remove built-in behaviour.
     pub fn add_user(&mut self, pack: &Json, bytes: usize) -> Result<()> {
-        let pack = parse_pack(pack, false, bytes)?;
+        let pack = parse_pack(pack, PackKind::User, bytes)?;
         let Some(base) = self.get(&pack.profile_id) else {
+            if self.plugins.iter().any(|p| p.profile_id == pack.profile_id) {
+                return invalid("user pack targets a disabled plugin profile");
+            }
             return invalid("user pack targets an unloaded profile");
         };
         let mut taken: HashSet<&str> = base.triggers.iter().map(|t| t.id.as_str()).collect();
@@ -606,16 +791,39 @@ impl Registry {
         self.user_keywords.clear();
     }
 
+    /// The pack of an active profile (a disabled plugin pack stays discoverable but contributes nothing).
     pub fn get(&self, profile: &str) -> Option<&Pack> {
-        self.packs.iter().find(|p| p.profile_id == profile)
+        self.packs
+            .iter()
+            .find(|p| p.profile_id == profile)
+            .or_else(|| {
+                self.plugins
+                    .iter()
+                    .find(|p| p.profile_id == profile && self.enabled.iter().any(|e| e == profile))
+            })
     }
 
     pub fn language_for_id(&self, language_id: &str) -> Option<&str> {
-        self.by_language_id.get(language_id).map(String::as_str)
+        if let Some(id) = self.by_language_id.get(language_id) {
+            return Some(id.as_str());
+        }
+        self.plugins
+            .iter()
+            .filter(|p| self.enabled.iter().any(|e| e == &p.profile_id))
+            .find(|p| p.language_ids.iter().any(|l| l == language_id))
+            .map(|p| p.profile_id.as_str())
     }
 
+    /// The active profiles: the seven built-in ones, then the enabled plugin profiles.
     pub fn profiles(&self) -> Vec<&str> {
-        self.packs.iter().map(|p| p.profile_id.as_str()).collect()
+        let mut out: Vec<&str> = self.packs.iter().map(|p| p.profile_id.as_str()).collect();
+        out.extend(
+            self.plugins
+                .iter()
+                .filter(|p| self.enabled.iter().any(|e| e == &p.profile_id))
+                .map(|p| p.profile_id.as_str()),
+        );
+        out
     }
 
     /// Built-in triggers followed by user triggers.
@@ -698,7 +906,10 @@ mod tests {
     #[test]
     fn builtin_packs_load_and_cover_seven_languages() {
         let reg = Registry::builtin().unwrap();
-        assert_eq!(reg.profiles(), LANGUAGES.to_vec());
+        // the seven built-in profiles plus the default plugin set (Cypher and PL/SQL)
+        let mut want = LANGUAGES.to_vec();
+        want.extend(["cypher", "plsql"]);
+        assert_eq!(reg.profiles(), want);
         assert_eq!(reg.language_for_id("typescriptreact"), Some("typescript"));
         assert_eq!(reg.language_for_id("nasm"), Some("assembly"));
         assert!(!reg.triggers("rust").is_empty());
@@ -707,15 +918,33 @@ mod tests {
 
     #[test]
     fn unknown_keys_are_rejected_in_every_position() {
-        let reg_err = |s: &str| parse_pack(&parse(s), true, 0).unwrap_err().code;
+        let reg_err = |s: &str| {
+            parse_pack(&parse(s), PackKind::Builtin, 0)
+                .unwrap_err()
+                .code
+        };
         assert_eq!(
             reg_err(r#"{"schema_version":1,"profile_id":"rust","version":"1.0.0","script":"x"}"#),
             "RULEPACK_INVALID"
         );
         let t = r#"{"id":"a","pattern":"a","exec":"calc","candidates":[{"label":"l","text":"t"}]}"#;
-        assert!(parse_pack(&user_pack(&format!(r#","triggers":[{t}]"#)), false, 0).is_err());
+        assert!(
+            parse_pack(
+                &user_pack(&format!(r#","triggers":[{t}]"#)),
+                PackKind::User,
+                0
+            )
+            .is_err()
+        );
         let c = r#"{"id":"a","pattern":"a","candidates":[{"label":"l","text":"t","run":"x"}]}"#;
-        assert!(parse_pack(&user_pack(&format!(r#","triggers":[{c}]"#)), false, 0).is_err());
+        assert!(
+            parse_pack(
+                &user_pack(&format!(r#","triggers":[{c}]"#)),
+                PackKind::User,
+                0
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -724,26 +953,26 @@ mod tests {
         let long = format!(
             r#","triggers":[{{"id":"a","pattern":"a","candidates":[{{"label":"l","text":"{big}"}}]}}]"#
         );
-        assert!(parse_pack(&user_pack(&long), false, 0).is_err());
+        assert!(parse_pack(&user_pack(&long), PackKind::User, 0).is_err());
         let bad_placeholder = r#","triggers":[{"id":"a","pattern":"a","candidates":[{"label":"l","text":"run ${rm -rf} ${cursor}"}]}]"#;
-        assert!(parse_pack(&user_pack(bad_placeholder), false, 0).is_err());
+        assert!(parse_pack(&user_pack(bad_placeholder), PackKind::User, 0).is_err());
         let ok = r#","triggers":[{"id":"a","pattern":"a","weight":5,"candidates":[{"label":"l","text":"x ${name} ${cursor}"}]}]"#;
-        assert!(parse_pack(&user_pack(ok), false, 0).is_ok());
+        assert!(parse_pack(&user_pack(ok), PackKind::User, 0).is_ok());
         assert!(
-            parse_pack(&user_pack(ok), false, 300_000).is_err(),
+            parse_pack(&user_pack(ok), PackKind::User, 300_000).is_err(),
             "size limit"
         );
         let weight = r#","triggers":[{"id":"a","pattern":"a","weight":101,"candidates":[{"label":"l","text":"x"}]}]"#;
-        assert!(parse_pack(&user_pack(weight), false, 0).is_err());
+        assert!(parse_pack(&user_pack(weight), PackKind::User, 0).is_err());
         let pattern =
             r#","triggers":[{"id":"a","pattern":"a b","candidates":[{"label":"l","text":"x"}]}]"#;
-        assert!(parse_pack(&user_pack(pattern), false, 0).is_err());
+        assert!(parse_pack(&user_pack(pattern), PackKind::User, 0).is_err());
     }
 
     #[test]
     fn user_packs_cannot_use_builtin_only_fields_or_collide() {
-        assert!(parse_pack(&user_pack(r#","dialects":{}"#), false, 0).is_err());
-        assert!(parse_pack(&user_pack(r#","display_name":"x""#), false, 0).is_err());
+        assert!(parse_pack(&user_pack(r#","dialects":{}"#), PackKind::User, 0).is_err());
+        assert!(parse_pack(&user_pack(r#","display_name":"x""#), PackKind::User, 0).is_err());
         let mut reg = Registry::builtin().unwrap();
         let collide = r#","triggers":[{"id":"rust.main","pattern":"zz","candidates":[{"label":"l","text":"x"}]}]"#;
         assert!(reg.add_user(&user_pack(collide), 0).is_err());
@@ -767,7 +996,7 @@ mod tests {
             "[]",
         ] {
             assert_eq!(
-                parse_pack(&parse(bad), false, 0).unwrap_err().code,
+                parse_pack(&parse(bad), PackKind::User, 0).unwrap_err().code,
                 "RULEPACK_INVALID",
                 "{bad}"
             );

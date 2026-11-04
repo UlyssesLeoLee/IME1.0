@@ -47,12 +47,21 @@ async function openF1(file, {line = 18, col = 1, select = 0} = {}) {
   await app.openFile(file);
   await app.goto(line, col);
   for (let i = 0; i < select; i++) await app.page.keyboard.press('Shift+ArrowDown');
-  await app.page.keyboard.press('F1');
+  await app.page.keyboard.press('Control+F1');
   await app.waitPanel();
 }
 const authorise = async (choice = 'Authorize this request') => { await app.waitDialog(); await app.dialogClick(choice); };
 const scopeText = () => app.panelText('#ann-scope');
-const hunkLines = async () => app.panelFrame.locator('#panel-annotate fieldset.hunk .diff span.l').evaluateAll(els => els.map(e => ({add: e.classList.contains('add'), del: e.classList.contains('del'), text: e.textContent})));
+// the panel is a webview: its DOM is rebuilt asynchronously, so a one-shot read can still see the previous state.
+// The auto-retrying assertion waits for the new text instead of racing it.
+const expectScope = async text => { await expect(app.panelFrame.locator('#ann-scope')).toHaveText(text); };
+void scopeText;   // kept for ad-hoc debugging of the panel
+// The wait is bounded on purpose: an unbounded evaluateAll blocks forever when the hunks never appear, and the
+// test then dies with a timeout instead of saying what was missing.
+const hunkLines = async () => {
+  await app.panelFrame.locator('#panel-annotate fieldset.hunk .diff span.l').first().waitFor({timeout: 10000});
+  return app.panelFrame.locator('#panel-annotate fieldset.hunk .diff span.l').evaluateAll(els => els.map(e => ({add: e.classList.contains('add'), del: e.classList.contains('del'), text: e.textContent})));
+};
 // the 1-based document lines that carry our highlight decoration (best effort: Monaco renders a whole-line decoration as a .cdr child of the line's overlay row)
 async function highlightedLines() {
   return app.page.evaluate(() => {
@@ -86,7 +95,7 @@ test('UAT-43 [ANN-60] no selection inside a function: that function is the scope
   await app.screenshot('annotate-consent');
   await app.dialogClick('Authorize this request');
   await app.waitPanelStatus('annotate', /ready/);
-  expect(await scopeText()).toBe('Scope: fn parse_header (lines 12-22, 11 lines)');
+  await expectScope('Scope: fn parse_header (lines 12-22, 11 lines)');
   expect(await app.panelText('#ann-crumbs')).toBe('fn parse_header > impl Parser > file');
   expect(scopeRequests().length).toBe(1); expect(mock.count()).toBe(1);        // one F1 = one request
   const req = scopeRequests()[0];
@@ -108,7 +117,7 @@ test('UAT-44 [ANN-61] a selection: exactly the selected lines are the scope, wha
   await openF1('sc3.rs', {line: 14, col: 1, select: 5});                      // lines 14-18 (the selection ends at column 0 of line 19)
   await authorise();
   await app.waitPanelStatus('annotate', /ready/);
-  expect(await scopeText()).toBe('Selection: lines 14-18 (5 lines)');
+  await expectScope('Selection: lines 14-18 (5 lines)');
   expect(await app.panelText('#ann-crumbs')).toBe('selection > fn parse_header > impl Parser > file');
   const req = scopeRequests()[0];
   expect(req.input.scope).toEqual({kind: 'selection', label: 'selection', startLine: 14, endLine: 18});
@@ -133,15 +142,16 @@ test('UAT-45 [ANN-62] Wider moves up the chain without sending anything; Generat
   await expect(app.panelFrame.locator('#ann-narrower')).toBeDisabled();
   await app.panelFrame.locator('#ann-wider').click();
   await app.waitPanelStatus('annotate', /idle/);
-  expect(await scopeText()).toBe('Scope: impl Parser (lines 7-23, 17 lines)');
+  await expectScope('Scope: impl Parser (lines 7-23, 17 lines)');
   expect(scopeRequests().length).toBe(1);                                      // changing the scope sends nothing
   expect(await highlightedLines()).toEqual(range(7, 23));
   await app.panelFrame.locator('#ann-wider').click();
-  expect(await scopeText()).toBe('Whole file: lines 1-23 (23 lines)');
+  await expectScope('Whole file: lines 1-23 (23 lines)');
   await expect(app.panelFrame.locator('#ann-wider')).toBeDisabled();           // the end of the chain
   await app.panelFrame.locator('#ann-narrower').click();
-  expect(await scopeText()).toBe('Scope: impl Parser (lines 7-23, 17 lines)');
+  await expectScope('Scope: impl Parser (lines 7-23, 17 lines)');
   await app.panelFrame.locator('#generate').click();
+  await authorise();                                                              // a second request needs its own consent: "this request only" is spent by the first one
   await app.waitPanelStatus('annotate', /ready/);
   expect(scopeRequests().length).toBe(2);
   expect(scopeRequests()[1].input.scope).toEqual({kind: 'declaration', label: 'impl Parser', startLine: 7, endLine: 23});
@@ -188,7 +198,7 @@ test('UAT-48 [ANN-66] secrets: the request carries no secret byte, the comments 
   behaviour = ({input}) => ({json: {comments: [{line: 1, text: 'Connects with PIME_REDACTED_1 as the credential.'}, {line: 2, text: 'Hands the PIME_REDACTED_1 value to login.'}]}});
   await app.openFile('secret1.rs');
   await app.goto(3, 1);
-  await app.page.keyboard.press('F1'); await app.waitPanel();
+  await app.page.keyboard.press('Control+F1'); await app.waitPanel();
   await authorise();
   await app.waitPanelStatus('annotate', /ready/);
   const wire = mock.requests.map(r => r.rawBody).join('\n');
@@ -213,7 +223,7 @@ test('UAT-49 [ANN-74] f1Mode=edit is the old F1: whole-file tab first, nothing s
   expect(mock.count()).toBe(0); expect(await app.dialogVisible()).toBe(false);
   expect(await app.panelText('#panel-annotate .status')).toMatch(/Nothing is written|Tick/);
   await app.panelFrame.locator('#tab-annotate').click();
-  expect(await scopeText()).toBe('Scope: fn parse_header (lines 12-22, 11 lines)');   // the annotate tab is there, idle
+  await expectScope('Scope: fn parse_header (lines 12-22, 11 lines)');   // the annotate tab is there, idle
   expect(mock.count()).toBe(0);
   await app.panelFrame.locator('#tab-full').click();
   behaviour = ({task}) => task === 'full' ? {json: {fullFile: RUST.replace('let mut n = 0;', 'let mut n = 0; // counter')}} : {json: {insertCandidates: []}};

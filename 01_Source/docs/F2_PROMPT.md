@@ -1,4 +1,8 @@
-# F2 prompt: select text or code, press F2, get a 5W1H prompt on the clipboard
+# F2 prompt: select text or code, press Ctrl+F2, get a 5W1H prompt on the clipboard
+
+**The shortcut is `Ctrl+F2`, not the plain `F2`.** The plain `F2` renames a symbol and the plain `F1` opens the editor's Help (the Command Palette), so
+Programming IME binds `Ctrl+F2` / `Ctrl+Shift+F2` (this feature) and `Ctrl+F1` / `Ctrl+Shift+F1` (the F1 annotate panel) instead: the editor keeps its own
+keys, and the binding can still be moved with `programmingIme.f2Binding` or switched off with `none`.
 
 Requirement added by the project owner after the design baseline (SRS v1.2 has no ids for it; tests use ids `PRM-xx`, UAT ids `UAT-36..41`).
 It extends FR-016 (authorisation), FR-049 (privacy filter) and the AI contract of SRS §6.3 without changing them. Original wording (Chinese):
@@ -25,19 +29,19 @@ constraints, acceptance criteria and the requested output format. `verify5W1H` m
 
 ## Command, key and settings
 
-* Command `programmingIme.f2Prompt` ("Programming IME: F2 Prompt (5W1H Prompt to Clipboard)"; titles in `package.nls*.json`).
-* Keybinding `F2` when `editorTextFocus && editorHasSelection && programmingIme.f2Key.f2`; `Shift+F2` when `... && programmingIme.f2Key.shiftF2`.
-  **F2 normally renames a symbol.** Because of the `editorHasSelection` clause F2 without a selection keeps doing Rename, and nothing is taken over while
-  Programming IME is disabled (the default), the binding is `none`/`shift+f2`, or the language is excluded.
-* Settings: `programmingIme.f2Binding` (`f2` | `shift+f2` | `none`, default `f2`), `programmingIme.f2ExcludedLanguages` (language ids, default `[]`).
+* Command `programmingIme.f2Prompt` ("Programming IME: Ctrl+F2 Prompt (5W1H Prompt to Clipboard)"; titles in `package.nls*.json`).
+* Keybinding `Ctrl+F2` when `editorTextFocus && editorHasSelection && programmingIme.f2Key.ctrlF2`; `Ctrl+Shift+F2` when `... && programmingIme.f2Key.ctrlShiftF2`.
+  **The plain F2 normally renames a symbol** and is left to the editor. Because of the `editorHasSelection` clause the prompt runs only with a selection, and
+  nothing is taken over while Programming IME is disabled (the default), the binding is `none`/`ctrl+shift+f2`, or the language is excluded.
+* Settings: `programmingIme.f2Binding` (`ctrl+f2` | `ctrl+shift+f2` | `none`, default `ctrl+f2`), `programmingIme.f2ExcludedLanguages` (language ids, default `[]`).
 * The context keys follow the rule of F1 (`updateContextKeys` in `extension.js`): enabled + the chosen binding + language not excluded. They are refreshed on a
-  configuration change, on the enable toggle and when the active editor changes. A user who wants a selection-only rename can bind `shift+f2` or `none`.
+  configuration change, on the enable toggle and when the active editor changes. A user who wants the prompt on another key can bind `ctrl+shift+f2` or `none`.
 * From the Command Palette with no (or only blank) selection the command shows a notice "Select some text or code first".
 * A selection over 200,000 characters is refused with a notice (nothing is classified or sent).
 
 ## Flow (`src/f2.js`; pure logic in `src/core/promptcraft.js`)
 
-1. Gate: Programming IME enabled, an editor, a non-blank selection of at most 200,000 characters. One request at a time: a second F2 aborts the first one,
+1. Gate: Programming IME enabled, an editor, a non-blank selection of at most 200,000 characters. One request at a time: a second Ctrl+F2 press aborts the first one,
    which ends silently (no error, no clipboard write). Cancel on the progress notification does the same.
 2. Classify: `classifySelection({profile, languageId, fileName, text, fileText, start, end})`. `profile` is the Programming IME language when it is one of the seven,
    else empty; `fileText/start/end` are always passed (Markdown fences, comments inside code).
@@ -117,7 +121,7 @@ per `docs/RUST_MIGRATION_PLAN.md` it can move to the core later, with fixtures g
 | PRM-26 | unusable reply: warning, never "no optimisation needed" |
 | PRM-27 | unverifiable findings dropped; none left: nothing copied |
 | PRM-28 | sensitive selection / file: never copied, never sent (also AI off) |
-| PRM-29 / PRM-30 | a second F2 cancels the first; Cancel on the progress: silent |
+| PRM-29 / PRM-30 | a second Ctrl+F2 press cancels the first; Cancel on the progress: silent |
 | PRM-31 | gates: disabled, no/blank selection, over-large selection |
 | PRM-32 | context keys, manifest (keybindings, settings, nls) and `extension.js` wiring |
 | PRM-33 | diagnostics and error text carry no content; one error message |

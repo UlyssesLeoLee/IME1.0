@@ -1,4 +1,8 @@
-# F1 annotate: press F1, the scope under the cursor (or the selection) gets comments
+# F1 annotate: press Ctrl+F1, the scope under the cursor (or the selection) gets comments
+
+**The shortcut is `Ctrl+F1`, not the plain `F1`.** The plain `F1` is the editor's own Help key (it opens the Command Palette) and the plain `F2` renames a
+symbol, so Programming IME binds `Ctrl+F1` / `Ctrl+Shift+F1` (this feature) and `Ctrl+F2` / `Ctrl+Shift+F2` (the F2 prompt) instead: the editor keeps its
+own keys, and the binding can still be moved with `programmingIme.f1Binding` or switched off with `none`.
 
 Requirement added by the project owner after the design baseline (SRS v1.2 has no ids for it; tests use ids `ANN-60..85`, UAT ids `UAT-42..49`).
 It extends FR-016 (authorisation), FR-049 (privacy filter) and the F1 review/apply contract (FR-031..040) without changing them. Original wording (Chinese):
@@ -6,9 +10,9 @@ It extends FR-016 (authorisation), FR-049 (privacy filter) and the F1 review/app
 
 ## What the user gets
 
-* **F1, no selection**: the innermost declaration (function, method, class, impl, assembly label ...) around the cursor is the scope. If the cursor is not in a
+* **Ctrl+F1, no selection**: the innermost declaration (function, method, class, impl, assembly label ...) around the cursor is the scope. If the cursor is not in a
   declaration the scope is the paragraph ("block") around it.
-* **F1, with a selection**: exactly the selected lines (snapped to whole lines; a selection that ends at column 0 of a line does not include that line).
+* **Ctrl+F1, with a selection**: exactly the selected lines (snapped to whole lines; a selection that ends at column 0 of a line does not include that line).
 * The panel opens on the new **C. Annotate scope** tab and, when AI is available, **starts the request on its own** (after the consent modal the first time).
   The result is a normal reviewable proposal: one block per added comment, checkboxes, result preview, syntax check, **Open full Diff**, **Apply selected blocks**
   (one WorkspaceEdit = one `Ctrl+Z`), stale protection. Nothing is written until Apply.
@@ -20,15 +24,15 @@ It extends FR-016 (authorisation), FR-049 (privacy filter) and the F1 review/app
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `programmingIme.f1Mode` | `annotate` | `annotate`: F1 opens on the Annotate tab. `edit`: F1 is exactly the previous behaviour (opens on *Whole file*, Generate runs the whole-file and the insert request, nothing starts on its own); the Annotate tab stays reachable and idle. Read each time F1 opens. |
-| `programmingIme.f1AnnotateOnOpen` | `true` | With `annotate`: start the first request when F1 opens. `false`: F1 only shows the scope and waits for Generate. |
+| `programmingIme.f1Mode` | `annotate` | `annotate`: Ctrl+F1 opens on the Annotate tab. `edit`: Ctrl+F1 is exactly the previous behaviour (opens on *Whole file*, Generate runs the whole-file and the insert request, nothing starts on its own); the Annotate tab stays reachable and idle. Read each time Ctrl+F1 opens. |
+| `programmingIme.f1AnnotateOnOpen` | `true` | With `annotate`: start the first request when Ctrl+F1 opens. `false`: Ctrl+F1 only shows the scope and waits for Generate. |
 
 Existing settings are reused: `autoComment` (default on) and `graphComment` (default off) initialise the two checkboxes **Comments** / **Cypher graph** of the tab
 (changing them in the tab is for this session only and never writes a setting), `graphCommentScope` says whether the Cypher block may use the symbol **names** of
 the other files of the folder (`directory`, needs the L4 grant) or only the current file (`file`). If both checkboxes are off the tab says what to tick and nothing is sent.
 
 In `annotate` mode **Generate and Enter in the intent field run the tab on screen only** (annotate by default; *Whole file* or *Insert* if the user switched to
-it), so one F1 is one request, never three. The intent text is passed to the prompt as `intent` (the label of the field reads "What should the comments focus on?").
+it), so one Ctrl+F1 is one request, never three. The intent text is passed to the prompt as `intent` (the label of the field reads "What should the comments focus on?").
 
 ## The tab
 
@@ -50,7 +54,7 @@ buffer, file over 2 MiB, scope too large.
 A scope may have at most **20 000 characters and 1 200 lines** (a wider chain entry above that is not offered). The line limit exists because the review diff
 (`core/diff.js`, LCS with a 4 million cell cap) degrades into ONE "removed N lines, added M lines" block past ~2 000 lines; measured: 1 500 lines of short lines give
 51 blocks, 2 000 lines give a single block. The file as a whole is the context (L3) and is limited to 2 MiB like the whole-file tab. A scope that is itself too large has nothing
-narrower in the chain (the chain only widens): the message tells the user to select a smaller part and press F1 again.
+narrower in the chain (the chain only widens): the message tells the user to select a smaller part and press Ctrl+F1 again.
 
 ## Highlight
 
@@ -98,8 +102,9 @@ The first slice was the whole loop with fakes: resolve the scope of real functio
    it, and a `tooLarge` scope has no narrower candidate at all. The scope is resolved with `maxChars: Infinity` and cut by `f1.js` instead, which gives the UI the first blocked
    entry (crossed out, with its size) and lets `tooLarge` say "select a smaller part and press F1 again".
 3. **Long scopes ruin the review.** 1 500 short lines gave 51 blocks, 2 000 gave one block "-1979 +2046" for comment-only changes (the diff cell cap). Hence the 1 200 line limit next to the character limit (ANN-63).
-4. **The first request must not hold the open lock.** `open()` refuses a second F1 while a session is being created; awaiting the request inside it would have swallowed every F1 for
-   the whole request. The request starts after the lock is released, and `reopen` (stale -> Generate) passes `autoStart: false`, otherwise the same F1 sent two requests (both caught by mutants).
+4. **The first request must not hold the open lock.** `open()` refuses a second F1 press while a session is being created; awaiting the request inside it would have swallowed every F1
+   press for the whole request. The request starts after the lock is released, and `reopen` (stale -> Generate) passes `autoStart: false`, otherwise the same Ctrl+F1 press sent two
+   requests (both caught by mutants).
 5. **The Cypher block and the comment above the first line are one block.** Both are insertions at the same place, so the diff gives one hunk: they can only be applied together
    (the other comments are separate blocks: Cypher + a comment above line 1 + a comment above line 2 gives 2 blocks, not 3; the corpus sweep, which commented every line and added the Cypher block, showed it in all 86 scopes).
 6. **The existing whole-file check is advisory on real code.** Across 86 scopes of this repository's JS, Rust and PowerShell files every proposal was accepted by `applyScopeReply`, had
@@ -125,6 +130,6 @@ The first slice was the whole loop with fakes: resolve the scope of real functio
 * `f1.js` became `createF1(env)` (injection, like `f2.js`); the module exports are unchanged plus `onVisibleEditorsChanged` (hooked in `extension.js`) and `settled()` for the tests.
 * `tooLarge`: Narrower is disabled (nothing narrower exists), the message says what to do; plus the line limit (finding 3). Wider-blocked shows the reason.
 * An unusable reply is an error, "nothing to add" is ready (finding: follows F2). The annotate request uses its own consent function instead of `obtainGrants`.
-* The command title `programmingIme.f1Edit` now reads "F1 AI (Annotate Scope / Whole File / Insert)" (nls files, id unchanged). A new intent label for the annotate tab.
-* Open: when the annotate tab is unavailable only for the language (`unknown`) F1 still opens on it; falling back to *Whole file* would be kinder. A one-use consent asks again on every F1 (workspace
-  authorisation avoids that). Should the auto-start wait one beat so that a quick second F1 does not show a consent modal? The Rust parity port of `scope.js` / `applyScopeReply` is not done.
+* The command title `programmingIme.f1Edit` now reads "Ctrl+F1 AI (Annotate Scope / Whole File / Insert)" (nls files, id unchanged). A new intent label for the annotate tab.
+* Open: when the annotate tab is unavailable only for the language (`unknown`) Ctrl+F1 still opens on it; falling back to *Whole file* would be kinder. A one-use consent asks again on every
+  Ctrl+F1 press (workspace authorisation avoids that). Should the auto-start wait one beat so that a quick second Ctrl+F1 press does not show a consent modal? The Rust parity port of `scope.js` / `applyScopeReply` is not done.

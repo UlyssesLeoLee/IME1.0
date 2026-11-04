@@ -4,7 +4,7 @@
 //   node scripts/build-installer.js [<version>] [--skip-dry-run]
 //
 // The version defaults to the one in editor-bridges/vscode/package.json. Steps: release builds of pime-core and pime-tsf
-// (x86_64-pc-windows-gnu), the .vsix (scripts/package-vsix.js), the pime-setup stub, then the payload (the four files plus
+// (x86_64-pc-windows-gnu), the .vsix (scripts/package-vsix.js), the pime-setup stub, then the payload (the five files plus
 // meta.json) is appended to the stub in the format documented in crates/pime-setup/src/payload.rs. Finally the result is
 // checked as a PE file (x64, system DLL imports only) and `--dry-run` proves that the exe finds and verifies its payload.
 // Nothing is installed or registered: the installer is never run except with --dry-run.
@@ -24,8 +24,12 @@ const DIST = path.join(ROOT, 'dist');
 const TARGET = 'x86_64-pc-windows-gnu';
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
 const release = path.join(targetDir, TARGET, 'release');
+// The tray and the worker are built in a target directory of their own, so that the text service DLL of the main
+// workspace is never replaced by the copy that is compiled as their dependency.
+const auxTarget = path.join(targetDir, 'aux');
+const auxRelease = path.join(auxTarget, TARGET, 'release');
 // system DLLs present on every Windows 10/11 x64 installation (no MinGW runtime DLL a user would not have)
-const ALLOWED_IMPORT = /^(kernel32|ntdll|msvcrt|advapi32|user32|shell32|ole32|oleaut32|gdi32|userenv|ws2_32|bcryptprimitives|propsys|msctf|api-ms-win-[a-z0-9-]+)\.dll$/;
+const ALLOWED_IMPORT = /^(kernel32|ntdll|msvcrt|advapi32|user32|shell32|ole32|oleaut32|gdi32|userenv|ws2_32|bcryptprimitives|propsys|msctf|winmm|crypt32|winhttp|api-ms-win-[a-z0-9-]+)\.dll$/;
 const MAGIC = Buffer.from('PIME-PAYLOAD-V1\0', 'latin1');
 const sha256 = data => crypto.createHash('sha256').update(data).digest();
 
@@ -34,10 +38,11 @@ function fail(message) {
   process.exit(1);
 }
 
-function cargo(cwd, args, label) {
+function cargo(cwd, args, label, targetDirOverride) {
   console.log(`\n== ${label}: cargo ${args.join(' ')}  (${path.relative(ROOT, cwd) || '.'})`);
+  const env = {...process.env, CARGO_TARGET_DIR: targetDirOverride || targetDir};
   for (let attempt = 1; attempt <= 3; attempt++) { // a freshly linked file can fail once while Defender scans it
-    const r = spawnSync('cargo', args, {cwd, encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir}});
+    const r = spawnSync('cargo', args, {cwd, encoding: 'utf8', env});
     const text = `${r.stdout || ''}${r.stderr || ''}`;
     if (r.status === 0) { console.log(text.trim().split(/\r?\n/).slice(-2).join('\n')); return; }
     if (!/os error 5/.test(text) || attempt === 3) fail(`${label} failed (exit ${r.status}${r.error ? `, ${r.error.message}` : ''})\n${text}`);
@@ -90,10 +95,16 @@ function main() {
   const version = requested || packageJson.version;
   if (!/^[0-9A-Za-z][0-9A-Za-z.+-]{0,31}$/.test(version)) fail(`"${version}" is not a usable version (letters, digits, . + - only)`);
   fs.mkdirSync(DIST, {recursive: true});
-  console.log(`Programming IME installer ${version}\n  cargo target dir: ${targetDir}`);
+  console.log(`IME1.0 installer ${version}\n  cargo target dir: ${targetDir}`);
 
   cargo(ROOT, ['build', '--release', '--target', TARGET, '-p', 'pime-core', '--bin', 'pime-core'], 'pime-core');
   cargo(path.join(ROOT, 'crates', 'pime-tsf'), ['build', '--release', '--target', TARGET], 'pime-tsf (text service DLL)');
+  // The tray and the worker are workspaces of their own (they have their own Cargo.lock). They are built into a
+  // target directory of their own, so that the text service DLL of the main workspace is never replaced by the copy
+  // that is compiled as their dependency.
+  const auxTarget = path.join(targetDir, 'aux');
+  cargo(path.join(ROOT, 'crates', 'pime-tray'), ['build', '--release', '--target', TARGET], 'pime-tray (resident tray)', auxTarget);
+  cargo(path.join(ROOT, 'crates', 'pime-ai-worker'), ['build', '--release', '--target', TARGET], 'pime-ai-worker (speech service client)', auxTarget);
   console.log('\n== VS Code extension');
   let vsix;
   try { vsix = packageVsix({outDir: DIST, log: m => console.log(`  ${m}`)}); } catch (e) { fail(e.message); }
@@ -102,18 +113,47 @@ function main() {
   const parts = {
     dll: path.join(release, 'pime_tsf.dll'), core: path.join(release, 'pime-core.exe'), stub: path.join(release, 'pime-setup.exe'),
     license: path.join(ROOT, 'LICENSE'),
+    icon: path.join(ROOT, 'assets', 'pime.ico'),
+    tray: path.join(auxRelease, 'pime-tray.exe'),
+    worker: path.join(auxRelease, 'pime-ai-worker.exe'),
   };
   for (const [k, p] of Object.entries(parts)) if (!fs.existsSync(p)) fail(`missing ${k}: ${p}`);
+  const icon = fs.readFileSync(parts.icon);
+  // The icon is the picture of the Add/Remove Programs entry: a broken .ico would show as an empty one there.
+  if (icon.readUInt16LE(0) !== 0 || icon.readUInt16LE(2) !== 1 || icon.readUInt16LE(4) < 1) {
+    fail(`${parts.icon} is not a Windows .ico (draw it again: node assets/make-icon.js)`);
+  }
   const entries = [
     ['pime_tsf.dll', fs.readFileSync(parts.dll)],
     ['pime-core.exe', fs.readFileSync(parts.core)],
     ['LICENSE', fs.readFileSync(parts.license)],
     ['programming-ime.vsix', fs.readFileSync(vsix.file)],
+    ['pime.ico', icon],
+    ['pime-tray.exe', fs.readFileSync(parts.tray)],
+    ['pime-ai-worker.exe', fs.readFileSync(parts.worker)],
     ['meta.json', Buffer.from(JSON.stringify({version, extension_id: vsix.id}), 'utf8')],
   ];
-  const out = path.join(DIST, `ProgrammingIME-${version}-win-x64-setup.exe`);
+  // Wait for a file that an antivirus scanner holds: writing it can fail with EBUSY for a moment.
+function writeWithRetry(file, bytes, attempts = 10) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      fs.writeFileSync(file, bytes);
+      return;
+    } catch (e) {
+      if (e.code !== 'EBUSY' && e.code !== 'EPERM') throw e;
+      sleep(1000);
+    }
+  }
+  fail(`could not write ${file}: the file stays locked by another program`);
+}
+
+// Sleep without pulling in a dependency (the build must run on a bare Node.js).
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+const out = path.join(DIST, `ProgrammingIME-${version}-win-x64-setup.exe`);
   const stub = fs.readFileSync(parts.stub);
-  fs.writeFileSync(out, Buffer.concat([stub, packPayload(entries)]));
+  writeWithRetry(out, Buffer.concat([stub, packPayload(entries)]));
   const outBytes = fs.readFileSync(out);
   const digest = sha256(outBytes).toString('hex');
   fs.writeFileSync(`${out}.sha256`, `${digest} *${path.basename(out)}\n`);
@@ -129,9 +169,24 @@ function main() {
   let payload;
   try { payload = readPayload(out); check(true, `payload footer and hashes verify (${payload.entries.length} entries, read by an independent reader)`); }
   catch (e) { check(false, `payload: ${e.message}`); }
+  // Every program in the payload is installed into Program Files and is started by the user's machine: it may only
+  // need DLLs that Windows itself ships.
+  for (const [name, bytes] of entries) {
+    if (!/\.(exe|dll)$/i.test(name)) continue;
+    const pe = parsePe(bytes);
+    const bad = pe.imports.filter(n => !ALLOWED_IMPORT.test(n));
+    check(bad.length === 0 && pe.machineCode === 0x8664,
+      `the payload program ${name} is x64 and imports only Windows system DLLs (${pe.imports.join(', ')})${bad.length ? `; unexpected: ${bad.join(', ')}` : ''}`);
+  }
   if (!args.includes('--skip-dry-run')) {
     const probe = path.join(os.tmpdir(), `pime-dry-run-${process.pid}`); // must stay absent: a dry run changes nothing
-    const r = spawnSync(out, ['--dry-run', '--prefix', probe], {encoding: 'utf8'});
+    // A virus scanner on this machine keeps freshly written executables locked for a moment: the first run can fail to
+    // start (no exit code). Retry a few times before calling it a failure.
+    let r = spawnSync(out, ['--dry-run', '--prefix', probe], {encoding: 'utf8'});
+    for (let attempt = 0; attempt < 5 && r.status === null; attempt++) {
+      sleep(1000);
+      r = spawnSync(out, ['--dry-run', '--prefix', probe], {encoding: 'utf8'});
+    }
     const text = `${r.stdout || ''}${r.stderr || ''}`;
     check(r.status === 0 && text.includes(`install plan (dry run: nothing is changed)`) && text.includes(`version ${version}, SHA-256 of every file verified`), `--dry-run finds and verifies the payload (exit ${r.status})`);
     check(!fs.existsSync(probe), '--dry-run created nothing');

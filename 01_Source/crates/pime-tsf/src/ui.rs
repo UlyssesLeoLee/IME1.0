@@ -16,6 +16,33 @@ pub struct CandidateRow {
     pub detail: String,
 }
 
+/// What the user (a click in our own window) or the host (a UI element that draws the list itself) asks the text
+/// service to do with the candidate list.
+///
+/// The host asks through `ITfCandidateListUIElementBehavior` (`SetSelection`, `Finalize`, `Abort`); without that
+/// interface a host that draws the list has no way to tell the text service what the user picked, and the click does
+/// nothing. The user asks through a click in the native window.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ListAction {
+    /// Move the highlight to this row of the current page (the host selected it; nothing is written).
+    Select(usize),
+    /// Take this row of the current page (the user clicked it): it is written to the document.
+    Take(usize),
+    /// Take the highlighted candidate (the host confirmed the selection).
+    Finalize,
+    /// Drop the list without taking anything (the host cancelled it).
+    Abort,
+}
+
+/// How a window or a host hands an action to the text service. The sink runs on the thread that owns the candidate
+/// window (the host's own thread), so it must not block and must not unwind into the host.
+pub type ActionSink = std::rc::Rc<dyn Fn(ListAction)>;
+
+/// A sink that drops every action: for the parts of the code that have no text service to talk to (the demo).
+pub fn no_sink() -> ActionSink {
+    std::rc::Rc::new(|_| {})
+}
+
 /// What the window shows right now (exactly one page).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CandidateView {
@@ -54,6 +81,12 @@ pub trait CandidateUi {
     /// list itself may hand it back (`ITfUIElement::Show(TRUE)`) to a popup that then cannot be drawn. The controller asks
     /// before it eats a key.
     fn is_visible(&self) -> bool;
+    /// An action the user or the host asked for, waiting to be applied. `None` when there is none. The controller asks
+    /// on every key event and after every `show`: an action that arrived while the text service was busy (a host that
+    /// calls back into the element from inside `UpdateUIElement`) waits here instead of being lost.
+    fn take_action(&mut self) -> Option<ListAction> {
+        None
+    }
 }
 
 /// Test double: remembers what it was asked to show.

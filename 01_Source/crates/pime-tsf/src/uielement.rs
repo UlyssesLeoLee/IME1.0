@@ -35,7 +35,7 @@ use crate::ui::{Anchor, CandidateRow, CandidateUi, CandidateView};
 pub const ELEMENT_GUID: u128 = 0x7c1e4a52_9d83_4f06_b2a7_5e3d90c8f114;
 
 /// `ITfUIElement::GetDescription`. Constant: the host may show it as the name of the list.
-pub const DESCRIPTION: &str = "Programming IME candidate list";
+pub const DESCRIPTION: &str = "IME1.0 candidate list";
 
 /// `TF_CLUIE_*`: which answers of the element changed (the glue test pins these to the `windows` constants).
 pub mod updated {
@@ -103,6 +103,14 @@ impl ListSnapshot {
     /// `GetSelection`: index of the highlighted candidate.
     pub fn selection(&self) -> u32 {
         self.selection
+    }
+
+    /// The same list with another highlighted row: what a host that draws the list itself tells us
+    /// (`ITfCandidateListUIElementBehavior::SetSelection`), so that `GetSelection` answers what the user picked.
+    pub fn with_selection(&self, index: u32) -> ListSnapshot {
+        let mut copy = self.clone();
+        copy.selection = index.min(self.count().saturating_sub(1));
+        copy
     }
 
     /// `GetString`: None for an index that is not a candidate (the glue answers `E_INVALIDARG`).
@@ -271,6 +279,16 @@ impl Shared {
         *self.published.borrow_mut() = None;
     }
 
+    /// The host moved the highlight of the list it draws itself: the published answer follows, so that
+    /// `GetSelection` tells the host what it already knows.
+    pub fn set_published_selection(&self, index: u32) {
+        let mut published = self.published.borrow_mut();
+        if let Some(p) = published.as_mut() {
+            p.list = p.list.with_selection(index);
+            p.flags |= updated::SELECTION;
+        }
+    }
+
     /// `ITfUIElement::IsShown`: true only while the TIP's own window is drawn for the open element.
     pub fn is_shown(&self) -> bool {
         let state = self.state.borrow();
@@ -402,6 +420,16 @@ impl<H: UiElementHost> ElementUi<H> {
                 } else {
                     Drawer::Host
                 };
+                drop(state);
+                if !begun.show {
+                    // The host draws the list itself. It does not read the contents at Begin, it reads them at the
+                    // first UpdateUIElement, and the flags of that first update must carry every answer (Microsoft's
+                    // rule for the UI element protocol). Without this update the host has nothing to draw, and the
+                    // user sees no list at all: this is what a host like the one in Windows.UI.Xaml does.
+                    self.shared.in_call.set(true);
+                    self.host.update(begun.id);
+                    self.shared.in_call.set(false);
+                }
             }
             Err(HostUnavailable) => {
                 state.begin_failed = true;
@@ -530,7 +558,7 @@ mod tests {
     #[test]
     fn a_snapshot_answers_what_the_element_is_asked() {
         let snap = ListSnapshot::from_view(&view(5, 2, 1, 3));
-        assert_eq!(snap.description(), "Programming IME candidate list");
+        assert_eq!(snap.description(), "IME1.0 candidate list");
         assert_eq!(snap.count(), 5);
         assert_eq!(snap.selection(), 2);
         assert_eq!(snap.string(0), Some("T0 (rule · valid)"));
@@ -1003,8 +1031,14 @@ mod tests {
         );
         assert_eq!(
             rig.calls().len(),
-            3,
-            "the host is still told about every change"
+            4,
+            "the host is told about every change, and it gets the contents once at once: a host that draws the list \
+             reads them at the first update, whose flags must carry every answer"
+        );
+        assert_eq!(
+            rig.wire.borrow().seen[1].flags,
+            updated::ALL,
+            "the first update after Begin carries every answer: a host that draws the list reads the contents there"
         );
         rig.ui.hide();
         assert_eq!(rig.native_shows(), 0);

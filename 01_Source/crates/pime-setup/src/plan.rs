@@ -9,13 +9,28 @@
 //!   itself through its own `DllRegisterServer`, the installer only calls `regsvr32 /s <our dll>` (UT-002, UT-061).
 
 use crate::backend::RegValue;
-use crate::payload::{CORE, DLL, LICENSE};
+use crate::payload::{CORE, DLL, ICON, LICENSE, TRAY, WORKER};
 use pime_core::json::{self, Json};
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-pub const PRODUCT: &str = "Programming IME";
-pub const PUBLISHER: &str = "Programming IME contributors";
+/// The product name, as the user sees it (language bar, Add/Remove Programs, installer title).
+pub const PRODUCT: &str = "IME1.0";
+/// The one-line description of the product, shown next to the name where Windows has a field for it
+/// (the Add/Remove Programs "Comments" value).
+pub const PRODUCT_DESCRIPTION: &str = "编程输入法";
+pub const PUBLISHER: &str = "IME1.0";
+/// The name of the folder the program is installed in.
+///
+/// The product is called "IME1.0" and its folder carries the same name. The program therefore always lives in a
+/// folder of its own: never in the root of a drive, never next to the files of another program. The rule is in
+/// [`resolve_install_dir`] and it is the same in the window and on the command line.
+pub const PRODUCT_FOLDER: &str = "IME1.0";
+/// The name the install folder had before the product was renamed to "IME1.0".
+///
+/// It is only used to recognise an older installation on the machine (to remove it, or to tell the person to
+/// remove it first): nothing is ever installed into it again.
+pub const LEGACY_INSTALL_FOLDER: &str = "Programming IME";
 pub const MANIFEST_NAME: &str = "install-manifest.json";
 pub const UNINSTALLER_NAME: &str = "uninstall.exe";
 /// Under `HKEY_LOCAL_MACHINE`.
@@ -53,9 +68,35 @@ pub enum VscodeMode {
     Install,
 }
 
-/// The folders that decide which program the (elevated) installer runs and which folders it treats as protected.
-/// `real::system_paths()` fills it from the Windows APIs (GetSystemDirectoryW, SHGetKnownFolderPath), never from
-/// environment variables, which the unelevated process that started the setup controls; tests build it by hand.
+/// The local time of the machine, as the Add/Remove Programs entry records it.
+///
+/// The plan never reads a clock itself: the time comes in with the rest of the machine's facts (see [`SystemPaths`]),
+/// so that a plan is reproducible and a test can ask for a fixed one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LocalTime {
+    pub year: u16,
+    pub month: u16,
+    pub day: u16,
+    pub hour: u16,
+    pub minute: u16,
+    pub second: u16,
+}
+
+impl LocalTime {
+    /// The form the Add/Remove Programs entry uses for `InstallDate`: `YYYYMMDDHHMMSS`.
+    pub fn format(&self) -> String {
+        format!(
+            "{:04}{:02}{:02}{:02}{:02}{:02}",
+            self.year, self.month, self.day, self.hour, self.minute, self.second
+        )
+    }
+}
+
+/// The machine the installer runs on: the folders that decide which program the (elevated) installer runs and which
+/// folders it treats as protected, plus the local time it records as the installation time.
+/// `real::system_paths()` fills it from the Windows APIs (GetSystemDirectoryW, SHGetKnownFolderPath, GetLocalTime),
+/// never from environment variables, which the unelevated process that started the setup controls; tests build it by
+/// hand.
 #[derive(Clone, Debug)]
 pub struct SystemPaths {
     /// The Windows folder (`C:\Windows`).
@@ -66,6 +107,9 @@ pub struct SystemPaths {
     pub program_files_x86: Option<PathBuf>,
     pub program_data: Option<PathBuf>,
     pub user_profile: Option<PathBuf>,
+    /// The machine's local time. The Add/Remove Programs entry records it as the installation time, so it is read with
+    /// the paths and not by the plan itself.
+    pub local_time: LocalTime,
 }
 
 impl SystemPaths {
@@ -75,7 +119,13 @@ impl SystemPaths {
     }
 
     pub fn default_prefix(&self) -> PathBuf {
-        self.program_files.join(PRODUCT)
+        self.program_files.join(PRODUCT_FOLDER)
+    }
+
+    /// Where an installation from before the rename lives. Nothing is installed there any more; the folder is only
+    /// looked for, so that an old installation can be removed or reported.
+    pub fn legacy_prefix(&self) -> PathBuf {
+        self.program_files.join(LEGACY_INSTALL_FOLDER)
     }
 
     fn protected_roots(&self) -> Vec<&Path> {
@@ -229,6 +279,16 @@ impl fmt::Display for PlanError {
 }
 
 impl std::error::Error for PlanError {}
+
+impl PlanError {
+    /// The reason without the wrapper of `Display` ("refusing this install folder: ..."). The window writes it
+    /// under the folder field, where the wrapper would only repeat itself.
+    pub fn reason(&self) -> &str {
+        match self {
+            PlanError::Prefix(m) | PlanError::Release(m) | PlanError::Manifest(m) => m,
+        }
+    }
+}
 
 /// What an install wrote, kept in `<prefix>\install-manifest.json` so that uninstalling removes exactly this.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -441,6 +501,16 @@ const SYSTEM_TOP_LEVEL: [&str; 11] = [
     "boot",
 ];
 
+/// The two of them that are the place where a program is installed: the program folder is *created inside* them,
+/// but nothing is ever installed into one of them itself.
+const PROGRAM_FILES_TOP_LEVEL: [&str; 2] = ["program files", "program files (x86)"];
+
+/// Whether `name` is a top-level folder of a drive that the program may not be installed in.
+fn is_system_top_level(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    SYSTEM_TOP_LEVEL.contains(&lower.as_str()) && !PROGRAM_FILES_TOP_LEVEL.contains(&lower.as_str())
+}
+
 /// Splits `C:\a\b` (already using backslashes) into its components after checking each of them.
 fn split_components(path: &str) -> Result<Vec<&str>, String> {
     let bytes = path.as_bytes();
@@ -449,7 +519,7 @@ fn split_components(path: &str) -> Result<Vec<&str>, String> {
         && bytes[1] == b':'
         && bytes[2] == b'\\')
     {
-        return Err("it must be an absolute path on a local drive such as C:\\Tools\\PIME (relative, UNC and \\\\?\\ paths are refused)".into());
+        return Err("it must be an absolute path on a local drive such as C:\\Program Files\\IME1.0 (relative, UNC and \\\\?\\ paths are refused)".into());
     }
     let rest = path[3..].trim_end_matches('\\');
     if rest.is_empty() {
@@ -491,6 +561,65 @@ fn split_components(path: &str) -> Result<Vec<&str>, String> {
     Ok(comps)
 }
 
+/// The folder the program is installed in, worked out from the place the person chose.
+///
+/// The rules (the same ones in the window and on the command line):
+/// - nothing chosen means the default folder (`<Program Files>\IME1.0`);
+/// - a folder whose last part is already `IME1.0` is used as it is (`D:\Tools\IME1.0`);
+/// - every other folder gets the product folder appended (`D:\Tools` becomes `D:\Tools\IME1.0`);
+/// - the root of a drive is never the install folder: `D:\` becomes `D:\IME1.0`.
+///
+/// The function only works out the path. Whether it may be written to is decided by [`validate_prefix`].
+pub fn resolve_install_dir(chosen: &Path, system: &SystemPaths) -> Result<PathBuf, PlanError> {
+    let refuse = |m: String| PlanError::Prefix(format!("{}: {m}", chosen.display()));
+    let raw = chosen
+        .to_str()
+        .ok_or_else(|| refuse("it is not valid Unicode".into()))?;
+    // The text is not trimmed: a component that ends in a dot or a space is a name that Windows would silently
+    // rewrite, and such a folder is refused instead of being installed somewhere else.
+    let text = raw.replace('/', "\\");
+    if text.trim().is_empty() {
+        // nothing chosen means the default folder
+        return Ok(system.default_prefix());
+    }
+    // "D:" is the root of the drive with the separator forgotten
+    let text = if text.len() == 2 && text.as_bytes()[1] == b':' {
+        format!("{text}\\")
+    } else {
+        text
+    };
+    let comps: Vec<String> = split_components(&text)
+        .map_err(refuse)?
+        .iter()
+        .map(|c| c.to_string())
+        .collect();
+    // the Windows folder is never a place to install into
+    if comps
+        .first()
+        .is_some_and(|c| c.eq_ignore_ascii_case("windows"))
+    {
+        return Err(refuse("it is inside the Windows folder".into()));
+    }
+    // a system folder is never a place to install into either (the Program Files folders are: the program folder
+    // is created inside them, that is what they are for)
+    if comps.len() == 1 && is_system_top_level(&comps[0]) {
+        return Err(refuse("it is a system folder".into()));
+    }
+    let mut resolved = comps;
+    if !resolved
+        .last()
+        .is_some_and(|c| c.eq_ignore_ascii_case(PRODUCT_FOLDER))
+    {
+        // the program always gets a folder of its own: the root of a drive is never the install folder
+        resolved.push(PRODUCT_FOLDER.to_string());
+    }
+    Ok(PathBuf::from(format!(
+        "{}\\{}",
+        &text[..2],
+        resolved.join("\\")
+    )))
+}
+
 /// Normalises and checks an install folder. Returns the path with backslashes and without a trailing separator.
 pub fn validate_prefix(raw: &Path, system: &SystemPaths) -> Result<PathBuf, PlanError> {
     let refuse = |m: String| PlanError::Prefix(format!("{}: {m}", raw.display()));
@@ -506,7 +635,7 @@ pub fn validate_prefix(raw: &Path, system: &SystemPaths) -> Result<PathBuf, Plan
     if first.as_deref() == Some("windows") {
         return Err(refuse("it is inside the Windows folder".into()));
     }
-    if comps.len() == 1 && SYSTEM_TOP_LEVEL.contains(&first.as_deref().unwrap_or_default()) {
+    if comps.len() == 1 && is_system_top_level(first.as_deref().unwrap_or_default()) {
         return Err(refuse("it is a system folder".into()));
     }
     let normalized = PathBuf::from(format!("{}\\{}", &text[..2], comps.join("\\")));
@@ -525,7 +654,7 @@ pub fn validate_prefix(raw: &Path, system: &SystemPaths) -> Result<PathBuf, Plan
     Ok(normalized)
 }
 
-fn arp_values(prefix: &Path, release: &Release) -> Vec<(String, RegValue)> {
+fn arp_values(prefix: &Path, release: &Release, date: LocalTime) -> Vec<(String, RegValue)> {
     let uninstaller = prefix.join(UNINSTALLER_NAME);
     let quoted = format!("\"{}\"", uninstaller.display());
     let kib = release
@@ -535,23 +664,31 @@ fn arp_values(prefix: &Path, release: &Release) -> Vec<(String, RegValue)> {
         .sum::<u64>()
         .div_ceil(1024);
     let s = |k: &str, v: String| (k.to_string(), RegValue::Str(v));
-    vec![
+    let mut values = vec![
         s("DisplayName", PRODUCT.to_string()),
         s("DisplayVersion", release.version.clone()),
         s("Publisher", PUBLISHER.to_string()),
+        s("Comments", PRODUCT_DESCRIPTION.to_string()),
         s("InstallLocation", prefix.display().to_string()),
         s("UninstallString", format!("{quoted} --uninstall")),
         s(
             "QuietUninstallString",
             format!("{quoted} --uninstall --silent"),
         ),
+        s("InstallDate", date.format()),
         (
             "EstimatedSize".to_string(),
             RegValue::Dword(u32::try_from(kib).unwrap_or(u32::MAX)),
         ),
         ("NoModify".to_string(), RegValue::Dword(1)),
         ("NoRepair".to_string(), RegValue::Dword(1)),
-    ]
+    ];
+    // The icon is only named when the payload really carries it: an entry that points at a file that is not there
+    // shows a broken picture in the Add/Remove Programs list.
+    if release.files.iter().any(|f| f.name == ICON) {
+        values.push(s("DisplayIcon", prefix.join(ICON).display().to_string()));
+    }
+    values
 }
 
 /// Administrator rights are needed to write HKLM and to write under Program Files / Windows.
@@ -564,10 +701,15 @@ fn needs_admin(prefix: &Path, writes_hklm: bool, system: &SystemPaths) -> bool {
 }
 
 /// `install_plan(prefix, options)`: pure, nothing is read from or written to the machine.
+///
+/// `prefix` is the place the person chose. The install folder is worked out from it by [`resolve_install_dir`]: the
+/// product folder is appended to it, so the program always lands in a folder of its own. The function is idempotent,
+/// so a folder that is already the resolved one stays as it is.
 pub fn install_plan(prefix: &Path, options: &InstallOptions) -> Result<Plan, PlanError> {
-    let prefix = validate_prefix(prefix, &options.system)?;
+    let prefix = resolve_install_dir(prefix, &options.system)?;
+    let prefix = validate_prefix(&prefix, &options.system)?;
     let release = &options.release;
-    for needed in [DLL, CORE, LICENSE] {
+    for needed in [DLL, CORE, LICENSE, TRAY, WORKER] {
         if !release.files.iter().any(|f| f.name == needed) {
             return Err(PlanError::Release(format!("the payload has no {needed}")));
         }
@@ -616,7 +758,7 @@ pub fn install_plan(prefix: &Path, options: &InstallOptions) -> Result<Plan, Pla
     if options.arp {
         steps.push(Step::WriteArp {
             key: ARP_KEY.to_string(),
-            values: arp_values(&prefix, release),
+            values: arp_values(&prefix, release, options.system.local_time),
         });
         manifest.registry_keys.push(arp_path());
     }
@@ -755,6 +897,14 @@ pub mod tests {
             program_files_x86: Some(PathBuf::from(r"C:\Program Files (x86)")),
             program_data: Some(PathBuf::from(r"C:\ProgramData")),
             user_profile: Some(PathBuf::from(r"C:\Users\me")),
+            local_time: LocalTime {
+                year: 2026,
+                month: 11,
+                day: 2,
+                hour: 9,
+                minute: 5,
+                second: 3,
+            },
         }
     }
 
@@ -772,8 +922,21 @@ pub mod tests {
                 file(CORE, 4096),
                 file(LICENSE, 1100),
                 file(crate::payload::VSIX, 5000),
+                file(TRAY, 3072),
+                file(WORKER, 6144),
             ],
         }
+    }
+
+    /// The same release, but with the icon the installer puts into the install folder.
+    pub fn release_with_icon(version: &str) -> Release {
+        let mut r = release(version);
+        r.files.push(PayloadFile {
+            name: ICON.to_string(),
+            size: 15086, // the size of assets/pime.ico
+            sha256: [7; 32],
+        });
+        r
     }
 
     pub fn options() -> InstallOptions {
@@ -786,7 +949,7 @@ pub mod tests {
         }
     }
 
-    pub const PREFIX: &str = r"C:\Program Files\Programming IME";
+    pub const PREFIX: &str = r"C:\Program Files\IME1.0";
 
     fn p(s: &str) -> PathBuf {
         PathBuf::from(s)
@@ -813,13 +976,15 @@ pub mod tests {
             place(CORE, payload(CORE)),
             place(LICENSE, payload(LICENSE)),
             place(crate::payload::VSIX, payload(crate::payload::VSIX)),
+            place(TRAY, payload(TRAY)),
+            place(WORKER, payload(WORKER)),
             place(UNINSTALLER_NAME, FileSource::SelfExe),
             Step::RegisterTextService {
                 dll: p(&format!(r"{PREFIX}\pime_tsf.dll")),
             },
             Step::WriteArp {
                 key: ARP_KEY.to_string(),
-                values: arp_values(Path::new(PREFIX), &release("0.2.0")),
+                values: arp_values(Path::new(PREFIX), &release("0.2.0"), system().local_time),
             },
             Step::InstallVscodeExtension {
                 vsix: p(&format!(r"{PREFIX}\programming-ime.vsix")),
@@ -830,7 +995,7 @@ pub mod tests {
         assert!(plan.requires_admin && plan.warnings.is_empty());
         assert_eq!(plan.regsvr32, p(r"C:\Windows\System32\regsvr32.exe"));
         let m = &plan.manifest;
-        assert_eq!(m.files.len(), 6);
+        assert_eq!(m.files.len(), 8);
         assert_eq!(
             m.registry_keys,
             [r"HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\ProgrammingIME"]
@@ -851,11 +1016,13 @@ pub mod tests {
 
     #[test]
     fn st_035_the_add_remove_programs_entry_describes_the_uninstaller() {
-        let values = arp_values(Path::new(PREFIX), &release("0.2.0"));
+        let values = arp_values(Path::new(PREFIX), &release("0.2.0"), system().local_time);
         let get = |n: &str| values.iter().find(|(k, _)| k == n).map(|(_, v)| v.clone());
+        assert_eq!(get("DisplayName"), Some(RegValue::Str("IME1.0".into())));
         assert_eq!(
-            get("DisplayName"),
-            Some(RegValue::Str("Programming IME".into()))
+            get("Comments"),
+            Some(RegValue::Str("编程输入法".into())),
+            "the product description sits next to the name in Add/Remove Programs"
         );
         assert_eq!(get("DisplayVersion"), Some(RegValue::Str("0.2.0".into())));
         assert_eq!(get("InstallLocation"), Some(RegValue::Str(PREFIX.into())));
@@ -871,8 +1038,62 @@ pub mod tests {
                 r#""{PREFIX}\uninstall.exe" --uninstall --silent"#
             )))
         );
-        assert_eq!(get("EstimatedSize"), Some(RegValue::Dword(12))); // 12244 bytes -> 12 KiB
+        assert_eq!(get("EstimatedSize"), Some(RegValue::Dword(21))); // 21460 bytes -> 21 KiB
         assert_eq!(get("NoModify"), Some(RegValue::Dword(1)));
+    }
+
+    #[test]
+    fn st_035_the_entry_records_the_installation_time_in_the_windows_format() {
+        // a fixed time produces a fixed value: the clock is injected, the plan never reads one itself
+        let at = LocalTime {
+            year: 2026,
+            month: 11,
+            day: 2,
+            hour: 9,
+            minute: 5,
+            second: 3,
+        };
+        assert_eq!(at.format(), "20261102090503");
+        let values = arp_values(Path::new(PREFIX), &release("0.2.0"), at);
+        let date = values
+            .iter()
+            .find(|(k, _)| k == "InstallDate")
+            .map(|(_, v)| v.clone());
+        assert_eq!(date, Some(RegValue::Str("20261102090503".into())));
+        // the plan takes the time from the machine's facts, so the same plan always says the same thing
+        let plan = install_plan(Path::new(PREFIX), &options()).unwrap();
+        let Step::WriteArp { values, .. } = plan
+            .steps
+            .iter()
+            .find(|s| matches!(s, Step::WriteArp { .. }))
+            .unwrap()
+        else {
+            panic!("the plan writes the Add/Remove Programs entry");
+        };
+        assert!(
+            values
+                .iter()
+                .any(|(k, v)| k == "InstallDate" && *v == RegValue::Str("20261102090503".into()))
+        );
+    }
+
+    #[test]
+    fn st_035_the_entry_points_at_the_icon_only_when_the_payload_carries_one() {
+        let without = arp_values(Path::new(PREFIX), &release("0.2.0"), system().local_time);
+        assert!(
+            !without.iter().any(|(k, _)| k == "DisplayIcon"),
+            "an entry must not name an icon file that is not installed"
+        );
+        let with = arp_values(
+            Path::new(PREFIX),
+            &release_with_icon("0.2.0"),
+            system().local_time,
+        );
+        let icon = with
+            .iter()
+            .find(|(k, _)| k == "DisplayIcon")
+            .map(|(_, v)| v.clone());
+        assert_eq!(icon, Some(RegValue::Str(format!(r"{PREFIX}\{ICON}"))));
     }
 
     #[test]
@@ -992,9 +1213,6 @@ pub mod tests {
     #[test]
     fn st_035_prefixes_that_are_system_roots_or_contain_dot_dot_are_refused() {
         let refused = [
-            "",
-            "C:",
-            r"C:\",
             r"relative\dir",
             r"\\server\share\pime",
             r"\\?\C:\pime",
@@ -1003,12 +1221,8 @@ pub mod tests {
             r"c:\windows",
             r"C:\Windows\System32\PIME",
             r"C:/Windows/System32",
-            r"C:\Program Files",
-            r"C:\Program Files\",
-            r"C:\Program Files (x86)",
             r"C:\ProgramData",
             r"C:\Users",
-            r"C:\Users\me",
             r"C:\Program Files\..\Windows",
             r"C:\Tools\..\..",
             r"C:\Tools\..",
@@ -1034,20 +1248,82 @@ pub mod tests {
         }
     }
 
+    /// The rule of the install folder: the product folder is always the last part of it, so the program never lands
+    /// in the root of a drive and never next to the files of another program.
+    #[test]
+    fn the_product_folder_is_always_the_last_part_of_the_install_folder() {
+        for (chosen, resolved) in [
+            // the root of a drive gets the product folder instead of being installed into
+            (r"D:\", r"D:\IME1.0"),
+            (r"D:", r"D:\IME1.0"),
+            (r"D:\Tools", r"D:\Tools\IME1.0"),
+            (r"D:\Tools\", r"D:\Tools\IME1.0"),
+            ("D:/Tools", r"D:\Tools\IME1.0"),
+            // a folder that is already the product folder stays as it is
+            (r"D:\Tools\IME1.0", r"D:\Tools\IME1.0"),
+            (r"D:\Tools\ime1.0", r"D:\Tools\ime1.0"),
+            (r"C:\Program Files\IME1.0", r"C:\Program Files\IME1.0"),
+            // the default
+            (r"C:\Program Files", r"C:\Program Files\IME1.0"),
+        ] {
+            let dir = resolve_install_dir(Path::new(chosen), &system()).unwrap();
+            assert_eq!(dir, p(resolved), "{chosen}");
+            // and the plan installs there, not into the place that was chosen
+            let plan = install_plan(Path::new(chosen), &options()).unwrap();
+            assert_eq!(plan.prefix, p(resolved), "{chosen}");
+            assert!(
+                plan.steps.iter().all(|s| match s {
+                    Step::CreateDir(d) => d == &p(resolved),
+                    Step::PlaceFile { dest, .. } => dest.starts_with(resolved),
+                    _ => true,
+                }),
+                "{chosen}: {plan:?}"
+            );
+        }
+    }
+
+    /// The rule is idempotent: a folder that is already the resolved one is not changed a second time. The
+    /// elevated child is started with the resolved folder, so this is what keeps the two processes on one folder.
+    #[test]
+    fn resolving_a_resolved_folder_changes_nothing() {
+        for raw in [r"D:\IME1.0", r"D:\Tools\IME1.0", r"C:\Program Files\IME1.0"] {
+            let once = resolve_install_dir(Path::new(raw), &system()).unwrap();
+            let twice = resolve_install_dir(&once, &system()).unwrap();
+            assert_eq!(once, twice, "{raw}");
+        }
+    }
+
+    /// Nothing chosen means the default folder, and the default folder is the product folder in Program Files.
+    #[test]
+    fn the_default_folder_is_the_product_folder_in_program_files() {
+        let system = system();
+        assert_eq!(system.default_prefix(), p(r"C:\Program Files\IME1.0"));
+        assert_eq!(
+            resolve_install_dir(Path::new(""), &system).unwrap(),
+            p(r"C:\Program Files\IME1.0")
+        );
+        assert_eq!(
+            resolve_install_dir(Path::new("   "), &system).unwrap(),
+            p(r"C:\Program Files\IME1.0")
+        );
+        // and the folder of an installation from before the rename is only looked for, never installed into
+        assert_eq!(
+            system.legacy_prefix(),
+            p(r"C:\Program Files\Programming IME")
+        );
+    }
+
     #[test]
     fn st_035_prefixes_with_spaces_and_non_ascii_are_accepted_and_normalised() {
         for (raw, normalized) in [
             (PREFIX, PREFIX),
-            (r"C:\Program Files\Programming IME\", PREFIX),
-            ("C:/Program Files/Programming IME", PREFIX),
-            (
-                r"D:\日本語 フォルダ\Programming IME",
-                r"D:\日本語 フォルダ\Programming IME",
-            ),
-            (r"E:\Tools\PIME", r"E:\Tools\PIME"),
+            (r"C:\Program Files\IME1.0\", PREFIX),
+            ("C:/Program Files/IME1.0", PREFIX),
+            (r"D:\日本語 フォルダ\IME1.0", r"D:\日本語 フォルダ\IME1.0"),
+            (r"E:\Tools\PIME", r"E:\Tools\PIME\IME1.0"),
             (
                 r"C:\Users\me\AppData\Local\Temp\pime x",
-                r"C:\Users\me\AppData\Local\Temp\pime x",
+                r"C:\Users\me\AppData\Local\Temp\pime x\IME1.0",
             ),
         ] {
             let plan = install_plan(Path::new(raw), &options()).unwrap();
@@ -1072,16 +1348,10 @@ pub mod tests {
     fn st_035_dry_run_text_lists_every_step_and_says_nothing_is_changed() {
         let plan = install_plan(Path::new(PREFIX), &options()).unwrap();
         let text = render(&plan, &["payload: ok".to_string()]);
-        assert!(
-            text.starts_with(
-                "Programming IME 0.2.0 - install plan (dry run: nothing is changed)\n"
-            )
-        );
+        assert!(text.starts_with("IME1.0 0.2.0 - install plan (dry run: nothing is changed)\n"));
         assert!(text.contains("administrator rights needed: yes"));
         assert!(text.contains("payload: ok"));
-        assert!(
-            text.contains(r#"regsvr32.exe /s "C:\Program Files\Programming IME\pime_tsf.dll""#)
-        );
+        assert!(text.contains(r#"regsvr32.exe /s "C:\Program Files\IME1.0\pime_tsf.dll""#));
         assert_eq!(
             text.lines()
                 .filter(|l| l.trim_start().starts_with(|c: char| c.is_ascii_digit()))
@@ -1094,7 +1364,7 @@ pub mod tests {
         let mut plan_manifest = install_plan(Path::new(PREFIX), &options())
             .unwrap()
             .manifest;
-        plan_manifest.directories = vec![p(r"C:\Program Files\Programming IME")];
+        plan_manifest.directories = vec![p(r"C:\Program Files\IME1.0")];
         plan_manifest
     }
 
@@ -1176,6 +1446,8 @@ pub mod tests {
             file(CORE),
             file(LICENSE),
             file("programming-ime.vsix"),
+            file(TRAY),
+            file(WORKER),
             file(UNINSTALLER_NAME),
             file(MANIFEST_NAME),
             Step::RemoveDir(p(PREFIX)),

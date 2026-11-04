@@ -9,10 +9,31 @@ version = "0.2.0"
 edition = "2024"
 license = "MIT"
 publish = false
+# The integration test scripts live in 01_Source/tests/tsf (one home for every test script, like tests/rust for
+# pime-core and tests/setup for pime-setup). autotests = false keeps cargo from looking anywhere else.
+autotests = false
 description = "Programming IME text service (TSF) in Rust: in-process input state machine from pime-core"
 
 [lib]
-crate-type = ["cdylib"]
+# "rlib" as well as "cdylib": the integration test scripts under 01_Source/tests/tsf link the crate as a library.
+# The shipped artefact is still the cdylib (the DLL); the rlib is never packaged.
+crate-type = ["cdylib", "rlib"]
+
+[[test]]
+name = "ime_scenarios"
+path = "../../tests/tsf/ime_scenarios.rs"
+
+[[test]]
+name = "ime_functions"
+path = "../../tests/tsf/ime_functions.rs"
+
+[[test]]
+name = "ime_host"
+path = "../../tests/tsf/ime_host.rs"
+
+[[test]]
+name = "ime_selection"
+path = "../../tests/tsf/ime_selection.rs"
 
 [dependencies]
 pime-core = { path = "../pime-core" }
@@ -30,6 +51,7 @@ features = [
   "Win32_Graphics_Gdi",
   "Win32_System_Registry",
   "Win32_System_LibraryLoader",
+  "Win32_System_SystemInformation",
   "Win32_System_Threading",
   "Win32_System_Ole",
   "Win32_System_Variant",
@@ -41,6 +63,16 @@ features = [
 
 [dependencies.windows-core]
 version = "=0.58.0"
+
+# The integration test scripts under 01_Source/tests/tsf need the same COM interfaces the crate itself uses.
+[dev-dependencies]
+windows = { version = "=0.58.0", features = [
+  "implement",
+  "Win32_Foundation",
+  "Win32_System_Com",
+  "Win32_UI_TextServices",
+  "Win32_UI_WindowsAndMessaging",
+] }
 
 [profile.release]
 opt-level = "s"

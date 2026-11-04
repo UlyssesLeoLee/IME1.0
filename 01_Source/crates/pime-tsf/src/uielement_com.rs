@@ -14,14 +14,15 @@ use std::rc::Rc;
 
 use windows::Win32::Foundation::{BOOL, E_FAIL, E_INVALIDARG, E_NOTIMPL};
 use windows::Win32::UI::TextServices::{
-    ITfCandidateListUIElement, ITfCandidateListUIElement_Impl, ITfDocumentMgr, ITfThreadMgr,
-    ITfUIElement, ITfUIElement_Impl, ITfUIElementMgr,
+    ITfCandidateListUIElement, ITfCandidateListUIElement_Impl, ITfCandidateListUIElementBehavior,
+    ITfCandidateListUIElementBehavior_Impl, ITfDocumentMgr, ITfThreadMgr, ITfUIElement,
+    ITfUIElement_Impl, ITfUIElementMgr,
 };
 use windows::core::{BSTR, Error, GUID, Interface, Result, implement};
 
 use crate::register::debug_line;
 use crate::tip::guard;
-use crate::ui::CandidateUi;
+use crate::ui::{ActionSink, CandidateUi, ListAction};
 use crate::uielement::{
     Begun, DESCRIPTION, ELEMENT_GUID, ElementUi, HostUnavailable, Shared, UiElementHost,
 };
@@ -36,11 +37,20 @@ fn error(code: windows::core::HRESULT) -> Error {
 
 /// The object handed to `ITfUIElementMgr::BeginUIElement`. TSF holds it from Begin to End; it answers from the list the
 /// driver published just before the call.
-#[implement(ITfCandidateListUIElement)]
+///
+/// It also answers `ITfCandidateListUIElementBehavior`: a host that draws the candidate list itself (the XAML
+/// framework of the new Notepad does) tells the text service through that interface what the user picked. Without it
+/// the host has no way to tell us, and a click in the host's own list does nothing.
+#[implement(ITfCandidateListUIElement, ITfCandidateListUIElementBehavior)]
 struct CandidateListElement {
     shared: Rc<Shared>,
     /// For `GetDocumentMgr`: the document the user is typing into is the thread manager's focus.
     thread_mgr: Option<ITfThreadMgr>,
+    /// How the host reaches the text service (the user in our own window uses the same channel).
+    sink: ActionSink,
+    /// Counts this object in the DLL's live-object counter while it exists: TSF holds the element from
+    /// `BeginUIElement` to `EndUIElement` and calls back into it, so the DLL must not be unloaded before that.
+    _live: crate::LiveGuard,
 }
 
 impl CandidateListElement_Impl {
@@ -141,6 +151,34 @@ impl ITfCandidateListUIElement_Impl for CandidateListElement_Impl {
     }
 }
 
+/// `ITfCandidateListUIElementBehavior`: what a host that draws the candidate list itself asks for.
+impl ITfCandidateListUIElementBehavior_Impl for CandidateListElement_Impl {
+    /// The user picked a row in the host's own list: the machine follows the highlight. Nothing is written yet.
+    fn SetSelection(&self, nindex: u32) -> Result<()> {
+        guard(Err(error(E_FAIL)), || {
+            self.shared.set_published_selection(nindex);
+            (self.sink)(ListAction::Select(nindex as usize));
+            Ok(())
+        })
+    }
+
+    /// The host confirms the selection: the candidate is written to the document.
+    fn Finalize(&self) -> Result<()> {
+        guard(Err(error(E_FAIL)), || {
+            (self.sink)(ListAction::Finalize);
+            Ok(())
+        })
+    }
+
+    /// The host cancels: the list goes away without writing anything.
+    fn Abort(&self) -> Result<()> {
+        guard(Err(error(E_FAIL)), || {
+            (self.sink)(ListAction::Abort);
+            Ok(())
+        })
+    }
+}
+
 /// `ITfUIElementMgr` for the driver. Without a manager (the thread manager does not offer one, or the call fails) the
 /// driver draws the native popup, so a failure here is never fatal.
 pub(crate) struct TsfUiElementHost {
@@ -201,11 +239,16 @@ impl UiElementHost for TsfUiElementHost {
 pub(crate) fn candidate_ui(
     thread_mgr: &ITfThreadMgr,
     native: Box<dyn CandidateUi>,
+    sink: ActionSink,
 ) -> ElementUi<TsfUiElementHost> {
     let shared = Shared::new(native);
+    let mut _live = crate::LiveGuard::new();
+    _live.count();
     let element: ITfCandidateListUIElement = CandidateListElement {
         shared: Rc::clone(&shared),
         thread_mgr: Some(thread_mgr.clone()),
+        sink,
+        _live,
     }
     .into();
     let target = match (
@@ -228,6 +271,7 @@ pub(crate) fn candidate_ui(
 mod tests {
     use super::*;
     use crate::ui::{Anchor, CandidateRow, CandidateView, RecordingUi};
+    use std::cell::RefCell;
     use windows::Win32::UI::TextServices::{
         ITfCandidateListUIElementBehavior, TF_CLUIE_COUNT, TF_CLUIE_CURRENTPAGE,
         TF_CLUIE_DOCUMENTMGR, TF_CLUIE_PAGEINDEX, TF_CLUIE_SELECTION, TF_CLUIE_STRING,
@@ -246,7 +290,7 @@ mod tests {
                 .map(|i| CandidateRow {
                     label: (i + 1).to_string(),
                     text: format!("T{i}"),
-                    detail: "rule · valid".to_string(),
+                    detail: "rule 路 valid".to_string(),
                 })
                 .collect(),
             selected_in_page: selected,
@@ -277,19 +321,28 @@ mod tests {
         element: ITfCandidateListUIElement,
         ui: ElementUi<AnyHost>,
         shared: Rc<Shared>,
+        actions: Rc<RefCell<Vec<ListAction>>>,
     }
 
     fn fixture(show: bool) -> Fixture {
         let shared = Shared::new(Box::new(RecordingUi::default()));
+        let actions: Rc<RefCell<Vec<ListAction>>> = Rc::new(RefCell::new(Vec::new()));
+        let sink: ActionSink = {
+            let actions = actions.clone();
+            Rc::new(move |action| actions.borrow_mut().push(action))
+        };
         let element: ITfCandidateListUIElement = CandidateListElement {
             shared: Rc::clone(&shared),
             thread_mgr: None,
+            sink,
+            _live: crate::LiveGuard::new(),
         }
         .into();
         Fixture {
             element,
             ui: ElementUi::new(Rc::clone(&shared), AnyHost { show }),
             shared,
+            actions,
         }
     }
 
@@ -309,15 +362,46 @@ mod tests {
         let f = fixture(true);
         assert!(f.element.cast::<IUnknown>().is_ok());
         let base: ITfUIElement = f.element.cast().expect("ITfUIElement");
+        // the behaviour interface is what lets a host that draws the list itself report the user's choice
         assert!(
             f.element
                 .cast::<ITfCandidateListUIElementBehavior>()
-                .is_err(),
-            "the behaviour interface (host-driven selection) is not implemented and must not be claimed"
+                .is_ok(),
+            "a host that draws the candidate list needs the behaviour interface, or its clicks do nothing"
         );
         // the same object behind every interface
         let back: ITfCandidateListUIElement = base.cast().expect("ITfCandidateListUIElement");
         assert_eq!(back.as_raw(), f.element.as_raw());
+    }
+
+    #[test]
+    fn the_behaviour_interface_reports_the_users_choice_to_the_text_service() {
+        let mut f = fixture(false);
+        f.ui.show(&view(5, 0), ANCHOR);
+        // SAFETY: in-process calls on a live object.
+        unsafe {
+            let behaviour = f
+                .element
+                .cast::<ITfCandidateListUIElementBehavior>()
+                .expect("ITfCandidateListUIElementBehavior");
+            behaviour.SetSelection(2).unwrap();
+            behaviour.Finalize().unwrap();
+            behaviour.Abort().unwrap();
+        }
+        assert_eq!(
+            *f.actions.borrow(),
+            vec![
+                ListAction::Select(2),
+                ListAction::Finalize,
+                ListAction::Abort
+            ],
+            "the host's clicks travel to the text service"
+        );
+        // and the published answer follows the host, so GetSelection tells it what it already knows
+        // SAFETY: in-process calls on a live object.
+        unsafe {
+            assert_eq!(f.element.GetSelection().unwrap(), 2);
+        }
     }
 
     #[test]
@@ -339,7 +423,7 @@ mod tests {
             assert_eq!(f.element.GetGUID().unwrap(), GUID::from_u128(ELEMENT_GUID));
             assert_eq!(
                 f.element.GetDescription().unwrap().to_string(),
-                "Programming IME candidate list"
+                "IME1.0 candidate list"
             );
             assert!(!f.element.IsShown().unwrap().as_bool());
         }
@@ -355,11 +439,11 @@ mod tests {
             assert_eq!(f.element.GetSelection().unwrap(), 2);
             assert_eq!(
                 f.element.GetString(0).unwrap().to_string(),
-                "T0 (rule · valid)"
+                "T0 (rule 路 valid)"
             );
             assert_eq!(
                 f.element.GetString(4).unwrap().to_string(),
-                "T4 (rule · valid)"
+                "T4 (rule 路 valid)"
             );
             assert_eq!(
                 f.element.GetString(5).unwrap_err().code(),

@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 pub mod analysis;
+pub mod base64;
 pub mod budget;
 pub mod candidate;
 pub mod clock;
@@ -29,6 +30,7 @@ pub mod secrets;
 pub mod session;
 pub mod settings;
 pub mod sha256;
+pub mod style;
 pub mod textrange;
 pub mod util;
 pub mod validators;
@@ -46,6 +48,7 @@ pub mod symbols;
 pub mod diag;
 pub mod i18n;
 mod i18n_table;
+pub mod imeswitch;
 pub mod jsval;
 pub mod ops_cfg;
 pub mod settings_io;

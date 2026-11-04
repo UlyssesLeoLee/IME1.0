@@ -1,5 +1,13 @@
 # 2026-10-30 Verification record (code v0.2.0, after the tests/ restructure and the upgrades)
 
+> **更新（2026-11-02）**：本文件是 2026-10-30 的快照，下面每个数字按当时的口径保留，不回改。更新的记录在
+> `02_Verification/IME_FRAMEWORK_MATRIX.md`（输入法框架完整性矩阵、安装包构建与 `--dry-run` 自校验、当日的测试计数）和
+> `02_Verification/FRAMEWORK_GAPS.md`（框架缺口提交单）。
+> 其中一条结论变了：**Windows 系统输入法安装包现在能构建出来了**
+> （`01_Source/dist/ProgrammingIME-0.2.0-win-x64-setup.exe`，4,575,813 字节，未签名），而且
+> `crates/pime-setup` 的真实文件系统与链接集成测试这次**跑起来了**（此前被终端防护挡住）。
+> 但另一条结论**没有**变：该安装包**仍然从未在真实 Windows 上安装、注册或运行过**——「判据层」依然是空的。
+
 Environment: Windows 11, Node v26.13.0 (installed side by side; the machine default is still 22.12.0), npm 12.2.1, VS Code 1.144.0
 (stable, `Code.exe` driven over CDP), Playwright 1.64.1, Rust 1.99.1 (`x86_64-pc-windows-gnu`, user-level install; no MSVC), edition 2024.
 

@@ -709,6 +709,322 @@
      1
     ]
    }
+  },
+  {
+   "profile": "cypher",
+   "text": "MATCH (n)\nWHERE EXISTS { (n) }",
+   "dialect": {
+    "version": "4"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "CYPHER5_EXISTS_SUBQUERY"
+    ],
+    "lines": [
+     2
+    ]
+   }
+  },
+  {
+   "profile": "cypher",
+   "text": "MATCH (n)\nWHERE EXISTS { (n) }",
+   "dialect": {
+    "version": "5"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "cypher",
+   "text": "MATCH (n) IN TRANSACTIONS",
+   "dialect": {
+    "version": "4"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "CYPHER5_IN_TRANSACTIONS"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "cypher",
+   "text": "MATCH (n) IN TRANSACTIONS",
+   "dialect": {
+    "version": "5"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "cypher",
+   "text": "MATCH (n) RETURN n;",
+   "dialect": {
+    "version": "5"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "cypher",
+   "text": "MATCH (n)\nWHERE name = 'abc';",
+   "dialect": {
+    "version": "4"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "SELECT LISTAGG(a) FROM t",
+   "dialect": {
+    "version": "12c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "PLSQL19C_LISTAGG"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "SELECT LISTAGG(a) FROM t",
+   "dialect": {
+    "version": "19c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "SELECT a FROM t WHERE b = 1;",
+   "dialect": {
+    "version": "21c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "SELECT 1\nWHERE a = 'x",
+   "dialect": {
+    "version": "21c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "SQL_UNTERMINATED_STRING"
+    ],
+    "lines": [
+     2
+    ]
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "SELECT (1",
+   "dialect": {
+    "version": "21c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "BRACKET_UNCLOSED"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "SELECT 1)",
+   "dialect": {
+    "version": "21c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "BRACKET_UNEXPECTED"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "SELECT (1]",
+   "dialect": {
+    "version": "21c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "BRACKET_MISMATCH"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "-- LISTAGG\nSELECT 1;",
+   "dialect": {
+    "version": "12c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "plsql",
+   "text": "/* LISTAGG */ SELECT 1;",
+   "dialect": {
+    "version": "12c"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "tsql",
+   "text": "CREATE OR ALTER VIEW v AS SELECT 1",
+   "dialect": {
+    "version": "2012"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "TSQL2016_CREATE_OR_ALTER"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "tsql",
+   "text": "CREATE OR ALTER VIEW v AS SELECT 1",
+   "dialect": {
+    "version": "2016"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "tsql",
+   "text": "SELECT STRING_AGG(a) FROM t",
+   "dialect": {
+    "version": "2016"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": false,
+    "level": "invalid",
+    "codes": [
+     "TSQL2017_STRING_AGG"
+    ],
+    "lines": [
+     1
+    ]
+   }
+  },
+  {
+   "profile": "tsql",
+   "text": "SELECT STRING_AGG(a) FROM t",
+   "dialect": {
+    "version": "2017"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
+  },
+  {
+   "profile": "tsql",
+   "text": "SELECT a FROM t;",
+   "dialect": {
+    "version": "2022"
+   },
+   "family": "sql",
+   "expect": {
+    "ok": true,
+    "level": "valid",
+    "codes": [],
+    "lines": []
+   }
   }
  ]
 }

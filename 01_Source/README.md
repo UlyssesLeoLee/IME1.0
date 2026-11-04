@@ -1,4 +1,4 @@
-# Programming IME — 源码 v0.2.0
+# IME1.0（编程输入法）— 源码 v0.2.0
 
 **状态：VS Code 侧功能完整的编辑器桥接 + 零依赖 Rust 本地核心 + Playwright 用户验收脚本。不是可发布的 Windows 系统输入法。**
 Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credential Manager、签名安装器没有实现。
@@ -24,13 +24,13 @@ Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credent
 要求 Windows 11、VS Code 1.94+、Node.js 20+（仅测试需要）。
 
 1. 用 VS Code 打开 `editor-bridges/vscode`，按 **F5** 启动扩展开发宿主。
-2. 命令面板运行 `Programming IME: Enable / Disable`。启用前 F1 仍是命令面板。
+2. 命令面板运行 `Programming IME: Enable / Disable`。启用前 F1 仍是命令面板（扩展用 Ctrl+F1，不抢 F1）。
 3. 打开 `.rs/.py/.ts(x)/.ps1/.c` 文件，状态栏显示 `PIME <语言>`（点击可选择/锁定语言；`?` 表示检测到但不确定、保持原语言）。
 4. 输入前缀（如 `fnm`、`fori`、`def`、`Ge`）后运行 `Programming IME: Show Code Candidates`（默认 `Ctrl+Alt+Space`）。候选列表标明来源（本地规则 / 用户规则 / 附近代码 / AI）和校验状态。
 5. `programmingIme.suggestMode` 设为 `auto` 时会同时显示内联建议（ghost text）。
 6. AI（可选）：`Programming IME: Configure AI Provider / API Key`（选择或新建 Provider、HTTPS 端点、模型 ID、Key；Key 只存 SecretStorage）。`aiEnabled` 总开关默认关闭，配置完成后自动打开，可随时用 `Toggle AI` 关闭。
-7. **F1**（启用后、编辑器有焦点时）打开面板：`A. 整文件修改` 与 `B. 光标处插入` 各自独立请求、独立授权、独立出错。整文件结果按“修改块”显示，可勾选部分块、预览结果和哈希、打开完整 Diff；点击“应用”才会写入，写入是一个可 `Ctrl+Z` 撤销的编辑，不会自动保存。文档在生成后被修改则拒绝应用。
-8. 想保留 F1 给命令面板：`programmingIme.f1Binding` 设为 `shift+f1` 或 `none`；`f1ExcludedLanguages` 可按语言排除。
+7. **Ctrl+F1**（启用后、编辑器有焦点时）打开面板：`A. 整文件修改` 与 `B. 光标处插入` 各自独立请求、独立授权、独立出错。整文件结果按“修改块”显示，可勾选部分块、预览结果和哈希、打开完整 Diff；点击“应用”才会写入，写入是一个可 `Ctrl+Z` 撤销的编辑，不会自动保存。文档在生成后被修改则拒绝应用。
+8. 快捷键默认是 **Ctrl+F1**（注释面板）与 **Ctrl+F2**（5W1H 提示词，需有选区）；想换键：`programmingIme.f1Binding` / `f2Binding` 设为 `ctrl+shift+f1` / `ctrl+shift+f2` 或 `none`；`f1ExcludedLanguages` 可按语言排除。
 9. `Manage AI Permissions` 随时撤销授权；`Show AI Usage` / `Show Diagnostics` 查看用量和脱敏诊断（不含源码、提示词、Key）。
 
 用户规则包放在扩展全局存储的 `rules/` 目录（`Programming IME: Open User Rules Folder`），格式同 `language-packs/*.json`（仅允许数据字段，不允许任何脚本）。

@@ -11,16 +11,19 @@
 //! * `on_key_down` performs eaten keys, and observes keys it has not seen yet (a host that skips the test).
 //!
 //! Default behaviour (DD 5.3, UT-009): the input method never eats a code character. Typing is observed and the window
-//! shows suggestions, but Space, Enter, Tab, Esc, digits and the arrows all reach the host untouched. The user enters a
-//! composition explicitly with Ctrl+Alt+Space while candidates show (the chord is eaten only then); inside it the
-//! mainstream keys work (digits pick within the page, PageUp/PageDown, Up/Down, Shift+Tab, Tab/Enter/Space confirm, Esc
-//! cancels) and the composition ends after a commit or a cancel. `TipConfig` can switch on the always-on variants.
+//! shows suggestions, but Space, Enter, Esc, digits and the arrows all reach the host untouched. The one exception is
+//! the Tab key: while the candidate window is on screen it belongs to the window, so Tab confirms the highlighted
+//! candidate and writes it into the document (Shift+Tab walks the list back). The user enters a composition explicitly
+//! with Ctrl+Alt+Space while candidates show (the chord is eaten only then); inside it the mainstream keys work (digits
+//! pick within the page, PageUp/PageDown, Up/Down, Shift+Tab, Tab/Enter/Space confirm, Esc cancels) and the composition
+//! ends after a commit or a cancel. `TipConfig` can switch on the always-on variants.
 //!
 //! Safety rules enforced here: Direct and Observing never eat (the machine guarantees it); nothing is eaten while the
 //! candidate window is not visible; a failure of the host (edit session refused, text not where expected) hands the
 //! keyboard back to the host until the focus moves; a panic anywhere below is contained and also ends in pass-through.
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::rc::Rc;
 
 use pime_core::candidate::{Candidate, Validation};
 use pime_core::input::{
@@ -28,8 +31,10 @@ use pime_core::input::{
 };
 use pime_core::pack::render_plain;
 
-use crate::keymap::{Modifiers, ShiftTapDetector, breaks_context, is_compose_chord, translate};
-use crate::ui::{Anchor, CandidateRow, CandidateUi, CandidateView};
+use crate::keymap::{
+    Modifiers, ShiftTapDetector, breaks_context, is_compose_chord, is_input_mode_chord, translate,
+};
+use crate::ui::{Anchor, CandidateRow, CandidateUi, CandidateView, ListAction};
 
 /// Why a host operation did not happen.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -83,6 +88,10 @@ pub struct TipConfig {
     /// confirms too (the Sogou behaviour). Needs a host that grants the composition; without it `candidate_capture`
     /// still works.
     pub auto_compose: bool,
+    /// OFF by default (direct mode: the input method never eats a code character). ON: input mode, the behaviour of
+    /// the mainstream input methods: typing opens a composition and the candidate list takes the digits, the Tab key
+    /// and the arrows. Alt+F1 and the button of the floating window switch it.
+    pub input_mode: bool,
     /// Language profile of the prediction engine.
     pub language: String,
 }
@@ -93,6 +102,10 @@ impl Default for TipConfig {
             keymap: KeyMap::default(),
             candidate_capture: false,
             auto_compose: false,
+            // Input mode is the default: the mainstream behaviour (typing opens a composition, the candidate list
+            // takes the arrows, Tab, Space and Enter). Direct mode - nothing is ever eaten - is the mode for code
+            // that must not be touched, and Alt+F1 switches to it.
+            input_mode: true,
             language: "rust".to_string(),
         }
     }
@@ -221,6 +234,12 @@ pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPred
     seen: Option<Observed>,
     /// The key event the host was last asked about the secure field for (see `refresh_secure`).
     probed: Option<Observed>,
+    /// Told where a character was written, so that the light of the input method can shine on it.
+    ///
+    /// The hook is called **after** the text is in the document and with the place where it landed (the caret before
+    /// the write). It must not block and must not unwind into the host: it runs inside the panic guard of the
+    /// controller, so a panic in it degrades the input method instead of taking the host down.
+    commit_hook: Option<Rc<dyn Fn(Option<Anchor>)>>,
     now_ms: u64,
 }
 
@@ -241,6 +260,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             last_anchor: None,
             seen: None,
             probed: None,
+            commit_hook: None,
             now_ms: 0,
         }
     }
@@ -278,7 +298,8 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         self.guarded((), |c| {
             c.secure_mode = secure_mode;
             c.machine.set_keymap(c.config.keymap);
-            c.machine.set_candidate_capture(c.config.candidate_capture);
+            c.machine
+                .set_candidate_capture(c.config.candidate_capture || c.config.input_mode);
             c.machine.grant_observation(true);
             if secure_mode {
                 c.secure = true;
@@ -337,6 +358,81 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         self.guarded(false, |c| c.key_up(key))
     }
 
+    /// Whether the input method is in input mode (the mainstream behaviour: typing opens a composition and the
+    /// candidate list takes the digits) or in direct mode (nothing is eaten).
+    pub fn input_mode(&self) -> bool {
+        self.config.input_mode
+    }
+
+    /// Switch between direct mode and input mode. This is what Alt+F1 and the button of the floating window do.
+    pub fn set_input_mode(&mut self, on: bool) {
+        self.guarded((), |c| {
+            c.config.input_mode = on;
+            c.machine
+                .set_candidate_capture(c.config.candidate_capture || on);
+            if !on {
+                // the composition and the list of the input mode end with it
+                c.reset();
+            }
+        });
+    }
+
+    /// Apply the settings of the language profile (the settings window writes them; the text service applies them).
+    ///
+    /// The settings change the key map (the page size, the Tab behaviour, whether the space key takes a candidate),
+    /// whether a composition opens by itself, and the mode the input method is in. A mode that was on and is now off
+    /// ends the composition, exactly like the mode button does.
+    pub fn apply_settings(&mut self, settings: &crate::imesettings::LanguageSettings) {
+        self.guarded((), |c| {
+            let was_input_mode = c.config.input_mode;
+            c.config.keymap.page_size = settings.page_size().clamp(1, 9);
+            c.config.keymap.tab_cycles = settings.tab_cycles;
+            c.config.keymap.tab_to_host = settings.tab_to_host;
+            c.config.keymap.space_confirms = settings.space_confirms;
+            c.config.auto_compose = settings.auto_compose;
+            c.config.input_mode = settings.input_mode;
+            c.machine.set_keymap(c.config.keymap);
+            c.machine
+                .set_candidate_capture(c.config.candidate_capture || c.config.input_mode);
+            if was_input_mode && !c.config.input_mode {
+                c.reset();
+            }
+        });
+    }
+
+    /// An action from the user (a click in the candidate window) or from a host that draws the candidate list itself
+    /// (the UI element behaviour). A host that draws the list has no other way to tell the text service what the user
+    /// picked, so this is the channel its clicks travel through.
+    pub fn apply_list_action(&mut self, action: ListAction) {
+        self.guarded((), |c| {
+            if let ListAction::Select(index) = action {
+                // The host already knows the highlight it asked for: only the machine has to follow. Nothing is shown
+                // here: the host is inside its own call and must not be called back into.
+                c.machine.select_page_row(index);
+                return;
+            }
+            let effects = match action {
+                ListAction::Take(index) => c.machine.take_page_row(index),
+                ListAction::Finalize => c.machine.take_selected(),
+                ListAction::Abort => c.machine.cancel_list(),
+                ListAction::Select(_) => None,
+            };
+            let Some(effects) = effects else {
+                return;
+            };
+            if !c.apply(effects) {
+                c.degrade();
+                return;
+            }
+            c.settle();
+        });
+    }
+
+    /// The hook that is told where a character was written (see [`TipController::set_commit_hook`]).
+    pub fn set_commit_hook(&mut self, hook: Rc<dyn Fn(Option<Anchor>)>) {
+        self.commit_hook = Some(hook);
+    }
+
     /// `OnKeyUp`: the same as [`TipController::on_test_key_up`] (a repeated report of one release is harmless).
     pub fn on_key_up(&mut self, key: KeyInput) -> bool {
         self.guarded(false, |c| c.key_up(key))
@@ -385,6 +481,18 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             return false;
         }
         self.refresh_secure(stamp, key.now_ms);
+        if is_input_mode_chord(key.code, key.mods) {
+            // Alt+F1 switches between direct mode and input mode (the floating window offers the same as a button)
+            self.seen = None;
+            if self.secure {
+                return false; // nothing is collected in a secure field: the key stays with the host
+            }
+            if test_only {
+                return true; // the host asks whether the key is ours: it is
+            }
+            self.set_input_mode(!self.input_mode());
+            return true;
+        }
         if self.visible && !self.ui.is_visible() {
             // the list went away without a `hide` from us (a host that drew it handed it back through
             // `ITfUIElement::Show(TRUE)` and the popup could not be drawn): nothing may be eaten behind it
@@ -457,7 +565,10 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     /// they appear is deliberate: the host inserts a typed character only after the key callback returned, so the text
     /// before the caret matches the prefix only at the next key event.
     fn prepare(&mut self) {
-        if self.config.auto_compose && !self.composition_refused && self.can_compose() {
+        if (self.config.auto_compose || self.config.input_mode)
+            && !self.composition_refused
+            && self.can_compose()
+        {
             self.begin_composition();
         }
     }
@@ -523,7 +634,15 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
                 Effect::EndComposition => self.end_host_composition(),
                 Effect::Commit { text, .. } => {
                     let typed = self.machine.typed_prefix().to_string();
-                    written &= self.host.commit(&typed, &render_plain(&text, "")).is_ok();
+                    // Where the text lands: the caret before the write is the place the character appears at.
+                    let anchor = self.host.caret_anchor().or(self.last_anchor);
+                    let ok = self.host.commit(&typed, &render_plain(&text, "")).is_ok();
+                    if ok && let Some(hook) = self.commit_hook.clone() {
+                        // The light of the input method shines on the character that was written. The hook is inside
+                        // the panic guard of the caller, so a panic in it degrades the input method and not the host.
+                        hook(anchor);
+                    }
+                    written &= ok;
                 }
             }
         }
@@ -781,6 +900,7 @@ mod tests {
         TipConfig {
             candidate_capture: true,
             auto_compose: true,
+            input_mode: false,
             ..TipConfig::default()
         }
     }
@@ -806,8 +926,23 @@ mod tests {
             Rig::with(sogou())
         }
 
-        /// The shipped defaults.
-        fn defaults() -> Rig {
+        /// The direct configuration: the input method never eats a code character. This is the mode for code that
+        /// must not be touched, and it is **not** the shipped default any more (the input mode is).
+        fn direct() -> Rig {
+            Rig::with(TipConfig {
+                candidate_capture: false,
+                auto_compose: false,
+                input_mode: false,
+                keymap: KeyMap {
+                    space_confirms: false,
+                    ..KeyMap::default()
+                },
+                ..TipConfig::default()
+            })
+        }
+
+        /// The shipped defaults: the input mode (the mainstream behaviour).
+        fn shipped() -> Rig {
             Rig::with(TipConfig::default())
         }
 
@@ -1006,12 +1141,8 @@ mod tests {
     }
 
     #[test]
-    fn space_confirms_in_the_composition_and_enter_and_tab_confirm_too() {
-        for (code, name) in [
-            (vk::SPACE, "Space"),
-            (vk::RETURN, "Enter"),
-            (vk::TAB, "Tab"),
-        ] {
+    fn space_confirms_in_the_composition_and_enter_confirms_too() {
+        for (code, name) in [(vk::SPACE, "Space"), (vk::RETURN, "Enter")] {
             let mut rig = Rig::new();
             rig.type_text("fn", Host::Contract);
             let eaten = rig.press(code, Some(' '), NONE, Host::Contract);
@@ -1020,6 +1151,103 @@ mod tests {
             assert_eq!(rig.ctl.host().commits.len(), 1, "{name}");
             assert!(!rig.ctl.host().composing, "{name}");
         }
+    }
+
+    #[test]
+    fn alt_f1_switches_between_direct_mode_and_input_mode() {
+        let alt_f1 = Modifiers { alt: true, ..NONE };
+        // direct mode: the candidates are shown, but the digits stay the host's
+        let mut rig = Rig::direct();
+        rig.type_text("fn", Host::Contract);
+        assert!(!rig.view().rows.is_empty(), "the candidates are shown");
+        let digit = rig.press(code_of('1'), Some('1'), NONE, Host::Contract);
+        assert!(!digit, "in direct mode a digit is a code character");
+        // Alt+F1 enters the input mode: the same digit now takes the candidate
+        assert!(
+            rig.press(vk::F1, None, alt_f1, Host::Contract),
+            "Alt+F1 is ours"
+        );
+        assert!(rig.ctl.input_mode(), "the input mode is on");
+        let mut rig = Rig::direct();
+        rig.press(vk::F1, None, alt_f1, Host::Contract);
+        rig.type_text("fn", Host::Contract);
+        let digit = rig.press(code_of('1'), Some('1'), NONE, Host::Contract);
+        assert!(digit, "in input mode a digit takes the candidate");
+        assert_eq!(rig.ctl.host().commits.len(), 1);
+        // Alt+F1 again goes back to the direct mode
+        assert!(rig.press(vk::F1, None, alt_f1, Host::Contract));
+        assert!(!rig.ctl.input_mode());
+    }
+
+    #[test]
+    fn tab_takes_the_candidate_that_is_highlighted() {
+        // the mainstream behaviour: Tab confirms the highlighted candidate and puts it into the document
+        let mut rig = Rig::new();
+        rig.type_text("fn", Host::Contract);
+        assert!(
+            rig.press(vk::TAB, None, NONE, Host::Contract),
+            "Tab is ours"
+        );
+        assert_eq!(
+            rig.ctl.host().commits,
+            vec![("fn".to_string(), "T0:fn".to_string())]
+        );
+        assert_eq!(rig.ctl.host().doc, "T0:fn", "the text is in the document");
+        assert!(!rig.ctl.host().composing, "the composition ended");
+    }
+
+    #[test]
+    fn tab_takes_the_candidate_in_the_direct_mode_too() {
+        // the shipped defaults: nothing is eaten while typing, but the candidate window is on screen, so the
+        // Tab key belongs to that window and writes the highlighted candidate into the document
+        let mut rig = Rig::direct();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.ctl.ui().visible, "the candidate window shows");
+        assert!(
+            rig.press(vk::TAB, None, NONE, Host::Contract),
+            "Tab is ours"
+        );
+        assert_eq!(
+            rig.ctl.host().commits,
+            vec![("fn".to_string(), "T0:fn".to_string())]
+        );
+        assert_eq!(rig.ctl.host().doc, "T0:fn", "the text is in the document");
+        assert!(!rig.ctl.ui().visible, "the window goes away");
+    }
+
+    #[test]
+    fn tab_walks_the_candidates_when_the_setting_says_so() {
+        // the programmer habit, one click away in the settings: Tab moves the highlight, Enter/Space/digit take it
+        let mut rig = Rig::with(TipConfig {
+            keymap: KeyMap {
+                tab_cycles: true,
+                ..KeyMap::default()
+            },
+            ..TipConfig::default()
+        });
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.press(vk::TAB, None, NONE, Host::Contract));
+        assert_eq!(rig.view().selected_in_page, 1, "Tab moved the highlight");
+        assert!(
+            rig.ctl.host().commits.is_empty(),
+            "Tab does not write anything"
+        );
+    }
+
+    #[test]
+    fn tab_to_host_gives_the_tab_key_back_to_the_host() {
+        // the setting that restores the documented behaviour: the IDE keeps its Tab, the list is a preview only
+        let mut rig = Rig::with(TipConfig {
+            keymap: KeyMap {
+                tab_to_host: true,
+                ..KeyMap::default()
+            },
+            ..TipConfig::default()
+        });
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.ctl.ui().visible, "the candidate window shows");
+        assert!(!rig.plain(vk::TAB), "the Tab key is the host's");
+        assert!(rig.ctl.host().commits.is_empty(), "nothing was written");
     }
 
     #[test]
@@ -1037,7 +1265,18 @@ mod tests {
 
     #[test]
     fn space_is_the_hosts_when_the_host_refuses_the_composition_but_digits_still_work() {
-        let mut rig = Rig::new();
+        // The configuration is pinned here so that the test is about the refused composition and not about the
+        // Space switch (which is on by default: the mainstream behaviour).
+        let mut rig = Rig::with(TipConfig {
+            candidate_capture: true,
+            auto_compose: true,
+            input_mode: false,
+            keymap: KeyMap {
+                space_confirms: false,
+                ..KeyMap::default()
+            },
+            ..TipConfig::default()
+        });
         rig.ctl.host_mut().fail_begin = true;
         rig.type_text("fn", Host::Contract);
         assert_eq!(rig.ctl.machine().state(), State::Candidates);
@@ -1058,16 +1297,19 @@ mod tests {
     }
 
     #[test]
-    fn with_capture_off_and_no_composition_nothing_is_ever_eaten() {
-        let mut rig = Rig::defaults();
+    fn with_capture_off_and_no_composition_nothing_is_eaten_but_the_tab_key() {
+        let mut rig = Rig::direct();
         rig.type_text("fn", Host::Contract);
         assert!(rig.ctl.ui().visible, "the window still shows");
-        for code in [vk::TAB, vk::RETURN, vk::ESCAPE, vk::NEXT, vk::DOWN] {
+        for code in [vk::RETURN, vk::ESCAPE, vk::NEXT, vk::DOWN] {
             assert!(!rig.plain(code), "{code:#x}");
             rig.type_text("fn", Host::Contract);
         }
         assert!(!rig.digit('1'));
         assert!(rig.ctl.host().commits.is_empty());
+        // the Tab key is the exception: the window on screen owns it
+        assert!(rig.plain(vk::TAB));
+        assert_eq!(rig.ctl.host().commits.len(), 1);
     }
 
     #[test]
@@ -1227,7 +1469,7 @@ mod tests {
     #[test]
     fn ctrl_alt_space_with_candidates_starts_an_explicit_composition() {
         for style in [Host::Contract, Host::Always, Host::DownOnly] {
-            let mut rig = Rig::defaults();
+            let mut rig = Rig::direct();
             rig.type_text("fn", style);
             assert!(rig.ctl.ui().visible);
             assert_eq!(rig.ctl.machine().state(), State::Candidates);
@@ -1247,7 +1489,7 @@ mod tests {
     #[test]
     fn inside_the_explicit_composition_the_mainstream_keys_work() {
         let enter = || {
-            let mut rig = Rig::defaults();
+            let mut rig = Rig::direct();
             rig.type_text("fn", Host::Contract);
             assert!(rig.chord(Host::Contract));
             rig
@@ -1286,18 +1528,20 @@ mod tests {
         assert_eq!(rig.view().selected_in_page, 0, "Shift+Tab goes back");
         assert!(rig.plain(vk::UP));
         assert!(rig.ctl.host().commits.is_empty() && rig.ctl.host().composing);
-        // Tab, Enter and Space confirm the highlighted candidate
-        for (code, name) in [
-            (vk::TAB, "Tab"),
-            (vk::RETURN, "Enter"),
-            (vk::SPACE, "Space"),
-        ] {
+        // Enter and Space confirm the highlighted candidate; Tab does the same (the default)
+        for (code, name) in [(vk::RETURN, "Enter"), (vk::SPACE, "Space")] {
             let mut rig = enter();
             assert!(rig.press(code, Some(' '), NONE, Host::Contract), "{name}");
             assert_eq!(rig.ctl.host().doc, "T0:fn", "{name}");
             assert_eq!(rig.ctl.host().commits.len(), 1, "{name}");
             assert!(!rig.ctl.host().composing, "{name}: the composition ended");
         }
+        // Tab confirms the highlighted candidate too
+        let mut rig = enter();
+        assert!(rig.press(vk::TAB, None, NONE, Host::Contract));
+        assert_eq!(rig.ctl.host().doc, "T0:fn");
+        assert_eq!(rig.ctl.host().commits.len(), 1);
+        assert!(!rig.ctl.host().composing, "Tab: the composition ended");
         // Esc cancels and writes nothing
         let mut rig = enter();
         assert!(rig.plain(vk::ESCAPE));
@@ -1313,7 +1557,7 @@ mod tests {
 
     #[test]
     fn ctrl_alt_space_without_candidates_passes_to_the_host() {
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         assert!(!rig.chord(Host::Contract), "nothing is showing yet");
         rig.type_text("zz", Host::Contract); // no candidates for this prefix
         assert!(!rig.ctl.ui().visible);
@@ -1328,13 +1572,13 @@ mod tests {
     #[test]
     fn the_chord_is_the_hosts_whenever_a_composition_is_impossible() {
         // already composing
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         rig.type_text("fn", Host::Contract);
         assert!(rig.chord(Host::Contract));
         assert!(!rig.chord(Host::Contract), "a second chord is not ours");
         assert_eq!(rig.ctl.host().begins, 1);
         // the host refuses the composition: the key goes through and nothing else changes
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         rig.ctl.host_mut().fail_begin = true;
         rig.type_text("fn", Host::Contract);
         assert!(!rig.chord(Host::Contract));
@@ -1347,12 +1591,12 @@ mod tests {
         assert!(rig.ctl.ui().visible, "the suggestions stay");
         assert!(!rig.digit('1'), "and digits are still typed");
         // a secure field and a paused input method
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         rig.ctl.host_mut().secure = true;
         rig.type_text("fn", Host::Contract);
         assert!(!rig.chord(Host::Contract));
         assert_eq!(rig.ctl.host().begins, 0);
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         rig.type_text("fn", Host::Contract);
         rig.press(vk::SHIFT, None, NONE, Host::Contract);
         assert!(rig.ctl.is_paused());
@@ -1362,7 +1606,7 @@ mod tests {
 
     #[test]
     fn after_esc_the_next_typed_characters_pass_through_again() {
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         rig.type_text("fn", Host::Contract);
         assert!(rig.chord(Host::Contract));
         assert!(rig.plain(vk::ESCAPE), "Esc cancels the composition");
@@ -1376,7 +1620,7 @@ mod tests {
 
     #[test]
     fn a_commit_that_fails_inside_the_explicit_composition_degrades_like_any_other() {
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         rig.type_text("fn", Host::Contract);
         assert!(rig.chord(Host::Contract));
         rig.ctl.host_mut().fail_commit = true;
@@ -1779,7 +2023,7 @@ mod tests {
 
     /// A rig in an explicit composition whose synchronous end the host refuses (review finding 6).
     fn composing_with_a_refusing_host() -> Rig {
-        let mut rig = Rig::defaults();
+        let mut rig = Rig::direct();
         rig.type_text("fn", Host::Contract);
         assert!(rig.chord(Host::Contract));
         assert!(rig.ctl.host().composing);
@@ -1937,7 +2181,7 @@ mod tests {
             );
             assert_eq!(rig.ctl.host().doc, "fn1", "{style:?}");
             // the shipped defaults: the chord must not start a composition behind it
-            let mut rig = Rig::defaults();
+            let mut rig = Rig::direct();
             rig.type_text("fn", style);
             assert!(rig.ctl.ui().visible, "{style:?}");
             rig.ctl.ui.visible = false;
@@ -2065,12 +2309,64 @@ mod tests {
         );
         assert_eq!(c.keymap, KeyMap::default());
         assert_eq!(c.language, "rust");
+        assert!(
+            c.input_mode,
+            "the shipped default is the input mode: the candidate list takes the arrows, Tab, Space and Enter"
+        );
     }
 
-    /// Every character of ordinary code, typed with the shipped defaults, reaches the host and nothing is committed,
+    /// The direct mode is the one that never eats a code character: it is opt-in (Alt+F1), not the default.
+    #[test]
+    fn the_direct_mode_is_the_one_that_eats_nothing() {
+        let c = TipConfig {
+            candidate_capture: false,
+            auto_compose: false,
+            input_mode: false,
+            ..TipConfig::default()
+        };
+        assert!(!c.candidate_capture && !c.auto_compose && !c.input_mode);
+    }
+
+    /// The shipped default is the input mode: while the list is on screen, the arrows walk it and Tab, Space and
+    /// Enter take the highlighted candidate. This is the behaviour the user asked for (2026-11-04).
+    #[test]
+    fn the_shipped_default_takes_a_candidate_with_the_mainstream_keys() {
+        for (name, code, ch) in [
+            ("Tab", vk::TAB, None),
+            ("Space", vk::SPACE, Some(' ')),
+            ("Enter", vk::RETURN, None),
+        ] {
+            let mut rig = Rig::shipped();
+            rig.type_text("fn", Host::Contract);
+            assert!(rig.ctl.ui().visible, "{name}: the list is on screen");
+            let eaten = rig.press(code, ch, NONE, Host::Contract);
+            assert!(eaten, "{name}: the key belongs to the candidate list");
+            assert_eq!(
+                rig.ctl.host().commits.len(),
+                1,
+                "{name}: one candidate was written"
+            );
+        }
+    }
+
+    /// The arrows walk the list in the shipped default too.
+    #[test]
+    fn the_shipped_default_walks_the_list_with_the_arrows() {
+        let mut rig = Rig::shipped();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.ctl.ui().visible, "the list is on screen");
+        assert!(rig.plain(vk::DOWN), "the arrow belongs to the candidate list");
+        assert_eq!(rig.ctl.machine().selected(), 1, "the highlight moved");
+        assert!(
+            rig.ctl.ui().visible,
+            "the list is still on screen after the move"
+        );
+    }
+
+    /// Every character of ordinary code, typed in the direct mode, reaches the host and nothing is committed,
     /// although the window shows suggestions the whole time.
     #[test]
-    fn typing_code_with_the_defaults_eats_and_commits_nothing() {
+    fn typing_code_in_the_direct_mode_eats_and_commits_nothing() {
         for style in [Host::Contract, Host::Always, Host::DownOnly] {
             for script in [
                 "fn main",
@@ -2080,7 +2376,7 @@ mod tests {
                 "vec2",
                 "let y = x1 + 2;\n",
             ] {
-                let mut rig = Rig::defaults();
+                let mut rig = Rig::direct();
                 let mut shown = false;
                 for c in script.chars() {
                     let (code, ch) = if c == '\n' {
@@ -2104,7 +2400,7 @@ mod tests {
     }
 
     #[test]
-    fn the_real_engine_suggests_without_taking_a_key_under_the_defaults() {
+    fn the_real_engine_suggests_without_taking_a_key_in_the_direct_mode() {
         let host = FakeHost {
             anchor: Some(ANCHOR),
             ..FakeHost::default()
@@ -2113,7 +2409,16 @@ mod tests {
             RecordingUi::default(),
             host,
             LocalPredictor,
-            TipConfig::default(),
+            TipConfig {
+                candidate_capture: false,
+                auto_compose: false,
+                input_mode: false,
+                keymap: KeyMap {
+                    space_confirms: false,
+                    ..KeyMap::default()
+                },
+                ..TipConfig::default()
+            },
         );
         ctl.activate(false);
         let mut t = 0;
@@ -2154,7 +2459,7 @@ mod tests {
             "{:?}",
             view.rows[0]
         );
-        assert!(ctl.on_key_down(input(vk::TAB, None, NONE, 9)));
+        assert!(ctl.on_key_down(input(vk::RETURN, None, NONE, 9)));
         assert!(
             ctl.host().doc.starts_with("fn main"),
             "{:?}",

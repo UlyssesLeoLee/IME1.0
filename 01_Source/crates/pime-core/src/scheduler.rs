@@ -7,7 +7,7 @@
 //! reports what happened (`schedule`, `fire`, `finish`, `cancel`) and carries out the effects it gets back. Time is
 //! never read: the debounce delay is returned, and tests drive a virtual clock.
 
-use crate::pack::{LANGUAGES, Registry};
+use crate::pack::Registry;
 use crate::resolve::{Decision, ResolveContext, resolve_language};
 
 pub const DEBOUNCE_MIN_MS: i64 = 150;
@@ -88,9 +88,9 @@ impl InputSession {
         true
     }
 
-    /// `false` for a profile that is not a supported language.
+    /// `false` for a profile that is not an active profile (a disabled plugin profile is rejected too).
     pub fn lock(&mut self, profile: &str, scope: LockScope, file_key: &str) -> bool {
-        if !LANGUAGES.contains(&profile) {
+        if !crate::predict::engine().registry().has_profile(profile) {
             return false;
         }
         match scope {
@@ -133,12 +133,13 @@ impl InputSession {
     /// The decision's language is the session's language after the (possible) switch.
     pub fn resolve(
         &mut self,
-        registry: &Registry,
+        registry: impl std::ops::Deref<Target = Registry>,
         ctx: &ResolveContext,
         file_key: &str,
     ) -> Decision {
+        let reg: &Registry = &registry;
         let lock = self.lock_for(file_key).map(str::to_string);
-        let mut decision = resolve_language(registry, ctx, &self.language, lock.as_deref());
+        let mut decision = resolve_language(reg, ctx, &self.language, lock.as_deref());
         if !decision.language.is_empty() && decision.language != "unknown" {
             let language = decision.language.clone();
             self.set_language(&language);
@@ -429,11 +430,11 @@ mod tests {
             file_name: Some("x.rs"),
             text: None,
         };
-        let d = s.resolve(reg, &ctx, "k");
+        let d = s.resolve(&*reg, &ctx, "k");
         assert_eq!(d.language, "typescript");
         assert_eq!(s.language, "typescript");
         s.unlock(LockScope::Global, "");
-        let d = s.resolve(reg, &ctx, "k");
+        let d = s.resolve(&*reg, &ctx, "k");
         assert_eq!(d.language, "rust");
         assert_eq!(s.profile_epoch, 3);
     }

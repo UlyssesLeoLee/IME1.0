@@ -1,0 +1,437 @@
+{
+ "generated_by": "tests/gen-fixtures.js",
+ "defaultEnabled": [
+  "cypher",
+  "plsql"
+ ],
+ "pluginLanguages": [
+  "cypher",
+  "plsql",
+  "tsql"
+ ],
+ "cases": [
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.sql"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "plsql",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.cypher"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "cypher",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.cql"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "cypher",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.tsql"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "unknown",
+    "reason": "kept",
+    "changed": false,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "ctx": {
+    "languageId": "cypher",
+    "fileName": "x.cypher"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "cypher",
+    "reason": "bridge-languageId",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.rs"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "rust",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql",
+    "tsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.sql"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "unknown",
+    "reason": "ambiguous-extension",
+    "changed": false,
+    "uncertain": true,
+    "suggestion": "plsql",
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql",
+    "tsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.tsql"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "tsql",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql",
+    "tsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.cypher"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "cypher",
+    "reason": "extension",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.sql"
+   },
+   "current": "unknown",
+   "lock": null,
+   "expect": {
+    "language": "unknown",
+    "reason": "kept",
+    "changed": false,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "resolve",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "ctx": {
+    "languageId": "plaintext",
+    "fileName": "x.sql"
+   },
+   "current": "unknown",
+   "lock": "cypher",
+   "expect": {
+    "language": "cypher",
+    "reason": "manual-lock",
+    "changed": true,
+    "uncertain": false,
+    "suggestion": null,
+    "dialectHints": {}
+   }
+  },
+  {
+   "kind": "predict",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "profile": "cypher",
+   "prefix": "match",
+   "before": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "cypher.match#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "MATCH (${n})\nWHERE ${condition}\nRETURN ${n};",
+     "match": "exact"
+    },
+    {
+     "id": "cypher.kw.match",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "match",
+     "match": "exact"
+    },
+    {
+     "id": "cypher.merge#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "MERGE (${n}:${Label} {${property}: ${value}})\nON CREATE SET ${n}.${property} = ${value}\nRETURN ${n};",
+     "match": "keyword"
+    },
+    {
+     "id": "cypher.optional#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "OPTIONAL MATCH (${n})\nWHERE ${condition}\nRETURN ${n};",
+     "match": "keyword"
+    }
+   ]
+  },
+  {
+   "kind": "predict",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "profile": "cypher",
+   "prefix": "match",
+   "before": "MATCH (a)\n",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "cypher.match#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "MATCH (${n})\nWHERE ${condition}\nRETURN ${n};",
+     "match": "exact"
+    },
+    {
+     "id": "cypher.kw.match",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "match",
+     "match": "exact"
+    },
+    {
+     "id": "cypher.merge#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "MERGE (${n}:${Label} {${property}: ${value}})\nON CREATE SET ${n}.${property} = ${value}\nRETURN ${n};",
+     "match": "keyword"
+    },
+    {
+     "id": "cypher.optional#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "OPTIONAL MATCH (${n})\nWHERE ${condition}\nRETURN ${n};",
+     "match": "keyword"
+    }
+   ]
+  },
+  {
+   "kind": "predict",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "profile": "plsql",
+   "prefix": "select",
+   "before": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "plsql.select#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "SELECT ${columns}\nFROM ${table}\nWHERE ${condition};",
+     "match": "exact"
+    },
+    {
+     "id": "plsql.kw.select",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "select",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "kind": "predict",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "profile": "plsql",
+   "prefix": "select",
+   "before": "",
+   "dialect": {
+    "version": "12c"
+   },
+   "expect": [
+    {
+     "id": "plsql.select#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "SELECT ${columns}\nFROM ${table}\nWHERE ${condition};",
+     "match": "exact"
+    },
+    {
+     "id": "plsql.kw.select",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "select",
+     "match": "exact"
+    }
+   ]
+  },
+  {
+   "kind": "predict",
+   "enabled": [
+    "cypher",
+    "plsql"
+   ],
+   "profile": "tsql",
+   "prefix": "select",
+   "before": "",
+   "dialect": {},
+   "expect": []
+  },
+  {
+   "kind": "predict",
+   "enabled": [
+    "cypher",
+    "plsql",
+    "tsql"
+   ],
+   "profile": "tsql",
+   "prefix": "select",
+   "before": "",
+   "dialect": {},
+   "expect": [
+    {
+     "id": "tsql.select#0",
+     "kind": "syntax",
+     "source": "rule",
+     "validation": "valid",
+     "text": "SELECT ${columns}\nFROM ${table}\nWHERE ${condition};",
+     "match": "exact"
+    },
+    {
+     "id": "tsql.kw.select",
+     "kind": "keyword",
+     "source": "rule",
+     "validation": "valid",
+     "text": "select",
+     "match": "exact"
+    }
+   ]
+  }
+ ]
+}

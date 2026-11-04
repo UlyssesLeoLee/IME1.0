@@ -18,6 +18,7 @@ pub fn style_of(profile: &str) -> Option<Style> {
         "typescript" => Some(Style::TypeScript),
         "python" => Some(Style::Python),
         "powershell" => Some(Style::PowerShell),
+        "cypher" | "plsql" | "tsql" => Some(Style::Sql),
         _ => None,
     }
 }

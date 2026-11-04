@@ -1,6 +1,6 @@
 'use strict';
 // UAT group 6: the F2 prompt (docs/F2_PROMPT.md; requirement added by the project owner after the design baseline, test ids PRM-xx).
-// Select text or code, press F2: a complete 5W1H prompt lands on the clipboard; nothing to optimise -> a bottom-right notice that goes away
+// Select text or code, press Ctrl+F2: a complete 5W1H prompt lands on the clipboard; nothing to optimise -> a bottom-right notice that goes away
 // on the next input and leaves the clipboard alone; AI not available -> the UNREVIEWED template; secrets never leave and are never copied.
 //
 // STATUS: written against the proven patterns of 02-ai-f1 / 04-annotate, NOT YET RUN on a real VS Code (the work item had no memory for it).
@@ -87,7 +87,7 @@ async function consentIfAsked(re) {
 test('UAT-36 [PRM-40] a prose selection + F2: the clipboard gets the improved 5W1H prompt (six headings in order) after a consent that names the receiver', async () => {
   behaviour = () => ({json: PROSE_REPLY});
   await selectAllIn('req1.md');
-  await app.page.keyboard.press('F2');
+  await app.page.keyboard.press('Control+F2');
   const d = await app.waitDialog();
   expect(d.message).toMatch(/nearby code excerpt/); expect(d.message).toContain('127.0.0.1');     // prose: only the selection (scope L1)
   await app.screenshot('f2-prose-consent');
@@ -110,7 +110,7 @@ test('UAT-37 [PRM-41] a code selection + F2: the request carries the whole file,
   await app.openFile('code1.rs');
   await app.goto(1, 1);
   for (let i = 0; i < 3; i++) await app.page.keyboard.press('Shift+ArrowDown');                     // lines 1-3: the first function
-  await app.page.keyboard.press('F2');
+  await app.page.keyboard.press('Control+F2');
   const d = await app.waitDialog();
   expect(d.message).toMatch(/COMPLETE current document/);                                            // code: the file goes to the provider (scope L3)
   await app.screenshot('f2-code-consent');
@@ -134,7 +134,7 @@ test('UAT-38 [PRM-42] nothing to optimise: a bottom-right notice with the right 
   behaviour = () => ({json: NO_CHANGE});
   await app.openFile('code2.rs');
   await app.page.keyboard.press('Control+A');
-  await app.page.keyboard.press('F2');
+  await app.page.keyboard.press('Control+F2');
   await consentIfAsked(/COMPLETE current document/);
   const t = toast(/No optimisation needed/);
   await t.waitFor({state: 'visible', timeout: 20000});
@@ -158,7 +158,7 @@ test('UAT-39 [PRM-43] AI off: the UNREVIEWED template is copied with the reason 
   patchSettings({'programmingIme.aiEnabled': false}); await sleep(2500);
   try {
     await selectAllIn('code3.rs');
-    await app.page.keyboard.press('F2');
+    await app.page.keyboard.press('Control+F2');
     const clip = await waitClipboard(t => t !== SENTINEL);
     expect(clip.split('\n')[0]).toBe('UNREVIEWED TEMPLATE: no AI looked at this selection and nothing was analysed. Answer the bracketed questions below, then send it.');
     expect(increasing(HEADS.map(h => clip.indexOf(`## ${h}\n`))), clip).toBe(true);
@@ -176,7 +176,7 @@ test('UAT-40 [PRM-44] F2 without a selection is still Rename: our command does n
   await app.goto(1, 12);                                                                             // inside "alpha", empty selection
   let renamed = false;
   for (let i = 0; i < 12 && !renamed; i++) {                                                         // the TypeScript server needs a few seconds before it offers Rename
-    await app.page.keyboard.press('F2');
+    await app.page.keyboard.press('F2');                                                              // plain F2 is still Rename: the IME command is Ctrl+F2 (and needs a selection)
     renamed = await app.page.locator('.rename-box').first().waitFor({state: 'visible', timeout: 4000}).then(() => true, () => false);
   }
   expect(await app.dialogVisible()).toBe(false);
@@ -189,7 +189,7 @@ test('UAT-40 [PRM-44] F2 without a selection is still Rename: our command does n
 test('UAT-41 [PRM-45] secrets: a high-risk file is never sent or copied without the user, "Redact and send" sends no secret byte, medium risk is redacted silently', async () => {
   // the user closes the sensitive-data dialog: nothing is sent, nothing is copied
   await selectAllIn('secret1.rs');
-  await app.page.keyboard.press('F2');
+  await app.page.keyboard.press('Control+F2');
   await consentIfAsked(/COMPLETE current document/);
   const d = await app.waitDialog();
   expect(d.message).toMatch(/Possible secrets found/); expect(d.buttons.join('|')).toMatch(/Redact and send/);
@@ -201,7 +201,7 @@ test('UAT-41 [PRM-45] secrets: a high-risk file is never sent or copied without 
   await app.closeAll(); mock.reset();
   behaviour = () => ({json: {needsOptimization: true, findings: [{line: 2, evidence: 'let key = "PIME_REDACTED_1";', issue: 'a key is hard-coded', impact: 'anyone with the source has it', severity: 'high'}], w5h1: FIELDS}});
   await selectAllIn('secret2.rs');
-  await app.page.keyboard.press('F2');
+  await app.page.keyboard.press('Control+F2');
   await consentIfAsked();
   await app.waitDialog(); await app.dialogClick('Redact and send');
   const clip = await waitClipboard(t => t !== SENTINEL);
@@ -215,7 +215,7 @@ test('UAT-41 [PRM-45] secrets: a high-risk file is never sent or copied without 
   await app.closeAll(); mock.reset(); writeClipboard(SENTINEL);
   behaviour = () => ({json: NO_CHANGE});
   await selectAllIn('medium1.rs');
-  await app.page.keyboard.press('F2');
+  await app.page.keyboard.press('Control+F2');
   await consentIfAsked();
   await app.waitNotification(/No optimisation needed/);
   expect(await app.dialogVisible()).toBe(false);
@@ -226,7 +226,7 @@ test('UAT-41 [PRM-45] secrets: a high-risk file is never sent or copied without 
   patchSettings({'programmingIme.aiEnabled': false}); await sleep(2500);
   try {
     await selectAllIn('secret3.rs');
-    await app.page.keyboard.press('F2');
+    await app.page.keyboard.press('Control+F2');
     await app.waitNotification(/nothing was sent to an AI and nothing was copied/);
     expect(mock.count()).toBe(0); expect(readClipboard()).toBe(SENTINEL); expect(await app.dialogVisible()).toBe(false);
   } finally { patchSettings({'programmingIme.aiEnabled': true}); await sleep(2500); }

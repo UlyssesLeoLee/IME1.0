@@ -67,6 +67,10 @@ path = "../../tests/rust/protocol_v03_cfg.rs"
 name = "settings_io"
 path = "../../tests/rust/settings_io.rs"
 
+[[test]]
+name = "plugin_languages"
+path = "../../tests/rust/plugin_languages.rs"
+
 [[bin]]
 name = "pime-core"
 path = "src/main.rs"

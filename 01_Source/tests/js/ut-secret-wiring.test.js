@@ -571,7 +571,7 @@ function fakeVscode(st) {
 async function withExtension(fn) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pime-sec-ext-'));
   const st = {modal: undefined, active: null, ui: {...newUi()}, items: [], commands: new Map(), executed: [], provider: null,
-    config: {enabled: true, suggestMode: 'auto', aiEnabled: false, realtimeAI: false, debounceMs: 350, maxVisibleCandidates: 6, pinnedCandidates: [], f1Binding: 'f1', f1ExcludedLanguages: [], f2Binding: 'f2',
+    config: {enabled: true, suggestMode: 'auto', aiEnabled: false, realtimeAI: false, debounceMs: 350, maxVisibleCandidates: 6, pinnedCandidates: [], f1Binding: 'ctrl+f1', f1ExcludedLanguages: [], f2Binding: 'ctrl+f2',
       f2ExcludedLanguages: [], uiLocale: 'en-US', engine: 'js', coreExecutable: '', providers: {}, scenarios: {}, budget: {}, dialects: {}, secretFilePatterns: []}};
   const fake = fakeVscode(st);
   const orig = Module._load;
@@ -625,6 +625,14 @@ test('SEC-45 extension.js: typing and Show Code Candidates read nothing of a pro
     st.pick = items => { st.menu = items.map(i => i.label); return undefined; };
     await st.commands.get('programmingIme.menu')();
     assert.ok(st.menu.includes('Secret files…'), st.menu.join(' | '));
+    // ---- the key of the panel is Ctrl+F1 (the plain F1 stays with the editor): the context keys say so
+    const ctxKey = name => st.executed.find(a => a[0] === 'setContext' && a[1] === name);
+    assert.ok(ctxKey('programmingIme.f1Key.ctrlF1'), 'the F1 context keys are set');
+    assert.equal(ctxKey('programmingIme.f1Key.ctrlF1')[2], true, 'Ctrl+F1 opens the panel');
+    assert.equal(ctxKey('programmingIme.f1Key.ctrlShiftF1')[2], false, 'the alternative binding is off');
+    assert.equal(ctxKey('programmingIme.f2Key.ctrlF2')[2], true, 'Ctrl+F2 is the prompt key');
+    assert.equal(ctxKey('programmingIme.f2Key.ctrlShiftF2')[2], false, 'the alternative binding is off');
+    assert.equal(ctxKey('programmingIme.f1Key.f1'), undefined, 'the legacy F1 context key is gone');
     // ---- the language cache knows whether the head was read: the same document and version, allowed meanwhile, is detected again from its text
     let locked = true; const probe = doc(P('src', 'probe.rs'), {text: RUST, languageId: 'rust'});
     lang.setLockCheck(() => locked); lang.invalidate();

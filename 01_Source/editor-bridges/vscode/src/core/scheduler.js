@@ -1,7 +1,7 @@
 'use strict';
 // Input session epochs, realtime AI scheduling and Direct fallback (FR-027/028, NFR-102/202, DD §8/§16).
 // Local candidates are never routed through this class: it only governs the optional, asynchronous AI path.
-const {resolveLanguage, LANGUAGES} = require('./languages');
+const {resolveLanguage, registry} = require('./languages');
 
 const DEBOUNCE = Object.freeze({min: 150, max: 1000, def: 350});
 const clampDebounce = ms => Math.min(DEBOUNCE.max, Math.max(DEBOUNCE.min, Number.isFinite(ms) ? ms : DEBOUNCE.def));
@@ -19,7 +19,8 @@ class InputSession {
     this.language = language; this.profileEpoch++; return true;
   }
   lock(profile, scope = 'file', fileKey = '') {
-    if (!LANGUAGES.includes(profile)) return false;
+    // only an ACTIVE profile can be locked (a built-in one or an enabled plugin language)
+    if (!registry().hasProfile(profile)) return false;
     if (scope === 'global') this.globalLock = profile; else this.fileLocks.set(fileKey, profile);
     return true;
   }

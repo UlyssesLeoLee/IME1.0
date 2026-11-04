@@ -19,7 +19,7 @@
 - **载荷（payload）用「附加在 exe 末尾的 overlay」携带**，不用 `include_bytes!`：Rust 桩程序只编译一次、没有载荷也能构建和跑测试；
   `scripts/build-installer.js` 把文件追加到桩程序后面得到最终安装包，不需要为每个载荷重新编译。Windows 加载器忽略最后一个节之后的字节。
   签名兼容：代码签名（Authenticode）会把证书表追加在 overlay 之后，安装器按 PE 头里的安全目录定位载荷末尾并容忍 ≤ 7 字节的对齐填充（有单元测试，尚未用真实签名验证）。
-- 控制台子系统：从终端运行时 shell 会等待它，`--silent` 才有可用的退出码、`--dry-run` 才能在终端打印；双击（交互模式）时程序立刻 `FreeConsole()`，只剩消息框。
+- 控制台子系统：从终端运行时 shell 会等待它，`--silent` 才有可用的退出码、`--dry-run` 才能在终端打印；双击（交互模式）时程序立刻 `FreeConsole()`，**只剩自绘的安装向导窗口**（消息框只在失败时出现）。
 
 ## 2. 它做什么 / 不做什么
 
@@ -28,26 +28,60 @@
 | # | 步骤 | 说明 |
 |---|---|---|
 | 0 | 校验载荷 | 整个载荷和每个文件的 SHA-256；不通过则什么都不做 |
-| 1 | 创建安装目录 | 默认 `%ProgramFiles%\Programming IME`；记录**真正新建**的目录（含缺失的上级），预先存在的目录不记录、卸载时不删 |
+| 1 | 创建安装目录 | 默认 `%ProgramFiles%\IME1.0`；**产品文件夹规则**：程序永远在自己名为 `IME1.0` 的文件夹里，选的地方是它的上级（选 `D:\` → 装到 `D:\IME1.0`，选 `D:\Tools` → `D:\Tools\IME1.0`；末段已经是 `IME1.0` 就原样用）。**磁盘根目录永远不会成为安装目录**。记录**真正新建**的目录（含缺失的上级），预先存在的目录不记录、卸载时不删 |
 | 2 | 写 `install-manifest.json` | **先于其它文件写入**（预写）：安装被强杀时仍可卸载 |
 | 3 | 复制 `pime_tsf.dll`、`pime-core.exe`、`LICENSE`、`programming-ime.vsix` | 已存在且内容相同则不重写 |
 | 4 | 复制自身为 `uninstall.exe` | 卸载程序 |
 | 5 | 注册文本服务 | `<System32>\regsvr32.exe /s "<dll>"`（64 位版本；`<System32>` 来自 `GetSystemDirectoryW`，不读环境变量）。`--no-register` 跳过 |
-| 6 | 写「添加/删除程序」项 | `HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\ProgrammingIME`（`UninstallString`、`QuietUninstallString`、`EstimatedSize` 等）。`--no-arp` 跳过 |
+| 6 | 写「添加/删除程序」项 | `HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\ProgrammingIME`（`UninstallString`、`QuietUninstallString`、`InstallDate`（本地时间，`YYYYMMDDHHMMSS`，写这个项的时刻）、`DisplayIcon`（指向安装目录里的 `pime.ico`）、`EstimatedSize` 等）。`--no-arp` 跳过 |
 | 7 | 安装 VS Code 扩展 | 仅当找得到 `code`：`code --install-extension "<vsix>" --force`；**失败不回滚**，只在结果里警告。`--no-vscode` 跳过 |
+
+**装完之后的提示（只有交互模式）**：安装**完全成功**之后（每一步都提交了，没有回滚），在向导的**完成页**上告诉用户怎么把输入法加进自己的语言列表、
+怎么切换到它（Windows 设置里的路径，按界面语言给出 zh-CN / en-US / ja-JP 三种文案），并说明安装器**没有**改他的默认输入法。
+这一步只是**文字**：它不写注册表、不调用任何 TSF/profile 的 API、不设置默认输入法、也不激活 profile，所以它坏了也不会让安装失败。
+`--silent` 下什么都不显示（那里只有退出码），`--dry-run` 和卸载也不显示。
 
 **不做**：不设置默认输入法、不激活 profile、不读写其它输入法的任何注册（计划里没有这种步骤类型，且有测试检查；`regsvr32` 调用的是 DLL 自己的
 `DllRegisterServer`，它写什么由 `pime-tsf` 的注册模块决定，受 `install_plan.rs`/UT-002/UT-061 约束）；不联网；不修改 VS Code 设置
 （尤其**不会**设置 `programmingIme.engine` / `programmingIme.coreExecutable`：要用 Rust 引擎需自行把 `coreExecutable` 指向 `<安装目录>\pime-core.exe`）；
 不写 `Program Files` 以外的位置（除你给的 `--prefix`）；不创建开始菜单/桌面快捷方式；没有单独的「修复」模式（重新运行同一个安装包即可，幂等）；不提供 32 位版本。
 
+## 2.1 安装向导（交互模式，2026-11-02 新增）
+
+双击安装包（无参数）时不再只弹一个确认框，而是打开一个**自绘的向导窗口**（`crates/pime-setup/src/wizard.rs`，纯 GDI，不依赖系统主题，
+所以在每一版 Windows 上长得一样）：
+
+| 页 | 内容 |
+|---|---|
+| 欢迎页 | 品牌色头带 + 彩虹条；**安装位置区**：位置框（**可以直接输入**，也可以点「浏览…」用 Windows 的文件夹选择框 `IFileDialog`）+ **「实际安装到 …」预览行**（按产品文件夹规则算出来的真正落点，边输入边更新）+ **规则说明行**（程序永远在名为 `IME1.0` 的文件夹里）+ **旧版残留提示**（机器上还有 `C:\Program Files\Programming IME` 时提示先删除）+ **行内报错行**（位置不可用时写明原因，句子是窗口的语言、原因是技术细节单独一行）；三个勾选项：注册输入法 / 添加「应用」卸载入口 / 安装 VS Code 扩展；**左上角与右下角各一个 IME1.0 logo** |
+| 进度页 | 实时显示安装器做的每一步（每行来自安装器的报告通道）。**安装中不提供取消**：装到一半的东西要能自己回滚回去，那是安装器的职责，不是窗口的 |
+| 完成页 | 结果 + 「怎么把输入法加进语言列表」的指引；失败时显示原因 |
+
+**卸载走同一个窗口**（`--uninstall`）：第一页就是确认页——写着要删的版本、安装目录、"只删除本安装程序创建的文件与注册表项"，以及计划给出的警告；点是才删。进度页与完成页同安装，只是标题换成「アンインストール中…／アンインストールが完了しました」。
+
+- **logo**：`crates/pime-setup/assets/ime1.0.ico` 用 `include_bytes!` 编译进 EXE（没有 rc.exe 可用），运行时写到临时文件再用 `LoadImageW` 加载，窗口关闭时删除临时文件。**绘制尺寸取自 ICO 的原生档，绝不缩放**（`logo_fit_size` 只返回文件里真实存在的档位，48px 就画 48px）——缩放过的图会发白发虚。白底圆角块（56px）只为容下 48px 原图。
+- **同一个 logo 用在四个地方**：向导右下角与左上角、**窗口图标**、**EXE 资源**（`build.rs` 用 `windres` 编 `1 ICON "assets/ime1.0.ico"`）、载荷里的 `pime.ico`。
+- **安装位置可以直接输入**：路径栏是一个**真实的 Win32 EDIT 子控件**（`PATH_EDIT_ID = 1001`，`WS_CHILD|WS_VISIBLE|WS_TABSTOP|ES_LEFT|ES_AUTOHSCROLL`），不是自绘的文字。这样它自带光标、选区，并且兼容中文输入法的候选框。窗口打开就 `SetFocus` + `EM_SETSEL(0,-1)` 全选，直接打字即可覆盖；`EN_CHANGE` 一到就把文本写回 `state.prefix`。
+- **路径合法性由 `plan::validate_prefix` 单独判定**（与安装器用的是同一个函数）：按「インストール」时若路径非法，**不启动安装**，错误**行内显示**在面板下方（新增三语文案 `Msg::WizardPathInvalid`），选项区自动下移——不弹窗、不写控制台。
+- **回车即安装**：用 Win32 **加速键表**（`CreateAcceleratorTableW` + `FVIRTKEY/VK_RETURN`），在消息循环里 `TranslateAcceleratorW`。注意加速键发来的 `WM_COMMAND` 高位可能是 0 也可能是 1，判断要写成 `code == 0 || code == 1`。
+- **文案**：`crates/pime-setup/src/text.rs` 的 `Msg` 增了 21 条向导文案（含 6 条卸载文案），`wizard_text(lang, msg)` 按界面语言（zh-CN / en-US / ja-JP）取。两种一致性都有测试：**占位符 parity**（三种语言的占位符一样）与**判据层**（每条消息在每种语言下都必须解析出非空文本——只做 parity 的话，一条被路由到空串的消息在三种语言下都是空的，parity 照样成立）。
+- **它不改变安装逻辑**：向导只收集选择（目录 + 三个开关）并把结果交给 `cli`，真正的计划、提权、事务与回滚仍由 `plan.rs` / `exec.rs` 管；安装本身跑在**工作线程**上，窗口只负责显示。
+- **控制台模式不变**：`--silent` / `--dry-run` 仍然只走控制台，没有窗口。
+- **状态**：编译通过、安装器 **123 项**测试通过；**向导本身没有 UI 自动化测试**，但 2026-11-02 已在**真实 Windows 桌面**上逐页截图验证（欢迎页 / 进度页 / 完成页，以及卸载的确认页与完成页），并端到端跑通了安装与卸载；第六轮又验证了**目录选择器端到端、路径逐字输入、回车安装**与 **logo 像素级 1:1**（详见 `02_Verification/IME_FRAMEWORK_MATRIX.md` §5.2）；第七轮把整套绘制换成**自绘像素面**（线性光混色 + 解析式抗锯齿 + 柔影），并在真实 Windows 上核对了渐变连续性与边缘过渡（同上 §5.3）。
+- **所有提示信息都落在向导最后一页**：交互模式下**不再有任何 MessageBox**——结果、警告、"怎么把输入法加进语言列表"的指引都写在完成页上。唯一的例外是**向导窗口根本创建不出来**时的兜底 MessageBox（那时也没有"最后一页"可写）。
+- **窗口位置**：向导在工作区**居中**打开（不是固定左上角）——否则两个向导窗口会完全重叠，旧窗口的「安装」按钮与新窗口的「卸载」按钮坐标重合，一次点击就可能打错按钮。
+- **文案**：长文本会**自动换行**（拉丁按空格断、CJK 按字断、超长单词从中间断），不会被窗口裁切；换行是纯函数，有单测。
+
 ## 3. 命令行
 
 ```
 pime-setup.exe / ProgrammingIME-<版本>-win-x64-setup.exe [选项]
-  （无选项）        交互安装：几个 MessageBox，没有向导
-  --silent, /S      无提示
-  --prefix <目录>   安装目录（默认 <64 位 Program Files>\Programming IME，文件夹由 SHGetKnownFolderPath 决定，不看环境变量；路径含空格要加引号；--prefix=<目录> 也可）
+  （无选项）        交互安装：打开自绘的安装向导（欢迎页选目录与选项 → 进度页 → 完成页），完成后在向导里告诉你怎么把输入法加进语言列表
+  --silent, /S      无提示（只有退出码）
+  --prefix <目录>   安装**位置**（默认 <64 位 Program Files>，文件夹由 SHGetKnownFolderPath 决定，不看环境变量；路径含空格要加引号；--prefix=<目录> 也可）
+                        **产品文件夹规则**：程序永远在自己名为 `IME1.0` 的文件夹里，这里给的是它的**上级**
+                        （不给 → `C:\Program Files\IME1.0`；`--prefix D:\` → `D:\IME1.0`；`--prefix D:\Tools` → `D:\Tools\IME1.0`；末段已经是 `IME1.0` 就原样用）
+                        **磁盘根目录永远不会成为安装目录**
   --dry-run         只打印计划（并校验载荷），不改变任何东西，不提权，不写日志
   --no-register     不注册文本服务
   --no-arp          不写「添加/删除程序」项
@@ -64,17 +98,28 @@ pime-setup.exe / ProgrammingIME-<版本>-win-x64-setup.exe [选项]
 `--dry-run` 实例（节选，本机实测，什么都没有改变）：
 
 ```
-Programming IME 0.2.0 - install plan (dry run: nothing is changed)
-  folder: C:\Program Files\Programming IME
+IME1.0 0.2.0 - install plan (dry run: nothing is changed)
+  folder: C:\Program Files\IME1.0
   administrator rights needed: yes (the setup restarts itself elevated)
-  payload: 4 files, version 0.2.0, SHA-256 of every file verified
+  payload: 7 files, version 0.2.0, SHA-256 of every file verified
+  VS Code: `code` found at D:\Microsoft VS Code\bin\code.cmd
   steps:
-     1. create folder C:\Program Files\Programming IME
-     ...
-     8. register the text service: regsvr32.exe /s "C:\Program Files\Programming IME\pime_tsf.dll"
-     9. add the Add/Remove Programs entry HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\ProgrammingIME
-    10. install the VS Code extension if `code` is found (non-fatal): code --install-extension "...\programming-ime.vsix" --force
+     1. create folder C:\Program Files\IME1.0
+     2. write C:\Program Files\IME1.0\install-manifest.json (every file, folder and registry key this install writes)
+     3. write C:\Program Files\IME1.0\pime_tsf.dll (payload file pime_tsf.dll, SHA-256 verified)
+     4. write C:\Program Files\IME1.0\pime-core.exe (payload file pime-core.exe, SHA-256 verified)
+     5. write C:\Program Files\IME1.0\LICENSE (payload file LICENSE, SHA-256 verified)
+     6. write C:\Program Files\IME1.0\programming-ime.vsix (payload file programming-ime.vsix, SHA-256 verified)
+     7. write C:\Program Files\IME1.0\pime.ico (payload file pime.ico, SHA-256 verified)
+     8. write C:\Program Files\IME1.0\pime-tray.exe (payload file pime-tray.exe, SHA-256 verified)
+     9. write C:\Program Files\IME1.0\pime-ai-worker.exe (payload file pime-ai-worker.exe, SHA-256 verified)
+    10. write C:\Program Files\IME1.0\uninstall.exe (a copy of this setup, used as the uninstaller)
+    11. register the text service: regsvr32.exe /s "C:\Program Files\IME1.0\pime_tsf.dll"
+    12. add the Add/Remove Programs entry HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\ProgrammingIME
+    13. install the VS Code extension if `code` is found (non-fatal): code --install-extension "C:\Program Files\IME1.0\programming-ime.vsix" --force
 ```
+
+（上面是 2026-11-04 那次实测的输出，命令是 `ProgrammingIME-0.2.0-win-x64-setup.exe --dry-run`，什么都没有改变。载荷里现在有 8 个文件：多了图标 `pime.ico`、**常驻托盘 `pime-tray.exe`** 和**语音服务客户端 `pime-ai-worker.exe`**；托盘与 worker 装进同一个目录，worker 就在托盘旁边，所以托盘能直接找到它。）
 
 ## 4. 提权与 VS Code 步骤的用户上下文
 
@@ -158,7 +203,7 @@ reg delete "HKLM\SOFTWARE\Microsoft\CTF\TIP\{43F95ED1-95B4-421D-8F5A-837128C2D85
 
 拒绝（退出码 2，什么都不做）：空、相对路径、UNC、`\\?\`、含 `..`/`.`/空组件、末尾为点或空格、保留设备名（CON、NUL…）、8.3 短名（`PROGRA~1`）、非法字符；
 盘符根目录、Windows 目录及其下、`C:\Program Files`、`C:\Program Files (x86)`、`C:\ProgramData`、`C:\Users`、用户 profile 根本身等系统根。
-含空格和非 ASCII（如 `D:\日本語 フォルダ\Programming IME`）的路径正常工作，缺失的上级目录会创建并记录。
+含空格和非 ASCII（如 `D:\日本語 フォルダ\IME1.0`）的路径正常工作，缺失的上级目录会创建并记录。
 注册文本服务时若目录在 Program Files 之外，计划会给出警告（任何能写该目录的用户都能替换被 Windows 加载进其它程序的 DLL）。
 
 **系统文件夹不读环境变量**（评审问题 2）：`SystemPaths` 的 Windows 目录、`System32`、Program Files（64 位/x86）、ProgramData、用户 profile 由
@@ -185,7 +230,7 @@ footer := "PIME-PAYLOAD-V1\0"[16] | u64 blob 长 | sha256(blob)[32]            �
 文件   := PE 桩 | blob | footer [| 填充 | Authenticode 证书表]
 ```
 
-条目名只允许普通文件名（`pime_tsf.dll`、`pime-core.exe`、`LICENSE`、`programming-ime.vsix`、`meta.json`），其它一律拒绝。`meta.json` 带版本和扩展 id。
+条目名只允许普通文件名（`pime_tsf.dll`、`pime-core.exe`、`LICENSE`、`programming-ime.vsix`、`pime.ico`、`pime-tray.exe`、`pime-ai-worker.exe`、`meta.json`），其它一律拒绝。`meta.json` 带版本和扩展 id。
 **哈希只能发现损坏和截断，不能证明来源**：能改安装包的人也能改哈希。来源证明需要代码签名（未做）。下载后请用同目录的 `.sha256` 文件核对整个安装包：
 `Get-FileHash .\ProgrammingIME-0.2.0-win-x64-setup.exe -Algorithm SHA256`。被截断的安装包会报「carries no payload」。
 
@@ -212,16 +257,21 @@ footer := "PIME-PAYLOAD-V1\0"[16] | u64 blob 长 | sha256(blob)[32]            �
 ```powershell
 cd 01_Source
 $env:CARGO_TARGET_DIR = '<一个空闲目录>'      # 可选；默认 <temp>\pime-cargo-target
+node assets/make-icon.js                      # 画出 assets\pime.ico（仓库里已经有了；只有想改图形时才需要重画）
 node scripts/package-vsix.js                 # 只打包并验证 .vsix -> dist\programming-ime-vscode-bridge-<版本>.vsix
 node scripts/build-installer.js              # 全部：pime-core + pime-tsf + .vsix + 桩 + 载荷 -> dist\ProgrammingIME-<版本>-win-x64-setup.exe + .sha256
 node scripts/build-installer.js 0.3.0-pre1   # 指定安装器版本（默认取 editor-bridges/vscode/package.json 的版本）
 ```
 
-`build-installer.js` 依次：`cargo build --release --target x86_64-pc-windows-gnu`（`pime-core`、`crates/pime-tsf`、`crates/pime-setup`）、`package-vsix.js`、追加载荷，
+`build-installer.js` 依次：`cargo build --release --target x86_64-pc-windows-gnu`（`pime-core`、`crates/pime-tsf`、`crates/pime-setup`）、`package-vsix.js`、追加载荷
+（8 个文件：DLL、core、LICENSE、`.vsix`、`pime.ico`、**`pime-tray.exe`（常驻托盘）**、**`pime-ai-worker.exe`（语音服务客户端）**，再加 `meta.json`；图标会先检查是不是真的 `.ico`）。托盘与 worker 是**各自独立的 workspace**（有自己的 `Cargo.lock`），构建到**独立的 target 目录**里，免得它们作为依赖编译出来的 TSF DLL 覆盖掉主 workspace 的那一份。，
 然后检查结果：x64 PE、控制台子系统、只导入系统 DLL（`scripts/pe-info.js`）、用独立的读取器校验载荷、运行 `--dry-run`（只打印计划，不创建任何东西）证明安装包能找到并校验自己的载荷。
 **从不运行安装器本体**。构建输出 `dist/` 已在 `.gitignore`。
 
-crate 自身的检查（在 `crates/pime-setup` 下）：`cargo fmt`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（72 个单元测试 + 12 个 `real_fs` 集成测试 + 5 个 `real_links` 集成测试，
+图标 `assets\pime.ico`（16/32/48 三个尺寸、32 位带 alpha）由 `assets/make-icon.js` 用代码画出来：一个圆角方块加一个白色的文本光标。
+这样图标是可复现、可评审的（不用图片编辑器，也不用下载任何东西）。
+
+crate 自身的检查（在 `crates/pime-setup` 下）：`cargo fmt`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（79 个单元测试 + 12 个 `real_fs` 集成测试 + 5 个 `real_links` 集成测试，
 不需要载荷；评审修复前是 50 + 5）。`tests/run-all.js --setup` 只是在这个 crate 里运行 `cargo test`。
 
 2026-10-30 本机一次实测：安装包 2,978,899 字节（桩 505,344 + `pime_tsf.dll` 239,616 + `pime-core.exe` 2,126,963 + `.vsix` 105,452 + 其它），
@@ -232,7 +282,9 @@ sha256 `a3dcd330013497c6fa12db8ac634fd1518f420d3446221ed0141fe1df2b9c79d`（仅�
 - 单元（`src/*.rs` 内，假后端 `FakeBackend`，带故障注入、被占用文件、重启删除模拟）：精确计划；各 `--no-*` 开关；计划里没有任何非本产品的步骤；
   系统根与 `..` 被拒绝、空格/非 ASCII 路径；清单往返与篡改；每个操作故障注入的回滚（全新安装与升级）；幂等重装；升级（含被占用 DLL、陈旧文件）；
   regsvr32 失败；VS Code 非致命；卸载（只删清单内容、保留用户文件和其它产品、被占用文件重启删除、注销失败不阻断）；载荷格式（位翻转、截断、签名表填充、非法名）；
-  命令行；三种语言的消息占位符一致；命令行引用规则；`code.cmd` 查找。
+  「添加/删除程序」项的新值（安装日期的格式，固定时间得出固定的值；图标只在载荷真的带了图标时才写）；图标文件和其它文件一样装进安装目录、写进清单、卸载时删掉；
+  命令行；三种语言的消息占位符一致、装完之后的提示在每种语言里都写对了 Windows 设置的路径；装完之后的提示只在交互模式出现（`--silent` 不显示）；
+  命令行引用规则；`code.cmd` 查找。
 - 集成（`01_Source/tests/setup/real_fs.rs`、`real_links.rs`，共用 `common.rs`，由 `crates/pime-setup/Cargo.toml` 的 `[[test]]` 引用；**真实文件系统，仅临时目录，仅 `--no-register --no-arp --no-vscode`**，
   提权的测试进程会自动跳过）：安装/升级/卸载、含空格和日文的路径、`--dry-run` 不创建任何东西、被拒绝的安装目录退出码 2、没有载荷的桩给出明确错误、真实 exe 的安装与卸载。
   评审修复新增：真实的改名不覆盖已有文件；被映射的 DLL（一份 System32 DLL 的副本，真的加载进测试进程）被改名到旁边、原路径从不被安排删除；带伪造环境变量的子进程得到同样的系统文件夹；
@@ -252,8 +304,9 @@ sha256 `a3dcd330013497c6fa12db8ac634fd1518f420d3446221ed0141fe1df2b9c79d`（仅�
 - 只有 x64；32 位应用看不到该输入法。
 - 请从**本地磁盘**运行安装包：提权后的进程看不到非提权会话映射的网络驱动器。
 - 报告文件只在提权子进程场景下存在（父进程在 `%TEMP%` 里以随机名创建、回显后删除，见第 4 节）；没有常驻安装日志。
-- 「添加/删除程序」项没有图标和安装日期；没有「修改/修复」按钮（`NoModify`/`NoRepair`）。
-- 消息框文案有 zh-CN / en-US / ja-JP 三种（按用户界面语言），控制台和日志只有英文。
+- 「添加/删除程序」项现在有图标和安装日期：图标是安装目录里的 `pime.ico`（`DisplayIcon`），日期是写这个项那一刻的本地时间（`InstallDate`，`YYYYMMDDHHMMSS`）；
+  **这两样在真实的「添加/删除程序」列表里显示成什么样没有在真实系统上验证过**（本机规则禁止写 HKLM），只测了写出去的键值。仍然没有「修改/修复」按钮（`NoModify`/`NoRepair`）。
+- 消息框文案有 zh-CN / en-US / ja-JP 三种（按用户界面语言），控制台和日志只有英文；装完之后的提示（怎么把输入法加进语言列表）也只有这三种语言。
 
 ## 13. 给集成者
 

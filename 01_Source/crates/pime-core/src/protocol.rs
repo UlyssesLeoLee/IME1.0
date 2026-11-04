@@ -86,15 +86,40 @@ pub(crate) fn dialect_of(req: &Json) -> Result<Dialect, String> {
 }
 
 fn health(id: Option<i64>) -> Json {
+    let reg = engine().registry();
+    let plugin_languages = reg.enabled_plugins();
+    let available = reg.available_plugins();
+    let active = reg.profiles();
     ok_json(
         id,
         vec![
             ("name", Json::str("pime-core")),
             ("version", Json::str(VERSION)),
             ("protocol", Json::str(PROTOCOL)),
+            // the built-in profiles only: old clients keep seeing the same seven
             ("languages", Json::strs(&LANGUAGES)),
+            ("pluginLanguages", Json::strs(&plugin_languages)),
+            ("availablePluginLanguages", Json::strs(&available)),
+            ("activeProfiles", Json::strs(&active)),
         ],
     )
+}
+
+/// `setPluginLanguages`: replaces the enabled plugin set. Unknown profile ids are ignored, a value that is
+/// not an array of strings is a protocol error.
+fn set_plugin_languages_op(id: Option<i64>, req: &Json) -> Result<Json, String> {
+    let Some(Json::Arr(list)) = req.get("languages") else {
+        return Err("languages".to_string());
+    };
+    let mut ids: Vec<String> = Vec::new();
+    for item in list {
+        let Some(name) = item.as_str() else {
+            return Err("languages".to_string());
+        };
+        ids.push(name.to_string());
+    }
+    engine().set_plugin_languages(&ids);
+    Ok(ok_json(id, Vec::new()))
 }
 
 fn predict_op(id: Option<i64>, req: &Json) -> Result<Json, String> {
@@ -151,7 +176,8 @@ fn resolve_op(id: Option<i64>, req: &Json) -> Result<Json, String> {
         text: opt_str(req, "text")?,
     };
     let current = opt_str(req, "current")?.unwrap_or("unknown");
-    let d = resolve_language(engine().registry(), &ctx, current, opt_str(req, "locked")?);
+    let reg = engine().registry();
+    let d = resolve_language(&reg, &ctx, current, opt_str(req, "locked")?);
     let hints = Json::Obj(
         d.dialect_hints
             .iter()
@@ -176,12 +202,22 @@ fn resolve_op(id: Option<i64>, req: &Json) -> Result<Json, String> {
 fn validate_op(id: Option<i64>, req: &Json) -> Result<Json, String> {
     let language = opt_str(req, "language")?.unwrap_or("");
     let dialect = dialect_of(req)?;
+    let reg = engine().registry();
+    // a disabled plugin profile is rejected like an unknown profile: it has no validator
+    let active = reg.has_profile(language);
     // a missing / non-string `text` is reported like the reference engine (NOT_TEXT), not as a protocol error
     let result = match req.get("text") {
-        Some(Json::Str(t)) if LANGUAGES.contains(&language) => {
-            validators::validate_source(language, t, &dialect)
+        Some(Json::Str(t)) if active => {
+            // a built-in profile keeps its per-profile validator, a plugin profile the family of its pack
+            match reg.plugin_family(language) {
+                Some(family) if validators::is_family(family) => {
+                    validators::validate_family(family, language, t, &dialect)
+                }
+                Some(_) => validators::no_validator(), // an unknown family has no validator
+                None => validators::validate_source(language, t, &dialect),
+            }
         }
-        _ if !LANGUAGES.contains(&language) => validators::validate_source(language, "", &dialect),
+        _ if !active => validators::no_validator(),
         _ => validators::not_text(),
     };
     let issues = result
@@ -312,6 +348,7 @@ impl Core {
             "predict" => predict_op(id, req),
             "resolve" => resolve_op(id, req),
             "validate" => validate_op(id, req),
+            "setPluginLanguages" => set_plugin_languages_op(id, req),
             "encode" => encode_op(id, req),
             "validate_hex" => validate_hex_op(id, req),
             "scan" => scan_op(id, req),

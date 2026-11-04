@@ -7,12 +7,12 @@ use crate::candidate::{
     rank_candidates,
 };
 use crate::error::Result;
-use crate::pack::{Context, LANGUAGES, Registry, dialect_matches, render_plain};
+use crate::pack::{Context, Registry, dialect_matches, render_plain};
 use crate::util::{is_js_space, js_trim, utf16_len};
-use crate::validators::{Dialect, validate_source};
+use crate::validators::{Dialect, validate_family, validate_source};
 use crate::x86;
 use std::collections::{HashMap, HashSet};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Mutex, OnceLock, RwLock, RwLockReadGuard};
 
 pub const MAX_PREFIX: usize = 128;
 pub const DEFAULT_LIMIT: usize = 6;
@@ -65,16 +65,20 @@ impl PredictOptions {
 }
 
 /// The engine: a registry plus a template-validation cache (like the JS `validationCache`).
+/// The registry is behind a lock: the enabled plugin set is a runtime property of the engine.
 pub struct Engine {
-    registry: Registry,
+    registry: RwLock<Registry>,
     cache: Mutex<HashMap<String, bool>>,
 }
 
-/// Process-wide engine over the built-in packs.
+/// Process-wide engine over the built-in packs and the default plugin set (Cypher and PL/SQL).
 pub fn engine() -> &'static Engine {
     static ENGINE: OnceLock<Engine> = OnceLock::new();
     ENGINE.get_or_init(|| {
-        Engine::new(Registry::builtin().expect("built-in language packs are valid"))
+        Engine::new(
+            Registry::builtin_with_plugins(&crate::pack::default_plugin_ids())
+                .expect("built-in language packs are valid"),
+        )
     })
 }
 
@@ -133,18 +137,37 @@ fn explain_candidate(
 impl Engine {
     pub fn new(registry: Registry) -> Engine {
         Engine {
-            registry,
+            registry: RwLock::new(registry),
             cache: Mutex::new(HashMap::new()),
         }
     }
 
-    pub fn registry(&self) -> &Registry {
-        &self.registry
+    /// The registry of the engine (the active profiles and their packs).
+    pub fn registry(&self) -> RwLockReadGuard<'_, Registry> {
+        self.registry.read().unwrap_or_else(|e| e.into_inner())
     }
 
-    fn validate_template(&self, profile: &str, text: &str, dialect: &Dialect) -> Validation {
+    /// Replaces the enabled plugin set. Unknown profile ids are ignored.
+    pub fn set_plugin_languages(&self, ids: &[String]) {
+        let mut reg = self.registry.write().unwrap_or_else(|e| e.into_inner());
+        reg.activate_plugins(ids);
+    }
+
+    /// The enabled plugin profiles.
+    pub fn plugin_languages(&self) -> Vec<String> {
+        self.registry().enabled_plugins()
+    }
+
+    fn validate_template(
+        &self,
+        profile: &str,
+        text: &str,
+        dialect: &Dialect,
+        family: Option<&str>,
+    ) -> Validation {
         let dialect_key: String = dialect.iter().map(|(k, v)| format!("{k}={v};")).collect();
-        let key = format!("{profile}|{dialect_key}|{text}");
+        let family_key = family.unwrap_or("");
+        let key = format!("{profile}|{family_key}|{dialect_key}|{text}");
         let cached = self
             .cache
             .lock()
@@ -155,7 +178,12 @@ impl Engine {
             Some(ok) => ok,
             None => {
                 let body = if profile == "python" { "pass" } else { "" };
-                let ok = validate_source(profile, &render_plain(text, body), dialect).ok;
+                let plain = render_plain(text, body);
+                // a plugin profile is validated by the family of its pack, a built-in one by its own validator
+                let ok = match family {
+                    Some(family) => validate_family(family, profile, &plain, dialect).ok,
+                    None => validate_source(profile, &plain, dialect).ok,
+                };
                 let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
                 if cache.len() > 5000 {
                     cache.clear();
@@ -237,13 +265,15 @@ impl Engine {
 
     /// Ranked, de-duplicated candidates for `opts` (never more than `opts.limit`).
     pub fn predict(&self, opts: &PredictOptions) -> Result<Vec<Candidate>> {
-        let reg = &self.registry;
+        let reg = self.registry();
         let profile = opts.profile.as_str();
         let key = js_trim(&opts.prefix).to_lowercase();
-        if key.is_empty() || utf16_len(&key) > MAX_PREFIX || !LANGUAGES.contains(&profile) {
+        if key.is_empty() || utf16_len(&key) > MAX_PREFIX || !reg.has_profile(profile) {
             return Ok(Vec::new());
         }
         let (dialect, unsupported) = reg.resolve_dialect(profile, &opts.dialect);
+        // the validator family of a plugin profile comes from its pack, a built-in profile has none
+        let family = reg.plugin_family(profile);
         if let Some((axis, value)) = unsupported.first() {
             // unknown ISA/dialect: say so instead of guessing bytes or syntax
             return Ok(vec![explain_candidate(
@@ -321,7 +351,7 @@ impl Engine {
                 cand.match_kind = Some(matched);
                 cand.weight = t.weight.unwrap_or(50);
                 cand.assumptions = assumptions;
-                cand.validation = self.validate_template(profile, &text, &dialect);
+                cand.validation = self.validate_template(profile, &text, &dialect, family);
                 cand.text = Some(text);
                 out.push(cand);
             }
@@ -347,7 +377,7 @@ impl Engine {
         }
         if !opts.before.is_empty() || !opts.after.is_empty() {
             let joined = format!("{}{}", opts.before, opts.after);
-            for (i, word) in nearby_identifiers(reg, profile, &joined, js_trim(&opts.prefix), 3)
+            for (i, word) in nearby_identifiers(&reg, profile, &joined, js_trim(&opts.prefix), 3)
                 .into_iter()
                 .enumerate()
             {

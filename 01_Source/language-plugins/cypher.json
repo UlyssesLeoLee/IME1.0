@@ -1,0 +1,396 @@
+{
+  "schema_version": 1,
+  "profile_id": "cypher",
+  "version": "1.0.0",
+  "display_name": "Cypher",
+  "language_ids": [
+    "cypher"
+  ],
+  "accepted_extensions": [
+    ".cypher",
+    ".cql"
+  ],
+  "validator": "sql",
+  "dialects": {
+    "version": {
+      "values": [
+        "4",
+        "5"
+      ],
+      "default": "5"
+    }
+  },
+  "keywords": [
+    "match",
+    "optional",
+    "where",
+    "return",
+    "with",
+    "unwind",
+    "create",
+    "merge",
+    "delete",
+    "detach",
+    "set",
+    "remove",
+    "order",
+    "by",
+    "skip",
+    "limit",
+    "call",
+    "yield",
+    "union",
+    "distinct",
+    "as",
+    "count",
+    "collect",
+    "sum",
+    "avg",
+    "min",
+    "max",
+    "case",
+    "when",
+    "then",
+    "else",
+    "end",
+    "and",
+    "or",
+    "xor",
+    "not",
+    "in",
+    "is",
+    "null",
+    "starts",
+    "ends",
+    "contains",
+    "exists",
+    "on",
+    "constraint",
+    "index",
+    "drop",
+    "explain",
+    "profile",
+    "using",
+    "join",
+    "shortest",
+    "path",
+    "all",
+    "any",
+    "none",
+    "single",
+    "load",
+    "csv",
+    "nodes",
+    "relationships",
+    "integer",
+    "float",
+    "string",
+    "boolean",
+    "map",
+    "list"
+  ],
+  "triggers": [
+    {
+      "id": "cypher.match",
+      "pattern": "match",
+      "kind": "syntax",
+      "weight": 90,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "MATCH ... RETURN",
+          "text": "MATCH (${n})\nWHERE ${condition}\nRETURN ${n};"
+        }
+      ]
+    },
+    {
+      "id": "cypher.optional",
+      "pattern": "optional",
+      "kind": "syntax",
+      "weight": 80,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "OPTIONAL MATCH",
+          "text": "OPTIONAL MATCH (${n})\nWHERE ${condition}\nRETURN ${n};"
+        }
+      ]
+    },
+    {
+      "id": "cypher.where",
+      "pattern": "where",
+      "kind": "syntax",
+      "weight": 75,
+      "contexts": [
+        "statement",
+        "expression"
+      ],
+      "candidates": [
+        {
+          "label": "WHERE clause",
+          "text": "WHERE ${condition}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.return",
+      "pattern": "return",
+      "kind": "syntax",
+      "weight": 85,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "RETURN",
+          "text": "RETURN ${n}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.with",
+      "pattern": "with",
+      "kind": "syntax",
+      "weight": 80,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "WITH (carry rows to the next clause)",
+          "text": "WITH ${n}\nWHERE ${condition}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.unwind",
+      "pattern": "unwind",
+      "kind": "syntax",
+      "weight": 80,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "UNWIND a list",
+          "text": "UNWIND ${list} AS ${item}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.create",
+      "pattern": "create",
+      "kind": "syntax",
+      "weight": 85,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE a node",
+          "text": "CREATE (${n}:${Label} {${property}: ${value}})"
+        }
+      ]
+    },
+    {
+      "id": "cypher.merge",
+      "pattern": "merge",
+      "kind": "syntax",
+      "weight": 85,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "MERGE (match or create)",
+          "text": "MERGE (${n}:${Label} {${property}: ${value}})\nON CREATE SET ${n}.${property} = ${value}\nRETURN ${n};"
+        }
+      ]
+    },
+    {
+      "id": "cypher.delete",
+      "pattern": "delete",
+      "kind": "syntax",
+      "weight": 80,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "DELETE a node",
+          "text": "DELETE ${n}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.detach",
+      "pattern": "detach",
+      "kind": "syntax",
+      "weight": 78,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "DETACH DELETE (with its relations)",
+          "text": "DETACH DELETE ${n}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.set",
+      "pattern": "set",
+      "kind": "syntax",
+      "weight": 70,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "SET a property",
+          "text": "SET ${n}.${property} = ${value}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.orderby",
+      "pattern": "orderby",
+      "kind": "syntax",
+      "weight": 72,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "ORDER BY ... LIMIT",
+          "text": "ORDER BY ${n}.${property} ${direction}\nLIMIT ${limit}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.limit",
+      "pattern": "limit",
+      "kind": "syntax",
+      "weight": 68,
+      "contexts": [
+        "statement",
+        "expression"
+      ],
+      "candidates": [
+        {
+          "label": "LIMIT / SKIP",
+          "text": "SKIP ${offset}\nLIMIT ${limit}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.call",
+      "pattern": "call",
+      "kind": "syntax",
+      "weight": 80,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CALL a procedure",
+          "text": "CALL ${db}.${procedure}(${arguments})\nYIELD ${result}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.constraint",
+      "pattern": "constraint",
+      "kind": "syntax",
+      "weight": 65,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE CONSTRAINT",
+          "text": "CREATE CONSTRAINT ${name} IF NOT EXISTS\nFOR (${n}:${Label}) REQUIRE ${n}.${property} IS UNIQUE;"
+        }
+      ]
+    },
+    {
+      "id": "cypher.index",
+      "pattern": "index",
+      "kind": "syntax",
+      "weight": 62,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE INDEX",
+          "text": "CREATE INDEX ${name} IF NOT EXISTS\nFOR (${n}:${Label}) ON (${n}.${property});"
+        }
+      ]
+    },
+    {
+      "id": "cypher.explain",
+      "pattern": "explain",
+      "kind": "syntax",
+      "weight": 60,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "EXPLAIN",
+          "text": "EXPLAIN ${query}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.profile",
+      "pattern": "profile",
+      "kind": "syntax",
+      "weight": 58,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "PROFILE",
+          "text": "PROFILE ${query}"
+        }
+      ]
+    },
+    {
+      "id": "cypher.shortest",
+      "pattern": "shortest",
+      "kind": "syntax",
+      "weight": 60,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "shortest path",
+          "text": "MATCH (${a}:${Label}), (${b}:${Label})\nMATCH shortestPath((${a})-[*..${hops}]-(${b}))\nRETURN ${a}, ${b};"
+        }
+      ]
+    },
+    {
+      "id": "cypher.loadcsv",
+      "pattern": "loadcsv",
+      "kind": "syntax",
+      "weight": 62,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "LOAD CSV",
+          "text": "LOAD CSV FROM 'file:///${path}' AS row\nRETURN row;"
+        }
+      ]
+    }
+  ]
+}

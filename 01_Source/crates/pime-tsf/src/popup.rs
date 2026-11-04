@@ -1,6 +1,11 @@
-//! The native Win32 candidate window (a no-activate, topmost tool popup drawn with GDI) implementing
+//! The native Win32 candidate window (a no-activate, topmost tool popup) implementing
 //! [`crate::ui::CandidateUi`]. It must never take focus (WS_EX_NOACTIVATE, MA_NOACTIVATE, SW_SHOWNOACTIVATE) and never
 //! touch the host's text.
+//!
+//! The window is a **layered window** (`WS_EX_LAYERED`): the list is drawn pixel by pixel into a 32-bit picture with an
+//! alpha channel and handed to `UpdateLayeredWindow`, so the panel has soft corners, a shadow and a rim of the brand
+//! rainbow — the laser-rainbow style of the product (see [`crate::candidate_skin`]). GDI cannot draw that: a window
+//! that is painted with GDI has hard edges and no transparency.
 //!
 //! Threading: a [`PopupWindow`] belongs to the thread that first shows it (a window has thread affinity); that thread's
 //! message loop, which the host owns, delivers its paint messages. Every failure (no monitor, no font, window creation,
@@ -8,12 +13,10 @@
 //! the list (it then lets every key through, see `controller`). A panic must not unwind out of the window procedure
 //! (an `extern "system"` frame: it would abort the host), so every message runs inside `contained`.
 //!
-//! Colours are system colours (`GetSysColor`), so high-contrast themes apply; the selected row is additionally marked
-//! by a text marker (see `layout::draw_ops`). DPI comes from the monitor under the caret.
+//! The picture is made when the list is shown, not in `WM_PAINT`: the content of a layered window is not painted by the
+//! system. `WM_PAINT` is still answered (the paint cycle has to be ended), but it paints nothing.
 //!
-//! Verified only with `examples/popup_demo.rs` on one monitor at 100 %: DPI scaling, several monitors, high-contrast
-//! themes and hosting inside real applications have not been run (the placement and DPI arithmetic is unit-tested in
-//! `layout`).
+//! DPI comes from the monitor under the caret.
 
 use std::cell::RefCell;
 use std::ffi::c_void;
@@ -27,31 +30,36 @@ use windows::Win32::Foundation::{
     LRESULT, POINT, RECT, SIZE, WPARAM,
 };
 use windows::Win32::Graphics::Gdi::{
-    BeginPaint, BitBlt, COLOR_3DSHADOW, COLOR_GRAYTEXT, COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT,
-    COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWTEXT, CreateCompatibleBitmap, CreateCompatibleDC,
-    CreateFontIndirectW, DeleteDC, DeleteObject, ETO_CLIPPED, EndPaint, ExtTextOutW, FillRect,
-    GetDC, GetMonitorInfoW, GetSysColor, GetSysColorBrush, GetTextExtentPoint32W, GetTextMetricsW,
-    HBRUSH, HDC, HFONT, HGDIOBJ, HMONITOR, InvalidateRect, MONITOR_DEFAULTTONEAREST, MONITORINFO,
-    MonitorFromPoint, PAINTSTRUCT, ReleaseDC, SRCCOPY, SYS_COLOR_INDEX, SelectObject, SetBkMode,
-    SetTextColor, TEXTMETRICW, TRANSPARENT, UpdateWindow,
+    BeginPaint, CreateFontIndirectW, DeleteDC, DeleteObject, EndPaint, GetDC, GetMonitorInfoW,
+    GetSysColor, GetTextExtentPoint32W, GetTextMetricsW, HDC, HFONT, HGDIOBJ, HMONITOR,
+    MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromPoint, PAINTSTRUCT, ReleaseDC, SelectObject,
+    SYS_COLOR_INDEX, TEXTMETRICW,
 };
 use windows::Win32::System::LibraryLoader::{
     GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
     GetModuleHandleExW, GetProcAddress, LOAD_LIBRARY_SEARCH_SYSTEM32, LoadLibraryExW,
 };
-use windows::Win32::UI::HiDpi::{GetDpiForWindow, SystemParametersInfoForDpi};
+use windows::Win32::System::Threading::GetCurrentProcessId;
+use windows::Win32::UI::HiDpi::{
+    AreDpiAwarenessContextsEqual, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE,
+    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, GetDpiForWindow, GetThreadDpiAwarenessContext,
+    SystemParametersInfoForDpi,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, GWLP_USERDATA, GetWindowLongPtrW,
-    GetWindowRect, HMENU, HWND_TOPMOST, IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE,
-    NONCLIENTMETRICSW, RegisterClassExW, SPI_GETNONCLIENTMETRICS, SW_HIDE, SW_SHOWNOACTIVATE,
-    SWP_NOACTIVATE, SWP_NOOWNERZORDER, SetWindowLongPtrW, SetWindowPos, SetWindowTextW, ShowWindow,
-    WM_ERASEBKGND, WM_MOUSEACTIVATE, WM_NCDESTROY, WM_PAINT, WNDCLASSEXW, WS_EX_NOACTIVATE,
-    WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, GWLP_HWNDPARENT, GWLP_USERDATA,
+    GetForegroundWindow, GetSystemMetrics, GetWindowLongPtrW, GetWindowRect,
+    GetWindowThreadProcessId, HMENU, IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE,
+    NONCLIENTMETRICSW, RegisterClassExW, SM_CXSCREEN, SM_CYSCREEN, SPI_GETNONCLIENTMETRICS,
+    SW_HIDE, SW_SHOWNOACTIVATE, SetWindowLongPtrW, SetWindowTextW, ShowWindow, WM_ERASEBKGND,
+    WM_LBUTTONDOWN, WM_MOUSEACTIVATE, WM_NCDESTROY, WM_PAINT, WNDCLASSEXW, WS_EX_LAYERED,
+    WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::{HRESULT, PCWSTR, s, w};
 
-use crate::layout::{self, DrawOp, FillTone, Layout, Rect, TextMetrics, TextTone};
-use crate::ui::{Anchor, CandidateUi, CandidateView, guard};
+use crate::candidate_skin;
+use crate::layout::{self, Layout, Rect, TextMetrics};
+use crate::paint::LayeredSurface;
+use crate::ui::{ActionSink, Anchor, CandidateUi, CandidateView, ListAction, guard, no_sink};
 
 /// The window class is process-wide: a distinctive name, registered once per process.
 const CLASS_NAME: PCWSTR = w!("ProgrammingIME.CandidateWindow");
@@ -65,6 +73,8 @@ struct Painted {
     layout: Option<Layout>,
     selected: usize,
     font: HFONT,
+    /// How a click in the window reaches the text service (the same channel a host that draws the list uses).
+    sink: ActionSink,
 }
 
 pub struct PopupWindow {
@@ -73,6 +83,8 @@ pub struct PopupWindow {
     painted: Rc<RefCell<Painted>>,
     /// The message font for one DPI; owned here, selected into a DC only while painting or measuring.
     font: Option<(u32, GdiObject)>,
+    /// The picture of the window (the list plus the padding around it). It is made again when the size changes.
+    surface: Option<LayeredSurface>,
     accessible_name: String,
     visible: bool,
 }
@@ -84,16 +96,23 @@ impl Default for PopupWindow {
 }
 
 impl PopupWindow {
-    /// Creates nothing yet: the window is created on the first `show`, on the calling thread.
+    /// Creates nothing yet: the window is created on the first `show`, on the calling thread. Clicks are dropped.
     pub fn new() -> PopupWindow {
+        PopupWindow::with_sink(no_sink())
+    }
+
+    /// The same window, but a click on a row is reported to the text service through `sink`.
+    pub fn with_sink(sink: ActionSink) -> PopupWindow {
         PopupWindow {
             hwnd: HWND::default(),
             painted: Rc::new(RefCell::new(Painted {
                 layout: None,
                 selected: 0,
                 font: HFONT::default(),
+                sink,
             })),
             font: None,
+            surface: None,
             accessible_name: String::new(),
             visible: false,
         }
@@ -112,6 +131,9 @@ impl PopupWindow {
 
     fn try_show(&mut self, view: &CandidateView, anchor: Anchor) -> Result<(), NotShown> {
         let hwnd = self.ensure_window()?;
+        // The host application may have changed since the window was created (the user switched windows): the owner
+        // is refreshed every time the list appears.
+        set_owner(hwnd);
         let (monitor, work) = work_area_at(anchor).ok_or(NotShown)?;
         let dpi = dpi_for(monitor, hwnd);
         let font = self.font_for(dpi)?;
@@ -123,30 +145,50 @@ impl PopupWindow {
             return Err(NotShown); // `show` hides the window and reports "not visible"
         }
         let window = layout.window;
-        // The borrow ends before any window call: SetWindowPos/UpdateWindow re-enter `wnd_proc` synchronously.
+        // The borrow ends before any window call: the window calls re-enter `wnd_proc` synchronously.
         {
             let mut painted = self.painted.try_borrow_mut().map_err(|_| NotShown)?;
-            painted.layout = Some(layout);
+            painted.layout = Some(layout.clone());
             painted.selected = view.selected_in_page;
             painted.font = font;
         }
-        set_pos(hwnd, window)?;
         let name = layout::accessible_name(view);
         if name != self.accessible_name {
             set_name(hwnd, &name);
             self.accessible_name = name;
+        }
+        // The picture of the window: the list plus the padding the shadow and the soft corners need.
+        let pad = candidate_skin::PADDING;
+        self.ensure_surface(window.width() + pad * 2, window.height() + pad * 2)?;
+        {
+            let Some(surface) = self.surface.as_mut() else {
+                return Err(NotShown);
+            };
+            candidate_skin::paint(surface, &layout, view.selected_in_page, font);
+            // `UpdateLayeredWindow` puts the picture on the screen and moves the window to it.
+            surface.upload(hwnd, window.left - pad, window.top - pad);
         }
         if !self.visible {
             // SAFETY: plain call on our own window; SW_SHOWNOACTIVATE shows it without activating it.
             let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
             self.visible = true;
         }
-        // SAFETY: plain calls on our own window.
-        unsafe {
-            let _ = InvalidateRect(hwnd, None, false);
-            let _ = UpdateWindow(hwnd);
-        }
         Ok(())
+    }
+
+    /// The picture of the window, made again when the size changes.
+    fn ensure_surface(&mut self, width: i32, height: i32) -> Result<(), NotShown> {
+        if let Some(surface) = &self.surface
+            && surface.width() == width
+            && surface.height() == height
+        {
+            return Ok(());
+        }
+        self.surface = new_surface(width, height);
+        match self.surface {
+            Some(_) => Ok(()),
+            None => Err(NotShown),
+        }
     }
 
     /// The window of this popup, created on first use (or again if the host destroyed it).
@@ -162,7 +204,7 @@ impl PopupWindow {
         // SAFETY: the class is registered; no pointers are passed except the static class name.
         let hwnd = unsafe {
             CreateWindowExW(
-                WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
+                WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
                 CLASS_NAME,
                 w!(""),
                 WS_POPUP,
@@ -181,6 +223,7 @@ impl PopupWindow {
         let raw = Rc::into_raw(Rc::clone(&self.painted));
         // SAFETY: `hwnd` is our live window; USERDATA is ours alone (the class has no other use for it).
         unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, raw as isize) };
+        set_owner(hwnd);
         self.hwnd = hwnd;
         Ok(hwnd)
     }
@@ -233,20 +276,14 @@ impl Drop for PopupWindow {
     }
 }
 
-fn set_pos(hwnd: HWND, window: Rect) -> Result<(), NotShown> {
-    // SAFETY: plain call on our own window; no pointers.
-    unsafe {
-        SetWindowPos(
-            hwnd,
-            HWND_TOPMOST,
-            window.left,
-            window.top,
-            window.width(),
-            window.height(),
-            SWP_NOACTIVATE | SWP_NOOWNERZORDER,
-        )
-    }
-    .map_err(|_| NotShown)
+/// A new picture of the given size (the screen DC is the reference).
+fn new_surface(width: i32, height: i32) -> Option<LayeredSurface> {
+    // SAFETY: a plain call that borrows the desktop DC for a moment.
+    let screen = unsafe { GetDC(HWND::default()) };
+    let surface = LayeredSurface::new(screen, width, height);
+    // SAFETY: the DC was borrowed above and is given back here.
+    unsafe { ReleaseDC(HWND::default(), screen) };
+    surface
 }
 
 /// The window name is what the default accessibility proxy reports for the popup.
@@ -260,7 +297,7 @@ fn set_name(hwnd: HWND, name: &str) {
 
 /// The module that contains this code: the DLL when loaded into a host, the executable in the demo. Never
 /// `GetModuleHandle(NULL)`, which would be the host application.
-fn module_instance() -> Option<HINSTANCE> {
+pub(crate) fn module_instance() -> Option<HINSTANCE> {
     let proc: unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT = wnd_proc;
     let mut module = HMODULE::default();
     // SAFETY: with FROM_ADDRESS the "name" is an address inside the module (our window procedure); the reference count is
@@ -358,6 +395,11 @@ fn window_message(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESU
     match msg {
         // A click on the popup must not move the focus away from the host's editor.
         WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
+        // A click takes the row it is on: the same as pressing the digit of that row.
+        WM_LBUTTONDOWN => {
+            on_click(hwnd, lparam);
+            LRESULT(0)
+        }
         // Everything is painted in WM_PAINT, double-buffered.
         WM_ERASEBKGND => LRESULT(1),
         WM_PAINT => {
@@ -393,37 +435,52 @@ impl Drop for PaintScope {
     }
 }
 
+/// A click in the candidate window takes the row it is on. The row is found under the client point of the message; the
+/// borrow of the painted state is released before the sink runs, because the sink writes to the document and may ask
+/// for the window to be drawn again.
+fn on_click(hwnd: HWND, lparam: LPARAM) {
+    let Some(cell) = (unsafe { painted_of(hwnd) }) else {
+        return;
+    };
+    let x = (lparam.0 & 0xFFFF) as i16 as i32;
+    let y = ((lparam.0 >> 16) & 0xFFFF) as i16 as i32;
+    // The picture of the window is bigger than the list: the padding around it belongs to the shadow.
+    let (x, y) = (x - candidate_skin::PADDING, y - candidate_skin::PADDING);
+    let (row, sink) = {
+        let Ok(painted) = cell.try_borrow() else {
+            return;
+        };
+        let Some(layout) = painted.layout.as_ref() else {
+            return;
+        };
+        let row = layout.rows.iter().position(|r| r.contains(x, y));
+        (row, painted.sink.clone())
+    };
+    if let Some(row) = row {
+        sink(ListAction::Take(row));
+    }
+}
+
+/// End the paint cycle of the window.
+///
+/// The content of a layered window is not painted by the system: it is the picture that was handed to
+/// `UpdateLayeredWindow`. The paint cycle still has to be ended, or the window is sent `WM_PAINT` again and again.
 fn on_paint(hwnd: HWND) {
     let mut scope = PaintScope {
         hwnd,
         ps: PAINTSTRUCT::default(),
     };
     // SAFETY: `scope.ps` is a live local that BeginPaint fills in.
-    let hdc = unsafe { BeginPaint(hwnd, &mut scope.ps) };
-    if hdc.is_invalid() {
-        return;
-    }
-    // SAFETY: called from `wnd_proc`, the reference is dropped before returning.
-    let Some(cell) = (unsafe { painted_of(hwnd) }) else {
-        return;
-    };
-    // `show` never holds the borrow across a window call, so this only fails if something is badly wrong: draw nothing.
-    let Ok(painted) = cell.try_borrow() else {
-        return;
-    };
-    let Some(layout) = painted.layout.as_ref() else {
-        return;
-    };
-    draw(hdc, layout, painted.selected, painted.font);
+    let _ = unsafe { BeginPaint(hwnd, &mut scope.ps) };
 }
 
 // ----- GDI helpers (small RAII wrappers so every handle is released on every path) -----
 
 /// A GDI object (font, bitmap) deleted on drop.
-struct GdiObject(HGDIOBJ);
+pub(crate) struct GdiObject(pub(crate) HGDIOBJ);
 
 impl GdiObject {
-    fn as_font(&self) -> HFONT {
+    pub(crate) fn as_font(&self) -> HFONT {
         HFONT(self.0.0)
     }
 }
@@ -454,7 +511,7 @@ impl Drop for ScreenDc {
 }
 
 /// A memory DC, deleted on drop.
-struct MemDc(HDC);
+pub(crate) struct MemDc(pub(crate) HDC);
 
 impl Drop for MemDc {
     fn drop(&mut self) {
@@ -464,13 +521,13 @@ impl Drop for MemDc {
 }
 
 /// An object selected into a DC; the previous object is selected back on drop.
-struct Selection {
+pub(crate) struct Selection {
     hdc: HDC,
     previous: HGDIOBJ,
 }
 
 impl Selection {
-    fn new(hdc: HDC, object: HGDIOBJ) -> Selection {
+    pub(crate) fn new(hdc: HDC, object: HGDIOBJ) -> Selection {
         // SAFETY: `hdc` and `object` are live handles owned by the caller for longer than this guard.
         let previous = unsafe { SelectObject(hdc, object) };
         Selection { hdc, previous }
@@ -485,7 +542,7 @@ impl Drop for Selection {
 }
 
 /// Text measurement with the message font on the screen DC; implements the layout's [`TextMetrics`].
-struct GdiMetrics {
+pub(crate) struct GdiMetrics {
     // field order = drop order: restore the previous font before the DC is released
     _font: Selection,
     dc: ScreenDc,
@@ -493,7 +550,7 @@ struct GdiMetrics {
 }
 
 impl GdiMetrics {
-    fn new(font: HFONT) -> Option<GdiMetrics> {
+    pub(crate) fn new(font: HFONT) -> Option<GdiMetrics> {
         let dc = ScreenDc::new()?;
         let selection = Selection::new(dc.0, HGDIOBJ(font.0));
         let mut tm = TEXTMETRICW::default();
@@ -524,7 +581,7 @@ impl TextMetrics for GdiMetrics {
 }
 
 /// The system message font (what menus and message boxes use), already scaled for `dpi`.
-fn message_font(dpi: u32) -> Option<GdiObject> {
+pub(crate) fn message_font(dpi: u32) -> Option<GdiObject> {
     let mut metrics = NONCLIENTMETRICSW {
         cbSize: size_of::<NONCLIENTMETRICSW>() as u32,
         ..Default::default()
@@ -545,17 +602,12 @@ fn message_font(dpi: u32) -> Option<GdiObject> {
     (!font.is_invalid()).then_some(GdiObject(HGDIOBJ(font.0)))
 }
 
-fn colour(index: SYS_COLOR_INDEX) -> COLORREF {
+pub(crate) fn colour(index: SYS_COLOR_INDEX) -> COLORREF {
     // SAFETY: a plain query.
     COLORREF(unsafe { GetSysColor(index) })
 }
 
-fn brush(index: SYS_COLOR_INDEX) -> HBRUSH {
-    // SAFETY: returns a shared system brush that must not be deleted (we do not).
-    unsafe { GetSysColorBrush(index) }
-}
-
-fn to_rect(r: Rect) -> RECT {
+pub(crate) fn to_rect(r: Rect) -> RECT {
     RECT {
         left: r.left,
         top: r.top,
@@ -564,85 +616,27 @@ fn to_rect(r: Rect) -> RECT {
     }
 }
 
-/// Paints `layout` into `target` through an off-screen bitmap (no flicker).
-fn draw(target: HDC, layout: &Layout, selected: usize, font: HFONT) {
-    let (w, h) = (layout.window.width(), layout.window.height());
-    if w <= 0 || h <= 0 {
-        return;
-    }
-    // SAFETY: `target` is the live paint DC.
-    let mem = MemDc(unsafe { CreateCompatibleDC(target) });
-    if mem.0.is_invalid() {
-        return;
-    }
-    // SAFETY: `target` is the live paint DC.
-    let bitmap = unsafe { CreateCompatibleBitmap(target, w, h) };
-    if bitmap.is_invalid() {
-        return;
-    }
-    // Declared in the order of release: the selections go back first, then the bitmap and the DC are deleted.
-    let bitmap = GdiObject(HGDIOBJ(bitmap.0));
-    let _bitmap_selected = Selection::new(mem.0, bitmap.0);
-    let _font_selected = Selection::new(mem.0, HGDIOBJ(font.0));
-    // SAFETY: plain state change on our memory DC.
-    let _ = unsafe { SetBkMode(mem.0, TRANSPARENT) };
-    for op in layout::draw_ops(layout, selected) {
-        draw_op(mem.0, &op);
-    }
-    // SAFETY: both DCs are live and the bitmap covers `w` x `h`.
-    let _ = unsafe { BitBlt(target, 0, 0, w, h, mem.0, 0, 0, SRCCOPY) };
-}
-
-fn draw_op(hdc: HDC, op: &DrawOp) {
-    match op {
-        DrawOp::Fill { rect, tone } => {
-            let index = match tone {
-                FillTone::Window => COLOR_WINDOW,
-                FillTone::Frame => COLOR_WINDOWFRAME,
-                FillTone::Selection => COLOR_HIGHLIGHT,
-                FillTone::Separator => COLOR_3DSHADOW,
-            };
-            // SAFETY: `hdc` is live and the RECT is a local.
-            let _ = unsafe { FillRect(hdc, &to_rect(*rect), brush(index)) };
-        }
-        DrawOp::Text {
-            text,
-            x,
-            y,
-            clip,
-            tone,
-        } => {
-            let index = match tone {
-                TextTone::Normal => COLOR_WINDOWTEXT,
-                TextTone::Dim => COLOR_GRAYTEXT,
-                TextTone::OnSelection => COLOR_HIGHLIGHTTEXT,
-            };
-            let wide: Vec<u16> = text.encode_utf16().collect();
-            let Ok(count) = u32::try_from(wide.len()) else {
-                return;
-            };
-            // SAFETY: `hdc` is live; `wide` holds `count` UTF-16 units and outlives the call; the clip RECT is a local.
-            unsafe {
-                SetTextColor(hdc, colour(index));
-                let _ = ExtTextOutW(
-                    hdc,
-                    *x,
-                    *y,
-                    ETO_CLIPPED,
-                    Some(&to_rect(*clip)),
-                    PCWSTR(wide.as_ptr()),
-                    count,
-                    None,
-                );
-            }
-        }
-    }
-}
-
 // ----- monitor and DPI -----
 
 /// The monitor nearest to the caret and its work area (the desktop minus taskbars), in screen coordinates.
-fn work_area_at(anchor: Anchor) -> Option<(HMONITOR, Rect)> {
+/// The work area of the monitor that holds the rectangle (the screen minus the taskbars), in screen coordinates.
+pub(crate) fn work_area_of(rect: Rect) -> Rect {
+    let anchor = Anchor {
+        x: rect.left,
+        y: rect.top,
+        line_height: 0,
+    };
+    if let Some((_, work)) = work_area_at(anchor) {
+        return work;
+    }
+    // No monitor (should not happen): the whole screen.
+    // SAFETY: plain queries.
+    let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+    let height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+    Rect::new(0, 0, width, height)
+}
+
+pub(crate) fn work_area_at(anchor: Anchor) -> Option<(HMONITOR, Rect)> {
     // SAFETY: a plain query; DEFAULTTONEAREST always yields a monitor.
     let monitor = unsafe {
         MonitorFromPoint(
@@ -690,21 +684,99 @@ fn monitor_dpi_fn() -> Option<GetDpiForMonitorFn> {
     })
 }
 
-/// Effective DPI of `monitor` (what the user chose in Settings), else of the window, else 96.
-fn dpi_for(monitor: HMONITOR, hwnd: HWND) -> u32 {
-    if let Some(get_dpi) = monitor_dpi_fn() {
-        let (mut x, mut y) = (0u32, 0u32);
-        // MDT_EFFECTIVE_DPI = 0
-        // SAFETY: both out-pointers are live locals.
-        if unsafe { get_dpi(monitor, 0, &mut x, &mut y) }.is_ok() && x > 0 {
-            return x;
-        }
-    }
-    // SAFETY: a plain query; an invalid handle yields 0.
-    match unsafe { GetDpiForWindow(hwnd) } {
+/// Effective DPI of the candidate window.
+///
+/// The window lives in the coordinate space of the host application. When that application is per-monitor aware, the
+/// caret rectangle is in physical pixels of the monitor under the caret and the window inherits that monitor's
+/// DPI. When it is only system-DPI aware, the rectangle (and our window) are in system-scaled coordinates and the
+/// window's own DPI is the system DPI; scaling by the raw monitor DPI would then draw the list at the wrong size.
+///
+/// The text service must not change the awareness of the host process: `SetProcessDpiAwarenessContext` decides how
+/// every window of the application is rendered, and that is the application's business, not the input method's. So
+/// the window adapts to the awareness the application already has.
+pub(crate) fn dpi_for(monitor: HMONITOR, hwnd: HWND) -> u32 {
+    let window_dpi = match unsafe { GetDpiForWindow(hwnd) } {
         0 => 96,
         dpi => dpi,
+    };
+    let monitor_dpi = monitor_dpi(monitor);
+    choose_dpi(window_dpi, monitor_dpi, per_monitor_aware())
+}
+
+/// The DPI of `monitor` (what the user chose in Settings), if it can be read.
+fn monitor_dpi(monitor: HMONITOR) -> Option<u32> {
+    let get_dpi = monitor_dpi_fn()?;
+    let (mut x, mut y) = (0u32, 0u32);
+    // MDT_EFFECTIVE_DPI = 0
+    // SAFETY: both out-pointers are live locals.
+    if unsafe { get_dpi(monitor, 0, &mut x, &mut y) }.is_ok() && x > 0 {
+        Some(x)
+    } else {
+        None
     }
+}
+
+/// The DPI to draw at, separated from the queries so that the decision itself can be tested.
+///
+/// A per-monitor aware process puts the candidate list on the monitor under the caret, so the list is drawn at that
+/// monitor's DPI. A system-DPI aware process keeps every coordinate in the system scale, so the list is drawn at the
+/// window's own DPI - the raw monitor DPI would make it the wrong size.
+fn choose_dpi(window_dpi: u32, monitor_dpi: Option<u32>, per_monitor: bool) -> u32 {
+    if per_monitor
+        && let Some(dpi) = monitor_dpi
+        && dpi > 0
+    {
+        return dpi;
+    }
+    if window_dpi > 0 { window_dpi } else { 96 }
+}
+
+/// Whether this process is per-monitor aware (either generation).
+fn per_monitor_aware() -> bool {
+    // SAFETY: a plain query about the calling thread; it never fails.
+    let context = unsafe { GetThreadDpiAwarenessContext() };
+    // SAFETY: comparing two awareness contexts is a plain call with two live values.
+    unsafe { AreDpiAwarenessContextsEqual(context, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) }
+        .as_bool()
+        // SAFETY: the same, with the second generation of per-monitor awareness.
+        || unsafe {
+            AreDpiAwarenessContextsEqual(context, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+        }
+        .as_bool()
+}
+
+/// The window that may own the candidate list: the foreground window of our own application.
+///
+/// Only a window of our own process may be the owner. An owner from another application would place our window
+/// above a foreign window and would hide the candidate list when that application closes.
+fn owner_window() -> Option<HWND> {
+    // SAFETY: a plain query; an invalid handle yields a null window.
+    let foreground = unsafe { GetForegroundWindow() };
+    if foreground.is_invalid() {
+        return None;
+    }
+    let mut process = 0u32;
+    // SAFETY: `process` is a live local the call only writes to.
+    unsafe { GetWindowThreadProcessId(foreground, Some(&mut process)) };
+    // SAFETY: a plain query about the calling process.
+    if process != unsafe { GetCurrentProcessId() } {
+        return None;
+    }
+    Some(foreground)
+}
+
+/// Make `hwnd` owned by the host application, so the candidate list disappears with it and never floats over another
+/// application. A window without an owner stays on the screen until it is hidden, which is how an orphan popup
+/// survives the window it belonged to.
+fn set_owner(hwnd: HWND) {
+    let Some(owner) = owner_window() else {
+        return;
+    };
+    if owner == hwnd {
+        return;
+    }
+    // SAFETY: `hwnd` is our own window; GWLP_HWNDPARENT of a top-level window is its owner.
+    unsafe { SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, owner.0 as isize) };
 }
 
 // Only the pure parts are tested: nothing here creates a window (the real popup is verified by `examples/popup_demo.rs`).
@@ -774,6 +846,43 @@ mod tests {
             assert_eq!(
                 wnd_proc(none, WM_ERASEBKGND, WPARAM(0), LPARAM(0)),
                 LRESULT(1)
+            );
+        }
+    }
+
+    /// The DPI the candidate list is drawn at.
+    ///
+    /// A per-monitor aware process draws the list at the DPI of the monitor under the caret; a system-DPI aware one
+    /// keeps every coordinate in the system scale and has to draw at the window's own DPI.
+    #[test]
+    fn the_candidate_list_is_drawn_at_the_dpi_of_the_coordinate_space_it_lives_in() {
+        // per-monitor aware: the monitor under the caret decides
+        assert_eq!(choose_dpi(96, Some(144), true), 144);
+        // system-DPI aware: the window's own DPI decides, the raw monitor DPI would be the wrong size
+        assert_eq!(choose_dpi(96, Some(144), false), 96);
+        // an unreadable monitor falls back to the window
+        assert_eq!(choose_dpi(120, None, true), 120);
+        // a monitor that reports 0 is no answer
+        assert_eq!(choose_dpi(120, Some(0), true), 120);
+        // no window and no monitor: the system default
+        assert_eq!(choose_dpi(0, None, true), 96);
+        assert_eq!(choose_dpi(0, Some(144), false), 96);
+    }
+
+    /// The owner of the candidate list: only a window of our own application may own it.
+    ///
+    /// The test process has no window of its own in the foreground, so there is no owner - and the function must
+    /// say so instead of pointing at a foreign window.
+    #[test]
+    fn the_owner_of_the_candidate_list_is_never_a_foreign_window() {
+        if let Some(owner) = owner_window() {
+            let mut process = 0u32;
+            // SAFETY: `process` is a live local the call only writes to.
+            unsafe { GetWindowThreadProcessId(owner, Some(&mut process)) };
+            assert_eq!(
+                process,
+                unsafe { GetCurrentProcessId() },
+                "only a window of our own process may own the candidate list"
             );
         }
     }

@@ -56,7 +56,7 @@ write('predict-cases.json', {generated_by: 'tests/gen-fixtures.js', limit: 6, ca
 })});
 
 // ---------------------------------------------------------------- validators
-const V = (profile, text, dialect = {}) => ({profile, text, dialect});
+const V = (profile, text, dialect = {}, family = null) => (family ? {profile, text, dialect, family} : {profile, text, dialect});
 const validateInputs = [
   V('rust', 'fn main() {\n    println!("}");\n}\n'), V('rust', "fn main() {\n    let c = '}';\n    let x: &'a str = \"\";\n}\n"), V('rust', 'fn main() {\n'), V('rust', 'fn f() { ( ] }'),
   V('rust', '/* a /* nested */ still */ fn f() {}'), V('rust', 'let s = r#"raw } text"#;'),
@@ -73,10 +73,21 @@ const validateInputs = [
   V('assembly', 'mov rax, rbx\n', {syntax: 'att', assembler: 'gas'}), V('assembly', 'mov rax, rbx\nmovq %rbx, %rax\n', {syntax: 'intel'}),
   V('assembly', '.intel_syntax noprefix\nmov rax, rbx\n', {syntax: 'att', assembler: 'gas'}), V('assembly', 'section .text\nglobal _start\n_start:\n  ret\n', {assembler: 'nasm'}),
   V('assembly', '.globl _start\n', {assembler: 'nasm'}), V('assembly', 'section .text\n', {assembler: 'gas', syntax: 'att'}), V('assembly', 'mov rax, [rbx] ; load\n', {syntax: 'intel'}),
-  V('machine-code', '48 89 D8'), V('machine-code', 'F'), V('machine-code', 'GG'), V('machine-code', '0x90, 0xC3\n// comment\n48 89 d8'), V('machine-code', '90 C')
+  V('machine-code', '48 89 D8'), V('machine-code', 'F'), V('machine-code', 'GG'), V('machine-code', '0x90, 0xC3\n// comment\n48 89 d8'), V('machine-code', '90 C'),
+  // the SQL family (the plugin languages): the family of the pack decides the checks
+  V('cypher', 'MATCH (n)\nWHERE EXISTS { (n) }', {version: '4'}, 'sql'), V('cypher', 'MATCH (n)\nWHERE EXISTS { (n) }', {version: '5'}, 'sql'),
+  V('cypher', 'MATCH (n) IN TRANSACTIONS', {version: '4'}, 'sql'), V('cypher', 'MATCH (n) IN TRANSACTIONS', {version: '5'}, 'sql'),
+  V('cypher', 'MATCH (n) RETURN n;', {version: '5'}, 'sql'), V('cypher', 'MATCH (n)\nWHERE name = \'abc\';', {version: '4'}, 'sql'),
+  V('plsql', 'SELECT LISTAGG(a) FROM t', {version: '12c'}, 'sql'), V('plsql', 'SELECT LISTAGG(a) FROM t', {version: '19c'}, 'sql'),
+  V('plsql', 'SELECT a FROM t WHERE b = 1;', {version: '21c'}, 'sql'), V('plsql', "SELECT 1\nWHERE a = 'x", {version: '21c'}, 'sql'),
+  V('plsql', 'SELECT (1', {version: '21c'}, 'sql'), V('plsql', 'SELECT 1)', {version: '21c'}, 'sql'), V('plsql', 'SELECT (1]', {version: '21c'}, 'sql'),
+  V('plsql', '-- LISTAGG\nSELECT 1;', {version: '12c'}, 'sql'), V('plsql', '/* LISTAGG */ SELECT 1;', {version: '12c'}, 'sql'),
+  V('tsql', 'CREATE OR ALTER VIEW v AS SELECT 1', {version: '2012'}, 'sql'), V('tsql', 'CREATE OR ALTER VIEW v AS SELECT 1', {version: '2016'}, 'sql'),
+  V('tsql', 'SELECT STRING_AGG(a) FROM t', {version: '2016'}, 'sql'), V('tsql', 'SELECT STRING_AGG(a) FROM t', {version: '2017'}, 'sql'),
+  V('tsql', 'SELECT a FROM t;', {version: '2022'}, 'sql')
 ];
 write('validate-cases.json', {generated_by: 'tests/gen-fixtures.js', cases: validateInputs.map(input => {
-  const r = validators.validateSource(input.profile, input.text, input.dialect);
+  const r = validators.validateSource(input.profile, input.text, input.dialect, input.family ? {family: input.family} : undefined);
   return {...input, expect: {ok: r.ok, level: r.level, codes: r.issues.map(i => i.code), lines: r.issues.map(i => i.line)}};
 })});
 
@@ -104,6 +115,45 @@ write('resolve-cases.json', {generated_by: 'tests/gen-fixtures.js', cases: resol
   const r = languages.resolveLanguage(input.ctx, input.current, input.lock);
   return {...input, expect: {language: r.language, reason: r.reason, changed: r.changed, uncertain: !!r.uncertain, suggestion: r.suggestion || null, dialectHints: r.dialectHints}};
 })});
+
+// ---------------------------------------------------------------- plugin languages (a plugin pack adds a whole new language)
+// The enabled set, the profile and the expectation are in every case: the Rust core must answer the same.
+{
+  const resolvePluginInputs = [
+    {enabled: ['cypher', 'plsql'], ctx: {languageId: 'plaintext', fileName: 'x.sql'}},
+    {enabled: ['cypher', 'plsql'], ctx: {languageId: 'plaintext', fileName: 'x.cypher'}},
+    {enabled: ['cypher', 'plsql'], ctx: {languageId: 'plaintext', fileName: 'x.cql'}},
+    {enabled: ['cypher', 'plsql'], ctx: {languageId: 'plaintext', fileName: 'x.tsql'}},
+    {enabled: ['cypher', 'plsql'], ctx: {languageId: 'cypher', fileName: 'x.cypher'}},
+    {enabled: ['cypher', 'plsql'], ctx: {languageId: 'plaintext', fileName: 'x.rs'}},
+    {enabled: ['cypher', 'plsql', 'tsql'], ctx: {languageId: 'plaintext', fileName: 'x.sql'}},
+    {enabled: ['cypher', 'plsql', 'tsql'], ctx: {languageId: 'plaintext', fileName: 'x.tsql'}},
+    {enabled: ['cypher', 'plsql', 'tsql'], ctx: {languageId: 'plaintext', fileName: 'x.cypher'}},
+    {enabled: [], ctx: {languageId: 'plaintext', fileName: 'x.sql'}},
+    {enabled: ['cypher', 'plsql'], ctx: {languageId: 'plaintext', fileName: 'x.sql'}, lock: 'cypher'}
+  ];
+  const predictPluginInputs = [
+    {enabled: ['cypher', 'plsql'], profile: 'cypher', prefix: 'match', before: '', dialect: {}},
+    {enabled: ['cypher', 'plsql'], profile: 'cypher', prefix: 'match', before: 'MATCH (a)\n', dialect: {}},
+    {enabled: ['cypher', 'plsql'], profile: 'plsql', prefix: 'select', before: '', dialect: {}},
+    {enabled: ['cypher', 'plsql'], profile: 'plsql', prefix: 'select', before: '', dialect: {version: '12c'}},
+    {enabled: ['cypher', 'plsql'], profile: 'tsql', prefix: 'select', before: '', dialect: {}},
+    {enabled: ['cypher', 'plsql', 'tsql'], profile: 'tsql', prefix: 'select', before: '', dialect: {}}
+  ];
+  const pluginCases = [];
+  for (const input of resolvePluginInputs) {
+    const reg = languages.loadRegistry(undefined, {enabled: input.enabled});
+    const r = languages.resolveLanguage(input.ctx, 'unknown', input.lock || null, reg);
+    pluginCases.push({kind: 'resolve', enabled: input.enabled, ctx: input.ctx, current: 'unknown', lock: input.lock || null,
+      expect: {language: r.language, reason: r.reason, changed: r.changed, uncertain: !!r.uncertain, suggestion: r.suggestion || null, dialectHints: r.dialectHints}});
+  }
+  for (const input of predictPluginInputs) {
+    const reg = languages.loadRegistry(undefined, {enabled: input.enabled});
+    const r = languages.predict({profile: input.profile, prefix: input.prefix, before: input.before, dialect: input.dialect, limit: 6}, reg);
+    pluginCases.push({kind: 'predict', ...input, expect: r.map(c => ({id: c.id, kind: c.kind, source: c.source, validation: c.validation, text: c.text, match: c.match}))});
+  }
+  write('plugin-cases.json', {generated_by: 'tests/gen-fixtures.js', defaultEnabled: [...languages.DEFAULT_PLUGIN_LANGUAGES], pluginLanguages: [...languages.PLUGIN_LANGUAGES], cases: pluginCases});
+}
 
 // ---------------------------------------------------------------- secret scanning (findings carry no values)
 const secretInputs = [

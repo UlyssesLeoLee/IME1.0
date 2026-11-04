@@ -23,7 +23,7 @@ test('PARITY predict fixtures (94 cases) match the JS engine', () => {
 });
 test('PARITY validate fixtures match the JS validators', () => {
   for (const c of load('validate-cases.json').cases) {
-    const r = V.validateSource(c.profile, c.text, c.dialect);
+    const r = V.validateSource(c.profile, c.text, c.dialect, c.family ? {family: c.family} : undefined);
     assert.deepEqual({ok: r.ok, level: r.level, codes: r.issues.map(i => i.code), lines: r.issues.map(i => i.line)}, c.expect, `${c.profile}: ${JSON.stringify(c.text).slice(0, 50)}`);
   }
 });
@@ -43,6 +43,21 @@ test('PARITY secret fixtures match the JS scanner', () => {
   for (const c of load('secret-cases.json').cases) {
     const r = secrets.scan(c.text, {fileName: c.fileName});
     assert.deepEqual({highest: r.highest, sensitiveFile: r.sensitiveFile, findings: r.findings.map(x => ({kind: x.kind, severity: x.severity, line: x.line}))}, c.expect);
+  }
+});
+test('PARITY plugin language fixtures match the JS resolver and predictor', () => {
+  const f = load('plugin-cases.json');
+  assert.deepEqual(f.defaultEnabled, ['cypher', 'plsql'], 'T-SQL is off and PL/SQL is on out of the box');
+  assert.ok(f.cases.length >= 10);
+  for (const c of f.cases) {
+    const reg = L.loadRegistry(undefined, {enabled: c.enabled});
+    if (c.kind === 'resolve') {
+      const r = L.resolveLanguage(c.ctx, c.current, c.lock, reg);
+      assert.deepEqual({language: r.language, reason: r.reason, changed: r.changed, uncertain: !!r.uncertain, suggestion: r.suggestion || null, dialectHints: r.dialectHints}, c.expect, JSON.stringify(c.ctx));
+    } else {
+      const got = L.predict({profile: c.profile, prefix: c.prefix, before: c.before, dialect: c.dialect, limit: 6}, reg).map(x => ({id: x.id, kind: x.kind, source: x.source, validation: x.validation, text: x.text, match: x.match}));
+      assert.deepEqual(got, c.expect, `${c.profile}/${JSON.stringify(c.prefix)}`);
+    }
   }
 });
 test('PARITY fixtures are exactly what the generator produces (no hand edits)', () => {

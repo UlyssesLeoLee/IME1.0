@@ -43,6 +43,8 @@ pub mod vk {
     pub const PROCESSKEY: u32 = 0xE5;
     /// An injected Unicode character (SendInput); it has no key identity.
     pub const PACKET: u32 = 0xE7;
+    /// The F1 key.
+    pub const F1: u32 = 0x70;
 }
 
 /// Modifier state at the time of a key message.
@@ -117,6 +119,13 @@ pub fn translate(code: u32, ch: Option<char>, mods: Modifiers) -> Option<KeyEven
 /// candidates). It is the only chord the input method may claim, and only while candidates are showing.
 pub fn is_compose_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::SPACE && mods.ctrl && mods.alt && !mods.shift && !mods.win
+}
+
+/// Alt+F1: switch between direct mode (nothing is eaten) and input mode (the mainstream behaviour: typing opens a
+/// composition and the candidate list takes the digits and the Tab key). The floating window offers the same as a
+/// button.
+pub fn is_input_mode_chord(code: u32, mods: Modifiers) -> bool {
+    code == vk::F1 && mods.alt && !mods.ctrl && !mods.shift && !mods.win
 }
 
 /// True for a key that moves the caret or edits the text behind the machine's back, so that what it observed (the typed

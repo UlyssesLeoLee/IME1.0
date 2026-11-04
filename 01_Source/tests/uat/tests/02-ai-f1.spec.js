@@ -42,7 +42,7 @@ test.beforeEach(async () => { behaviour = defaultBehaviour; mock.reset(); await 
 async function openF1(file, {line = 1, col = 1, intent = 'fill bodies'} = {}) {
   await app.openFile(file);
   await app.goto(line, col);
-  await app.page.keyboard.press('F1');
+  await app.page.keyboard.press('Control+F1');   // the plain F1 is the editor's Help key; the panel is on Ctrl+F1
   await app.waitPanel();
   await app.panelFrame.locator('#intent').fill(intent);
 }
@@ -147,7 +147,7 @@ test('UAT-24 [ST-012/IT-014/IT-028] the request carries the UNSAVED buffer, not 
   await app.openFile('f6.rs');
   await app.end(); await app.type('// unsaved note\n', 6);
   expect(await app.isActiveTabDirty()).toBe(true);
-  await app.page.keyboard.press('F1');
+  await app.page.keyboard.press('Control+F1');
   await app.waitPanel();
   await generate();
   await app.waitPanelStatus('full', /ready/);
@@ -204,7 +204,7 @@ test('UAT-27 [AT-056/ST-042/UT-076] prompt injection in code and a malicious rep
 test('UAT-28 [AT-050/ST-036/IT-040] secrets in the file: the user must choose; "Redact" sends no secret bytes and the proposal is restored locally', async () => {
   behaviour = ({task, input}) => task === 'full' ? {json: {fullFile: (input.currentFile || '').replace('fn a() {}', 'fn a() { 1 }')}} : {json: {insertCandidates: []}};
   await app.openFile('secret.rs');
-  await app.page.keyboard.press('F1'); await app.waitPanel();
+  await app.page.keyboard.press('Control+F1'); await app.waitPanel();
   await app.panelFrame.locator('#generate').click();
   await app.waitDialog(); await app.dialogClick('Authorize this request');
   const d = await app.waitDialog();
@@ -231,7 +231,7 @@ test('UAT-28 [AT-050/ST-036/IT-040] secrets in the file: the user must choose; "
   // a .env file needs the same explicit decision
   mock.reset();
   await app.openFile('.env');
-  await app.page.keyboard.press('F1');
+  await app.page.keyboard.press('Control+F1');
   await app.waitDialog(); await app.dialogClick('Allow once');                 // the secret-file read gate (file name rule) asks before anything is read
   await app.waitPanel();
   await app.panelFrame.locator('#generate').click();
@@ -242,11 +242,11 @@ test('UAT-28 [AT-050/ST-036/IT-040] secrets in the file: the user must choose; "
   expect(mock.count()).toBe(0);
 });
 
-test('UAT-29 [AT-032/ST-023/IT-026] with the key bound to Shift+F1, plain F1 keeps opening the Command Palette', async () => {
+test('UAT-29 [AT-032/ST-023/IT-026] with the key bound to Ctrl+Shift+F1, plain F1 keeps opening the Command Palette', async () => {
   // the user edits settings.json; VS Code applies it live (same effect as the Settings UI)
   const settingsFile = `${app.userDir}\\User\\settings.json`;
   const next = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
-  next['programmingIme.f1Binding'] = 'shift+f1';
+  next['programmingIme.f1Binding'] = 'ctrl+shift+f1';
   fs.writeFileSync(settingsFile, JSON.stringify(next, null, 2));
   await sleep(2500);
   await app.openFile('f9.rs');
@@ -255,7 +255,7 @@ test('UAT-29 [AT-032/ST-023/IT-026] with the key bound to Shift+F1, plain F1 kee
   expect((await app.page.locator('.quick-input-box input').inputValue())).toMatch(/^>/);
   await app.escapeQuick();
   await app.focusEditor();
-  await app.page.keyboard.press('Shift+F1');
+  await app.page.keyboard.press('Control+Shift+F1');
   await app.waitPanel();                                                     // the configured key opens the IME panel
   await app.screenshot('f1-shift-binding');
 });

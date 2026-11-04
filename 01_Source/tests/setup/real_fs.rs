@@ -30,7 +30,9 @@ use windows::core::PCWSTR;
 #[test]
 fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() {
     let tmp = TempDir::new("lib");
-    let prefix = tmp.0.join("Programming IME 日本語");
+    // the product folder is the last part of the install folder, so the folder that is chosen is a parent of it
+    let base = tmp.0.join("日本語 フォルダ");
+    let prefix = base.join("IME1.0");
     let mut backend = RealBackend::without_reboot_schedule();
     let run = |backend: &mut RealBackend, version: &str| {
         let options = offline_options(version);
@@ -67,14 +69,14 @@ fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() 
         &prefix,
     )
     .unwrap();
-    assert_eq!(manifest.files.len(), 6);
+    assert_eq!(manifest.files.len(), 8);
     assert!(
         manifest.files.iter().all(|f| f.is_file()),
         "the manifest lists exactly files that exist"
     );
     assert_eq!(
         manifest.directories,
-        std::slice::from_ref(&prefix),
+        [base.clone(), prefix.clone()],
         "the install folder was created by the installer and is recorded; the pre-existing temp folder is not"
     );
     assert!(
@@ -95,7 +97,7 @@ fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() 
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
     assert!(!names.iter().any(|n| n.contains(".pime-")), "{names:?}");
-    assert_eq!(names.len(), 6, "{names:?}");
+    assert_eq!(names.len(), 8, "{names:?}");
 
     // a file the user put there survives the uninstall; the manifest's files do not
     std::fs::write(prefix.join("my notes.txt"), "keep me").unwrap();
@@ -134,7 +136,7 @@ fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() 
     assert_eq!(std::fs::read_dir(&prefix).unwrap().count(), 1);
 
     // a folder the installer itself created (here: with a missing parent) goes too; one that pre-existed would stay
-    let deep = tmp.0.join("new parent").join("Programming IME");
+    let deep = tmp.0.join("new parent").join("IME1.0");
     let options = offline_options("0.2.0");
     let plan = install_plan(&deep, &options).unwrap();
     let payload = Payload::from_exe(&overlay("0.2.0")).unwrap().unwrap();
@@ -196,11 +198,11 @@ fn st_035_dry_run_prints_the_plan_and_changes_nothing() {
     let (code, text) = setup(&exe, &["--dry-run", "--prefix", prefix.to_str().unwrap()]);
     assert_eq!(code, 0, "{text}");
     assert!(
-        text.contains("Programming IME 0.3.0 - install plan (dry run: nothing is changed)"),
+        text.contains("IME1.0 0.3.0 - install plan (dry run: nothing is changed)"),
         "{text}"
     );
     assert!(
-        text.contains("payload: 4 files, version 0.3.0, SHA-256 of every file verified"),
+        text.contains("payload: 6 files, version 0.3.0, SHA-256 of every file verified"),
         "{text}"
     );
     assert!(
@@ -241,7 +243,6 @@ fn st_035_unsafe_prefixes_and_bad_arguments_exit_with_2_before_anything_happens(
     let exe = installer_exe(&tmp.0, "0.3.0");
     for prefix in [
         r"C:\Windows",
-        r"C:\",
         r"C:\Program Files\..\Windows",
         "relative",
         r"\\server\share\x",
@@ -255,6 +256,15 @@ fn st_035_unsafe_prefixes_and_bad_arguments_exit_with_2_before_anything_happens(
             "{prefix}: {text}"
         );
     }
+    // the root of a drive is not refused any more: the product folder is put into it, so the program never lands
+    // in the root itself
+    let (code, text) = setup(&exe, &["--dry-run", "--prefix", r"D:\"]);
+    assert_eq!(code, 0, "{text}");
+    assert!(text.contains(r"folder: D:\IME1.0"), "{text}");
+    assert!(
+        text.contains(r#"the product folder "IME1.0" was added: D:\ -> D:\IME1.0"#),
+        "{text}"
+    );
     let (code, text) = setup(&exe, &["--bogus"]);
     assert_eq!(code, 2);
     assert!(text.contains("unknown option --bogus") && text.contains("Usage:"));
@@ -293,7 +303,7 @@ fn st_035_the_real_exe_installs_and_uninstalls_in_a_temp_folder_with_all_three_n
     }
     let tmp = TempDir::new("exe");
     let exe = installer_exe(&tmp.0, "0.3.0");
-    let prefix = tmp.0.join("Programming IME");
+    let prefix = tmp.0.join("IME1.0");
     let prefix_arg = prefix.to_str().unwrap();
     let flags = [
         "--silent",
@@ -306,10 +316,7 @@ fn st_035_the_real_exe_installs_and_uninstalls_in_a_temp_folder_with_all_three_n
 
     let (code, text) = setup(&exe, &flags);
     assert_eq!(code, 0, "{text}");
-    assert!(
-        text.contains("DONE: Programming IME 0.3.0 installed"),
-        "{text}"
-    );
+    assert!(text.contains("DONE: IME1.0 0.3.0 installed"), "{text}");
     assert!(
         !text.contains("UAC"),
         "a temp-folder install never asks for administrator rights: {text}"
@@ -340,10 +347,7 @@ fn st_035_the_real_exe_installs_and_uninstalls_in_a_temp_folder_with_all_three_n
         ],
     );
     assert_eq!(code, 0, "{text}");
-    assert!(
-        text.contains("DONE: Programming IME 0.3.0 uninstalled"),
-        "{text}"
-    );
+    assert!(text.contains("DONE: IME1.0 0.3.0 uninstalled"), "{text}");
     assert!(!prefix.exists(), "everything the installer created is gone");
 
     // nothing left to uninstall: a clear error, not a guess
@@ -359,6 +363,57 @@ fn st_035_the_real_exe_installs_and_uninstalls_in_a_temp_folder_with_all_three_n
     );
     assert_eq!(code, 1);
     assert!(text.contains("no install manifest"), "{text}");
+}
+
+/// The rule of the install folder: the product folder is the last part of it. A place that is chosen gets the
+/// product folder, so the program never lands in the root of a drive.
+#[test]
+fn st_035_the_product_folder_is_appended_to_the_place_that_was_chosen() {
+    if is_elevated() {
+        eprintln!("skipped: do not run the installer tests from an elevated shell");
+        return;
+    }
+    let tmp = TempDir::new("rule");
+    let exe = installer_exe(&tmp.0, "0.3.0");
+    let base = tmp.0.join("chosen");
+    let prefix = base.join("IME1.0");
+    let (code, text) = setup(
+        &exe,
+        &[
+            "--silent",
+            "--no-register",
+            "--no-arp",
+            "--no-vscode",
+            "--prefix",
+            base.to_str().unwrap(),
+        ],
+    );
+    assert_eq!(code, 0, "{text}");
+    assert!(
+        text.contains(&format!("installed ({})", prefix.display())),
+        "{text}"
+    );
+    assert!(
+        prefix.join("pime-core.exe").is_file(),
+        "the program is in the product folder"
+    );
+    assert!(
+        !base.join("pime-core.exe").exists(),
+        "and not in the place that was chosen"
+    );
+    // the uninstall finds the manifest through the same rule
+    let (code, text) = setup(
+        &exe,
+        &[
+            "--uninstall",
+            "--silent",
+            "--no-vscode",
+            "--prefix",
+            base.to_str().unwrap(),
+        ],
+    );
+    assert_eq!(code, 0, "{text}");
+    assert!(!prefix.exists(), "everything the installer created is gone");
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

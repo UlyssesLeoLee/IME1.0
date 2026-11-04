@@ -1,0 +1,460 @@
+{
+  "schema_version": 1,
+  "profile_id": "tsql",
+  "version": "1.0.0",
+  "display_name": "T-SQL",
+  "language_ids": [
+    "tsql"
+  ],
+  "accepted_extensions": [
+    ".tsql",
+    ".sql"
+  ],
+  "validator": "sql",
+  "dialects": {
+    "version": {
+      "values": [
+        "2012",
+        "2016",
+        "2017",
+        "2019",
+        "2022"
+      ],
+      "default": "2022"
+    }
+  },
+  "keywords": [
+    "select",
+    "from",
+    "where",
+    "insert",
+    "update",
+    "delete",
+    "merge",
+    "join",
+    "inner",
+    "outer",
+    "left",
+    "right",
+    "full",
+    "cross",
+    "on",
+    "group",
+    "by",
+    "having",
+    "order",
+    "asc",
+    "desc",
+    "union",
+    "all",
+    "distinct",
+    "begin",
+    "end",
+    "declare",
+    "set",
+    "if",
+    "else",
+    "while",
+    "break",
+    "continue",
+    "return",
+    "try",
+    "catch",
+    "throw",
+    "null",
+    "not",
+    "and",
+    "or",
+    "in",
+    "between",
+    "like",
+    "exists",
+    "create",
+    "alter",
+    "procedure",
+    "proc",
+    "function",
+    "view",
+    "trigger",
+    "table",
+    "index",
+    "sequence",
+    "schema",
+    "constraint",
+    "primary",
+    "key",
+    "foreign",
+    "references",
+    "unique",
+    "check",
+    "default",
+    "commit",
+    "rollback",
+    "transaction",
+    "save",
+    "grant",
+    "revoke",
+    "with",
+    "cte",
+    "over",
+    "partition",
+    "row_number",
+    "rank",
+    "dense_rank",
+    "is",
+    "output",
+    "inserted",
+    "deleted",
+    "identity",
+    "nvarchar",
+    "varchar",
+    "int",
+    "bigint",
+    "bit",
+    "datetime2",
+    "sysname",
+    "temp",
+    "cursor",
+    "fetch",
+    "next",
+    "open",
+    "close",
+    "deallocate",
+    "exec",
+    "execute",
+    "sp_executesql",
+    "top",
+    "percent",
+    "offset",
+    "rows",
+    "only",
+    "current_timestamp",
+    "getdate",
+    "sysdate",
+    "newid",
+    "isnull",
+    "coalesce",
+    "case",
+    "when",
+    "cast",
+    "convert"
+  ],
+  "triggers": [
+    {
+      "id": "tsql.select",
+      "pattern": "select",
+      "kind": "syntax",
+      "weight": 88,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "SELECT ... FROM",
+          "text": "SELECT ${columns}\nFROM ${table}\nWHERE ${condition};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.insert",
+      "pattern": "insert",
+      "kind": "syntax",
+      "weight": 85,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "INSERT ... VALUES",
+          "text": "INSERT INTO ${table} (${column})\nVALUES (${value});"
+        }
+      ]
+    },
+    {
+      "id": "tsql.update",
+      "pattern": "update",
+      "kind": "syntax",
+      "weight": 85,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "UPDATE ... SET",
+          "text": "UPDATE ${table}\nSET ${column} = ${value}\nWHERE ${condition};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.delete",
+      "pattern": "delete",
+      "kind": "syntax",
+      "weight": 84,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "DELETE ... WHERE",
+          "text": "DELETE FROM ${table}\nWHERE ${condition};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.merge",
+      "pattern": "merge",
+      "kind": "syntax",
+      "weight": 78,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "MERGE INTO",
+          "text": "MERGE INTO ${target} AS t\nUSING ${source} AS s\nON ${join_condition}\nWHEN MATCHED THEN UPDATE SET t.${column} = s.${column}\nWHEN NOT MATCHED THEN INSERT (${column}) VALUES (s.${column});"
+        }
+      ]
+    },
+    {
+      "id": "tsql.procedure",
+      "pattern": "procedure",
+      "kind": "syntax",
+      "weight": 86,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE OR ALTER PROCEDURE",
+          "text": "CREATE OR ALTER PROCEDURE ${name}\n  @${param} ${type}\nAS\nBEGIN\n  ${cursor}\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.function",
+      "pattern": "function",
+      "kind": "syntax",
+      "weight": 86,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE OR ALTER FUNCTION",
+          "text": "CREATE OR ALTER FUNCTION ${name}(@${param} ${type})\nRETURNS ${type}\nAS\nBEGIN\n  RETURN ${value};\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.view",
+      "pattern": "createview",
+      "kind": "syntax",
+      "weight": 74,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE OR ALTER VIEW",
+          "text": "CREATE OR ALTER VIEW ${name}\nAS\nSELECT ${columns}\nFROM ${table};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.trigger",
+      "pattern": "trigger",
+      "kind": "syntax",
+      "weight": 80,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE OR ALTER TRIGGER",
+          "text": "CREATE OR ALTER TRIGGER ${name}\nON ${table}\nAFTER INSERT, UPDATE\nAS\nBEGIN\n  ${cursor}\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.createtable",
+      "pattern": "createtable",
+      "kind": "syntax",
+      "weight": 76,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE TABLE",
+          "text": "CREATE TABLE ${name} (\n  ${column} ${type} NOT NULL,\n  CONSTRAINT ${pk} PRIMARY KEY (${column})\n);"
+        }
+      ]
+    },
+    {
+      "id": "tsql.declare",
+      "pattern": "declare",
+      "kind": "syntax",
+      "weight": 78,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "DECLARE variables",
+          "text": "DECLARE @${name} ${type} = ${value};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.set",
+      "pattern": "set",
+      "kind": "syntax",
+      "weight": 70,
+      "contexts": [
+        "statement",
+        "expression"
+      ],
+      "candidates": [
+        {
+          "label": "SET variable",
+          "text": "SET @${name} = ${value};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.begin",
+      "pattern": "begin",
+      "kind": "syntax",
+      "weight": 84,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "BEGIN ... END block",
+          "text": "BEGIN\n  ${cursor}\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.trycatch",
+      "pattern": "try",
+      "kind": "syntax",
+      "weight": 76,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "TRY ... CATCH",
+          "text": "BEGIN TRY\n  ${cursor}\nEND TRY\nBEGIN CATCH\n  THROW;\nEND CATCH;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.throws",
+      "pattern": "throw",
+      "kind": "syntax",
+      "weight": 74,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "THROW",
+          "text": "THROW ${error_number}, '${message}', 1;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.cte",
+      "pattern": "with",
+      "kind": "syntax",
+      "weight": 72,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "WITH (common table expression)",
+          "text": "WITH ${name} AS (\n  SELECT ${columns}\n  FROM ${table}\n)\nSELECT * FROM ${name};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.exec",
+      "pattern": "exec",
+      "kind": "syntax",
+      "weight": 70,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "EXEC procedure",
+          "text": "EXEC ${procedure} @${parameter} = ${value};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.cursor",
+      "pattern": "cursor",
+      "kind": "syntax",
+      "weight": 68,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "cursor",
+          "text": "DECLARE ${name} CURSOR FOR\n  SELECT ${columns}\n  FROM ${table};\nOPEN ${name};\nFETCH NEXT FROM ${name};\nCLOSE ${name};\nDEALLOCATE ${name};"
+        }
+      ]
+    },
+    {
+      "id": "tsql.if",
+      "pattern": "if",
+      "kind": "syntax",
+      "weight": 72,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "IF ... BEGIN ... END",
+          "text": "IF ${condition}\nBEGIN\n  ${cursor}\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.while",
+      "pattern": "while",
+      "kind": "syntax",
+      "weight": 72,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "WHILE loop",
+          "text": "WHILE ${condition}\nBEGIN\n  ${cursor}\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "tsql.commit",
+      "pattern": "commit",
+      "kind": "syntax",
+      "weight": 58,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "COMMIT TRANSACTION",
+          "text": "COMMIT TRANSACTION;"
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 //! Language resolution (FR-010/011, DD section 5.3): port of `resolveLanguage` / `lexicalGuess`.
 //! A manual lock always wins; weak evidence never switches the language automatically.
 
-use crate::pack::{LANGUAGES, Registry};
+use crate::pack::Registry;
 use crate::util::head_utf16;
 
 const STRONG_EXT: [(&str, &str); 11] = [
@@ -147,7 +147,7 @@ pub fn resolve_language(
             Vec::new()
         }
     };
-    if let Some(l) = lock.filter(|l| LANGUAGES.contains(l)) {
+    if let Some(l) = lock.filter(|l| reg.has_profile(l)) {
         return Decision {
             language: l.to_string(),
             dialect_hints: hints_for(l),
@@ -193,11 +193,32 @@ pub fn resolve_language(
         suggestion: None,
         locked: false,
     };
+    // The hardcoded built-in tables win first (STRONG_EXT above, AMBIGUOUS_EXT here); the registry decides for
+    // every other extension. An extension may be owned by more than one active profile (PL/SQL and T-SQL own
+    // `.sql`): then the language is kept and the first owner is the suggestion.
     let ambiguous = lookup(&AMBIGUOUS_EXT, &ext);
+    let owners = reg.extension_owners(&ext);
+    if ambiguous.is_none() && owners.len() == 1 {
+        let strong = owners[0];
+        return Decision {
+            language: strong.to_string(),
+            dialect_hints: hints_for(strong),
+            confidence: 85,
+            reason: "extension",
+            changed: strong != current,
+            uncertain: false,
+            suggestion: None,
+            locked: false,
+        };
+    }
     if ambiguous.is_some() || ext.is_empty() {
         out.reason = "ambiguous-extension";
         out.uncertain = true;
         out.suggestion = ambiguous.map(str::to_string);
+    } else if owners.len() > 1 {
+        out.reason = "ambiguous-extension";
+        out.uncertain = true;
+        out.suggestion = Some(owners[0].to_string());
     }
     if let Some(guess) = ctx.text.and_then(lexical_guess)
         && guess != current

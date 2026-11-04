@@ -15,8 +15,12 @@
   "cmd.showDiagnostics": "Programming IME: Show Diagnostics",
   "cmd.reloadRules": "Programming IME: Reload User Rules",
   "cmd.openRulesFolder": "Programming IME: Open User Rules Folder",
-  "cmd.f1Edit": "Programming IME: F1 AI (Annotate Scope / Whole File / Insert)",
-  "cmd.f2Prompt": "Programming IME: F2 Prompt (5W1H Prompt to Clipboard)",
+  "cmd.pluginLanguages": "Programming IME: Plugin Languages (on / off)",
+  "cmd.importPluginPacks": "Programming IME: Import Plugin Packs from a Folder",
+  "cmd.openPluginFolder": "Programming IME: Open Plugin Packs Folder",
+  "cfg.pluginLanguages": "Plugin languages that are on. A plugin pack adds a whole new language (its own rules, dialects and validator); the built-in seven languages are always on and cannot be switched off. T-SQL and PL/SQL share the .sql extension, so only one of them can own it at a time: T-SQL is off by default, PL/SQL is on.",
+  "cmd.f1Edit": "Programming IME: Ctrl+F1 AI (Annotate Scope / Whole File / Insert)",
+  "cmd.f2Prompt": "Programming IME: Ctrl+F2 Prompt (5W1H Prompt to Clipboard)",
   "cmd.secretFiles": "Programming IME: Secret Files",
   "cfg.secretFilePatterns": "Extra file name or path patterns (globs, for example \"*.cred\" or \"config/private/**\") that Programming IME treats as secret-class files: it asks before it reads such a file. They add to the built-in rules (.env, private keys, keystores, credentials ...), which cannot be switched off. A pattern without a slash matches the file name; with a slash it matches the path from any folder; a trailing slash means everything below. User settings only: a workspace cannot weaken this list."
 }

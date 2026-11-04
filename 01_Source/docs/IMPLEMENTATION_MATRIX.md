@@ -2,11 +2,14 @@
 
 **Read this first:** "implemented" means code exists and the listed evidence passed in *this* environment
 (Windows 11, VS Code 1.137.0, Node 22.12, Rust 1.99.1 gnu). It does not mean the 64 requirements are accepted.
-Evidence is in `02_Verification/` (`STATUS.md`, `test-execution-report.md`). Windows-specific parts were not built or run.
+Evidence is in `02_Verification/` (`STATUS.md`, `test-execution-report.md`). The Windows text service now builds and ships
+inside the installer, but it has still never been registered or run under a real TSF: see
+`02_Verification/IME_FRAMEWORK_MATRIX.md` (framework matrix, 2026-11-02) and `02_Verification/FRAMEWORK_GAPS.md`
+(the gaps submitted for a decision).
 
 | DD module | Code | v0.2 status | Evidence | Not done / limits |
 |---|---|---|---|---|
-| DD-01 TSF | `windows/tsf` (unchanged v0.1 C++) | Source only. Not compiled, not registered, keys pass through | none | Everything: build, register 3 profiles, composition, candidate window, IPC, signing |
+| DD-01 TSF | `crates/pime-tsf` (pure Rust, 2026-11-02; the C++ skeleton in `windows/tsf` is unchanged and still not built) | Code layer complete, behaviour layer unit-tested, **judgement layer empty**: text service (`ITfTextInputProcessorEx`, `ITfKeyEventSink`, `ITfThreadMgrEventSink`, `ITfCompositionSink`, `ITfEditSession`), candidate window (a real Win32 popup, DPI-aware), the UI-element protocol, registration (COM + 3 language profiles + 3 categories) and the exact undo of the registration are all written and unit-tested; **never registered, never run under a real TSF** | `crates/pime-tsf` 178/178; `tests/smoke/tsf-dll-check.js` (x64 PE, the four exports, system DLL imports only); `02_Verification/IME_FRAMEWORK_MATRIX.md` | No evidence of a real registration, activation or keystroke; no `ITfDisplayAttributeProvider`, no COM object counting; `TIPCAP_IMMERSIVESUPPORT` and friends are deliberately not registered (`register.rs:271-283`); not code signed |
 | DD-02 Input core | `crates/pime-core/src/input.rs` | Pure state machine (DIRECT/OBSERVING/CANDIDATES/COMPOSING/SUSPENDED/FAULT_FALLBACK), key-consumption rules, secure-input suspend, Direct fallback on a virtual clock | Rust UT-003/004/005/009/064/067 | Not wired to a real TSF; 2 s fallback is a design-state test, the system measurement (ST-037) is not run |
 | DD-03 Languages | `language-packs/*.json` + `src/core/languages.js` + `validators.js` + `x86.js`; Rust `pack.rs`, `predict.rs`, `resolve.rs`, `validators.rs`, `x86.rs` | Seven declarative packs; dialect axes; context-aware ranked candidates (statement/expression/type, enclosing impl/class, nearby identifiers); language resolution that never switches on weak evidence; a small x86-64 table whose encodings are checked against known vectors, anything else refused | JS 90 tests (+10 engine differential tests that need a built core); Rust 209 tests; JS and Rust agree on 100 predict / 51 validate / 59 x86 / 18 resolve / 11 secret fixtures and on the edit-path fixtures (`edit-cases.json`: SHA-256, diff/hunks/render/selections, excerpts, settings, endpoints, workspace tokens) | Validators are structural checks (brackets, Python indentation, dialect tokens), **not** parsers or compilers. No AST, no type checking, no general assembler/disassembler |
 | DD-04 Context | `src/core/context.js`, `f1.js`, `languageState.js`; Rust `context.rs`, `sha256.rs` (engine `rust`) | L1 nearby excerpt, L3 live-buffer snapshot (version, sha256, EOL, selection, UTF-16 ranges); L4 is preview-only by construction. With engine `rust` the snapshot text lives in the core (addressed by `snapshot_id`, released when the F1 session closes) | JS UT-025..030; Rust UT-025..030 (same ids), NIST SHA-256 vectors; UAT-24 (request carries the unsaved buffer) | VS Code only. No TSF text ranges, no other IDE bridge, no chunked transfer: the core accepts text-carrying requests up to 16 MiB, the whole-file path is still disabled above 2 MiB instead of truncating. The JS side keeps its own copy of the text (the AI request is still built in JS) |
@@ -36,7 +39,11 @@ HTTP still sent by JS) and the decisions still open. **Steps 1.0 and 1.1 are imp
 
 ## Gates (DD §14)
 
-- G0 (Windows profiles, TSF): **not attempted** (no MSVC, no VM).
+- G0 (Windows profiles, TSF): **still not achieved.** The text service DLL builds, ships inside the installer and has a
+  registration implementation, but the real registration, the activation of the three profiles and typing in a real
+  application were never run: that needs a disposable Windows 11 with administrator rights
+  (`01_Source/docs/TSF_VM_TEST_PLAN.md`). Not possible on the development machine (checked on 2026-11-02:
+  `Get-VM` has no permission, the Multipass daemon is not running, no Windows ISO on disk).
 - G1 (VS Code dirty buffer, conflicts, Undo): exercised by UAT-23/24/25 on VS Code 1.137.0 - dirty buffer, stale refusal, single Ctrl+Z restore. Other VS Code versions and other extensions editing the same buffer were not tested.
 - G2 (BYOK, capability, authorisation): exercised against a **mock** provider only. No real provider API was called (no real key was used).
 - Engine switch (migration 1.0/1.1): the whole UAT suite also runs against the Rust engine (`PIME_ENGINE=rust`, `PIME_CORE_EXE`): 32/32 passed (24 original + 6 annotation + ENG-01/02); with the default js engine 31 passed + 1 skipped (ENG-02 needs a core). Core: debug build, local Windows 11 only.

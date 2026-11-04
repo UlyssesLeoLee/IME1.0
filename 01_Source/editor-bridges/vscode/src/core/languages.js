@@ -4,7 +4,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {fail} = require('./errors');
-const {maskSource, validateSource} = require('./validators');
+const validators = require('./validators');
+const {maskSource, validateSource} = validators;
 const x86 = require('./x86');
 
 const LANGUAGES = Object.freeze(['rust', 'python', 'typescript', 'powershell', 'c', 'assembly', 'machine-code']);
@@ -12,7 +13,13 @@ const KINDS = Object.freeze(['keyword', 'syntax', 'prefix', 'identifier', 'ai_in
 const SOURCES = Object.freeze(['rule', 'user_rule', 'context', 'ai']);
 const VALIDATIONS = Object.freeze(['valid', 'verified', 'unchecked', 'invalid', 'context_missing']);
 const CONTEXTS = Object.freeze(['statement', 'expression', 'type', 'unknown', 'literal']);
-const MASK_STYLE = Object.freeze({rust: 'rust', c: 'c', typescript: 'typescript', python: 'python', powershell: 'powershell'});
+const MASK_STYLE = Object.freeze({rust: 'rust', c: 'c', typescript: 'typescript', python: 'python', powershell: 'powershell', sql: 'sql'});
+// Plugin languages (see docs/LANGUAGE_PLUGIN_SPEC.md): a plugin pack adds a whole new language profile,
+// not only triggers for an existing one. The built-in seven always stay on; plugin profiles are toggled by the user.
+const PLUGIN_LANGUAGES = Object.freeze(['cypher', 'plsql', 'tsql']);
+// The plugin languages that are on out of the box. T-SQL shares the `.sql` extension with PL/SQL, so it stays off
+// until the user asks for it; PL/SQL owns `.sql` by default.
+const DEFAULT_PLUGIN_LANGUAGES = Object.freeze(['cypher', 'plsql']);
 const PLACEHOLDER = /\$\{([A-Za-z_][A-Za-z0-9_.-]*)\}/g;
 
 // ---------------------------------------------------------------- pack validation (UT-011, UT-058)
@@ -21,16 +28,22 @@ const USER_PACK_KEYS = ['schema_version', 'profile_id', 'version', 'keywords', '
 const TRIGGER_KEYS = ['id', 'pattern', 'kind', 'weight', 'when', 'contexts', 'in', 'not_in', 'candidates'];
 const CANDIDATE_KEYS = ['label', 'explain', 'text', 'stmt_semicolon', 'assumptions', 'when'];
 const LIMITS = Object.freeze({packBytes: 262144, triggers: 2000, candidates: 8, text: 4000, label: 200, pattern: 64, keywords: 2000});
+// A plugin profile adds a whole new language: its id is its own and never a built-in one.
+const PLUGIN_PROFILE_ID = /^[a-z][a-z0-9-]{0,31}$/;
 
 function checkKeys(obj, allowed, where) {
   for (const k of Object.keys(obj)) if (!allowed.includes(k)) throw fail('RULEPACK_INVALID', `${where}: unknown field "${k}" (rule packs are declarative data, never scripts)`);
 }
-function validatePack(pack, {builtin = true, bytes = 0} = {}) {
+function validatePack(pack, {builtin = true, plugin = false, bytes = 0} = {}) {
   if (!pack || typeof pack !== 'object' || Array.isArray(pack)) throw fail('RULEPACK_INVALID', 'pack must be an object');
   if (bytes > LIMITS.packBytes) throw fail('RULEPACK_INVALID', 'pack exceeds size limit');
   checkKeys(pack, builtin ? PACK_KEYS : USER_PACK_KEYS, 'pack');
   if (pack.schema_version !== 1) throw fail('RULEPACK_INVALID', 'unsupported schema_version (migration required)');
-  if (!LANGUAGES.includes(pack.profile_id)) throw fail('RULEPACK_INVALID', 'unknown profile_id');
+  if (plugin) {
+    // a plugin pack has the shape of a built-in pack, but it may not reuse a built-in profile id
+    if (typeof pack.profile_id !== 'string' || !PLUGIN_PROFILE_ID.test(pack.profile_id)) throw fail('RULEPACK_INVALID', 'invalid plugin profile_id');
+    if (LANGUAGES.includes(pack.profile_id)) throw fail('RULEPACK_INVALID', 'a plugin profile must not be a built-in profile_id');
+  } else if (!LANGUAGES.includes(pack.profile_id)) throw fail('RULEPACK_INVALID', 'unknown profile_id');
   if (typeof pack.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(pack.version)) throw fail('RULEPACK_INVALID', 'version must be semver');
   const triggers = pack.triggers ?? [], keywords = pack.keywords ?? [];
   if (!Array.isArray(triggers) || triggers.length > LIMITS.triggers) throw fail('RULEPACK_INVALID', 'too many triggers');
@@ -68,22 +81,67 @@ function validatePack(pack, {builtin = true, bytes = 0} = {}) {
 }
 
 // ---------------------------------------------------------------- registry
+// The built-in seven are always active. A plugin pack adds a whole new language profile; it stays DISCOVERABLE
+// while it is off, but then it contributes nothing: no language id, no extension, no trigger, no keyword.
 class Registry {
-  constructor() { this.packs = new Map(); this.user = new Map(); this.byLanguageId = new Map(); this.byExt = new Map(); }
+  constructor() {
+    this.packs = new Map();       // the built-in profiles
+    this.plugins = new Map();     // every discovered plugin pack (on or off)
+    this.user = new Map();        // user rule packs per profile
+    this.userKeywords = new Map();
+    this.byLanguageId = new Map();// language id -> profile id (built-ins and ACTIVE plugins)
+    this.byExt = new Map();       // extension -> the ACTIVE plugin profiles that own it
+    this.enabledPlugins = new Set();
+    this.pluginErrors = [];       // the plugin packs that were found but could not be loaded
+  }
   add(pack, bytes = 0) {
     validatePack(pack, {builtin: true, bytes});
     if (this.packs.has(pack.profile_id)) throw fail('RULEPACK_INVALID', `duplicate profile ${pack.profile_id}`);
     this.packs.set(pack.profile_id, pack);
-    for (const id of pack.language_ids) this.byLanguageId.set(id, pack.profile_id);
-    for (const e of pack.accepted_extensions) this.byExt.set(e, pack.profile_id);
+    this.rebuild();
     return this;
+  }
+  // A plugin pack is validated like a built-in pack and may not claim a language id or an extension of a built-in.
+  addPlugin(pack, bytes = 0) {
+    validatePack(pack, {builtin: true, plugin: true, bytes});
+    if (this.packs.has(pack.profile_id)) throw fail('RULEPACK_INVALID', `duplicate profile ${pack.profile_id}`);
+    if (this.plugins.has(pack.profile_id)) throw fail('RULEPACK_INVALID', `duplicate plugin profile ${pack.profile_id}`);
+    this.assertPluginClaims(pack);
+    this.plugins.set(pack.profile_id, pack);
+    this.rebuild();
+    return this;
+  }
+  assertPluginClaims(pack) {
+    for (const [id, builtin] of this.packs) {
+      for (const lid of pack.language_ids || []) if ((builtin.language_ids || []).includes(lid)) throw fail('RULEPACK_INVALID', `language id "${lid}" belongs to the built-in profile ${id}`);
+      for (const ext of pack.accepted_extensions || []) if ((builtin.accepted_extensions || []).includes(ext)) throw fail('RULEPACK_INVALID', `extension "${ext}" belongs to the built-in profile ${id}`);
+    }
+  }
+  // The enabled set: the plugin profiles that are on. The built-ins are not part of it (they are always on).
+  setEnabledPlugins(ids) {
+    this.enabledPlugins = new Set([...(ids || [])].filter(id => typeof id === 'string' && id));
+    this.rebuild();
+    return this;
+  }
+  enablePlugin(id) { if (!this.plugins.has(id)) return false; this.enabledPlugins.add(id); this.rebuild(); return true; }
+  disablePlugin(id) { if (!this.enabledPlugins.delete(id)) return false; this.rebuild(); return true; }
+  // The active maps are rebuilt from the packs: a plugin that is off contributes nothing.
+  rebuild() {
+    this.byLanguageId.clear(); this.byExt.clear();
+    for (const pack of this.packs.values()) for (const id of pack.language_ids || []) if (!this.byLanguageId.has(id)) this.byLanguageId.set(id, pack.profile_id);
+    for (const pack of this.plugins.values()) {
+      if (!this.enabledPlugins.has(pack.profile_id)) continue;
+      for (const id of pack.language_ids || []) if (!this.byLanguageId.has(id)) this.byLanguageId.set(id, pack.profile_id);
+      for (const e of pack.accepted_extensions || []) { const list = this.byExt.get(e) || []; if (!list.includes(pack.profile_id)) list.push(pack.profile_id); this.byExt.set(e, list); }
+    }
   }
   // User packs only add triggers/keywords; they cannot replace or remove built-in behaviour.
   addUser(pack, bytes = 0) {
     validatePack(pack, {builtin: false, bytes});
-    if (!this.packs.has(pack.profile_id)) throw fail('RULEPACK_INVALID', 'user pack targets an unloaded profile');
+    const base = this.packs.get(pack.profile_id) || this.plugins.get(pack.profile_id);
+    if (!base) throw fail('RULEPACK_INVALID', 'user pack targets an unloaded profile');
     const list = this.user.get(pack.profile_id) || [];
-    const taken = new Set([...this.packs.get(pack.profile_id).triggers.map(t => t.id), ...list.map(t => t.id)]);
+    const taken = new Set([...(base.triggers || []).map(t => t.id), ...list.map(t => t.id)]);
     for (const t of pack.triggers || []) if (taken.has(t.id)) throw fail('RULEPACK_INVALID', `trigger id collides with an existing rule: ${t.id}`);
     this.user.set(pack.profile_id, list.concat((pack.triggers || []).map(t => ({...t, user: true}))));
     const kw = this.userKeywords || (this.userKeywords = new Map());
@@ -91,16 +149,48 @@ class Registry {
     return this;
   }
   clearUser() { this.user.clear(); this.userKeywords = new Map(); }
-  get(profile) { return this.packs.get(profile); }
-  triggers(profile) { return (this.packs.get(profile)?.triggers || []).concat(this.user.get(profile) || []); }
-  keywords(profile) { return (this.packs.get(profile)?.keywords || []).concat(this.userKeywords?.get(profile) || []); }
+  // The pack of an ACTIVE profile (a built-in or an enabled plugin); a plugin that is off has no active pack.
+  get(profile) { return this.packs.get(profile) || (this.enabledPlugins.has(profile) ? this.plugins.get(profile) : undefined); }
+  // The pack of a discovered plugin, on or off (the UI lists them).
+  plugin(id) { return this.plugins.get(id); }
+  triggers(profile) { return (this.get(profile)?.triggers || []).concat(this.user.get(profile) || []); }
+  keywords(profile) { return (this.get(profile)?.keywords || []).concat(this.userKeywords?.get(profile) || []); }
+  // An ACTIVE profile: a built-in one or an enabled plugin one.
+  hasProfile(id) { return this.packs.has(id) || this.enabledPlugins.has(id); }
+  // A discovered plugin pack, on or off.
+  hasPlugin(id) { return this.plugins.has(id); }
+  // The ACTIVE owners of an extension (an extension may belong to more than one plugin profile).
+  extensionOwners(ext) { return this.byExt.get(ext) || []; }
+  // Every discovered plugin profile, on or off.
+  pluginProfiles() { return [...this.plugins.keys()]; }
+  // The plugin profiles that are on.
+  enabledPluginProfiles() { return [...this.plugins.keys()].filter(id => this.enabledPlugins.has(id)); }
+  // The validator family of every active plugin profile (it comes from the pack, never from the profile id).
+  families() { const out = new Map(); for (const [id, pack] of this.plugins) if (this.enabledPlugins.has(id)) out.set(id, pack.validator); return out; }
+  familyOf(id) { return this.enabledPlugins.has(id) ? this.plugins.get(id)?.validator : undefined; }
+}
+// Check a plugin pack before it is imported: it must be a valid plugin pack and must not claim a built-in
+// language id or extension.
+function checkPluginPack(pack, bytes = 0, reg = registry()) {
+  validatePack(pack, {builtin: true, plugin: true, bytes});
+  if (reg.packs.has(pack.profile_id)) throw fail('RULEPACK_INVALID', `duplicate profile ${pack.profile_id}`);
+  if (reg.hasPlugin(pack.profile_id)) throw fail('RULEPACK_INVALID', `duplicate plugin profile ${pack.profile_id}`);
+  reg.assertPluginClaims(pack);
+  return pack;
 }
 function findPackDir() {
   const candidates = [process.env.PIME_LANGUAGE_PACKS, path.join(__dirname, '..', '..', 'language-packs'), path.join(__dirname, '..', '..', '..', '..', 'language-packs')];
   for (const c of candidates) if (c && fs.existsSync(path.join(c, 'rust.json'))) return c;
   throw fail('RULEPACK_INVALID', 'language-packs directory not found');
 }
-function loadRegistry(dir = findPackDir()) {
+// The shipped plugin packs live next to the built-in ones (both are in the extension root of the .vsix).
+function findPluginDir(packDir = findPackDir()) {
+  if (process.env.PIME_LANGUAGE_PLUGINS) return process.env.PIME_LANGUAGE_PLUGINS;
+  return path.join(path.dirname(packDir), 'language-plugins');
+}
+// loadRegistry(dir) keeps working; the options add the plugin directories and the enabled set.
+function loadRegistry(dir = findPackDir(), options = {}) {
+  const {pluginDirs = [findPluginDir(dir)], enabled = DEFAULT_PLUGIN_LANGUAGES} = options;
   const reg = new Registry();
   for (const id of LANGUAGES) {
     const file = path.join(dir, `${id}.json`);
@@ -110,11 +200,22 @@ function loadRegistry(dir = findPackDir()) {
     if (pack.profile_id !== id) throw fail('RULEPACK_INVALID', `${id}.json declares profile ${pack.profile_id}`);
     reg.add(pack, Buffer.byteLength(raw));
   }
+  reg.setEnabledPlugins(enabled);
+  for (const pdir of pluginDirs) {
+    if (!pdir || !fs.existsSync(pdir)) continue; // no plugin packs: the built-in seven still work
+    for (const name of fs.readdirSync(pdir).filter(n => n.endsWith('.json')).sort()) {
+      const raw = fs.readFileSync(path.join(pdir, name), 'utf8');
+      try {
+        let pack; try { pack = JSON.parse(raw); } catch { throw fail('RULEPACK_INVALID', 'not valid JSON'); }
+        reg.addPlugin(pack, Buffer.byteLength(raw));
+      } catch (e) { reg.pluginErrors.push({name, code: e.code || 'RULEPACK_INVALID', message: e.message}); }
+    }
+  }
   return reg;
 }
 let defaultRegistry = null;
 const registry = () => defaultRegistry || (defaultRegistry = loadRegistry());
-function setRegistry(reg) { defaultRegistry = reg; }
+function setRegistry(reg) { defaultRegistry = reg; validators.setFamilies(reg.families()); }
 
 // ---------------------------------------------------------------- dialects (FR-012)
 function defaultDialect(profile, reg = registry()) {
@@ -163,12 +264,16 @@ function resolveLanguage(ctx, current = 'unknown', lock = null, reg = registry()
   const ext = extOf(ctx.fileName), hints = {};
   if (ctx.languageId === 'typescriptreact' || ext === '.tsx') hints.mode = 'tsx';
   else if (ctx.languageId === 'typescript' || ext === '.ts') hints.mode = 'ts';
-  if (lock && LANGUAGES.includes(lock)) return {language: lock, dialectHints: lock === 'typescript' ? hints : {}, confidence: 100, reason: 'manual-lock', changed: lock !== current, locked: true};
+  if (lock && reg.hasProfile(lock)) return {language: lock, dialectHints: lock === 'typescript' ? hints : {}, confidence: 100, reason: 'manual-lock', changed: lock !== current, locked: true};
   const byId = reg.byLanguageId.get(ctx.languageId);
   if (byId) return {language: byId, dialectHints: byId === 'typescript' ? hints : {}, confidence: 95, reason: 'bridge-languageId', changed: byId !== current};
   if (STRONG_EXT[ext]) return {language: STRONG_EXT[ext], dialectHints: STRONG_EXT[ext] === 'typescript' ? hints : {}, confidence: 85, reason: 'extension', changed: STRONG_EXT[ext] !== current};
   const out = {language: current, dialectHints: {}, confidence: 0, reason: 'kept', changed: false};
-  if (AMBIGUOUS_EXT[ext] || !ext) {
+  // the registry decides for every other extension: one active owner is a strong hint, several are ambiguous
+  const owners = reg.extensionOwners(ext);
+  if (owners.length === 1) return {language: owners[0], dialectHints: {}, confidence: 85, reason: 'extension', changed: owners[0] !== current};
+  if (owners.length > 1) { out.reason = 'ambiguous-extension'; out.uncertain = true; out.suggestion = owners[0]; }
+  else if (AMBIGUOUS_EXT[ext] || !ext) {
     out.reason = 'ambiguous-extension'; out.uncertain = true;
     if (AMBIGUOUS_EXT[ext]) out.suggestion = AMBIGUOUS_EXT[ext];
   }
@@ -179,10 +284,18 @@ function resolveLanguage(ctx, current = 'unknown', lock = null, reg = registry()
 
 // ---------------------------------------------------------------- context analysis (FR-025/030)
 const BRACE_HEADERS = {rust: [['fn', /\bfn\b/], ['impl', /\bimpl\b/], ['trait', /\btrait\b/], ['mod', /\bmod\b/]], c: [['fn', /\)\s*$/]], typescript: [['class', /\bclass\b/], ['interface', /\binterface\b/], ['fn', /=>\s*$|\)\s*(?::\s*[\w<>\[\] |]+)?\s*$/]]};
-function classifyContext(profile, before) {
+// The mask style of a profile: the built-in ones have their own, a plugin pack is masked like its validator family.
+function maskStyleFor(profile, reg = registry()) {
+  const direct = MASK_STYLE[profile];
+  if (direct) return direct;
+  const pack = reg.get(profile);
+  if (pack && pack.validator === 'sql') return 'sql';
+  return null;
+}
+function classifyContext(profile, before, reg = registry()) {
   if (profile === 'machine-code') return 'unknown';
   const tail = before.slice(-6000);
-  const style = MASK_STYLE[profile];
+  const style = maskStyleFor(profile, reg);
   if (style) { const m = maskSource(tail + 'Q', style); if (m[m.length - 1] === ' ') return 'literal'; }
   if (profile === 'assembly' && /[;#]/.test(tail.slice(tail.lastIndexOf('\n') + 1))) return 'literal';
   const masked = style ? maskSource(tail, style) : tail;
@@ -200,14 +313,20 @@ function classifyContext(profile, before) {
     return /(?:[=(,[{+\-*/%<>!&|^~]|\b(?:return|yield|await|in|and|or|not|is|if|elif|while|lambda))$/.test(t) ? 'expression' : 'unknown';
   }
   const generic = profile === 'rust' || profile === 'typescript';
+  if (style === 'sql') {
+    // A SQL statement is line oriented, so the statement position is the normal case. An expression position is a
+    // line that clearly goes on (an operator, a comparison or an open bracket).
+    if (/[,(=<>+*/-]$/.test(t)) return 'expression';
+    return 'statement';
+  }
   if (/(?:->|\bas|\bextends|\bimplements|(?<!:):)$/.test(t) || (generic && /<$/.test(t))) return cur.trim() === '' ? 'unknown' : 'type';
   if (/(?:=>|[=(,[+\-*/%>!&|^~?]|\breturn)$/.test(t)) return 'expression';
   if (/[;{}]$/.test(t) || t === '') return 'statement';
   // TypeScript and PowerShell statements need no terminator: a new line that does not continue an expression starts a statement
   return (profile === 'typescript' || profile === 'powershell') && cur.trim() === '' ? 'statement' : 'unknown';
 }
-function enclosingBlock(profile, before) {
-  const style = MASK_STYLE[profile];
+function enclosingBlock(profile, before, reg = registry()) {
+  const style = maskStyleFor(profile, reg);
   const tail = before.slice(-12000);
   if (profile === 'python') {
     const lines = tail.split(/\r\n|\r|\n/);
@@ -238,8 +357,8 @@ function enclosingBlock(profile, before) {
   for (const [kind, re] of BRACE_HEADERS[profile]) if (re.test(header)) return kind;
   return 'block';
 }
-function nearbyIdentifiers(profile, text, key, max = 3) {
-  const kw = new Set(registry().keywords(profile).map(k => k.toLowerCase()));
+function nearbyIdentifiers(profile, text, key, max = 3, reg = registry()) {
+  const kw = new Set(reg.keywords(profile).map(k => k.toLowerCase()));
   const counts = new Map(), lower = key.toLowerCase();
   const re = /[A-Za-z_$][\w$]*/g;
   let m;
@@ -312,12 +431,12 @@ function matchPattern(pattern, key, label) {
   return null;
 }
 const validationCache = new Map();
-function validateTemplate(profile, text, dialect) {
+function validateTemplate(profile, text, dialect, family) {
   const cacheKey = `${profile}|${JSON.stringify(dialect)}|${text}`;
   let hit = validationCache.get(cacheKey);
   if (!hit) {
     const body = profile === 'python' ? 'pass' : '';
-    const r = validateSource(profile, renderPlain(text, body), dialect);
+    const r = validateSource(profile, renderPlain(text, body), dialect, family ? {family} : undefined);
     hit = r.ok ? 'valid' : 'invalid';
     if (validationCache.size > 5000) validationCache.clear();
     validationCache.set(cacheKey, hit);
@@ -380,19 +499,21 @@ function predictMachine(prefix, dialect, limit) {
 }
 
 // predict({profile, prefix, before?, after?, dialect?, limit?, pins?, usage?}) -> ranked candidates (UT-037, FR-025/026)
+// The profile may be a built-in one or an ACTIVE plugin profile; a plugin that is off predicts nothing.
 function predict(opts, reg = registry()) {
   const {profile, prefix, before = '', after = '', limit = 6, pins, usage} = opts;
   const key = typeof prefix === 'string' ? prefix.trim().toLowerCase() : '';
-  if (!key || key.length > MAX_PREFIX || !LANGUAGES.includes(profile)) return [];
+  if (!key || key.length > MAX_PREFIX || !reg.hasProfile(profile)) return [];
   const {values: dialect, unsupported} = resolveDialect(profile, opts.dialect, reg);
   if (unsupported.length) { // unknown ISA/dialect: say so instead of guessing bytes or syntax
     const bad = unsupported[0];
     return [makeCandidate({id: `${profile}.dialect`, kind: 'explain', source: 'rule', label: `${bad.axis} "${bad.value}" is not supported`, text: null, explain: 'Pick a supported value (for example isa x86-64) to get candidates', validation: 'context_missing', profile_id: profile, match: 'exact', assumptions: ['dialect context missing']})];
   }
   if (profile === 'machine-code') return rankCandidates(predictMachine(prefix, dialect, limit * 2), {pins, usage}).slice(0, limit);
-  const ctx = opts.context || classifyContext(profile, before);
+  const family = reg.familyOf(profile); // the validator family of the pack (the SQL family for cypher / plsql / tsql)
+  const ctx = opts.context || classifyContext(profile, before, reg);
   if (ctx === 'literal') return []; // inside a string or comment nothing is proposed
-  const block = enclosingBlock(profile, before);
+  const block = enclosingBlock(profile, before, reg);
   const out = [];
   for (const t of reg.triggers(profile)) {
     if (!dialectMatches(t.when, dialect)) continue;
@@ -410,7 +531,7 @@ function predict(opts, reg = registry()) {
         assumptions.push(ctx === 'unknown' ? 'No semicolon added: statement position not provable' : 'No semicolon: expression position');
       }
       out.push(makeCandidate({id: `${t.id}#${i}`, kind: t.kind || 'syntax', source: t.user ? 'user_rule' : 'rule', profile_id: profile, label: c.label, text, explain: c.explain || '',
-        match, weight: t.weight ?? 50, assumptions, validation: validateTemplate(profile, text, dialect), context: ctx, block}));
+        match, weight: t.weight ?? 50, assumptions, validation: validateTemplate(profile, text, dialect, family), context: ctx, block}));
     }
   }
   for (const kw of reg.keywords(profile)) {
@@ -419,7 +540,7 @@ function predict(opts, reg = registry()) {
     out.push(makeCandidate({id: `${profile}.kw.${kw}`, kind: 'keyword', source: 'rule', profile_id: profile, label: kw, text: kw, match: lower === key ? 'exact' : 'prefix', weight: 20, validation: 'valid', context: ctx}));
   }
   if (before || after) {
-    for (const [i, word] of nearbyIdentifiers(profile, before + after, prefix.trim()).entries())
+    for (const [i, word] of nearbyIdentifiers(profile, before + after, prefix.trim(), 3, reg).entries())
       out.push(makeCandidate({id: `${profile}.id.${word}`, kind: 'identifier', source: 'context', profile_id: profile, label: word, text: word, explain: 'Seen in nearby code', match: 'context', weight: 30 - i, validation: 'unchecked', assumptions: ['Only nearby text was read; no project symbol table']}));
   }
   const kept = out.filter(c => c.validation !== 'invalid');
@@ -427,7 +548,7 @@ function predict(opts, reg = registry()) {
 }
 
 module.exports = {
-  LANGUAGES, KINDS, SOURCES, VALIDATIONS, CONTEXTS, LIMITS, Registry, validatePack, loadRegistry, registry, setRegistry, findPackDir,
-  defaultDialect, resolveDialect, resolveLanguage, extOf, classifyContext, enclosingBlock, nearbyIdentifiers, extractPrefix,
+  LANGUAGES, PLUGIN_LANGUAGES, DEFAULT_PLUGIN_LANGUAGES, KINDS, SOURCES, VALIDATIONS, CONTEXTS, LIMITS, Registry, validatePack, checkPluginPack, loadRegistry, registry, setRegistry, findPackDir, findPluginDir,
+  defaultDialect, resolveDialect, resolveLanguage, extOf, classifyContext, enclosingBlock, nearbyIdentifiers, extractPrefix, maskStyleFor,
   placeholdersOf, renderPlain, toSnippet, renderForHost, makeCandidate, candidateToJSON, candidateFromJSON, rankCandidates, dedupe, fingerprint, predict
 };

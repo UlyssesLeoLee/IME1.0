@@ -32,11 +32,32 @@ use windows::Win32::UI::TextServices::{
 use windows::core::{GUID, IUnknown, IUnknownImpl, Interface, Result, implement};
 
 use crate::controller::{HostError, HostText, KeyInput, TipConfig, TipController};
+use crate::floating::{
+    BarAction, BarMenu, BarSink, BarState, FloatingBar, button_of_menu, skin_colors,
+};
+use crate::imesettings::{self, ImeSettings, LanguageSettings};
 use crate::keymap::{Modifiers, vk};
-use crate::popup::PopupWindow;
+use crate::laser::PanelItem;
+use crate::laser_ui::{LaserEvent, LaserUi};
+use crate::layout::Rect;
+use crate::menus::{MenuAction, MenuItem, MenuSink, MenuWindow};
+use crate::popup::{PopupWindow, work_area_of};
 use crate::register::debug_line;
+use crate::settings_window::{SettingsEvent, SettingsSink, SettingsWindow};
 use crate::ui::{Anchor, CandidateUi, CandidateView};
 use crate::uielement_com::candidate_ui;
+
+/// Whether two COM interface pointers point at the same object.
+///
+/// One object can be reached through several interfaces (a context is also an `ITfContextComposition`, for
+/// example), and the pointer of the interface we happen to hold is not stable across them. The identity of the
+/// object is its `IUnknown` pointer, which every interface of that object shares.
+fn same_object<T: Interface, U: Interface>(a: &T, b: &U) -> bool {
+    let (Ok(a), Ok(b)) = (a.cast::<IUnknown>(), b.cast::<IUnknown>()) else {
+        return false;
+    };
+    Interface::as_raw(&a) == Interface::as_raw(&b)
+}
 
 /// Debugger output (DebugView) for the rare host behaviours the VM test has to see: codes and words only, never text.
 fn trace(message: &str) {
@@ -52,6 +73,9 @@ pub(crate) use crate::ui::guard;
 fn is_secure_mode(flags: u32) -> bool {
     flags & TF_TMAE_SECUREMODE != 0
 }
+
+/// The language whose settings are used when the active profile cannot be told apart.
+const DEFAULT_LANGUAGE: &str = "zh-CN";
 
 fn refused<E>(_: E) -> HostError {
     HostError::Refused
@@ -80,6 +104,9 @@ impl CandidateUi for BoxedUi {
 #[implement(ITfEditSession)]
 struct EditSession {
     work: RefCell<Option<SessionWork>>,
+    /// Counts this object in the DLL's live-object counter while it exists: TSF calls `DoEditSession` on it, and
+    /// that call must not reach an unloaded DLL.
+    _live: crate::LiveGuard,
 }
 
 type SessionWork = Box<dyn FnOnce(u32)>;
@@ -106,10 +133,13 @@ fn run_session<T: 'static>(
 ) -> std::result::Result<T, HostError> {
     let out: Rc<RefCell<Option<std::result::Result<T, HostError>>>> = Rc::new(RefCell::new(None));
     let sink = Rc::clone(&out);
+    let mut guard = crate::LiveGuard::new();
+    guard.count();
     let session: ITfEditSession = EditSession {
         work: RefCell::new(Some(Box::new(move |ec| {
             *sink.borrow_mut() = Some(work(ec));
         }))),
+        _live: guard,
     }
     .into();
     // SAFETY: `ctx` and `session` are live COM objects; the session runs (or is refused) before the call returns because
@@ -131,8 +161,11 @@ fn request_async(
     flags: windows::Win32::UI::TextServices::TF_CONTEXT_EDIT_CONTEXT_FLAGS,
     work: impl FnOnce(u32) + 'static,
 ) -> std::result::Result<(), HostError> {
+    let mut guard = crate::LiveGuard::new();
+    guard.count();
     let session: ITfEditSession = EditSession {
         work: RefCell::new(Some(Box::new(work))),
+        _live: guard,
     }
     .into();
     // SAFETY: `ctx` and `session` are live COM objects; TSF keeps its own reference to the session while it is queued.
@@ -312,6 +345,29 @@ impl TsfHost {
         self.context = None;
     }
 
+    /// Whether `ctx` is the context the last key event named.
+    fn is_current_context(&self, ctx: &ITfContext) -> bool {
+        self.context
+            .as_ref()
+            .is_some_and(|current| same_object(current, ctx))
+    }
+
+    /// Whether the context we type into belongs to `pdim`.
+    ///
+    /// A host may have several document managers alive at once (one per document, for example); only the one that
+    /// owns our context matters when that manager is torn down.
+    fn is_in_document(&self, pdim: &ITfDocumentMgr) -> bool {
+        let Some(ctx) = self.context.as_ref() else {
+            return false;
+        };
+        // SAFETY: `ctx` is a live context; a host that refuses the call leaves us with "not ours", which is the
+        // safe answer: we then keep the context and let the focus change clean it up.
+        let Ok(owner) = (unsafe { ctx.GetDocumentMgr() }) else {
+            return false;
+        };
+        same_object(&owner, pdim)
+    }
+
     fn probe_secure(&self, ctx: &ITfContext) -> Option<bool> {
         if keyboard_disabled(ctx) {
             return Some(true);
@@ -447,6 +503,481 @@ struct Inner {
     thread_sink_cookie: u32,
     controller: TipController<BoxedUi, TsfHost>,
     started: Instant,
+    /// Actions the user or the host asked for while the text service was busy: they are applied now. A host that
+    /// answers an update by calling back into the element produces one more action, so the rounds are bounded.
+    pending_actions: Rc<RefCell<Vec<Pending>>>,
+    /// The floating bar of this thread (the small strip with the mode and the settings button).
+    bar: FloatingBar,
+    /// The menu that is open (at most one).
+    menu: Option<MenuWindow>,
+    /// The settings window while it is open; `None` when it is closed.
+    settings_window: Option<SettingsWindow>,
+    /// How the settings window tells this text service that the settings were saved.
+    settings_sink: SettingsSink,
+    /// How a menu tells this text service what the user chose.
+    menu_sink: MenuSink,
+    /// The language profile that is active ("zh-CN", "en-US", "ja-JP").
+    language: String,
+    /// The settings of that language (the ones the floating bar and the controller work with).
+    settings: LanguageSettings,
+    /// The effort the AI features run with.
+    effort: String,
+    /// The skin of the floating bar.
+    skin: String,
+    /// Where the mouth of the light is on the screen (a global setting, not one of a language).
+    mouth_place: String,
+    /// The laser interface of this thread: the glow on the left of the screen, the beam, the panel and the logo.
+    laser: Rc<RefCell<LaserUi>>,
+}
+
+/// An action that arrived while the text service was busy.
+enum Pending {
+    /// The user clicked in the candidate window, or a host that draws the list itself selected something.
+    List(crate::ui::ListAction),
+    /// The user clicked in the floating bar.
+    Bar(BarAction),
+    /// The user chose something in a menu of the floating bar.
+    Menu(MenuAction),
+    /// The settings window was saved: the settings are read again.
+    ReloadSettings,
+    /// The user used the laser panel (the glow, the beam or the logo).
+    Laser(LaserEvent),
+}
+
+impl Inner {
+    fn drain_actions(&mut self) {
+        for _ in 0..4 {
+            let actions: Vec<Pending> = self.pending_actions.borrow_mut().drain(..).collect();
+            if actions.is_empty() {
+                return;
+            }
+            for action in actions {
+                match action {
+                    Pending::List(action) => self.controller.apply_list_action(action),
+                    Pending::Bar(action) => self.apply_bar_action(action),
+                    Pending::Menu(action) => self.apply_menu_action(action),
+                    Pending::ReloadSettings => self.reload_settings(),
+                    Pending::Laser(event) => self.apply_laser_event(event),
+                }
+            }
+        }
+    }
+
+    /// What the user asked for in the floating bar.
+    fn apply_bar_action(&mut self, action: BarAction) {
+        match action {
+            BarAction::ToggleInputMode => {
+                // The same thing Alt+F1 does.
+                let on = !self.controller.input_mode();
+                self.controller.set_input_mode(on);
+                self.sync_bar();
+            }
+            BarAction::OpenMenu(which) => self.open_menu(which),
+        }
+    }
+
+    /// Open one of the menus of the bar under (or above) its button.
+    fn open_menu(&mut self, which: BarMenu) {
+        if which == BarMenu::Settings {
+            self.open_settings();
+            return;
+        }
+        let Some(rect) = self.bar.button_rect(button_of_menu(which)) else {
+            return;
+        };
+        self.open_menu_at(which, rect);
+    }
+
+    /// Open one of the menus under the rectangle the user clicked (the button of the bar or a row of the panel).
+    fn open_menu_at(&mut self, which: BarMenu, rect: Rect) {
+        if which == BarMenu::Settings {
+            self.open_settings();
+            return;
+        }
+        // Only one menu at a time: the old one goes away.
+        self.menu = None;
+        let items = self.menu_items(which);
+        let work = work_area_of(rect);
+        let sink = self.menu_sink.clone();
+        self.menu = MenuWindow::open(
+            items,
+            which == BarMenu::Language,
+            rect,
+            work,
+            skin_colors(&self.skin),
+            sink,
+        );
+    }
+
+    /// The items of one menu.
+    fn menu_items(&self, which: BarMenu) -> Vec<MenuItem> {
+        match which {
+            BarMenu::Effort => imesettings::EFFORT_LEVELS
+                .iter()
+                .map(|level| {
+                    MenuItem::checked(
+                        imesettings::effort_label(level),
+                        MenuAction::SetEffort((*level).to_string()),
+                        self.effort == *level,
+                    )
+                })
+                .collect(),
+            BarMenu::Skin => imesettings::SKINS
+                .iter()
+                .map(|skin| {
+                    MenuItem::checked(
+                        imesettings::skin_label(skin),
+                        MenuAction::SetSkin((*skin).to_string()),
+                        self.skin == *skin,
+                    )
+                })
+                .collect(),
+            BarMenu::Convenience => vec![
+                MenuItem::checked(
+                    "Tab 确认候选上屏（勾选＝只移动选择）",
+                    MenuAction::SetOption("tab_cycles".to_string(), !self.settings.tab_cycles),
+                    self.settings.tab_cycles,
+                ),
+                MenuItem::checked(
+                    "候选窗显示时 Tab 交给宿主",
+                    MenuAction::SetOption("tab_to_host".to_string(), !self.settings.tab_to_host),
+                    self.settings.tab_to_host,
+                ),
+                MenuItem::checked(
+                    "空格上屏",
+                    MenuAction::SetOption(
+                        "space_confirms".to_string(),
+                        !self.settings.space_confirms,
+                    ),
+                    self.settings.space_confirms,
+                ),
+                MenuItem::checked(
+                    "自动开组合",
+                    MenuAction::SetOption("auto_compose".to_string(), !self.settings.auto_compose),
+                    self.settings.auto_compose,
+                ),
+                MenuItem::checked(
+                    "显示悬浮窗",
+                    MenuAction::SetOption("floating_bar".to_string(), !self.settings.floating_bar),
+                    self.settings.floating_bar,
+                ),
+            ],
+            BarMenu::Language => imesettings::LANGUAGES
+                .iter()
+                .map(|language| {
+                    MenuItem::new(
+                        imesettings::display_name(language),
+                        MenuAction::SwitchLanguage((*language).to_string()),
+                    )
+                })
+                .collect(),
+            BarMenu::Settings => Vec::new(),
+        }
+    }
+
+    /// What the user chose in a menu.
+    fn apply_menu_action(&mut self, action: MenuAction) {
+        match action {
+            MenuAction::ToggleInputMode => {
+                let on = !self.controller.input_mode();
+                self.controller.set_input_mode(on);
+                self.sync_bar();
+            }
+            MenuAction::SetEffort(effort) => {
+                self.effort = effort;
+                self.save_settings();
+            }
+            MenuAction::SetSkin(skin) => {
+                self.skin = skin;
+                self.save_settings();
+                self.sync_bar();
+            }
+            MenuAction::SetOption(name, on) => {
+                self.set_option(&name, on);
+            }
+            MenuAction::SwitchLanguage(language) => {
+                self.switch_language(&language);
+            }
+            MenuAction::OpenSettings => self.open_settings(),
+        }
+    }
+
+    /// Switch one of the settings of the active language on or off.
+    ///
+    /// The floating bar, the menus and the laser panel all go through here, so the three of them can never disagree
+    /// about what the setting is.
+    fn set_option(&mut self, name: &str, on: bool) {
+        let mut value = self.settings;
+        match name {
+            "tab_cycles" => value.tab_cycles = on,
+            "tab_to_host" => value.tab_to_host = on,
+            "space_confirms" => value.space_confirms = on,
+            "auto_compose" => value.auto_compose = on,
+            "floating_bar" => value.floating_bar = on,
+            "input_mode" => {
+                // The input mode is a state of the controller, not a file: it is the same thing Alt+F1 does.
+                self.controller.set_input_mode(on);
+                self.settings = value;
+                self.sync_bar();
+                self.sync_laser();
+                return;
+            }
+            _ => return,
+        }
+        self.settings = value;
+        self.controller.apply_settings(&value);
+        self.save_settings();
+        self.sync_bar();
+        self.sync_laser();
+    }
+
+    /// What the user asked for in the laser panel.
+    fn apply_laser_event(&mut self, event: LaserEvent) {
+        match event {
+            LaserEvent::Toggle { key, on } => self.set_option(key, on),
+            LaserEvent::Menu { key } => self.open_laser_menu(key),
+            LaserEvent::Settings => self.open_settings(),
+            LaserEvent::Switch => {
+                // The mouth of the light is the switch between the input methods.
+                crate::ime_switch::switch_now();
+            }
+            LaserEvent::MouthMoved { edge, offset } => {
+                // The mouth was dragged to another place: it is remembered, so it is still there next time.
+                self.mouth_place = crate::laser::MouthPlace { edge, offset }.to_text();
+                self.save_settings();
+            }
+        }
+    }
+
+    /// Open one of the lists of the laser panel under the row the user clicked.
+    fn open_laser_menu(&mut self, key: &str) {
+        let which = match key {
+            "language" => BarMenu::Language,
+            "effort" => BarMenu::Effort,
+            "skin" => BarMenu::Skin,
+            _ => return,
+        };
+        let anchor = self
+            .laser
+            .try_borrow()
+            .ok()
+            .and_then(|laser| laser.row_rect(key));
+        let Some(anchor) = anchor else {
+            return;
+        };
+        self.open_menu_at(which, anchor);
+    }
+
+    /// Switch the input language: TSF activates the profile of the language, and the settings of that language apply
+    /// from then on.
+    fn switch_language(&mut self, language: &str) {
+        let Some((langid, profile)) = profile_of(language) else {
+            return;
+        };
+        if !activate_profile(langid, &profile) {
+            trace(&format!("the profile of {language} could not be activated"));
+            return;
+        }
+        // The profile of the thread changes; the settings of the new language apply right away (the text service is
+        // activated again by TSF, but the bar must show the new language at once).
+        self.language = language.to_string();
+        let settings = load_settings();
+        let value = settings.get(language);
+        self.settings = value;
+        self.controller.apply_settings(&value);
+        self.sync_bar();
+    }
+
+    /// Write the settings back to the file of the user.
+    fn save_settings(&mut self) {
+        let Some(path) = imesettings::settings_path() else {
+            return;
+        };
+        let mut settings = ImeSettings::load(&path);
+        settings.effort = self.effort.clone();
+        settings.skin = self.skin.clone();
+        settings.mouth_place = self.mouth_place.clone();
+        settings.set(&self.language, self.settings);
+        if let Err(e) = settings.save(&path) {
+            trace(&format!("the settings could not be saved: {e}"));
+        }
+    }
+
+    /// The rows of the laser panel: the settings that are used most often, in the order they are drawn.
+    ///
+    /// The panel is the quick way into the settings (the Sogou way): the switches that are turned on and off while
+    /// typing, the language, the effort of the AI and the way the input method looks.
+    fn laser_items(&self) -> Vec<PanelItem> {
+        vec![
+            PanelItem::Toggle {
+                key: "input_mode",
+                label: "输入模式",
+                on: self.controller.input_mode(),
+            },
+            PanelItem::Toggle {
+                key: "space_confirms",
+                label: "空格上屏",
+                on: self.settings.space_confirms,
+            },
+            PanelItem::Toggle {
+                key: "auto_compose",
+                label: "自动开组合",
+                on: self.settings.auto_compose,
+            },
+            PanelItem::Toggle {
+                key: "tab_cycles",
+                label: "Tab 确认候选",
+                on: self.settings.tab_cycles,
+            },
+            PanelItem::Menu {
+                key: "language",
+                label: "语言",
+                value: imesettings::display_name(&self.language).to_string(),
+            },
+            PanelItem::Menu {
+                key: "effort",
+                label: "AI 力度",
+                value: imesettings::effort_label(&self.effort).to_string(),
+            },
+            PanelItem::Menu {
+                key: "skin",
+                label: "外观",
+                value: imesettings::skin_label(&self.skin).to_string(),
+            },
+            PanelItem::Settings,
+        ]
+    }
+
+    /// Put the laser interface on the screen and give it the rows it shows.
+    fn sync_laser(&mut self) {
+        let items = self.laser_items();
+        let Ok(mut laser) = self.laser.try_borrow_mut() else {
+            return;
+        };
+        laser.set_items(items);
+        laser.set_place(
+            crate::laser::MouthPlace::from_text(&self.mouth_place),
+        );
+        if !laser.is_visible() {
+            let work = work_area_of(Rect::new(0, 0, 0, 0));
+            laser.show(work);
+        }
+    }
+
+    /// Show the floating bar at the caret (or hide it, when the settings say so).
+    fn sync_bar(&mut self) {        if !self.settings.floating_bar {
+            self.bar.hide();
+            return;
+        }
+        let state = BarState {
+            language: self.language.clone(),
+            input_mode: self.controller.input_mode(),
+            skin: self.skin.clone(),
+        };
+        let Some(anchor) = self.controller.host_mut().caret_anchor() else {
+            return; // the host cannot say where the caret is: the bar stays where it is
+        };
+        self.bar.show(&state, anchor);
+    }
+
+    /// Open the settings window (once; a second click does nothing while it is open).
+    fn open_settings(&mut self) {
+        if self.settings_window.is_some() {
+            return;
+        }
+        let settings = load_settings();
+        let sink = self.settings_sink.clone();
+        self.settings_window = SettingsWindow::open(settings, sink);
+    }
+
+    /// Read the settings file again and apply what it says.
+    fn reload_settings(&mut self) {
+        let settings = load_settings();
+        let language = self.language.clone();
+        let value = settings.get(&language);
+        self.settings = value;
+        self.effort = settings.effort.clone();
+        self.skin = settings.skin.clone();
+        self.mouth_place = settings.mouth_place.clone();
+        self.controller.apply_settings(&value);
+        self.sync_bar();
+    }
+}
+
+/// The language id and the profile GUID of one of the three languages of the product.
+fn profile_of(language: &str) -> Option<(u16, GUID)> {
+    match language {
+        "zh-CN" => Some((0x0804, crate::PROFILE_ZH)),
+        "en-US" => Some((0x0409, crate::PROFILE_EN)),
+        "ja-JP" => Some((0x0411, crate::PROFILE_JA)),
+        _ => None,
+    }
+}
+
+/// Ask TSF to activate the language profile of our text service (the same thing the language bar does).
+fn activate_profile(langid: u16, profile: &GUID) -> bool {
+    use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance};
+    use windows::Win32::UI::TextServices::{
+        CLSID_TF_InputProcessorProfiles, ITfInputProcessorProfiles,
+    };
+    // SAFETY: the system object of the text services; it is created in-process and released with the handle.
+    let profiles: ITfInputProcessorProfiles = match unsafe {
+        CoCreateInstance(&CLSID_TF_InputProcessorProfiles, None, CLSCTX_INPROC_SERVER)
+    } {
+        Ok(profiles) => profiles,
+        Err(_) => return false,
+    };
+    // SAFETY: both pointers are live locals of the right type.
+    unsafe { profiles.ActivateLanguageProfile(&crate::CLSID_PIME, langid, profile) }.is_ok()
+}
+
+/// The settings of every language, from the file of the user (the defaults when there is none).
+fn load_settings() -> ImeSettings {
+    match imesettings::settings_path() {
+        Some(path) => ImeSettings::load(&path),
+        None => ImeSettings::default(),
+    }
+}
+
+/// The language of the profile that is active, if it can be told.
+///
+/// Two sources, in this order: TSF itself (the profile manager knows which of our three profiles is active) and the
+/// keyboard layout of the thread (right whenever the layout follows the profile, which is the usual case). `None`
+/// means "not one of our languages": the defaults apply then.
+fn active_language() -> Option<&'static str> {
+    if let Some(langid) = active_profile_language()
+        && let Some(language) = imesettings::language_for_id(langid)
+    {
+        return Some(language);
+    }
+    // SAFETY: a plain query; the handle is only read for its language id (the low word of the handle).
+    let hkl = unsafe { GetKeyboardLayout(0) };
+    let langid = (hkl.0 as usize & 0xFFFF) as u16;
+    imesettings::language_for_id(langid)
+}
+
+/// The language id of the profile of our text service that is active, as TSF sees it.
+fn active_profile_language() -> Option<u16> {
+    use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance};
+    use windows::Win32::UI::TextServices::{
+        CLSID_TF_InputProcessorProfiles, ITfInputProcessorProfiles,
+    };
+    // SAFETY: the system object of the text services; it is created in-process and released with the handle.
+    let profiles: ITfInputProcessorProfiles = match unsafe {
+        CoCreateInstance(&CLSID_TF_InputProcessorProfiles, None, CLSCTX_INPROC_SERVER)
+    } {
+        Ok(profiles) => profiles,
+        Err(_) => return None,
+    };
+    let mut langid = 0u16;
+    let mut profile = GUID::default();
+    // SAFETY: both pointers are live locals of the right type.
+    match unsafe {
+        profiles.GetActiveLanguageProfile(&crate::CLSID_PIME, &mut langid, &mut profile)
+    } {
+        Ok(()) => Some(langid),
+        Err(_) => None,
+    }
 }
 
 /// The three interfaces of the object that TSF is given to call back.
@@ -546,16 +1077,19 @@ const PENDING_COMPOSITION_ENDED: u8 = 2;
     ITfCompositionSink
 )]
 struct Tip {
-    inner: RefCell<Option<Inner>>,
+    inner: Rc<RefCell<Option<Inner>>>,
     /// Events that arrived while `inner` was borrowed (TSF re-entered us from inside one of our edit sessions).
     pending: Cell<u8>,
+    /// Counts this object in the DLL's live-object counter while it exists.
+    _live: crate::LiveGuard,
 }
 
 impl Tip {
     fn new() -> Tip {
         Tip {
-            inner: RefCell::new(None),
+            inner: Rc::new(RefCell::new(None)),
             pending: Cell::new(0),
+            _live: crate::LiveGuard::new(),
         }
     }
 
@@ -577,7 +1111,9 @@ impl Tip {
             inner.controller.host_mut().composition = None;
             inner.controller.composition_terminated();
         }
-        f(inner)
+        let result = f(inner);
+        inner.drain_actions();
+        result
     }
 
     /// Note an event for the next `with` when the state is busy right now.
@@ -586,7 +1122,6 @@ impl Tip {
             self.pending.set(self.pending.get() | flag);
         }
     }
-
     fn activate(
         &self,
         thread_mgr: Option<&ITfThreadMgr>,
@@ -607,15 +1142,146 @@ impl Tip {
         // Everything after the advises runs inside `advised`: an error or a panic there (the popup, the controller, the
         // store below) undoes both advises, so that TSF's retry of `Activate` is not refused as "already advised".
         advised(&tsf, |thread_sink_cookie| {
+            // The actions of the user (a click in the candidate window, a click in the floating bar) and of a host
+            // that draws the candidate list itself travel through this one channel: they are applied at once, or
+            // queued when the text service is busy inside a call of ours (then the queue is drained when that call
+            // returns).
+            let pending_actions: Rc<RefCell<Vec<Pending>>> = Rc::new(RefCell::new(Vec::new()));
+            let sink: crate::ui::ActionSink = {
+                let weak = Rc::downgrade(&self.inner);
+                let pending = pending_actions.clone();
+                Rc::new(move |action| {
+                    let Some(inner) = weak.upgrade() else {
+                        return;
+                    };
+                    match inner.try_borrow_mut() {
+                        Ok(mut slot) => {
+                            let Some(i) = slot.as_mut() else {
+                                return;
+                            };
+                            i.controller.apply_list_action(action);
+                        }
+                        Err(_) => pending.borrow_mut().push(Pending::List(action)),
+                    }
+                })
+            };
+            // The floating bar: the same pattern, for the two buttons of the bar.
+            let bar_sink: BarSink = {
+                let weak = Rc::downgrade(&self.inner);
+                let pending = pending_actions.clone();
+                Rc::new(move |action| {
+                    let Some(inner) = weak.upgrade() else {
+                        return;
+                    };
+                    match inner.try_borrow_mut() {
+                        Ok(mut slot) => {
+                            let Some(i) = slot.as_mut() else {
+                                return;
+                            };
+                            i.apply_bar_action(action);
+                        }
+                        Err(_) => pending.borrow_mut().push(Pending::Bar(action)),
+                    }
+                })
+            };
+            // The settings window: when the user saves, the settings are read again and applied.
+            let settings_sink: SettingsSink = {
+                let weak = Rc::downgrade(&self.inner);
+                let pending = pending_actions.clone();
+                Rc::new(move |event| {
+                    if !matches!(event, SettingsEvent::Saved) {
+                        return;
+                    }
+                    let Some(inner) = weak.upgrade() else {
+                        return;
+                    };
+                    match inner.try_borrow_mut() {
+                        Ok(mut slot) => {
+                            let Some(i) = slot.as_mut() else {
+                                return;
+                            };
+                            i.reload_settings();
+                        }
+                        Err(_) => pending.borrow_mut().push(Pending::ReloadSettings),
+                    }
+                })
+            };
+            // A menu of the floating bar: the choice travels the same way.
+            let menu_sink: MenuSink = {
+                let weak = Rc::downgrade(&self.inner);
+                let pending = pending_actions.clone();
+                Rc::new(move |action| {
+                    let Some(inner) = weak.upgrade() else {
+                        return;
+                    };
+                    match inner.try_borrow_mut() {
+                        Ok(mut slot) => {
+                            let Some(i) = slot.as_mut() else {
+                                return;
+                            };
+                            i.apply_menu_action(action);
+                        }
+                        Err(_) => pending.borrow_mut().push(Pending::Menu(action)),
+                    }
+                })
+            };
             // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
             // `ITfUIElementMgr`; a host that answers "I draw" keeps the popup hidden (see `uielement`).
-            let ui = candidate_ui(&thread_mgr, Box::new(PopupWindow::new()));
+            let ui = candidate_ui(
+                &thread_mgr,
+                Box::new(PopupWindow::with_sink(sink.clone())),
+                sink,
+            );
+            // The language of the active profile and the settings of that language.
+            let language = active_language().unwrap_or(DEFAULT_LANGUAGE).to_string();
+            let settings = load_settings();
+            let values = settings.get(&language);
+            let mut config = TipConfig::default();
+            config.keymap.page_size = values.page_size().clamp(1, 9);
+            config.keymap.tab_cycles = values.tab_cycles;
+            config.keymap.tab_to_host = values.tab_to_host;
+            config.keymap.space_confirms = values.space_confirms;
+            config.auto_compose = values.auto_compose;
+            config.input_mode = values.input_mode;
+            // The laser interface: the glow on the left of the screen, the beam, the panel and the logo in the
+            // corner. What the user does in the panel travels the same way as the actions of the bar.
+            let laser: Rc<RefCell<LaserUi>> = {
+                let weak = Rc::downgrade(&self.inner);
+                let pending = pending_actions.clone();
+                let sink: Rc<dyn Fn(LaserEvent)> = Rc::new(move |event| {
+                    let Some(inner) = weak.upgrade() else {
+                        return;
+                    };
+                    match inner.try_borrow_mut() {
+                        Ok(mut slot) => {
+                            let Some(i) = slot.as_mut() else {
+                                return;
+                            };
+                            i.apply_laser_event(event);
+                        }
+                        Err(_) => pending.borrow_mut().push(Pending::Laser(event)),
+                    }
+                });
+                LaserUi::create(sink)
+            };
             let mut controller = TipController::new(
                 BoxedUi(Box::new(ui)),
                 TsfHost::new(client_id, composition_sink),
                 pime_core::input::LocalPredictor,
-                TipConfig::default(),
+                config,
             );
+            // The light of the input method shines on the character that was written.
+            {
+                let laser_for_hook = Rc::clone(&laser);
+                controller.set_commit_hook(Rc::new(move |anchor| {
+                    let Some(anchor) = anchor else {
+                        return;
+                    };
+                    if let Ok(mut laser) = laser_for_hook.try_borrow_mut() {
+                        laser.fire(anchor);
+                    }
+                }));
+            }
             controller.activate(is_secure_mode(flags));
             *self.inner.borrow_mut() = Some(Inner {
                 thread_mgr: thread_mgr.clone(),
@@ -623,7 +1289,25 @@ impl Tip {
                 thread_sink_cookie,
                 controller,
                 started: Instant::now(),
+                pending_actions,
+                bar: FloatingBar::new(bar_sink),
+                menu: None,
+                settings_window: None,
+                settings_sink,
+                menu_sink,
+                language,
+                settings: values,
+                effort: settings.effort.clone(),
+                skin: settings.skin.clone(),
+                mouth_place: settings.mouth_place.clone(),
+                laser,
             });
+            // The laser interface comes on the screen with the text service.
+            if let Ok(mut slot) = self.inner.try_borrow_mut()
+                && let Some(inner) = slot.as_mut()
+            {
+                inner.sync_laser();
+            }
         })
     }
 
@@ -635,6 +1319,14 @@ impl Tip {
             return Ok(());
         };
         inner.controller.deactivate();
+        // The floating bar, its menus and the settings window belong to this thread: they go with it.
+        inner.bar.hide();
+        inner.menu = None;
+        inner.settings_window = None;
+        // The laser interface (the glow, the beam, the panel and the logo) goes with it as well.
+        if let Ok(mut laser) = inner.laser.try_borrow_mut() {
+            laser.hide();
+        }
         // SAFETY: the advises made in `activate`; failures here cannot be acted on (the thread is going away).
         unsafe {
             if let Ok(keystrokes) = inner.thread_mgr.cast::<ITfKeystrokeMgr>() {
@@ -653,12 +1345,15 @@ impl Tip {
         self.with(false, |inner| {
             inner.controller.host_mut().set_context(pic);
             let input = key_input(wparam, lparam, inner.started, kind.is_down());
-            match kind {
+            let eaten = match kind {
                 KeyKind::TestDown => inner.controller.on_test_key_down(input),
                 KeyKind::Down => inner.controller.on_key_down(input),
                 KeyKind::TestUp => inner.controller.on_test_key_up(input),
                 KeyKind::Up => inner.controller.on_key_up(input),
-            }
+            };
+            // The floating bar follows the caret: it is shown and moved after every key.
+            inner.sync_bar();
+            eaten
         })
     }
 }
@@ -824,11 +1519,31 @@ impl ITfKeyEventSink_Impl for Tip_Impl {
 
 impl ITfThreadMgrEventSink_Impl for Tip_Impl {
     fn OnInitDocumentMgr(&self, _pdim: Option<&ITfDocumentMgr>) -> Result<()> {
+        // A new document manager is not our business: the context we type into arrives with the key events.
         Ok(())
     }
 
-    fn OnUninitDocumentMgr(&self, _pdim: Option<&ITfDocumentMgr>) -> Result<()> {
-        Ok(())
+    fn OnUninitDocumentMgr(&self, pdim: Option<&ITfDocumentMgr>) -> Result<()> {
+        // The document manager is going away. When it owns the context we type into, the host will not send us any
+        // more events for it: the composition has to end now and the context has to be forgotten, or we would keep
+        // writing into a document that no longer exists.
+        guard(Ok(()), || {
+            let Some(pdim) = pdim else {
+                return Ok(());
+            };
+            self.with((), |inner| {
+                {
+                    let host = inner.controller.host_mut();
+                    if !host.is_in_document(pdim) {
+                        return;
+                    }
+                    let _ = host.end_composition();
+                    host.forget_context();
+                }
+                inner.controller.focus_changed();
+            });
+            Ok(())
+        })
     }
 
     fn OnSetFocus(
@@ -847,11 +1562,31 @@ impl ITfThreadMgrEventSink_Impl for Tip_Impl {
     }
 
     fn OnPushContext(&self, _pic: Option<&ITfContext>) -> Result<()> {
+        // A context was pushed onto the stack. It is not necessarily the one the user types into (the focused
+        // context is), so there is nothing to do here.
         Ok(())
     }
 
-    fn OnPopContext(&self, _pic: Option<&ITfContext>) -> Result<()> {
-        Ok(())
+    fn OnPopContext(&self, pic: Option<&ITfContext>) -> Result<()> {
+        // The context was popped: the host will not send us any more events for it. When it is the context we type
+        // into, the composition has to end now.
+        guard(Ok(()), || {
+            let Some(pic) = pic else {
+                return Ok(());
+            };
+            self.with((), |inner| {
+                {
+                    let host = inner.controller.host_mut();
+                    if !host.is_current_context(pic) {
+                        return;
+                    }
+                    let _ = host.end_composition();
+                    host.forget_context();
+                }
+                inner.controller.focus_changed();
+            });
+            Ok(())
+        })
     }
 }
 
@@ -880,7 +1615,11 @@ pub(crate) unsafe fn create_instance(iid: *const GUID, object: *mut *mut c_void)
     // SAFETY: valid per the contract. NULL after every failure, including a panic below that is turned into E_FAIL.
     unsafe { *object = std::ptr::null_mut() };
     guard(Err(E_FAIL.into()), || {
-        let tip: ITfTextInputProcessorEx = Tip::new().into();
+        let mut tip = Tip::new();
+        // The object counts as live from here on. If the query below fails, the object is dropped right away and the
+        // guard gives the count back.
+        tip._live.count();
+        let tip: ITfTextInputProcessorEx = tip.into();
         // SAFETY: forwarded from the caller's contract.
         unsafe { tip.query(iid, object).ok() }
     })
@@ -1060,6 +1799,11 @@ mod tests {
             assert!(sink.OnSetFocus(BOOL(1)).is_ok());
             assert!(sink.OnSetFocus(BOOL(0)).is_ok());
             assert!(thread_sink.OnSetFocus(None, None).is_ok());
+            // the document and context callbacks answer even without a document manager or a context
+            assert!(thread_sink.OnInitDocumentMgr(None).is_ok());
+            assert!(thread_sink.OnUninitDocumentMgr(None).is_ok());
+            assert!(thread_sink.OnPushContext(None).is_ok());
+            assert!(thread_sink.OnPopContext(None).is_ok());
             assert!(tip.Deactivate().is_ok());
             assert!(
                 tip.Activate(None, 1).is_err(),

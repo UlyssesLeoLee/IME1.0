@@ -44,12 +44,12 @@ async function updateContextKeys() {
   const excluded = editor ? (cfg().get('f1ExcludedLanguages') || []).includes(editor.document.languageId) : false;
   const binding = cfg().get('f1Binding');
   await vscode.commands.executeCommand('setContext', 'programmingIme.enabled', on);
-  await vscode.commands.executeCommand('setContext', 'programmingIme.f1Key.f1', on && binding === 'f1' && !excluded);
-  await vscode.commands.executeCommand('setContext', 'programmingIme.f1Key.shiftF1', on && binding === 'shift+f1' && !excluded);
+  await vscode.commands.executeCommand('setContext', 'programmingIme.f1Key.ctrlF1', on && binding === 'ctrl+f1' && !excluded);
+  await vscode.commands.executeCommand('setContext', 'programmingIme.f1Key.ctrlShiftF1', on && binding === 'ctrl+shift+f1' && !excluded);
   const f2Excluded = editor ? (cfg().get('f2ExcludedLanguages') || []).includes(editor.document.languageId) : false;
   const f2Keys = f2.contextKeys({enabled: on, binding: cfg().get('f2Binding'), excluded: f2Excluded});
-  await vscode.commands.executeCommand('setContext', 'programmingIme.f2Key.f2', f2Keys.f2);
-  await vscode.commands.executeCommand('setContext', 'programmingIme.f2Key.shiftF2', f2Keys.shiftF2);
+  await vscode.commands.executeCommand('setContext', 'programmingIme.f2Key.ctrlF2', f2Keys.ctrlF2);
+  await vscode.commands.executeCommand('setContext', 'programmingIme.f2Key.ctrlShiftF2', f2Keys.ctrlShiftF2);
 }
 
 // ------------------------------------------------------------------ local candidates (JS engine; optional Rust core)
@@ -200,10 +200,14 @@ async function showCandidates() {
 }
 async function chooseLanguage() {
   const editor = vscode.window.activeTextEditor;
+  const reg = languages.registry();
   const items = [{label: L('lang.auto'), value: 'auto'}, {label: L('lang.fileLock'), kind: vscode.QuickPickItemKind.Separator}];
   for (const id of languages.LANGUAGES) items.push({label: id, description: L('lang.fileLock'), value: id, scope: 'file'});
+  // the plugin languages that are on are offered next to the built-in ones
+  for (const id of reg.enabledPluginProfiles()) items.push({label: id, description: L('plugin.tag', (reg.plugin(id) || {}).display_name || id), value: id, scope: 'file'});
   items.push({label: L('lang.globalLock'), kind: vscode.QuickPickItemKind.Separator});
   for (const id of languages.LANGUAGES) items.push({label: `${id} (all files)`, description: L('lang.globalLock'), value: id, scope: 'global'});
+  for (const id of reg.enabledPluginProfiles()) items.push({label: `${id} (all files)`, description: L('plugin.tag', (reg.plugin(id) || {}).display_name || id), value: id, scope: 'global'});
   const pick = await vscode.window.showQuickPick(items, {title: L('lang.pick'), matchOnDescription: true});
   if (!pick || !editor) return;
   if (pick.value === 'auto') lang.unlock(editor.document); else lang.lock(editor.document, pick.value, pick.scope);
@@ -322,14 +326,71 @@ async function toggleRealtimeAI() {
   await cfg().update('realtimeAI', next, vscode.ConfigurationTarget.Global);
   vscode.window.showInformationMessage(next ? L('ai.realtimeOn') : L('ai.realtimeOff'));
 }
+// ------------------------------------------------------------------ plugin languages (a plugin pack adds a whole new language)
+// The built-in seven are always on. A plugin profile is on or off; the set lives in programmingIme.pluginLanguages.
+const RULE_DIR = () => path.join(rt.ctx.globalStorageUri.fsPath, 'rules');
+const PLUGIN_DIR = () => path.join(rt.ctx.globalStorageUri.fsPath, 'language-plugins');
+function enabledPluginLanguages() {
+  const raw = cfg().get('pluginLanguages');
+  const list = Array.isArray(raw) ? raw.filter(x => typeof x === 'string' && x) : [];
+  return [...new Set(list)];
+}
+const readPacks = dir => {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter(n => n.endsWith('.json')).sort().map(name => ({name, text: fs.readFileSync(path.join(dir, name), 'utf8')}));
+};
+// The core (the optional accelerator) needs the same set of plugin languages. A core that does not know the op
+// yet answers with an error: that is not a failure of the bridge.
+async function tellCorePluginLanguages(list) {
+  const client = rt.engine && rt.engine.predictClient ? rt.engine.predictClient() : null;
+  if (!client) return;
+  const body = {op: 'setPluginLanguages', languages: list};
+  if (rt.engine.session) body.session = rt.engine.session; // the Rust core needs its session
+  try { await client.request(body, {timeoutMs: rt.engine.predictTimeoutMs || 2000}); } catch { /* unknown op or no core: nothing to do */ }
+}
+// The registry is rebuilt from the built-in packs, the shipped plugin packs, the imported plugin packs and the user
+// rules. Only a complete build replaces the active registry, so a broken pack never degrades what already works.
 async function reloadRules() {
-  const dir = path.join(rt.ctx.globalStorageUri.fsPath, 'rules');
-  fs.mkdirSync(dir, {recursive: true});
-  const files = fs.readdirSync(dir).filter(n => n.endsWith('.json')).map(name => ({name, text: fs.readFileSync(path.join(dir, name), 'utf8')}));
-  const built = settingsMod.buildRegistryWithUserRules(files);
+  const ruleDir = RULE_DIR(), pluginDir = PLUGIN_DIR();
+  fs.mkdirSync(ruleDir, {recursive: true});
+  fs.mkdirSync(pluginDir, {recursive: true});
+  const enabled = enabledPluginLanguages();
+  const built = settingsMod.buildRegistryWithPlugins(readPacks(pluginDir), {enabled, ruleFiles: readPacks(ruleDir)});
   languages.setRegistry(built.registry);
-  if (built.rejected.length) vscode.window.showWarningMessage(`Programming IME rules: ${built.rejected.length} pack(s) rejected - ${built.rejected.map(r => `${r.name}: ${r.message}`).join('; ')}`);
-  else if (files.length) vscode.window.showInformationMessage(`Programming IME rules loaded: ${built.accepted.join(', ')}`);
+  await tellCorePluginLanguages(enabled);
+  const rejected = [...built.rejected, ...built.rules.rejected];
+  if (rejected.length) vscode.window.showWarningMessage(L('plugin.packRejected', rejected.length, rejected.map(r => `${r.name}: ${r.message}`).join('; ')));
+  else {
+    const parts = [];
+    if (built.accepted.length) parts.push(`plugin packs: ${built.accepted.join(', ')}`);
+    if (built.rules.accepted.length) parts.push(`rules: ${built.rules.accepted.join(', ')}`);
+    if (parts.length) vscode.window.showInformationMessage(L('plugin.loaded', parts.join('; ')));
+  }
+  return built;
+}
+// The plugin languages that are on: every DISCOVERED plugin language with a checkbox.
+async function choosePluginLanguages() {
+  const reg = languages.registry();
+  const ids = reg.pluginProfiles();
+  if (!ids.length) { vscode.window.showInformationMessage(L('plugin.none')); return; }
+  const on = new Set(reg.enabledPluginProfiles());
+  const items = ids.map(id => ({label: id, description: L('plugin.tag', (reg.plugin(id) || {}).display_name || id), picked: on.has(id)}));
+  const picks = await vscode.window.showQuickPick(items, {canPickMany: true, title: 'Programming IME: plugin languages (on / off)'});
+  if (!picks) return; // Esc / dismiss: nothing is written
+  const next = picks.map(p => p.label);
+  await cfg().update('pluginLanguages', next, vscode.ConfigurationTarget.Global);
+  vscode.window.showInformationMessage(L('plugin.enabled', next.length ? next.join(', ') : 'none'));
+}
+// Import plugin packs from a folder: every *.json is validated, the accepted ones are copied into the plugin folder.
+async function importPluginPacks() {
+  const picked = await vscode.window.showOpenDialog({canSelectFolders: true, canSelectFiles: false, canSelectMany: false, openLabel: L('plugin.importLabel')});
+  if (!picked || !picked.length) return;
+  const src = picked[0].fsPath;
+  const files = fs.readdirSync(src).filter(n => n.toLowerCase().endsWith('.json')).sort().map(name => ({name, text: fs.readFileSync(path.join(src, name), 'utf8')}));
+  const result = settingsMod.importPluginPacks(files, PLUGIN_DIR(), (pack, bytes) => languages.checkPluginPack(pack, bytes));
+  await reloadRules();
+  if (result.accepted.length) vscode.window.showInformationMessage(L('plugin.imported', result.accepted.length, result.accepted.join(', ')));
+  if (result.rejected.length) vscode.window.showWarningMessage(L('plugin.rejected', result.rejected.length, result.rejected.map(r => `${r.name}: ${r.message}`).join('; ')));
 }
 async function migrateOldSettings() {
   if (rt.ctx.globalState.get('pime.settingsSchema') === settingsMod.SCHEMA_VERSION) return;
@@ -399,7 +460,10 @@ async function activate(ctx) {
   reg('programmingIme.resetUsage', () => { rt.budget.reset(); updateStatus(); });
   reg('programmingIme.showDiagnostics', showDiagnostics);
   reg('programmingIme.reloadRules', reloadRules);
-  reg('programmingIme.openRulesFolder', async () => { const dir = path.join(rt.ctx.globalStorageUri.fsPath, 'rules'); fs.mkdirSync(dir, {recursive: true}); await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(dir)); });
+  reg('programmingIme.openRulesFolder', async () => { const dir = RULE_DIR(); fs.mkdirSync(dir, {recursive: true}); await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(dir)); });
+  reg('programmingIme.pluginLanguages', choosePluginLanguages);
+  reg('programmingIme.importPluginPacks', importPluginPacks);
+  reg('programmingIme.openPluginFolder', async () => { const dir = PLUGIN_DIR(); fs.mkdirSync(dir, {recursive: true}); await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(dir)); });
   reg('programmingIme.f1Edit', () => f1.open());
   reg('programmingIme.f2Prompt', () => f2.run());
   reg('programmingIme.secretFiles', () => fileGate.manage());
@@ -417,6 +481,8 @@ async function activate(ctx) {
     vscode.workspace.onDidChangeConfiguration(e => {
       if (!e.affectsConfiguration('programmingIme')) return;
       refreshSettings(); lang.invalidate();
+      // the plugin languages decide which plugin profiles are active: the registry is rebuilt and the core is told
+      if (e.affectsConfiguration('programmingIme.pluginLanguages')) reloadRules().catch(() => {});
       if (e.affectsConfiguration('programmingIme.engine')) vscode.window.showInformationMessage(L('engine.reload'));
       else if (e.affectsConfiguration('programmingIme.coreExecutable')) { engineNotified = false; startCore(); }
       if (!aiEnabled() || cfg().get('realtimeAI') !== true) rt.scheduler.cancel();

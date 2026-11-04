@@ -28,10 +28,19 @@ pub const DLL: &str = "pime_tsf.dll";
 pub const CORE: &str = "pime-core.exe";
 pub const LICENSE: &str = "LICENSE";
 pub const VSIX: &str = "programming-ime.vsix";
+/// The icon of the Add/Remove Programs entry: it is installed next to the other files and removed with them.
+pub const ICON: &str = "pime.ico";
+/// The resident tray: the logo in the notification area, the one-key switch and the voice input.
+pub const TRAY: &str = "pime-tray.exe";
+/// The AI worker: it sends the audio to the speech service and keeps the API key in the Credential Manager.
+pub const WORKER: &str = "pime-ai-worker.exe";
 pub const META: &str = "meta.json";
 /// Entries that must be present, and every entry that is allowed at all.
-const REQUIRED: [&str; 4] = [DLL, CORE, LICENSE, META];
-const ALLOWED: [&str; 5] = [DLL, CORE, LICENSE, META, VSIX];
+///
+/// The tray and the worker are required: the product ships them, and an installation without them would have the
+/// buttons of the tray (the one-key switch, the voice input) pointing at nothing.
+const REQUIRED: [&str; 6] = [DLL, CORE, LICENSE, META, TRAY, WORKER];
+const ALLOWED: [&str; 8] = [DLL, CORE, LICENSE, META, VSIX, ICON, TRAY, WORKER];
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PayloadError {
@@ -285,6 +294,8 @@ mod tests {
             (LICENSE, b"MIT"),
             (META, m),
             (VSIX, b"VSIX"),
+            (TRAY, b"TRAY"),
+            (WORKER, b"WORKER"),
         ]
     }
 
@@ -318,13 +329,13 @@ mod tests {
         let mut exe = stub();
         exe.extend(pack(&full_entries(&m)));
         let payload = Payload::from_exe(&exe).unwrap().expect("payload");
-        assert_eq!(payload.entries.len(), 5);
+        assert_eq!(payload.entries.len(), 7);
         assert_eq!(payload.get(DLL).unwrap().data, b"DLL");
         let release = payload.release().unwrap();
         assert_eq!(release.version, "0.2.0");
         assert_eq!(release.extension_id.as_deref(), Some("pub.name"));
         let names: Vec<_> = release.files.iter().map(|f| f.name.as_str()).collect();
-        assert_eq!(names, [DLL, CORE, LICENSE, VSIX]);
+        assert_eq!(names, [DLL, CORE, LICENSE, VSIX, TRAY, WORKER]);
         assert_eq!(release.files[0].sha256, sha256(b"DLL"));
         assert_eq!(release.files[0].size, 3);
     }
@@ -390,6 +401,43 @@ mod tests {
             Payload::from_exe(&evil),
             Err(PayloadError::Corrupt(_))
         ));
+    }
+
+    #[test]
+    fn st_035_the_icon_is_an_allowed_entry_and_a_stranger_is_not() {
+        assert!(valid_entry_name(ICON));
+        // a payload that carries the icon is a complete release, and the icon is one of the installed files
+        let m = meta("0.2.0");
+        let mut exe = stub();
+        exe.extend(pack(&[
+            (DLL, b"DLL"),
+            (CORE, b"CORE"),
+            (LICENSE, b"MIT"),
+            (META, &m),
+            (ICON, b"ICO"),
+            (TRAY, b"TRAY"),
+            (WORKER, b"WORKER"),
+        ]));
+        let payload = Payload::from_exe(&exe).unwrap().expect("payload");
+        let release = payload.release().unwrap();
+        let names: Vec<_> = release.files.iter().map(|f| f.name.as_str()).collect();
+        assert_eq!(names, [DLL, CORE, LICENSE, ICON, TRAY, WORKER]);
+        // an entry that is not on the list is refused, whatever it is called
+        for stranger in ["pime.png", "icon.ico", "PIME.ICO"] {
+            let mut exe = stub();
+            exe.extend(pack(&[
+                (DLL, b"DLL"),
+                (CORE, b"CORE"),
+                (LICENSE, b"MIT"),
+                (META, &m),
+                (stranger, b"X"),
+            ]));
+            let payload = Payload::from_exe(&exe).unwrap().expect("payload");
+            assert!(
+                matches!(payload.release(), Err(PayloadError::Incomplete(msg)) if msg.contains("unexpected")),
+                "{stranger} must not be an allowed entry"
+            );
+        }
     }
 
     #[test]

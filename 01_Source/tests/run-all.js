@@ -2,12 +2,15 @@
 // One entry point for every stored test script. It only RUNS them: fixtures, golden data, certificates and reports are
 // never regenerated unless you ask for it explicitly (gen-fixtures.js --write, --report).
 //
-//   node tests/run-all.js                 fast, no GUI: --syntax --fixtures --golden --js --rust --smoke --tsf
+//   node tests/run-all.js                 fast, no GUI: --syntax --fixtures --golden --js --rust --smoke --tsf --installer
 //   node tests/run-all.js --all           the above + --uat + --uat-rust
 //   node tests/run-all.js --tsf           crates/pime-tsf: its unit tests, then build the DLL (GNU target) and inspect it (x64, exports, imports); never registers it
+//   node tests/run-all.js --tsf-live      crates/pime-tsf: the live host test (the real msctf, a real context; it opens the candidate window on the desktop)
+//   node tests/run-all.js --tsf-ui         crates/pime-tsf: the native windows (the probe opens the candidate window, the floating bar and the settings window; a picture of the desktop is taken and checked)
 //   node tests/run-all.js --worker        crates/pime-ai-worker: unit tests + the smoke test against the HTTPS mock (needs OpenSSL; writes PIME-TEST session credentials and removes them)
 //   node tests/run-all.js --ipc           crates/pime-ipc: unit + loopback tests on real named pipes (unique test pipe names)
 //   node tests/run-all.js --setup         crates/pime-setup: unit + temp-folder integration tests (never touches Program Files, HKLM or regsvr32)
+//   node tests/run-all.js --installer     the numbers quoted in 02_Verification/IME_FRAMEWORK_MATRIX.md against the built installer and the logs it cites, the UAT numbers against the Playwright report in 02_Verification/uat, and the build log / the sidecar / the prose against the same artifact
 //   node tests/run-all.js --js            only the JavaScript unit/integration suite (add PIME_CORE_EXE to also run the engine differential tests)
 //   node tests/run-all.js --rust          cargo test --workspace (builds the debug core exe, which --smoke and --uat-rust reuse)
 //   node tests/run-all.js --uat           Playwright on the real VS Code, JavaScript engine
@@ -15,7 +18,7 @@
 //   node tests/run-all.js --report        rewrite 02_Verification/test-execution-report.* from the last results (explicit, never implicit)
 //   options: --only-uat "UAT-23"          forwarded to playwright as -g
 // Exit code 0 only when every selected step passed.
-const {spawnSync} = require('node:child_process');
+const {spawnSync, spawn} = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -24,9 +27,9 @@ const tests = __dirname, src = path.resolve(tests, '..'), root = path.resolve(sr
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|worker|ipc|setup|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf'];
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -69,9 +72,9 @@ if (want('js')) step('JavaScript tests' + (fs.existsSync(coreExe) ? ' (+ engine 
   sh(process.execPath, ['--test', '*.test.js'], {cwd: path.join(tests, 'js'), env: {...process.env, ...(fs.existsSync(coreExe) ? {PIME_CORE_EXE: coreExe} : {})}}));
 if (want('smoke')) step('real pime-core.exe smoke test (JSON Lines)', () => sh(process.execPath, [path.join(tests, 'smoke', 'core-binary-smoke.js')], {env: {...process.env, PIME_CORE_EXE: coreExe}}));
 // cargo in one of the crates that live outside the main workspace; a freshly linked exe can fail once with os error 5
-const cargoRetry = (crate, cargoArgs) => {
+const cargoRetry = (crate, cargoArgs, extraEnv = {}) => {
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const r = spawnSync('cargo', cargoArgs, {cwd: path.join(src, 'crates', crate), encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir}, shell: isWin});
+    const r = spawnSync('cargo', cargoArgs, {cwd: path.join(src, 'crates', crate), encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir, ...extraEnv}, shell: isWin});
     process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
     if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
     if (!/os error 5/.test((r.stdout || '') + (r.stderr || ''))) break;
@@ -79,8 +82,34 @@ const cargoRetry = (crate, cargoArgs) => {
   return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
 };
 if (want('tsf')) {
-  step('TSF crate (crates/pime-tsf): cargo test', () => cargoRetry('pime-tsf', ['test']));
+  step('TSF crate (crates/pime-tsf): cargo test (the unit tests, the IME scenario suite and the function ledger)', () => cargoRetry('pime-tsf', ['test']));
   step('TSF DLL (crates/pime-tsf): builds on the GNU target, x64 PE, only system DLL imports (not registered or loaded)', () => sh(process.execPath, [path.join(tests, 'smoke', 'tsf-dll-check.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
+}
+// The live part drives the real msctf and opens the candidate window of the text service on the desktop: it is
+// opt-in (--tsf-live), because a test run must not take over the screen of the user.
+if (has('--tsf-live')) {
+  step('TSF live host test (the real msctf, a real document context; it opens the candidate window)', () =>
+    cargoRetry('pime-tsf', ['test', '--test', 'ime_host', '--', '--nocapture'], {PIME_IME_LIVE: '1'}));
+}
+// The native windows (the candidate window, the floating bar, the settings window): the probe opens them, a picture of
+// the desktop is taken while they are open and the picture is checked (it must not be a flat rectangle).
+if (has('--tsf-ui')) {
+  step('native windows of the IME (the probe opens them, a picture is taken and checked)', () => {
+    const env = {...process.env, CARGO_TARGET_DIR: targetDir};
+    const crate = path.join(src, 'crates', 'pime-tsf');
+    const built = sh('cargo', ['build', '--target', 'x86_64-pc-windows-gnu', '--example', 'ime_ui_probe'], {cwd: crate, env});
+    if (!built.ok) return built;
+    const exe = path.join(targetDir, 'x86_64-pc-windows-gnu', 'debug', 'examples', 'ime_ui_probe.exe');
+    if (!fs.existsSync(exe)) return {ok: false, note: 'the probe was not built'};
+    const picture = path.join(root, '02_Verification', 'ime-ui', 'ime-windows.png');
+    fs.mkdirSync(path.dirname(picture), {recursive: true});
+    const probe = spawn(exe, ['12'], {cwd: crate, env, stdio: 'ignore'});
+    try {
+      // let the windows appear, then take the picture while they are open
+      spawnSync('powershell', ['-ExecutionPolicy', 'Bypass', '-File', path.join(tests, 'smoke', 'ime-ui-capture.ps1'), '-Out', picture], {stdio: 'inherit', shell: isWin});
+    } finally { probe.kill(); }
+    return sh(process.execPath, [path.join(tests, 'smoke', 'ime-ui-check.js'), picture]);
+  });
 }
 if (want('worker')) {
   step('AI worker (crates/pime-ai-worker): cargo test', () => cargoRetry('pime-ai-worker', ['test']));
@@ -91,6 +120,9 @@ if (want('worker')) {
 }
 if (want('ipc')) step('IPC (crates/pime-ipc): unit + loopback tests on real named pipes', () => sh(process.execPath, [path.join(tests, 'smoke', 'ipc-smoke.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
 if (want('setup')) step('Installer (crates/pime-setup): cargo test (temp-folder integration tests only)', () => cargoRetry('pime-setup', ['test']));
+if (want('installer')) step('framework matrix: the quoted numbers match the built installer and the cited logs', () => sh(process.execPath, [path.join(tests, 'smoke', 'installer-claims-check.js')]));
+if (want('installer')) step('UAT claims: the quoted UAT numbers match the Playwright report in 02_Verification/uat', () => sh(process.execPath, [path.join(tests, 'smoke', 'uat-claims-check.js')]));
+if (want('installer')) step('evidence cross-check: the build log, the sidecar and the prose agree with the built installer', () => sh(process.execPath, [path.join(tests, 'smoke', 'evidence-cross-check.js')]));
 const uat = engine => {
   const env = {...process.env};
   const uatArgs = ['playwright', 'test', ...(onlyUat ? ['-g', onlyUat] : [])];

@@ -5,7 +5,6 @@
 //! The declaration patterns are the JavaScript sources of the reference engine, run by the crate's own matcher
 //! (`regex.rs`), so every line is matched exactly like `RegExp.exec` does.
 
-use crate::pack::LANGUAGES;
 use crate::regex::{Regex, group};
 use crate::secrets::is_sensitive_file_name;
 use crate::util::{chars_of, head_utf16, split_lines, string_of};
@@ -156,6 +155,7 @@ pub(crate) fn style_of(profile: &str) -> Option<Style> {
         "typescript" => Some(Style::TypeScript),
         "python" => Some(Style::Python),
         "powershell" => Some(Style::PowerShell),
+        "cypher" | "plsql" | "tsql" => Some(Style::Sql),
         _ => None,
     }
 }
@@ -220,9 +220,9 @@ pub fn directory_candidates<'a>(
             file_name: Some(e.name),
             text: None,
         };
-        let decision = crate::resolve::resolve_language(registry, &ctx, "unknown", None);
+        let decision = crate::resolve::resolve_language(&registry, &ctx, "unknown", None);
         if (decision.reason == "extension" || decision.reason == "bridge-languageId")
-            && LANGUAGES.contains(&decision.language.as_str())
+            && registry.has_profile(&decision.language)
         {
             out.push((e.name, decision.language));
         }

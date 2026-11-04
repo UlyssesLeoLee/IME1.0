@@ -354,10 +354,13 @@ fn st_035_review_3_an_install_into_a_junction_writes_nothing_through_it() {
     let tmp = TempDir::new("inst-link");
     let target = tmp.0.join("target folder");
     std::fs::create_dir_all(&target).unwrap();
+    // the link is at the folder that was chosen; the install folder is the product folder inside it, so the link
+    // is one folder above the install folder. Nothing may be written through it.
     let prefix = tmp.0.join("Programming IME");
     let jn = junction!(&prefix, &target);
     let options = offline_options("0.3.0");
     let plan = install_plan(&prefix, &options).unwrap();
+    assert_eq!(plan.prefix, tmp.0.join("Programming IME").join("IME1.0"));
     assert!(!plan.requires_admin);
     let payload = Payload::from_exe(&overlay("0.3.0")).unwrap().unwrap();
     let err = execute(

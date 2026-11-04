@@ -14,7 +14,7 @@ const {fail, codeOf} = require('./core/errors');
 const {gateFor} = require('./filegate');
 const settingsMod = require('./core/settings');
 const promptcraft = require('./core/promptcraft');
-const {LANGUAGES} = require('./core/languages');
+const {registry} = require('./core/languages');
 const {t} = require('./core/i18n');
 const {TransientNotice} = require('./ui/notice');
 
@@ -27,7 +27,7 @@ const WHY_CODE = Object.freeze({aiOff: 'AI_DISABLED', untrusted: 'CONSENT_REQUIR
 
 // Context keys of the F2 keybindings (same rule as F1: enabled, the chosen binding, language not excluded).
 function contextKeys({enabled, binding, excluded}) {
-  return {f2: !!enabled && binding === 'f2' && !excluded, shiftF2: !!enabled && binding === 'shift+f2' && !excluded};
+  return {ctrlF2: !!enabled && binding === 'ctrl+f2' && !excluded, ctrlShiftF2: !!enabled && binding === 'ctrl+shift+f2' && !excluded};
 }
 
 // The selected text as it reads in the REDACTED file. Redaction never adds or removes a line (the caller checks), so every selected line has a
@@ -240,7 +240,7 @@ function createF2(env) {
       current = mine;
       const live = () => { if (mine.controller.signal.aborted) throw fail('AI_CANCELLED', 'superseded or cancelled'); };
       const info = infoFor(c.doc);
-      const profile = LANGUAGES.includes(info.language) ? info.language : '';
+      const profile = registry().hasProfile(info.language) ? info.language : ''; // an active profile only
       const cls = promptcraft.classifySelection({profile, languageId: c.doc.languageId, fileName: c.doc.fileName, text: c.text, fileText: c.fileText, start: c.start, end: c.end});
       kind = cls.kind === 'code' ? 'code' : 'prose';
       const job = {...c, c, kind, live, controller: mine.controller, language: profile || c.doc.languageId || '', dialect: profile ? (info.dialect || {}) : {},

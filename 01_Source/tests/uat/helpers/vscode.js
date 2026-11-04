@@ -127,7 +127,9 @@ class VsCode {
   async escapeQuick() { if (await this.quickVisible()) { await this.page.keyboard.press('Escape'); await this.quick.waitFor({state: 'hidden', timeout: 5000}).catch(() => {}); } }
   // ---------------------------------------------------------------- dialogs and notifications
   get dialog() { return this.page.locator('.monaco-dialog-box'); }
-  async waitDialog(timeout = 10000) { await this.dialog.waitFor({state: 'visible', timeout}); return {message: (await this.page.locator('.dialog-message-text').innerText()).trim(), detail: (await this.page.locator('.dialog-message-detail').innerText().catch(() => '')).trim(), buttons: (await this.dialog.locator('.dialog-buttons .monaco-button').allInnerTexts()).map(s => s.trim())}; }
+  // The timeouts on the reads matter: a dialog that disappears between the wait and the read would otherwise
+  // block forever (an unbounded innerText), and the whole test would die with a timeout instead of a message.
+  async waitDialog(timeout = 10000) { await this.dialog.waitFor({state: 'visible', timeout}); return {message: (await this.page.locator('.dialog-message-text').innerText({timeout: 5000})).trim(), detail: (await this.page.locator('.dialog-message-detail').innerText({timeout: 5000}).catch(() => '')).trim(), buttons: (await this.dialog.locator('.dialog-buttons .monaco-button').allInnerTexts()).map(s => s.trim())}; }
   async dialogClick(text) { await this.dialog.locator('.dialog-buttons .monaco-button', {hasText: text}).first().click(); await this.dialog.waitFor({state: 'hidden', timeout: 5000}).catch(() => {}); }
   async dialogVisible() { return this.dialog.isVisible().catch(() => false); }
   async notifications() { return (await this.page.locator('.notifications-toasts .notification-list-item-message').allInnerTexts()).map(s => s.trim()); }
@@ -146,7 +148,9 @@ class VsCode {
     await exact.waitFor({timeout: 8000});
     await exact.click();
     await this.page.locator('.tab.active', {hasText: base}).first().waitFor({timeout: 10000});
-    await this.page.locator('.monaco-editor.focused, .monaco-editor').first().waitFor();
+    // Wait for a VISIBLE editor: a closed editor group can still be in the DOM, and waiting for a hidden one
+    // never ends (no timeout on a plain waitFor). Bounded, so a transient state is an error, not a hang.
+    await this.page.locator('.monaco-editor:visible').first().waitFor({timeout: 10000});
     await sleep(500);
     await this.focusEditor();
   }
@@ -191,7 +195,7 @@ class VsCode {
     await this.panelFrame.locator('#title').waitFor({timeout});
     await this.panelFrame.locator('#generate').waitFor({timeout});
   }
-  async panelText(sel) { return (await this.panelFrame.locator(sel).innerText()).replace(/\s+/g, ' ').trim(); }
+  async panelText(sel) { return (await this.panelFrame.locator(sel).innerText({timeout: 5000})).replace(/\s+/g, ' ').trim(); }
   async waitPanelStatus(tab, re, timeout = 20000) {
     const loc = this.panelFrame.locator(`#panel-${tab} .status`).first();
     const end = Date.now() + timeout; let last = '';

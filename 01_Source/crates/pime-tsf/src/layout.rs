@@ -35,6 +35,11 @@ impl Rect {
     pub fn height(&self) -> i32 {
         self.bottom.saturating_sub(self.top)
     }
+
+    /// Whether the client point is inside the rectangle (the right and bottom edges are outside, like a pixel grid).
+    pub fn contains(&self, x: i32, y: i32) -> bool {
+        x >= self.left && x < self.right && y >= self.top && y < self.bottom
+    }
 }
 
 /// Text measurements supplied by the caller (from GDI in production, synthetic in tests).

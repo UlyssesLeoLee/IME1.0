@@ -249,6 +249,7 @@ impl Inner {
                 "url",
                 "headers",
                 "body",
+                "bodyBase64",
                 "timeoutMs",
                 "credentialRef",
                 "authHeader",
@@ -273,10 +274,22 @@ impl Inner {
                 _ => return Err(Failure::invalid("timeoutMs")),
             },
         };
-        let body = take_string(req, "body")
-            .map_err(|()| Failure::invalid("body"))?
-            .unwrap_or_default();
-        if body.len() > MAX_REQUEST_BODY_BYTES || (method == Method::Get && !body.is_empty()) {
+        // The body is either text or binary (base64). The two are exclusive: a request that carries both is
+        // ambiguous, and an ambiguous request must not be sent.
+        let text_body = take_string(req, "body").map_err(|()| Failure::invalid("body"))?;
+        let base64_body =
+            take_string(req, "bodyBase64").map_err(|()| Failure::invalid("bodyBase64"))?;
+        if text_body.is_some() && base64_body.is_some() {
+            return Err(Failure::invalid("body"));
+        }
+        let bytes = match (text_body, base64_body) {
+            (Some(text), None) => text.into_bytes(),
+            (None, Some(text)) => pime_core::base64::decode(&text)
+                .ok_or_else(|| Failure::invalid("bodyBase64"))?,
+            (None, None) => Vec::new(),
+            (Some(_), Some(_)) => unreachable!("the two bodies are exclusive"),
+        };
+        if bytes.len() > MAX_REQUEST_BODY_BYTES || (method == Method::Get && !bytes.is_empty()) {
             return Err(Failure::invalid("body"));
         }
         let (auth_line, key) = match (opt_str(req, "credentialRef")?, opt_str(req, "authHeader")?) {
@@ -307,7 +320,7 @@ impl Inner {
                 target,
                 headers,
                 auth_line,
-                body: body.into_bytes(),
+                body: bytes,
                 timeout: Duration::from_millis(timeout_ms as u64),
                 accept_untrusted_ca,
                 max_response_bytes: MAX_RESPONSE_BYTES,
@@ -1769,9 +1782,60 @@ mod tests {
         );
     }
 
+    /// The voice input sends a recording: the bytes travel as base64 and arrive as they were.
     #[test]
-    fn only_http_send_may_use_the_bulk_line_size() {
+    fn a_binary_body_travels_as_base64_and_arrives_as_it_was() {
         let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
+        let audio: Vec<u8> = (0..=255u8).collect();
+        h.line(&send_line(
+            1,
+            "POST",
+            "https://api.example.com/v1",
+            vec![(
+                "bodyBase64",
+                Json::str(&pime_core::base64::encode(&audio)),
+            )],
+        ));
+        h.wait();
+        assert!(is_ok(&h.reply(1)), "{}", h.raw());
+        assert_eq!(h.fake.seen.lock().unwrap()[0].body, audio);
+    }
+
+    /// A request that carries both bodies is ambiguous, and an ambiguous request is not sent.
+    #[test]
+    fn the_text_body_and_the_binary_body_are_exclusive() {
+        let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
+        h.line(&send_line(
+            2,
+            "POST",
+            "https://api.example.com/v1",
+            vec![
+                ("body", Json::str("text")),
+                ("bodyBase64", Json::str("dGV4dA==")),
+            ],
+        ));
+        let r = h.reply(2);
+        assert_eq!(code(&r), "INVALID_REQUEST");
+        assert_eq!(r.get("field").and_then(Json::as_str), Some("body"));
+    }
+
+    /// Text that is not base64 is refused instead of being sent half decoded.
+    #[test]
+    fn a_body_that_is_not_base64_is_refused() {
+        let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
+        h.line(&send_line(
+            3,
+            "POST",
+            "https://api.example.com/v1",
+            vec![("bodyBase64", Json::str("not base64!"))],
+        ));
+        let r = h.reply(3);
+        assert_eq!(code(&r), "INVALID_REQUEST");
+        assert_eq!(r.get("field").and_then(Json::as_str), Some("bodyBase64"));
+    }
+
+    #[test]
+    fn only_http_send_may_use_the_bulk_line_size() {        let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
         let body = "b".repeat(200_000);
         h.line(&send_line(
             1,

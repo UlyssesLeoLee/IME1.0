@@ -47,7 +47,7 @@ const notificationCount = async re => (await app.notifications()).filter(t => re
 // a button of a notification toast (VS Code DOM: a guess at the structure; if it is wrong the spec fails here, not in the product)
 const notificationButton = label => app.page.locator('.notifications-toasts .notification-list-item-buttons-container .monaco-button', {hasText: label}).first();
 const protectedStatus = /PIME protected file/;
-const pressF1 = async file => { await app.openFile(file); await app.page.keyboard.press('F1'); };
+const pressF1 = async file => { await app.openFile(file); await app.page.keyboard.press('Control+F1'); };
 const panelCount = () => app.page.locator('iframe.webview').count();
 
 test.beforeAll(async () => {
@@ -90,18 +90,18 @@ test('UAT-51 [SEC-40] F1 on a .env: a modal with exactly Allow once / Allow for 
   await app.dialog.waitFor({state: 'hidden', timeout: 5000});
   await app.waitNotification(/F1 did not start/);
   expect(await panelCount()).toBe(0);
-  await app.page.keyboard.press('F1');                                      // nothing was remembered: it asks again
+  await app.page.keyboard.press('Control+F1');                                      // nothing was remembered: it asks again
   await app.waitDialog(); await app.dialogClick(ALLOW_ONCE);
   await app.waitPanel();
   expect(mock.count()).toBe(0);
   await app.closeAll();
-  await app.openFile('.env.f1'); await app.page.keyboard.press('F1');      // the one-use grant is gone: asked again
+  await app.openFile('.env.f1'); await app.page.keyboard.press('Control+F1');      // the one-use grant is gone: asked again
   const again = await app.waitDialog();
   expect(again.buttons).toEqual(expect.arrayContaining([ALLOW_ONCE, ALLOW_SESSION]));
   await app.dialogClick(ALLOW_SESSION);
   await app.waitPanel();
   await app.closeAll();
-  await app.openFile('.env.f1'); await app.page.keyboard.press('F1');      // a session grant: no dialog any more
+  await app.openFile('.env.f1'); await app.page.keyboard.press('Control+F1');      // a session grant: no dialog any more
   await app.waitPanel();
   expect(await app.dialogVisible()).toBe(false);
 });
@@ -109,7 +109,7 @@ test('UAT-51 [SEC-40] F1 on a .env: a modal with exactly Allow once / Allow for 
 test('UAT-52 [SEC-42] F2 on a .env selection: a refusal is a notice and the clipboard is untouched; allowing the READ does not allow the COPY (the content gate still refuses it)', async () => {
   await app.openFile('.env.f2');
   await app.page.keyboard.press('Control+A');
-  await app.page.keyboard.press('F2');
+  await app.page.keyboard.press('Control+F2');
   const d = await app.waitDialog();
   expect(d.buttons).toEqual(expect.arrayContaining([ALLOW_ONCE, ALLOW_SESSION]));
   await app.page.keyboard.press('Escape');
@@ -117,7 +117,7 @@ test('UAT-52 [SEC-42] F2 on a .env selection: a refusal is a notice and the clip
   await app.waitNotification(/F2 did not run/);
   expect(readClipboard()).toBe(SENTINEL);
   await app.closeAll();
-  await app.openFile('.env.f2'); await app.page.keyboard.press('Control+A'); await app.page.keyboard.press('F2');   // Esc remembered nothing: it asks again
+  await app.openFile('.env.f2'); await app.page.keyboard.press('Control+A'); await app.page.keyboard.press('Control+F2');   // Esc remembered nothing: it asks again
   await app.waitDialog(); await app.dialogClick(ALLOW_ONCE);
   await app.waitNotification(/Looks sensitive/);                           // read, but never copied: reading and sending/copying are separate questions
   expect(readClipboard()).toBe(SENTINEL); expect(mock.count()).toBe(0);
@@ -139,7 +139,7 @@ test('UAT-53 [SEC-39] the command "Programming IME: Secret Files": allow the act
   expect(listed.some(r => /\.env\.cmd/.test(r) && /allowed until/.test(r))).toBe(true);
   expect(listed.some(r => /Forget all decisions/.test(r))).toBe(true);
   await app.screenshot('secret-files-list');
-  await app.pickRow('allowed until');
+  await app.pickRow('.env.cmd');            // the row of THIS file: an earlier test allowed ".env.type" for the session too
   await app.waitNotification(/Forgot the decision for ".env.cmd"/);
   await app.waitStatus(protectedStatus, 8000);
 });

@@ -4,7 +4,7 @@
 const vscode = require('vscode');
 const crypto = require('node:crypto');
 const {rt, cfg} = require('./runtime');
-const {resolveDialect, LANGUAGES} = require('./core/languages');
+const {resolveDialect, registry} = require('./core/languages');
 
 const fileKey = doc => crypto.createHash('sha256').update(doc.uri.toString()).digest('hex').slice(0, 16);
 let cache = null;
@@ -39,7 +39,8 @@ function infoFor(doc) {
 }
 const lockSignature = () => JSON.stringify([...rt.session.fileLocks]) + (rt.session.globalLock || '');
 function lock(doc, profile, scope) {
-  if (!LANGUAGES.includes(profile)) return;
+  // only an ACTIVE profile can be locked (a built-in one or an enabled plugin language)
+  if (!registry().hasProfile(profile)) return;
   rt.session.lock(profile, scope, fileKey(doc));
   rt.session.setLanguage(profile);
   persistLocks(); cache = null;

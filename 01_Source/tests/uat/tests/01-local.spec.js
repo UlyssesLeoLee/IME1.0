@@ -146,7 +146,7 @@ test('UAT-08 [AT-023/IT-019/FR-022] with AI off, typing 100+ characters and pres
   await app.openFile('ui.rs'); await app.end();
   await app.type('\nlet value = compute(items); // keep typing to prove nothing is sent while AI is off ........................', 5);
   await sleep(1200);
-  await app.page.keyboard.press('F1');                      // IME enabled -> F1 opens the Programming IME panel
+  await app.page.keyboard.press('Control+F1');               // IME enabled -> Ctrl+F1 opens the Programming IME panel
   await app.waitPanel();
   await expect(app.panelFrame.locator('#panel-full .status')).toHaveAttribute('data-status', 'unavailable');
   await expect(app.panelFrame.locator('#panel-insert .status')).toHaveAttribute('data-status', 'unavailable');

@@ -275,7 +275,7 @@ fn parity_input_session_epochs_locks_and_language_resolution() {
                         file_name: c.get("fileName").and_then(Json::as_str),
                         text: c.get("text").and_then(Json::as_str),
                     };
-                    let d = session.resolve(registry, &ctx, s(c, "fileKey"));
+                    let d = session.resolve(&*registry, &ctx, s(c, "fileKey"));
                     Json::obj(vec![
                         ("language", Json::str(&d.language)),
                         ("reason", Json::str(d.reason)),

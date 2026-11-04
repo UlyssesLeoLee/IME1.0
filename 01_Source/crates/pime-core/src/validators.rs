@@ -33,6 +33,8 @@ pub enum Style {
     TypeScript,
     Python,
     PowerShell,
+    /// The SQL family (Cypher, PL/SQL, T-SQL): `--` and `/* */` comments, `'...'` strings, `"..."` identifiers.
+    Sql,
 }
 
 fn issue(line: usize, code: &'static str, message: impl Into<String>) -> Issue {
@@ -181,6 +183,71 @@ pub fn mask_chars(text: &[char], style: Style) -> Vec<char> {
     mask_chars_spans(text, style).0
 }
 
+/// The end of a SQL string or quoted identifier: the index after the closing quote. `None` when the quote
+/// is never closed (the text ends first). A doubled quote (`''` / `""`) is an escaped quote and does not end
+/// the literal.
+fn sql_quote_end(text: &[char], i: usize, quote: char) -> Option<usize> {
+    let n = text.len();
+    let mut j = i + 1;
+    while j < n {
+        if text[j] == quote {
+            if text.get(j + 1) == Some(&quote) {
+                j += 2; // an escaped quote
+                continue;
+            }
+            return Some(j + 1);
+        }
+        j += 1;
+    }
+    None
+}
+
+/// Blanks the SQL comments and literals. Returns the masked text, the blanked regions and the char index of
+/// every quote that is never closed.
+fn sql_scan(text: &[char]) -> (Vec<char>, Vec<Span>, Vec<usize>) {
+    let n = text.len();
+    let mut out = text.to_vec();
+    let mut spans: Vec<Span> = Vec::new();
+    let mut unterminated: Vec<usize> = Vec::new();
+    let mut i = 0usize;
+    while i < n {
+        let c = text[i];
+        let d = text.get(i + 1).copied();
+        let (end, kind): (Option<usize>, SpanKind) = match (c, d) {
+            ('-', Some('-')) => (Some(line_end(text, i)), SpanKind::Comment),
+            ('/', Some('*')) => {
+                let e = find_seq(text, &['*', '/'], i + 2);
+                (Some(e.map_or(n, |e| e + 2)), SpanKind::Comment) // not nested
+            }
+            ('\'', _) | ('"', _) => match sql_quote_end(text, i, c) {
+                Some(e) => (Some(e), SpanKind::String),
+                None => {
+                    unterminated.push(i);
+                    (Some(n), SpanKind::String)
+                }
+            },
+            _ => (None, SpanKind::String),
+        };
+        match end {
+            Some(e) if e > i => {
+                spans.push(Span {
+                    start: i,
+                    end: e.min(n),
+                    kind,
+                });
+                for slot in out.iter_mut().take(e.min(n)).skip(i) {
+                    if *slot != '\n' && *slot != '\r' {
+                        *slot = ' ';
+                    }
+                }
+                i = e;
+            }
+            _ => i += 1,
+        }
+    }
+    (out, spans, unterminated)
+}
+
 /// Like [`mask_chars`], and also reports every blanked region (the `spans` argument of `maskSource`).
 pub fn mask_chars_spans(text: &[char], style: Style) -> (Vec<char>, Vec<Span>) {
     let n = text.len();
@@ -193,6 +260,10 @@ pub fn mask_chars_spans(text: &[char], style: Style) -> (Vec<char>, Vec<Span>) {
         let mut end: Option<usize> = None;
         let mut kind = SpanKind::String;
         match style {
+            Style::Sql => {
+                let (masked, sql_spans, _) = sql_scan(text);
+                return (masked, sql_spans);
+            }
             Style::Python => {
                 if c == '#' {
                     end = Some(line_end(text, i));
@@ -956,7 +1027,229 @@ pub fn hex_issues(text: &str) -> Vec<Issue> {
     issues
 }
 
+// ---------------------------------------------------------------- sql family
+
+/// The validator family of the SQL plugin packs.
+pub const FAMILY_SQL: &str = "sql";
+
+/// Whether a name is a known validator family.
+pub fn is_family(name: &str) -> bool {
+    name == FAMILY_SQL
+}
+
+/// The validator family of a profile. The built-in profiles keep their own per-profile validators (their
+/// `validator` field is not a family name), so they have no family here.
+pub fn family_of(profile: &str) -> Option<&'static str> {
+    match profile {
+        "cypher" | "plsql" | "tsql" => Some(FAMILY_SQL),
+        _ => None,
+    }
+}
+
+/// One dialect-gated SQL feature: the code it reports, the version that introduced it and how it is written.
+struct SqlFeature {
+    code: &'static str,
+    message: &'static str,
+    /// The index of the first version of the profile that has the feature.
+    since: usize,
+    /// The whole words of the feature, in order (separated by white space only).
+    words: &'static [&'static str],
+    /// The character that has to follow the words (white space in between is allowed).
+    after: Option<char>,
+}
+
+const CYPHER_FEATURES: [SqlFeature; 2] = [
+    SqlFeature {
+        code: "CYPHER5_EXISTS_SUBQUERY",
+        message: "EXISTS { ... } needs Cypher 5",
+        since: 1,
+        words: &["exists"],
+        after: Some('{'),
+    },
+    SqlFeature {
+        code: "CYPHER5_IN_TRANSACTIONS",
+        message: "IN TRANSACTIONS needs Cypher 5",
+        since: 1,
+        words: &["in", "transactions"],
+        after: None,
+    },
+];
+
+const PLSQL_FEATURES: [SqlFeature; 1] = [SqlFeature {
+    code: "PLSQL19C_LISTAGG",
+    message: "LISTAGG needs Oracle 19c",
+    since: 2,
+    words: &["listagg"],
+    after: None,
+}];
+
+const TSQL_FEATURES: [SqlFeature; 2] = [
+    SqlFeature {
+        code: "TSQL2016_CREATE_OR_ALTER",
+        message: "CREATE OR ALTER needs SQL Server 2016",
+        since: 1,
+        words: &["create", "or", "alter"],
+        after: None,
+    },
+    SqlFeature {
+        code: "TSQL2017_STRING_AGG",
+        message: "STRING_AGG needs SQL Server 2017",
+        since: 2,
+        words: &["string_agg"],
+        after: Some('('),
+    },
+];
+
+/// The known versions of a SQL profile, in the order of its dialect axis.
+fn sql_versions(profile: &str) -> Option<&'static [&'static str]> {
+    match profile {
+        "cypher" => Some(&["4", "5"]),
+        "plsql" => Some(&["12c", "18c", "19c", "21c", "23ai"]),
+        "tsql" => Some(&["2012", "2016", "2017", "2019", "2022"]),
+        _ => None,
+    }
+}
+
+/// The dialect-gated features of a SQL profile.
+fn sql_features(profile: &str) -> Option<&'static [SqlFeature]> {
+    match profile {
+        "cypher" => Some(&CYPHER_FEATURES),
+        "plsql" => Some(&PLSQL_FEATURES),
+        "tsql" => Some(&TSQL_FEATURES),
+        _ => None,
+    }
+}
+
+/// The 1-based line of a char index (the line breaks of the JavaScript engine: `\n`).
+fn line_at(text: &[char], index: usize) -> usize {
+    text[..index.min(text.len())]
+        .iter()
+        .filter(|&&c| c == '\n')
+        .count()
+        + 1
+}
+
+/// Finds a whole-word phrase (the words separated by white space only) in `text`. Returns the char index of
+/// the first word and the index after the last word.
+fn find_phrase(text: &[char], words: &[&str]) -> Option<(usize, usize)> {
+    let n = text.len();
+    let mut i = 0usize;
+    while i < n {
+        if !is_word(text[i]) {
+            i += 1;
+            continue;
+        }
+        let start = i;
+        let mut end = i;
+        let mut w = 0usize;
+        while w < words.len() {
+            let mut e = end;
+            while e < n && is_word(text[e]) {
+                e += 1;
+            }
+            let run: String = text[end..e].iter().collect::<String>().to_ascii_lowercase();
+            if run != words[w] {
+                break;
+            }
+            w += 1;
+            end = e;
+            if w == words.len() {
+                return Some((start, end));
+            }
+            let mut k = end;
+            while k < n && is_js_space(text[k]) {
+                k += 1;
+            }
+            if k == end {
+                break; // the words must be separated by white space
+            }
+            end = k;
+        }
+        i = start + 1;
+    }
+    None
+}
+
+/// Whether `text` continues with `c` at `index` (white space in between is allowed).
+fn follows(text: &[char], index: usize, c: char) -> bool {
+    let mut k = index;
+    while k < text.len() && is_js_space(text[k]) {
+        k += 1;
+    }
+    text.get(k) == Some(&c)
+}
+
+/// The structural issues of a SQL text: an unterminated string, the brackets of the masked text and the
+/// features of a version the dialect asks for.
+pub fn sql_issues(text: &str, dialect: &Dialect, profile: &str) -> Vec<Issue> {
+    let (masked_chars, _spans, unterminated) = sql_scan(&chars_of(text));
+    let masked = string_of(&masked_chars);
+    let mut issues: Vec<Issue> = Vec::new();
+    // (1) a quote that reaches the end of the text without closing
+    for &start in &unterminated {
+        issues.push(issue(
+            line_at(&masked_chars, start),
+            "SQL_UNTERMINATED_STRING",
+            "the string is never closed",
+        ));
+    }
+    // (2) the brackets of the masked text (the same checker and the same 20 issue cap as the other families)
+    issues.extend(bracket_issues(&masked));
+    // (3) the features of a version the dialect asks for
+    let version_index = dialect.get("version").and_then(|v| {
+        sql_versions(profile).and_then(|versions| versions.iter().position(|x| x == v))
+    });
+    if let (Some(features), Some(index)) = (sql_features(profile), version_index) {
+        for (idx, line) in split_lines(&masked).iter().enumerate() {
+            let lc = chars_of(line);
+            for f in features {
+                if index >= f.since {
+                    continue; // the requested version has the feature
+                }
+                if let Some((_start, end)) = find_phrase(&lc, f.words)
+                    && f.after.is_none_or(|c| follows(&lc, end, c))
+                {
+                    issues.push(issue(idx + 1, f.code, f.message));
+                }
+            }
+        }
+    }
+    issues
+}
+
 // ---------------------------------------------------------------- entry point
+
+/// The result of a profile without a validator: never "valid", never a crash.
+pub fn no_validator() -> ValidationResult {
+    ValidationResult {
+        ok: false,
+        level: "unchecked",
+        issues: vec![issue(0, "NO_VALIDATOR", "no validator for profile")],
+    }
+}
+
+/// Validates with a validator family (the `validator` field of a pack). An unknown family has no validator:
+/// `NO_VALIDATOR`, level `unchecked`.
+pub fn validate_family(
+    family: &str,
+    profile: &str,
+    text: &str,
+    dialect: &Dialect,
+) -> ValidationResult {
+    let issues = match family {
+        FAMILY_SQL => sql_issues(text, dialect, profile),
+        _ => return no_validator(),
+    };
+    ValidationResult {
+        ok: issues.is_empty(),
+        level: if issues.is_empty() {
+            "valid"
+        } else {
+            "invalid"
+        },
+        issues,
+    }
+}
 
 pub fn validate_source(profile: &str, text: &str, dialect: &Dialect) -> ValidationResult {
     let issues = match profile {
@@ -968,10 +1261,10 @@ pub fn validate_source(profile: &str, text: &str, dialect: &Dialect) -> Validati
         "assembly" => assembly_issues(text, dialect),
         "machine-code" => hex_issues(text),
         _ => {
-            return ValidationResult {
-                ok: false,
-                level: "unchecked",
-                issues: vec![issue(0, "NO_VALIDATOR", "no validator for profile")],
+            // a plugin profile uses the family of its pack; an unknown family has no validator
+            return match family_of(profile) {
+                Some(family) => validate_family(family, profile, text, dialect),
+                None => no_validator(),
             };
         }
     };

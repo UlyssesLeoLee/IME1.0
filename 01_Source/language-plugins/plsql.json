@@ -1,0 +1,402 @@
+{
+  "schema_version": 1,
+  "profile_id": "plsql",
+  "version": "1.0.0",
+  "display_name": "PL/SQL",
+  "language_ids": [
+    "plsql"
+  ],
+  "accepted_extensions": [
+    ".pls",
+    ".plsql",
+    ".pkb",
+    ".pks",
+    ".sql"
+  ],
+  "validator": "sql",
+  "dialects": {
+    "version": {
+      "values": [
+        "12c",
+        "18c",
+        "19c",
+        "21c",
+        "23ai"
+      ],
+      "default": "21c"
+    }
+  },
+  "keywords": [
+    "select",
+    "from",
+    "where",
+    "insert",
+    "update",
+    "delete",
+    "merge",
+    "join",
+    "inner",
+    "outer",
+    "left",
+    "right",
+    "full",
+    "cross",
+    "on",
+    "group",
+    "by",
+    "having",
+    "order",
+    "asc",
+    "desc",
+    "union",
+    "all",
+    "distinct",
+    "begin",
+    "end",
+    "declare",
+    "if",
+    "else",
+    "elsif",
+    "loop",
+    "while",
+    "for",
+    "exit",
+    "continue",
+    "return",
+    "exception",
+    "when",
+    "others",
+    "null",
+    "not",
+    "and",
+    "or",
+    "in",
+    "between",
+    "like",
+    "exists",
+    "create",
+    "replace",
+    "procedure",
+    "function",
+    "package",
+    "body",
+    "trigger",
+    "table",
+    "view",
+    "index",
+    "sequence",
+    "type",
+    "constraint",
+    "primary",
+    "key",
+    "foreign",
+    "references",
+    "unique",
+    "check",
+    "default",
+    "commit",
+    "rollback",
+    "savepoint",
+    "grant",
+    "revoke",
+    "pragma",
+    "cursor",
+    "fetch",
+    "into",
+    "rowcount",
+    "sqlcode",
+    "sqlerrm",
+    "dbms_output",
+    "is",
+    "record",
+    "rowtype",
+    "raise_application_error",
+    "authid",
+    "current_user",
+    "deterministic",
+    "pipelined",
+    "parallel_enable",
+    "result_cache",
+    "bulk",
+    "collect",
+    "forall",
+    "execute",
+    "immediate",
+    "dynamic",
+    "using",
+    "bind"
+  ],
+  "triggers": [
+    {
+      "id": "plsql.select",
+      "pattern": "select",
+      "kind": "syntax",
+      "weight": 88,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "SELECT ... FROM",
+          "text": "SELECT ${columns}\nFROM ${table}\nWHERE ${condition};"
+        }
+      ]
+    },
+    {
+      "id": "plsql.insert",
+      "pattern": "insert",
+      "kind": "syntax",
+      "weight": 85,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "INSERT ... VALUES",
+          "text": "INSERT INTO ${table} (${column})\nVALUES (${value});"
+        }
+      ]
+    },
+    {
+      "id": "plsql.update",
+      "pattern": "update",
+      "kind": "syntax",
+      "weight": 85,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "UPDATE ... SET",
+          "text": "UPDATE ${table}\nSET ${column} = ${value}\nWHERE ${condition};"
+        }
+      ]
+    },
+    {
+      "id": "plsql.delete",
+      "pattern": "delete",
+      "kind": "syntax",
+      "weight": 84,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "DELETE ... WHERE",
+          "text": "DELETE FROM ${table}\nWHERE ${condition};"
+        }
+      ]
+    },
+    {
+      "id": "plsql.merge",
+      "pattern": "merge",
+      "kind": "syntax",
+      "weight": 78,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "MERGE INTO",
+          "text": "MERGE INTO ${target} t\nUSING ${source} s\nON (${join_condition})\nWHEN MATCHED THEN UPDATE SET t.${column} = s.${column}\nWHEN NOT MATCHED THEN INSERT (${column}) VALUES (s.${column});"
+        }
+      ]
+    },
+    {
+      "id": "plsql.procedure",
+      "pattern": "procedure",
+      "kind": "syntax",
+      "weight": 86,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE OR REPLACE PROCEDURE",
+          "text": "CREATE OR REPLACE PROCEDURE ${name} (\n  ${param} IN ${type}\n) AS\nBEGIN\n  ${cursor}\nEND;\n/"
+        }
+      ]
+    },
+    {
+      "id": "plsql.function",
+      "pattern": "function",
+      "kind": "syntax",
+      "weight": 86,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE OR REPLACE FUNCTION",
+          "text": "CREATE OR REPLACE FUNCTION ${name} (\n  ${param} IN ${type}\n) RETURN ${type}\nIS\nBEGIN\n  RETURN ${value};\nEND;\n/"
+        }
+      ]
+    },
+    {
+      "id": "plsql.package",
+      "pattern": "package",
+      "kind": "syntax",
+      "weight": 82,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "PACKAGE (specification + body)",
+          "text": "CREATE OR REPLACE PACKAGE ${name} AS\n  ${procedure} (${param} IN ${type});\nEND ${name};\n/\n\nCREATE OR REPLACE PACKAGE BODY ${name} AS\n  PROCEDURE ${procedure} (\n    ${param} IN ${type}\n  ) IS\n  BEGIN\n    ${cursor}\n  END;\nEND ${name};\n/"
+        }
+      ]
+    },
+    {
+      "id": "plsql.trigger",
+      "pattern": "trigger",
+      "kind": "syntax",
+      "weight": 80,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE OR REPLACE TRIGGER",
+          "text": "CREATE OR REPLACE TRIGGER ${name}\nBEFORE INSERT OR UPDATE ON ${table}\nFOR EACH ROW\nBEGIN\n  ${cursor}\nEND;\n/"
+        }
+      ]
+    },
+    {
+      "id": "plsql.declare",
+      "pattern": "declare",
+      "kind": "syntax",
+      "weight": 78,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "DECLARE block",
+          "text": "DECLARE\n  ${name} ${type};\nBEGIN\n  ${cursor}\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "plsql.begin",
+      "pattern": "begin",
+      "kind": "syntax",
+      "weight": 84,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "BEGIN ... END block",
+          "text": "BEGIN\n  ${cursor}\nEND;"
+        }
+      ]
+    },
+    {
+      "id": "plsql.exception",
+      "pattern": "exception",
+      "kind": "syntax",
+      "weight": 74,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "exception handler",
+          "text": "EXCEPTION\n  WHEN ${error} THEN\n    ${cursor}\n  WHEN OTHERS THEN\n    RAISE;"
+        }
+      ]
+    },
+    {
+      "id": "plsql.cursor",
+      "pattern": "cursor",
+      "kind": "syntax",
+      "weight": 70,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "explicit cursor",
+          "text": "CURSOR ${name} IS\n  SELECT ${columns}\n  FROM ${table};"
+        }
+      ]
+    },
+    {
+      "id": "plsql.executeimmediate",
+      "pattern": "execim",
+      "kind": "syntax",
+      "weight": 72,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "EXECUTE IMMEDIATE (dynamic SQL)",
+          "text": "EXECUTE IMMEDIATE ${sql_string}\n  INTO ${variable}\n  USING ${bind_value};",
+          "explain": "The statement is built at run time; the values are not checked here."
+        }
+      ]
+    },
+    {
+      "id": "plsql.raiserror",
+      "pattern": "raise",
+      "kind": "syntax",
+      "weight": 70,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "RAISE_APPLICATION_ERROR",
+          "text": "RAISE_APPLICATION_ERROR(-${code}, '${message}');"
+        }
+      ]
+    },
+    {
+      "id": "plsql.commit",
+      "pattern": "commit",
+      "kind": "syntax",
+      "weight": 60,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "COMMIT",
+          "text": "COMMIT;"
+        }
+      ]
+    },
+    {
+      "id": "plsql.forall",
+      "pattern": "forall",
+      "kind": "syntax",
+      "weight": 68,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "FORALL (bulk)",
+          "text": "FORALL ${i} IN 1..${count}\n  INSERT INTO ${table} (${column})\n  VALUES (${value});"
+        }
+      ]
+    },
+    {
+      "id": "plsql.createview",
+      "pattern": "createview",
+      "kind": "syntax",
+      "weight": 72,
+      "contexts": [
+        "statement"
+      ],
+      "candidates": [
+        {
+          "label": "CREATE VIEW",
+          "text": "CREATE OR REPLACE VIEW ${name} AS\nSELECT ${columns}\nFROM ${table};"
+        }
+      ]
+    }
+  ]
+}

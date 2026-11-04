@@ -275,6 +275,10 @@ impl Runner<'_> {
     fn run_step(&mut self, step: &Step) -> Result<(), String> {
         match step {
             Step::CreateDir(path) => {
+                // A junction at the install folder, or at any folder above it, would send every file somewhere
+                // else. The folders above the install folder are created by the installer, so the whole chain up
+                // to the drive is checked before anything is created.
+                self.check_chain(path)?;
                 self.create_dir_all(path)?;
                 // An install folder that already is a junction would send every file somewhere else.
                 self.b.check_plain(path, path)
@@ -357,6 +361,21 @@ impl Runner<'_> {
                 Ok(manifest.to_json().into_bytes())
             }
         }
+    }
+
+    /// Checks every folder of the chain that leads to `path`, from the drive root down to `path` itself. A
+    /// junction in one of them would send everything the installer writes somewhere else, and the folders above the
+    /// install folder are created by the installer itself.
+    fn check_chain(&mut self, path: &Path) -> Result<(), String> {
+        let mut at = Some(path.to_path_buf());
+        while let Some(p) = at {
+            self.b.check_plain(&p, &p)?;
+            at = p
+                .parent()
+                .filter(|q| !q.as_os_str().is_empty())
+                .map(Path::to_path_buf);
+        }
+        Ok(())
     }
 
     /// `create_dir_all`, remembering which folders did not exist (the manifest lists them, uninstall removes them).
@@ -920,7 +939,7 @@ mod tests {
     use crate::plan::tests::{PREFIX, options, release, system};
     use crate::plan::{PayloadFile, UninstallOptions, VscodeMode, install_plan, uninstall_plan};
 
-    const DLL: &str = r"C:\Program Files\Programming IME\pime_tsf.dll";
+    const DLL: &str = r"C:\Program Files\IME1.0\pime_tsf.dll";
 
     fn machine() -> FakeBackend {
         FakeBackend::with_dirs(&[r"C:\", r"C:\Program Files", r"C:\Users\me", r"D:\"])
@@ -1027,6 +1046,8 @@ mod tests {
             dir("pime-core.exe"),
             dir("license"),
             dir("programming-ime.vsix"),
+            dir("pime-tray.exe"),
+            dir("pime-ai-worker.exe"),
             dir("uninstall.exe"),
         ];
         expected.sort();
@@ -1068,9 +1089,46 @@ mod tests {
     }
 
     #[test]
+    fn st_035_the_icon_is_installed_listed_and_removed_with_the_rest() {
+        let mut b = machine();
+        install_into(&mut b, PREFIX, "0.2.0", &["pime.ico"], |_| {}).unwrap();
+        // the icon is a file of the install folder, copied out of the payload like every other file
+        assert_eq!(
+            b.file(&format!(r"{PREFIX}\pime.ico")).unwrap(),
+            b"pime.ico@0.2.0"
+        );
+        // the manifest lists it, so the uninstaller is allowed to remove it
+        let text = String::from_utf8(
+            b.file(&format!(r"{PREFIX}\install-manifest.json"))
+                .unwrap()
+                .clone(),
+        )
+        .unwrap();
+        let manifest = Manifest::parse(&text, Path::new(PREFIX)).unwrap();
+        assert!(manifest.files.iter().any(|f| f.ends_with("pime.ico")));
+        // the Add/Remove Programs entry shows it
+        let arp = b
+            .state
+            .registry
+            .get(&ARP_KEY.to_lowercase())
+            .expect("ARP key");
+        assert!(arp.contains(&(
+            "DisplayIcon".to_string(),
+            RegValue::Str(format!(r"{PREFIX}\pime.ico"))
+        )));
+        // and the uninstall takes it away again
+        uninstall(&mut b, VscodeMode::Skip);
+        assert!(
+            !b.state
+                .files
+                .contains_key(&k(&format!(r"{PREFIX}\pime.ico")))
+        );
+    }
+
+    #[test]
     fn st_035_a_prefix_with_missing_parents_spaces_and_non_ascii_is_created_and_recorded() {
         let mut b = machine();
-        let prefix = r"D:\日本語 フォルダ\Programming IME";
+        let prefix = r"D:\日本語 フォルダ\IME1.0";
         install_into(&mut b, prefix, "0.2.0", &[], |o| {
             o.vscode = VscodeMode::Skip
         })
@@ -1086,7 +1144,7 @@ mod tests {
             m.directories,
             [PathBuf::from(r"D:\日本語 フォルダ"), PathBuf::from(prefix)]
         );
-        assert!(b.commands[0].contains(r"D:\日本語 フォルダ\Programming IME\pime_tsf.dll"));
+        assert!(b.commands[0].contains(r"D:\日本語 フォルダ\IME1.0\pime_tsf.dll"));
         // uninstalling removes both folders, in reverse order, and leaves the drive as it was
         let plan = uninstall_plan(
             &m,
@@ -1120,7 +1178,7 @@ mod tests {
         let mut clean = machine();
         install(&mut clean, "0.2.0").unwrap();
         let total = clean.ops;
-        assert_eq!(total, 10, "1 folder + 6 files + regsvr32 + registry + code");
+        assert_eq!(total, 12, "1 folder + 8 files + regsvr32 + registry + code");
         let mut failed = 0;
         for n in 1..=total {
             let mut b = machine();
@@ -1281,7 +1339,7 @@ mod tests {
         let mut b = machine();
         b.register_exit = 5;
         let e = install(&mut b, "0.2.0").unwrap_err();
-        assert_eq!(e.step, 8);
+        assert_eq!(e.step, 10);
         assert!(
             e.cause.contains("code 5") && e.cause.contains("DllRegisterServer"),
             "{e}"
@@ -1295,8 +1353,7 @@ mod tests {
                 .unwrap_or_else(|| panic!("{needle} not in {:?}", b.events))
         };
         assert!(
-            at("regsvr32.exe /u /s")
-                < at("remove c:\\program files\\programming ime\\pime_tsf.dll"),
+            at("regsvr32.exe /u /s") < at("remove c:\\program files\\ime1.0\\pime_tsf.dll"),
             "{:?}",
             b.events
         );
@@ -1376,7 +1433,7 @@ mod tests {
             ARP_KEY.to_lowercase(),
             vec![(
                 "InstallLocation".into(),
-                RegValue::Str(r"c:/program files/programming ime".into()),
+                RegValue::Str(r"c:/program files/ime1.0".into()),
             )],
         );
         assert!(install(&mut b, "0.2.0").is_ok());
@@ -1392,7 +1449,7 @@ mod tests {
         assert!(
             b.commands.is_empty() && b.state.registry.is_empty() && b.state.registered.is_empty()
         );
-        assert_eq!(b.state.files.len(), 6);
+        assert_eq!(b.state.files.len(), 8);
     }
 
     #[test]
@@ -1432,15 +1489,12 @@ mod tests {
                 .position(|e| e.contains(needle))
                 .unwrap_or_else(|| panic!("{needle} not in {:?}", b.events))
         };
-        assert!(
-            at("regsvr32.exe /u /s")
-                < at("remove c:\\program files\\programming ime\\pime_tsf.dll")
-        );
+        assert!(at("regsvr32.exe /u /s") < at("remove c:\\program files\\ime1.0\\pime_tsf.dll"));
         assert!(at("--uninstall-extension") < at("regsvr32.exe /u /s"));
         assert!(
             at("pime_tsf.dll") < at("uninstall.exe")
-                && at("remove c:\\program files\\programming ime\\uninstall.exe")
-                    < at("remove c:\\program files\\programming ime\\install-manifest.json")
+                && at("remove c:\\program files\\ime1.0\\uninstall.exe")
+                    < at("remove c:\\program files\\ime1.0\\install-manifest.json")
         );
     }
 
@@ -1562,7 +1616,7 @@ mod tests {
             b.file(&format!(r"{PREFIX}\install-manifest.json"))
                 .is_some()
         );
-        assert_eq!(b.state.files.len(), 6, "{:?}", file_names(&b));
+        assert_eq!(b.state.files.len(), 8, "{:?}", file_names(&b));
         assert!(
             b.state.dirs.contains(&k(PREFIX)),
             "the queued removal of the folder fails while it is not empty"
@@ -1794,7 +1848,7 @@ mod tests {
 
     #[test]
     fn st_035_review_3_a_link_in_a_parent_folder_the_installer_created_stops_everything_below_it() {
-        let prefix = r"D:\Tools\Deep\PIME";
+        let prefix = r"D:\Tools\Deep\IME1.0";
         let mut b = machine();
         install_into(&mut b, prefix, "0.2.0", &[], |o| {
             o.vscode = VscodeMode::Skip
@@ -1846,6 +1900,19 @@ mod tests {
             &out,
             &["legacy.dll", "left in place", "reparse point"]
         ));
+    }
+
+    /// The install folder is the product folder inside the place that was chosen, so a link can be one folder above
+    /// it. Nothing may be written through it.
+    #[test]
+    fn st_035_review_3_an_install_under_a_link_writes_nothing_through_it() {
+        let mut b = machine();
+        // the folder above the install folder is a junction
+        b.link(r"C:\Program Files");
+        let before = b.state.clone();
+        let e = install(&mut b, "0.2.0").unwrap_err();
+        assert!(e.cause.contains("reparse point"), "{e}");
+        assert_eq!(b.state, before, "nothing was written through the link");
     }
 
     #[test]

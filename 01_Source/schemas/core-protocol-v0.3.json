@@ -5,6 +5,7 @@
   "description": "stdin/stdout JSON Lines between a trusted local process and pime-core: one JSON object per line, exactly one response line per request line. Every request may carry an integer `id` that is echoed in the response as `id`. Protocol 0.3 is a SUPERSET of 0.2 (schemas/core-protocol-v0.2.json): the seven stateless 0.2 operations behave exactly as before and keep the 65536 byte line limit; `health` now reports protocol \"0.3\" (and the unchanged version \"0.2.0\"); `predict` additionally accepts the optional `pins` and `usage` ranking inputs. The stateful operations below are new. Every new operation except `session.open` names an open session in `session`; a missing, unknown, evicted or expired session answers NO_SESSION. Operations that carry document text (ctx.snapshot, ctx.validate, edit.propose, edit.plan, edit.prepare, edit.begin_apply, edit.finish_apply) may use lines up to 16777216 bytes; every other operation is limited to 65536 bytes (PAYLOAD_TOO_LARGE otherwise). All offsets and columns are UTF-16 code units. The core keeps snapshot and proposal text in memory (addressed by snapshot_id / proposal) so the bridge never resends it; ids are derived from the `entropy` given to session.open (HMAC-SHA-256 counter construction, see crates/pime-core/src/ids.rs). Time comes from the core's wall clock (epoch milliseconds). New top-level request fields are snake_case; nested objects that mirror the bridge's own shapes keep their camelCase names. The core never executes anything, never opens files or the network and never echoes secret values. Migration steps 1.2 and 1.3 add, without changing anything above: ai.prompt, ai.prepare, ai.complete, ai.parse (provider request construction and response/error handling; the HTTP call itself stays with the sender), privacy.assess / redact / restore / release, annotate.supports / prompt / f1_addendum / apply, symbols.extract / dir_candidates, and sched.* / lang.* (realtime scheduling decisions and input session epochs and locks). Of these, ai.prompt, ai.prepare, ai.complete, ai.parse, privacy.assess, privacy.redact, privacy.restore, annotate.prompt, annotate.apply, symbols.extract and lang.state may also use lines up to 16777216 bytes. Not the secure PIME-IPC/1 named-pipe protocol of the detailed design.",
   "oneOf": [
     {"$ref": "#/$defs/healthRequest"},
+    {"$ref": "#/$defs/setPluginLanguagesRequest"},
     {"$ref": "#/$defs/predictRequest"},
     {"$ref": "#/$defs/resolveRequest"},
     {"$ref": "#/$defs/validateRequest"},
@@ -97,7 +98,7 @@
     "id": {"type": "integer", "description": "Optional correlation id, echoed verbatim as `id` in the response. A non-integer id is rejected with INVALID_REQUEST (field `id`)."},
     "session": {"type": "string", "description": "Session id returned by session.open (32 lowercase hex characters)."},
     "hexId": {"type": "string", "pattern": "^[0-9a-f]+$"},
-    "language": {"enum": ["rust", "python", "typescript", "powershell", "c", "assembly", "machine-code"]},
+    "language": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "description": "A profile id. The seven built-in profiles (rust, python, typescript, powershell, c, assembly, machine-code) are always active; a plugin profile (cypher, plsql, tsql - or one the user imported) is active only while it is enabled."},
     "dialect": {
       "type": ["object", "null"],
       "description": "Dialect axis -> value, for example {\"edition\":\"2021\"}. Values must be strings (or null = default).",
@@ -158,6 +159,12 @@
       "type": "object",
       "required": ["op"],
       "properties": {"op": {"const": "health"}, "id": {"$ref": "#/$defs/id"}}
+    },
+    "setPluginLanguagesRequest": {
+      "type": "object",
+      "description": "Replaces the enabled set of plugin languages of the core. The seven built-in profiles are always active; a plugin profile (cypher, plsql, tsql - or one the user imported) is on or off. Unknown profile ids are ignored (they are simply not enabled); a `languages` value that is not an array of strings is INVALID_REQUEST. The answer names the set that is active afterwards.",
+      "required": ["op", "languages"],
+      "properties": {"op": {"const": "setPluginLanguages"}, "id": {"$ref": "#/$defs/id"}, "languages": {"type": "array", "maxItems": 64, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$"}}}
     },
     "predictRequest": {
       "type": "object",
@@ -834,12 +841,22 @@
     "responses": {
       "oneOf": [
         {
+          "title": "setPluginLanguages",
+          "type": "object",
+          "description": "The enabled set of plugin languages after the change. The seven built-in profiles are not listed: they are always active.",
+          "required": ["ok", "pluginLanguages"],
+          "properties": {"ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "pluginLanguages": {"type": "array", "items": {"type": "string"}}}
+        },
+        {
           "title": "health",
           "type": "object",
           "required": ["ok", "name", "version", "protocol", "languages"],
           "properties": {
             "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "name": {"const": "pime-core"}, "version": {"const": "0.2.0"}, "protocol": {"const": "0.3"},
-            "languages": {"type": "array", "items": {"$ref": "#/$defs/language"}, "minItems": 7, "maxItems": 7}
+            "languages": {"type": "array", "items": {"$ref": "#/$defs/language"}, "minItems": 7, "maxItems": 7},
+            "pluginLanguages": {"type": "array", "items": {"type": "string"}, "description": "The plugin profiles that are enabled right now (cypher and plsql out of the box)."},
+            "availablePluginLanguages": {"type": "array", "items": {"type": "string"}, "description": "Every plugin profile the core knows (the three that ship with the distribution)."},
+            "activeProfiles": {"type": "array", "items": {"type": "string"}, "minItems": 7, "description": "The built-in profiles plus the enabled plugin profiles."}
           }
         },
         {

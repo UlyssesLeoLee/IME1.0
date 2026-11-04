@@ -9,8 +9,14 @@
 //! The crate is a `cdylib`, so the example compiles the three modules it needs straight from `src/`.
 
 #[allow(dead_code)]
+#[path = "../src/candidate_skin.rs"]
+mod candidate_skin;
+#[allow(dead_code)]
 #[path = "../src/layout.rs"]
 mod layout;
+#[allow(dead_code)]
+#[path = "../src/paint.rs"]
+mod paint;
 #[allow(dead_code)]
 #[path = "../src/popup.rs"]
 mod popup;

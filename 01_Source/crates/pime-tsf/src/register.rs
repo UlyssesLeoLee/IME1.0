@@ -66,7 +66,45 @@ use windows::core::{GUID, HRESULT, IUnknown, Interface, PCWSTR};
 
 use crate::{CLSID_PIME, PROFILE_EN, PROFILE_JA, PROFILE_ZH};
 
-const COM_CLASS_NAME: &str = "Programming IME";
+const COM_CLASS_NAME: &str = "IME1.0";
+
+/// The icon of the input method: the logo of the product. It sits next to the DLL in the install folder.
+const ICON_FILE: &str = "pime.ico";
+
+/// The full path of the icon file of the profile.
+///
+/// The name in the plan is only a name: the folder is the one of this DLL, because that is where the installer put
+/// the logo. A file that is not there means no icon at all (Windows then shows its own), never a wrong path.
+fn icon_path(name: &str) -> String {
+    if name.is_empty() {
+        return String::new();
+    }
+    let path = std::path::Path::new(name);
+    if path.is_absolute() {
+        return name.to_string();
+    }
+    // SAFETY: the module handle is ours; the buffer is big enough for a path and is NUL-terminated by Windows.
+    let mut buffer = [0u16; 32768];
+    let length = unsafe {
+        GetModuleFileNameW(
+            crate::popup::module_instance().unwrap_or_default(),
+            &mut buffer,
+        )
+    } as usize;
+    if length == 0 || length >= buffer.len() {
+        return String::new();
+    }
+    let module = String::from_utf16_lossy(&buffer[..length]);
+    let Some(folder) = std::path::Path::new(&module).parent() else {
+        return String::new();
+    };
+    let icon = folder.join(name);
+    if icon.is_file() {
+        icon.display().to_string()
+    } else {
+        String::new()
+    }
+}
 const THREADING_MODEL: &str = "Apartment";
 /// Explicit `Software\Classes` (not HKCR): HKCR is a merged view and would hide which hive a write lands in.
 const CLASSES_CLSID: &str = r"Software\Classes\CLSID";
@@ -147,8 +185,11 @@ pub struct ProfileSpec {
     pub guid: GUID,
     /// The name shown in the Windows keyboard list.
     pub description: &'static str,
-    /// Empty: no icon (Windows shows its default keyboard icon). The DLL carries no icon resource yet; pointing at
-    /// the DLL with an index would only add a way to get a blank icon.
+    /// The icon of the profile: the name of the file that sits next to the DLL ("pime.ico"). The folder is worked
+    /// out when the profile is registered, because the plan does not know where the program was installed.
+    ///
+    /// Without an icon Windows shows the **text** of the profile in the notification area of the system; with it the
+    /// logo of the product is there instead.
     pub icon_file: String,
     pub icon_index: u32,
     /// `bEnabledByDefault`: enabled for users who add this language. It does not make the profile the default input
@@ -235,21 +276,19 @@ fn clsid_key(scope: Scope) -> RegKey {
 }
 
 fn product_profiles() -> Vec<ProfileSpec> {
+    // The product name is "IME1.0" for every language; the language suffix is what tells the three profiles apart in
+    // the keyboard list (Windows shows the profile name only, not the language it belongs to).
     [
-        (LANGID_ZH_CN, PROFILE_ZH, "编程输入法 (Programming IME)"),
-        (LANGID_EN_US, PROFILE_EN, "Programming IME"),
-        (
-            LANGID_JA_JP,
-            PROFILE_JA,
-            "プログラミングIME (Programming IME)",
-        ),
+        (LANGID_ZH_CN, PROFILE_ZH, "IME1.0 中文"),
+        (LANGID_EN_US, PROFILE_EN, "IME1.0 English"),
+        (LANGID_JA_JP, PROFILE_JA, "IME1.0 日本語"),
     ]
     .into_iter()
     .map(|(langid, guid, description)| ProfileSpec {
         langid,
         guid,
         description,
-        icon_file: String::new(),
+        icon_file: ICON_FILE.to_string(),
         icon_index: 0,
         enabled_by_default: true,
         flags: 0,
@@ -503,6 +542,18 @@ fn apply(backend: &mut dyn Backend, plan: &Plan, done: &mut Done) -> Result<(), 
     }
     for profile in &plan.profiles {
         done.profiles += 1;
+        // The real msctf **refuses** to register a profile whose GUID is already registered: it answers E_FAIL.
+        // A profile that is already there is therefore unregistered first, so that a second install over a
+        // registered one works instead of failing — and so that the new description and the new icon path (the
+        // icon of the old version pointed at the old folder) are the ones that are left behind.
+        if backend.profile_registered(profile) {
+            match backend.unregister_profile(profile) {
+                Ok(()) => {}
+                // The profile was gone between the check and the call: nothing to undo.
+                Err(BackendError::NotFound) => {}
+                Err(e) => return Err(Failure::new(profile.label("unregister"), e)),
+            }
+        }
         backend
             .register_profile(profile)
             .map_err(|e| Failure::new(profile.label("register"), e))?;
@@ -538,12 +589,21 @@ fn rollback(backend: &mut dyn Backend, plan: &Plan, before: &Before, done: &Done
         }
     }
     for i in (0..done.profiles).rev() {
+        let profile = &plan.profiles[i];
         if !before.profiles[i] {
-            let profile = &plan.profiles[i];
             note(
                 &mut failures,
                 profile.label("unregister"),
                 backend.unregister_profile(profile),
+            );
+        } else if !backend.profile_registered(profile) {
+            // The profile was there before this run and is gone now: the run unregistered it and then failed
+            // before it could register it again. Put it back, so that a failed install does not cost the user
+            // their input method.
+            note(
+                &mut failures,
+                profile.label("register"),
+                backend.register_profile(profile),
             );
         }
     }
@@ -863,7 +923,7 @@ impl Backend for RealBackend {
 
     fn register_profile(&mut self, profile: &ProfileSpec) -> Step {
         let description: Vec<u16> = profile.description.encode_utf16().collect();
-        let icon: Vec<u16> = profile.icon_file.encode_utf16().collect();
+        let icon: Vec<u16> = icon_path(&profile.icon_file).encode_utf16().collect();
         let manager = self.profile_mgr()?;
         // SAFETY: the GUID references and both slices live for the call; the slices carry their length (no NUL
         // needed); no substitute keyboard layout and the reserved preferred-layout argument is 0.
@@ -1157,14 +1217,25 @@ mod tests {
         }
 
         fn register_profile(&mut self, p: &ProfileSpec) -> Step {
-            self.run(p.label("register"), false, |s| {
-                s.profiles.insert(
-                    (CLSID_PIME.to_u128(), p.langid, p.guid.to_u128()),
-                    p.description.to_string(),
-                );
-                s.text_services.insert(CLSID_PIME.to_u128());
-                true
-            })
+            let key = (CLSID_PIME.to_u128(), p.langid, p.guid.to_u128());
+            let index = self.calls;
+            self.calls += 1;
+            self.log.push(p.label("register"));
+            if let Some((error, applied)) = self.inject.remove(&index) {
+                if applied {
+                    self.state.profiles.insert(key, p.description.to_string());
+                    self.state.text_services.insert(CLSID_PIME.to_u128());
+                }
+                return Err(error);
+            }
+            // The real msctf refuses to register a profile whose GUID is already registered (it answers E_FAIL),
+            // so the fake does the same: a test that registers twice has to go through the unregister first.
+            if self.state.profiles.contains_key(&key) {
+                return Err(BackendError::Failed(E_FAIL));
+            }
+            self.state.profiles.insert(key, p.description.to_string());
+            self.state.text_services.insert(CLSID_PIME.to_u128());
+            Ok(())
         }
 
         fn unregister_profile(&mut self, p: &ProfileSpec) -> Step {
@@ -1233,7 +1304,7 @@ mod tests {
             RegistryOp {
                 key: hklm(&class),
                 name: "",
-                value: "Programming IME".to_string(),
+                value: "IME1.0".to_string(),
             },
             RegistryOp {
                 key: hklm(&server),
@@ -1287,6 +1358,12 @@ mod tests {
         let distinct: BTreeSet<u128> = plan.profiles.iter().map(|p| p.guid.to_u128()).collect();
         assert_eq!(distinct.len(), 3, "three different profile GUIDs");
         assert!(plan.profiles.iter().all(|p| !p.description.is_empty()));
+        assert!(
+            plan.profiles
+                .iter()
+                .all(|p| p.description.starts_with("IME1.0")),
+            "every profile carries the product name"
+        );
         let names: BTreeSet<&str> = plan.profiles.iter().map(|p| p.description).collect();
         assert_eq!(names.len(), 3, "the keyboard list can tell them apart");
     }
@@ -1302,7 +1379,10 @@ mod tests {
                 p.flags, 0,
                 "no TF_RP_HIDDENINSETTINGUI / LOCALPROCESS / LOCALTHREAD"
             );
-            assert_eq!(p.icon_file, "", "no icon resource exists yet");
+            assert_eq!(
+                p.icon_file, ICON_FILE,
+                "the profile points at the logo of the product, so the tray shows it and not the text"
+            );
         }
     }
 
@@ -1469,11 +1549,25 @@ mod tests {
 
     #[test]
     fn registering_twice_is_fine_and_changes_nothing() {
+        // The real msctf refuses to register a profile whose GUID is already registered (it answers E_FAIL), and
+        // the fake refuses it too: the second run therefore has to unregister the old profiles first. Without that,
+        // a second install over a registered one fails and rolls back — which is what a real machine did.
         let mut fake = FakeBackend::default();
         register_with(&mut fake, &plan()).unwrap();
         let after_first = fake.state.clone();
         register_with(&mut fake, &plan()).unwrap();
         assert_eq!(fake.state, after_first);
+        assert_eq!(fake.own_profiles(), 3);
+    }
+
+    #[test]
+    fn a_failed_run_puts_a_profile_that_was_already_there_back() {
+        // The run unregisters the old profile and then fails to register it again: the rollback has to put it back,
+        // so that a failed install does not cost the user their input method.
+        let mut fake = installed(FakeBackend::default()).fail_at(4, failed(), false);
+        let error = register_with(&mut fake, &plan()).unwrap_err();
+        assert_eq!(error.failure.code, E_FAIL);
+        assert_eq!(fake.own_profiles(), 3, "the profiles were not put back");
     }
 
     #[test]

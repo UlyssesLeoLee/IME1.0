@@ -14,18 +14,25 @@ const {CoreSupervisor, InputSession} = core('scheduler');
 const root = path.join(__dirname, '..', '..', 'editor-bridges', 'vscode');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-test('UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded', () => {
+test('UT-043 / IT-026 / ST-023 Ctrl+F1 never steals the key unless enabled, bound and not excluded', () => {
   const f1 = pkg.contributes.keybindings.filter(k => k.command === 'programmingIme.f1Edit');
-  assert.deepEqual(f1.map(k => k.key).sort(), ['f1', 'shift+f1']);
+  assert.deepEqual(f1.map(k => k.key).sort(), ['ctrl+f1', 'ctrl+shift+f1'], 'the plain F1 stays with the editor (Command Palette)');
   for (const k of f1) assert.match(k.when, /editorTextFocus && programmingIme\.f1Key\./, 'only with editor focus and an explicit context key');
   const props = pkg.contributes.configuration.properties;
   assert.equal(props['programmingIme.enabled'].default, false, 'off by default: F1 keeps opening the Command Palette');
-  assert.deepEqual(props['programmingIme.f1Binding'].enum, ['f1', 'shift+f1', 'none']);
-  assert.equal(props['programmingIme.aiEnabled'].default, false); assert.equal(props['programmingIme.realtimeAI'].default, false);
+  assert.deepEqual(props['programmingIme.f1Binding'].enum, ['ctrl+f1', 'ctrl+shift+f1', 'none']);
+  assert.equal(props['programmingIme.f1Binding'].default, 'ctrl+f1');
+  assert.deepEqual(props['programmingIme.aiEnabled'].default, false); assert.equal(props['programmingIme.realtimeAI'].default, false);
   assert.deepEqual(props['programmingIme.f1ExcludedLanguages'].default, []);
   const ext = fs.readFileSync(path.join(root, 'src', 'extension.js'), 'utf8');
-  assert.match(ext, /f1Key\.f1', on && binding === 'f1' && !excluded/);
-  assert.match(ext, /f1Key\.shiftF1', on && binding === 'shift\+f1' && !excluded/);
+  assert.match(ext, /f1Key\.ctrlF1', on && binding === 'ctrl\+f1' && !excluded/);
+  assert.match(ext, /f1Key\.ctrlShiftF1', on && binding === 'ctrl\+shift\+f1' && !excluded/);
+  // the context key names are the same in the manifest and at runtime, and no legacy name is left
+  assert.deepEqual(f1.map(k => k.when.match(/programmingIme\.f1Key\.(\w+)/)[1]).sort(), ['ctrlF1', 'ctrlShiftF1']);
+  assert.deepEqual([...ext.matchAll(/setContext', '(programmingIme\.f1Key\.\w+)'/g)].map(m => m[1]).sort(),
+    ['programmingIme.f1Key.ctrlF1', 'programmingIme.f1Key.ctrlShiftF1']);
+  assert.doesNotMatch(ext, /f1Key\.(shiftF1|f1)\b/, 'no legacy F1 context key survives');
+  assert.doesNotMatch(ext, /binding === 'shift\+f1'|binding === 'f1'/, 'no legacy F1 binding value survives');
 });
 
 test('UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language', () => {

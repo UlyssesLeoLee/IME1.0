@@ -6,7 +6,7 @@
 //! person on a disposable machine.
 
 use crate::backend::{Backend, RegValue};
-use crate::plan::{SystemPaths, is_within};
+use crate::plan::{LocalTime, SystemPaths, is_within};
 use crate::text::Lang;
 use std::ffi::{OsStr, OsString, c_void};
 use std::io;
@@ -39,7 +39,9 @@ use windows::Win32::System::Registry::{
     REG_OPTION_NON_VOLATILE, REG_SZ, REG_VALUE_TYPE, RegCloseKey, RegCreateKeyExW, RegDeleteTreeW,
     RegEnumValueW, RegOpenKeyExW, RegQueryInfoKeyW, RegQueryValueExW, RegSetValueExW,
 };
-use windows::Win32::System::SystemInformation::{GetSystemDirectoryW, GetSystemWindowsDirectoryW};
+use windows::Win32::System::SystemInformation::{
+    GetLocalTime, GetSystemDirectoryW, GetSystemWindowsDirectoryW,
+};
 use windows::Win32::System::Threading::{
     GetCurrentProcess, GetExitCodeProcess, INFINITE, OpenProcessToken, WaitForSingleObject,
 };
@@ -139,7 +141,24 @@ pub fn system_paths() -> io::Result<SystemPaths> {
             "the ProgramData folder",
         )?),
         user_profile: Some(known_folder(&FOLDERID_Profile, "the user profile folder")?),
+        local_time: local_time(),
     })
+}
+
+/// The local time of the machine, as the Add/Remove Programs entry records it. The plan never reads a clock itself:
+/// the time comes from here, with the rest of the machine's facts (the setup reads it again right before it builds the
+/// plan, so that the recorded time is the moment of the install).
+pub fn local_time() -> LocalTime {
+    // SAFETY: the call has no arguments and only fills in a SYSTEMTIME it returns by value.
+    let at = unsafe { GetLocalTime() };
+    LocalTime {
+        year: at.wYear,
+        month: at.wMonth,
+        day: at.wDay,
+        hour: at.wHour,
+        minute: at.wMinute,
+        second: at.wSecond,
+    }
 }
 
 struct Handle(HANDLE);

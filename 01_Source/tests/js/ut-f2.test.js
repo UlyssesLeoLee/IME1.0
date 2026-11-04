@@ -331,18 +331,18 @@ test('PRM-31 gates: disabled, no selection (palette), blank selection and an ove
 
 test('PRM-32 context keys and manifest: F2 only with enabled + the chosen binding + a language that is not excluded, and only with a selection', () => {
   const {contextKeys} = f2mod;
-  for (const enabled of [false, true]) for (const binding of ['f2', 'shift+f2', 'none', undefined]) for (const excluded of [false, true]) {
+  for (const enabled of [false, true]) for (const binding of ['ctrl+f2', 'ctrl+shift+f2', 'none', undefined]) for (const excluded of [false, true]) {
     const k = contextKeys({enabled, binding, excluded});
-    assert.equal(k.f2, enabled && binding === 'f2' && !excluded, `${enabled}/${binding}/${excluded}`);
-    assert.equal(k.shiftF2, enabled && binding === 'shift+f2' && !excluded, `${enabled}/${binding}/${excluded}`);
+    assert.equal(k.ctrlF2, enabled && binding === 'ctrl+f2' && !excluded, `${enabled}/${binding}/${excluded}`);
+    assert.equal(k.ctrlShiftF2, enabled && binding === 'ctrl+shift+f2' && !excluded, `${enabled}/${binding}/${excluded}`);
   }
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const keys = pkg.contributes.keybindings.filter(k => k.command === 'programmingIme.f2Prompt');
-  assert.deepEqual(keys.map(k => k.key).sort(), ['f2', 'shift+f2']);
-  assert.equal(keys.find(k => k.key === 'f2').when, 'editorTextFocus && editorHasSelection && programmingIme.f2Key.f2', 'without a selection F2 keeps renaming');
-  assert.equal(keys.find(k => k.key === 'shift+f2').when, 'editorTextFocus && editorHasSelection && programmingIme.f2Key.shiftF2');
+  assert.deepEqual(keys.map(k => k.key).sort(), ['ctrl+f2', 'ctrl+shift+f2'], 'the plain F2 stays with the editor (Rename Symbol)');
+  assert.equal(keys.find(k => k.key === 'ctrl+f2').when, 'editorTextFocus && editorHasSelection && programmingIme.f2Key.ctrlF2', 'without a selection the plain F2 keeps renaming');
+  assert.equal(keys.find(k => k.key === 'ctrl+shift+f2').when, 'editorTextFocus && editorHasSelection && programmingIme.f2Key.ctrlShiftF2');
   const p = pkg.contributes.configuration.properties;
-  assert.deepEqual(p['programmingIme.f2Binding'].enum, ['f2', 'shift+f2', 'none']); assert.equal(p['programmingIme.f2Binding'].default, 'f2');
+  assert.deepEqual(p['programmingIme.f2Binding'].enum, ['ctrl+f2', 'ctrl+shift+f2', 'none']); assert.equal(p['programmingIme.f2Binding'].default, 'ctrl+f2');
   assert.match(p['programmingIme.f2Binding'].description, /F2 normally renames a symbol/); assert.match(p['programmingIme.f2Binding'].description, /non-empty selection/); assert.match(p['programmingIme.f2Binding'].description, /Programming IME is enabled/);
   assert.deepEqual(p['programmingIme.f2ExcludedLanguages'].default, []); assert.equal(p['programmingIme.f2ExcludedLanguages'].type, 'array');
   assert.equal(p['programmingIme.enabled'].default, false, 'off by default: F2 keeps renaming');
@@ -350,7 +350,13 @@ test('PRM-32 context keys and manifest: F2 only with enabled + the chosen bindin
   for (const nls of ['package.nls.json', 'package.nls.zh-cn.json', 'package.nls.ja.json']) assert.ok(JSON.parse(fs.readFileSync(path.join(root, nls), 'utf8'))['cmd.f2Prompt'], nls);
   // extension.js: the keys are refreshed by updateContextKeys, which runs on configuration change, enable toggle and editor change
   const ext = fs.readFileSync(path.join(root, 'src', 'extension.js'), 'utf8');
-  assert.match(ext, /setContext', 'programmingIme\.f2Key\.f2', f2Keys\.f2/); assert.match(ext, /setContext', 'programmingIme\.f2Key\.shiftF2', f2Keys\.shiftF2/);
+  assert.match(ext, /setContext', 'programmingIme\.f2Key\.ctrlF2', f2Keys\.ctrlF2/); assert.match(ext, /setContext', 'programmingIme\.f2Key\.ctrlShiftF2', f2Keys\.ctrlShiftF2/);
+  // the context key names are the same in the manifest and at runtime, and no legacy name is left
+  assert.deepEqual(keys.map(k => k.when.match(/programmingIme\.f2Key\.(\w+)/)[1]).sort(), ['ctrlF2', 'ctrlShiftF2']);
+  assert.deepEqual([...ext.matchAll(/setContext', '(programmingIme\.f2Key\.\w+)'/g)].map(m => m[1]).sort(),
+    ['programmingIme.f2Key.ctrlF2', 'programmingIme.f2Key.ctrlShiftF2']);
+  assert.doesNotMatch(ext, /f2Key\.(shiftF2|f2)\b/, 'no legacy F2 context key survives');
+  assert.doesNotMatch(fs.readFileSync(path.join(root, 'src', 'f2.js'), 'utf8'), /'shift\+f2'|\bshiftF2\b/, 'no legacy F2 binding value survives');
   assert.match(ext, /f2\.contextKeys\(\{enabled: on, binding: cfg\(\)\.get\('f2Binding'\), excluded: f2Excluded\}\)/); assert.match(ext, /cfg\(\)\.get\('f2ExcludedLanguages'\)/);
   assert.match(ext, /reg\('programmingIme\.f2Prompt', \(\) => f2\.run\(\)\)/); assert.match(ext, /f2\.init\(ctx\)/);
   assert.match(ext, /reg\('programmingIme\.enable', async \(\) => \{[^\n]*updateContextKeys\(\)/);

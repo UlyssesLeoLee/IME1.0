@@ -4,8 +4,10 @@
 //! Hard rules enforced here (and proven by the UT-003/004/005/009/064/067 tests below):
 //! * DIRECT never consumes a key and never observes text;
 //! * keys are consumed only in COMPOSING (an explicit, owned composition) or in the explicitly enabled
-//!   candidate-capture mode, and only for the reserved keymap (Tab, Enter, Esc, digits, Up, Down, Shift+Tab,
+//!   candidate-capture mode, and only for the reserved keymap (Enter, Esc, digits, Up, Down, Shift+Tab,
 //!   PageUp/PageDown when there is more than one page, Space in COMPOSING, optional punctuation paging);
+//! * the Tab key is the one exception: while the candidate list is on screen it belongs to the list, so Tab
+//!   confirms the highlighted candidate even in the direct mode (Shift+Tab walks the list back);
 //! * a lone Shift tap toggles the user's pause (like the Chinese/English switch of mainstream IMEs); Shift is never consumed;
 //! * secure input / disabled policy clears the context, refuses prediction and AI, and passes every key through;
 //! * a core/IPC failure (error, timeout, panic) ends in pass-through within the 2 s design budget;
@@ -113,19 +115,30 @@ pub struct KeyMap {
     /// Candidates per page (1..=9): the digits 1..=page_size pick within the current page.
     pub page_size: usize,
     /// Space confirms the highlighted candidate in candidate-capture mode too (always in COMPOSING).
-    /// Off by default: in code, Space is a character the host must receive.
+    /// On: the mainstream behaviour - while the candidate list is on screen, Space takes the highlighted
+    /// candidate. Off: in code, Space is a character the host must receive.
     pub space_confirms: bool,
     /// `=` `.` `]` page forward and `-` `,` `[` page back (only with more than one page). Off by default:
     /// they are code characters (`a.b`, `x - 1`).
     pub punct_paging: bool,
+    /// Tab walks the candidate list instead of taking the highlighted candidate (the programmer habit: Tab moves
+    /// the highlight, Enter/Space/digit take it), Shift+Tab walks back. Off by default: Tab confirms the
+    /// highlighted candidate, like the mainstream input methods.
+    pub tab_cycles: bool,
+    /// The Tab key belongs to the host even while the candidate list is on screen: the IDE keeps its Tab, and the
+    /// list is a preview only (the behaviour the basic design asks for). Off by default: Tab confirms the
+    /// highlighted candidate.
+    pub tab_to_host: bool,
 }
 
 impl Default for KeyMap {
     fn default() -> KeyMap {
         KeyMap {
             page_size: 5,
-            space_confirms: false,
+            space_confirms: true,
             punct_paging: false,
+            tab_cycles: false,
+            tab_to_host: false,
         }
     }
 }
@@ -284,6 +297,44 @@ impl<P: PredictPort> InputMachine<P> {
 
     pub fn keymap(&self) -> KeyMap {
         self.keymap
+    }
+
+    /// The global index of the `i`-th row of the page that is on screen now (the rows the candidate window shows and
+    /// the rows the UI element publishes). `None` when there is no such row.
+    pub fn page_row_index(&self, i: usize) -> Option<usize> {
+        let idx = self.page() * self.page_size() + i;
+        (idx < self.candidates.len()).then_some(idx)
+    }
+
+    /// Move the highlight to the `i`-th row of the page on screen: what a host that draws the candidate list asks
+    /// for (`ITfCandidateListUIElementBehavior::SetSelection`). Nothing is written.
+    pub fn select_page_row(&mut self, i: usize) -> Option<Vec<Effect>> {
+        let idx = self.page_row_index(i)?;
+        self.selected = idx;
+        Some(vec![Effect::SelectionMoved(idx)])
+    }
+
+    /// Take the `i`-th row of the page on screen: what a click in the candidate window asks for (the same as pressing
+    /// the digit of that row).
+    pub fn take_page_row(&mut self, i: usize) -> Option<Vec<Effect>> {
+        let idx = self.page_row_index(i)?;
+        self.accept(idx)
+    }
+
+    /// Take the highlighted candidate: what a host asks for when the user confirms its own list
+    /// (`ITfCandidateListUIElementBehavior::Finalize`).
+    pub fn take_selected(&mut self) -> Option<Vec<Effect>> {
+        let idx = self.selected;
+        self.accept(idx)
+    }
+
+    /// Drop the list without taking anything: what a host asks for when the user cancels its own list
+    /// (`ITfCandidateListUIElementBehavior::Abort`).
+    pub fn cancel_list(&mut self) -> Option<Vec<Effect>> {
+        if self.candidates.is_empty() && !self.composition_owned {
+            return None;
+        }
+        Some(self.cancel_effects())
     }
 
     pub fn set_keymap(&mut self, keymap: KeyMap) {
@@ -496,6 +547,20 @@ impl<P: PredictPort> InputMachine<P> {
         self.state == State::Composing || (self.state == State::Candidates && self.capture_enabled)
     }
 
+    /// Whether the Tab key belongs to the candidate list right now.
+    ///
+    /// The list on screen is the user's attention, so Tab is ours even in direct mode, where nothing else is
+    /// eaten. Without this the candidate window would be a dead preview: the user could read it but could not take
+    /// anything from it with the keyboard. Every other reserved key (Enter, the digits, the arrows, Esc) still
+    /// needs the candidate capture to be on, because those keys belong to the host's text as much as to the list.
+    /// With `tab_to_host` the user gives the key back to the host (the IDE keeps its Tab).
+    fn tab_is_ours(&self, ev: KeyEvent) -> bool {
+        matches!(ev.key, Key::Tab)
+            && !self.keymap.tab_to_host
+            && self.state == State::Candidates
+            && !self.candidates.is_empty()
+    }
+
     fn selectable(&self, idx: usize) -> Option<&Candidate> {
         self.candidates.get(idx).filter(|c| {
             c.text.is_some()
@@ -520,6 +585,20 @@ impl<P: PredictPort> InputMachine<P> {
         self.selected = 0;
         self.state = State::Observing;
         Some(effects)
+    }
+
+    /// The effects of cancelling the list: an owned composition ends (nothing is written) and the list goes away.
+    fn cancel_effects(&mut self) -> Vec<Effect> {
+        let mut effects = Vec::new();
+        if self.composition_owned {
+            self.composition_owned = false;
+            effects.push(Effect::EndComposition); // cancel: nothing is written
+        }
+        effects.push(Effect::HideCandidates);
+        self.candidates.clear();
+        self.selected = 0;
+        self.state = State::Observing;
+        effects
     }
 
     /// Highlight the next (`forward`) or previous candidate, wrapping around; the page follows the highlight.
@@ -564,8 +643,14 @@ impl<P: PredictPort> InputMachine<P> {
             })
         };
         match ev.key {
-            // Shift+Tab walks backwards like Up (Tab itself confirms, as the design's configurable confirm key)
+            // The Tab key can be given back to the host entirely (`tab_to_host`): then it is never ours, not even
+            // inside a composition, and the IDE keeps its Tab.
+            Key::Tab if self.keymap.tab_to_host => None,
+            // Shift+Tab walks backwards like Up; with `tab_cycles` off it is the only way to walk the list.
             Key::Tab if ev.shift => self.step_selection(false).and_then(consumed),
+            // Tab walks the list instead of taking the candidate (the programmer habit, `tab_cycles` on); with
+            // `tab_cycles` off it confirms the highlighted candidate, like the mainstream input methods.
+            Key::Tab if self.keymap.tab_cycles => self.step_selection(true).and_then(consumed),
             Key::Tab | Key::Enter => self.accept(self.selected).and_then(consumed),
             Key::Char(' ') if self.state == State::Composing || self.keymap.space_confirms => {
                 self.accept(self.selected).and_then(consumed)
@@ -590,18 +675,7 @@ impl<P: PredictPort> InputMachine<P> {
             Key::Char('-' | ',' | '[') if self.keymap.punct_paging => {
                 self.turn_page(false).and_then(consumed)
             }
-            Key::Esc => {
-                let mut effects = Vec::new();
-                if self.composition_owned {
-                    self.composition_owned = false;
-                    effects.push(Effect::EndComposition); // cancel: nothing is written
-                }
-                effects.push(Effect::HideCandidates);
-                self.candidates.clear();
-                self.selected = 0;
-                self.state = State::Observing;
-                consumed(effects)
-            }
+            Key::Esc => consumed(self.cancel_effects()),
             _ => None,
         }
     }
@@ -704,7 +778,9 @@ impl<P: PredictPort> InputMachine<P> {
         if ev.ctrl || ev.alt {
             return Step::pass(); // shortcuts belong to the host
         }
-        if self.capture_active()
+        // The candidate list owns the Tab key whenever it is on screen (see `tab_is_ours`); the other reserved
+        // keys need the candidate capture to be on.
+        if (self.capture_active() || self.tab_is_ours(ev))
             && let Some(step) = self.reserved_key(ev)
         {
             return step;
@@ -729,13 +805,16 @@ impl<P: PredictPort> InputMachine<P> {
             )
             || ev.ctrl
             || ev.alt
-            || !self.capture_active()
+            || (!self.capture_active() && !self.tab_is_ours(ev))
         {
             return false;
         }
         let selectable = |idx: usize| self.selectable(idx).is_some();
         match ev.key {
+            // the Tab key can be given back to the host entirely (`tab_to_host`)
+            Key::Tab if self.keymap.tab_to_host => false,
             Key::Tab if ev.shift => !self.candidates.is_empty(),
+            Key::Tab if self.keymap.tab_cycles => !self.candidates.is_empty(),
             Key::Tab | Key::Enter => selectable(self.selected),
             Key::Char(' ') if self.state == State::Composing || self.keymap.space_confirms => {
                 selectable(self.selected)
@@ -988,19 +1067,29 @@ mod tests {
                 "Direct {k:?}"
             );
         }
-        // candidates showing but capture NOT enabled: still never consumed
+        // candidates showing but capture NOT enabled: the Tab key is still ours, because the list on screen owns
+        // it; every other reserved key belongs to the host
         let mut shown = machine();
         shown.grant_observation(true);
         type_text(&mut shown, "fn", 0);
         assert_eq!(shown.state(), State::Candidates);
-        for k in [
-            Key::Tab,
-            Key::Enter,
-            Key::Char('1'),
-            Key::Up,
-            Key::Down,
-            Key::Esc,
-        ] {
+        let shown_tab = shown.on_key(KeyEvent::plain(Key::Tab), 0);
+        assert_eq!(
+            shown_tab.outcome,
+            KeyOutcome::Consumed,
+            "the candidate list on screen owns the Tab key"
+        );
+        assert!(
+            shown_tab.effects.iter().any(
+                |e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.fn")
+            ),
+            "Tab takes the highlighted candidate"
+        );
+        assert_eq!(shown.stats.commits, 1);
+        let mut shown = machine();
+        shown.grant_observation(true);
+        type_text(&mut shown, "fn", 0);
+        for k in [Key::Enter, Key::Char('1'), Key::Up, Key::Down, Key::Esc] {
             assert_eq!(
                 shown.on_key(KeyEvent::plain(k), 0).outcome,
                 KeyOutcome::PassThrough,
@@ -1028,6 +1117,54 @@ mod tests {
         assert!(
             tab.effects.iter().any(
                 |e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.fn")
+            ),
+            "Tab takes the highlighted candidate (the default)"
+        );
+        assert_eq!(cap.stats.commits, 1);
+        // with `tab_cycles` on Tab walks the candidate list instead (the programmer habit)
+        let mut cycler = machine();
+        cycler.grant_observation(true);
+        cycler.set_candidate_capture(true);
+        cycler.set_keymap(KeyMap {
+            tab_cycles: true,
+            ..KeyMap::default()
+        });
+        type_text(&mut cycler, "fn", 0);
+        let cycled = cycler.on_key(KeyEvent::plain(Key::Tab), 0);
+        assert_eq!(cycled.outcome, KeyOutcome::Consumed);
+        assert!(
+            cycled
+                .effects
+                .iter()
+                .any(|e| matches!(e, Effect::SelectionMoved(_))),
+            "Tab walks the candidate list (the programmer habit)"
+        );
+        assert!(
+            !cycled
+                .effects
+                .iter()
+                .any(|e| matches!(e, Effect::Commit { .. })),
+            "Tab does not take the candidate"
+        );
+        assert_eq!(cycler.selected(), 1);
+        // Shift+Tab walks back in both modes
+        let back = cycler.on_key(KeyEvent::shifted(Key::Tab), 0);
+        assert_eq!(back.outcome, KeyOutcome::Consumed);
+        assert_eq!(cycler.selected(), 0);
+        assert_eq!(cycler.stats.commits, 0, "walking commits nothing");
+        // with `tab_cycles` off Tab takes the highlighted candidate, like the mainstream input methods
+        let mut trad = machine();
+        trad.grant_observation(true);
+        trad.set_candidate_capture(true);
+        trad.set_keymap(KeyMap {
+            tab_cycles: false,
+            ..KeyMap::default()
+        });
+        type_text(&mut trad, "fn", 0);
+        let trad_tab = trad.on_key(KeyEvent::plain(Key::Tab), 0);
+        assert!(
+            trad_tab.effects.iter().any(
+                |e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.fn")
             )
         );
         type_text(&mut cap, "fn", 5);
@@ -1049,6 +1186,79 @@ mod tests {
             shift: false,
         };
         assert_eq!(cap.on_key(chord, 0).outcome, KeyOutcome::PassThrough);
+    }
+
+    #[test]
+    fn tab_takes_the_candidate_while_the_list_is_on_screen_even_in_direct_mode() {
+        // the basic flow: the candidate list is on screen, Tab confirms the highlighted candidate and it is
+        // written out. No mode switch, no chord, no extra key.
+        let mut m = machine();
+        m.grant_observation(true);
+        type_text(&mut m, "fn", 0);
+        assert_eq!(m.state(), State::Candidates, "the list is showing");
+        assert!(
+            m.would_consume(KeyEvent::plain(Key::Tab)),
+            "the test phase must claim the Tab key too (the host asks before it acts)"
+        );
+        let step = m.on_key(KeyEvent::plain(Key::Tab), 1);
+        assert_eq!(step.outcome, KeyOutcome::Consumed);
+        assert!(
+            step.effects.iter().any(
+                |e| matches!(e, Effect::Commit { candidate_id, text, .. } if candidate_id == "t.fn" && text == "fn!")
+            ),
+            "the highlighted candidate is committed with its text"
+        );
+        assert_eq!(m.stats.commits, 1);
+        assert!(m.candidates().is_empty(), "the list is gone");
+        // without a list on screen the Tab key belongs to the host again
+        let mut m = machine();
+        m.grant_observation(true);
+        assert!(
+            m.candidates().is_empty(),
+            "nothing was typed, so there is no list"
+        );
+        assert!(!m.would_consume(KeyEvent::plain(Key::Tab)));
+        assert_eq!(
+            m.on_key(KeyEvent::plain(Key::Tab), 1).outcome,
+            KeyOutcome::PassThrough
+        );
+    }
+
+    #[test]
+    fn tab_to_host_gives_the_key_back_to_the_host() {
+        // the basic design asks for the IDE to keep its Tab: with `tab_to_host` the candidate list is a preview
+        // only, in the direct mode and inside a composition alike
+        let mut m = machine();
+        m.grant_observation(true);
+        m.set_keymap(KeyMap {
+            tab_to_host: true,
+            ..KeyMap::default()
+        });
+        type_text(&mut m, "fn", 0);
+        assert_eq!(m.state(), State::Candidates);
+        assert!(!m.would_consume(KeyEvent::plain(Key::Tab)));
+        assert_eq!(
+            m.on_key(KeyEvent::plain(Key::Tab), 1).outcome,
+            KeyOutcome::PassThrough
+        );
+        assert_eq!(m.stats.commits, 0);
+        // the same inside an explicit composition
+        let mut m = machine();
+        m.grant_observation(true);
+        m.set_candidate_capture(true);
+        m.set_keymap(KeyMap {
+            tab_to_host: true,
+            ..KeyMap::default()
+        });
+        type_text(&mut m, "fn", 0);
+        m.begin_composition(true);
+        assert_eq!(m.state(), State::Composing);
+        assert!(!m.would_consume(KeyEvent::plain(Key::Tab)));
+        assert_eq!(
+            m.on_key(KeyEvent::plain(Key::Tab), 1).outcome,
+            KeyOutcome::PassThrough
+        );
+        assert_eq!(m.stats.commits, 0);
     }
 
     #[test]
@@ -1183,7 +1393,7 @@ mod tests {
         m.grant_observation(true);
         m.set_candidate_capture(true);
         type_text(&mut m, "fn", 0);
-        let step = m.on_key(KeyEvent::plain(Key::Tab), 1);
+        let step = m.on_key(KeyEvent::plain(Key::Enter), 1);
         assert!(
             step.effects
                 .iter()
@@ -1387,19 +1597,21 @@ mod tests {
     }
 
     #[test]
-    fn key_06_space_confirms_only_when_composing_or_explicitly_enabled() {
+    fn key_06_space_confirms_when_enabled_and_stays_a_character_when_not() {
+        // The default: while the list is on screen, Space takes the highlighted candidate.
         let mut m = paged();
+        assert_eq!(commit_id(&m.on_key(KeyEvent::ch(' '), 1)), Some("c0"));
+        // The switch: the user gives Space back to the host (in code, Space is a character).
+        let mut m = paged();
+        m.set_keymap(KeyMap {
+            space_confirms: false,
+            ..KeyMap::default()
+        });
         assert_eq!(
             m.on_key(KeyEvent::ch(' '), 1).outcome,
             KeyOutcome::PassThrough,
-            "capture alone: Space stays a code character"
+            "space_confirms off: Space stays a code character"
         );
-        let mut m = paged();
-        m.set_keymap(KeyMap {
-            space_confirms: true,
-            ..KeyMap::default()
-        });
-        assert_eq!(commit_id(&m.on_key(KeyEvent::ch(' '), 1)), Some("c0"));
         let mut m = paged(); // composing: an explicit, owned composition
         assert_eq!(m.begin_composition(true), Some(Effect::BeginComposition));
         m.on_key(KeyEvent::plain(Key::Down), 1);
@@ -1451,7 +1663,6 @@ mod tests {
         let keys = [
             KeyEvent::plain(Key::PageUp),
             KeyEvent::plain(Key::PageDown),
-            KeyEvent::shifted(Key::Tab),
             KeyEvent::ch(' '),
             KeyEvent::ch('='),
             KeyEvent::ch('.'),
@@ -1460,6 +1671,8 @@ mod tests {
             page_size: 5,
             space_confirms: true,
             punct_paging: true,
+            tab_cycles: true,
+            tab_to_host: false,
         };
         let mut direct = InputMachine::new(Spy { calls: 0, mode: 4 }, "rust");
         direct.set_keymap(all);
@@ -1470,11 +1683,27 @@ mod tests {
                 "Direct {k:?}"
             );
         }
+        assert_eq!(
+            direct.on_key(KeyEvent::plain(Key::Tab), 0).outcome,
+            KeyOutcome::PassThrough,
+            "no list on screen: the Tab key is the host's"
+        );
         let mut shown = InputMachine::new(Spy { calls: 0, mode: 4 }, "rust");
         shown.grant_observation(true); // observing with candidates, capture NOT enabled
         shown.set_keymap(all);
         type_text(&mut shown, "a", 0);
         assert_eq!(shown.state(), State::Candidates);
+        // the Tab key is the one exception: the list on screen owns it, so Tab walks it here (`tab_cycles` is
+        // on in this key map) and Shift+Tab walks back; neither of them writes anything
+        assert_eq!(
+            shown.on_key(KeyEvent::plain(Key::Tab), 1).outcome,
+            KeyOutcome::Consumed
+        );
+        assert_eq!(
+            shown.on_key(KeyEvent::shifted(Key::Tab), 1).outcome,
+            KeyOutcome::Consumed
+        );
+        assert_eq!((shown.stats.commits, shown.selected()), (0, 0));
         for k in keys {
             assert_eq!(
                 shown.on_key(k, 1).outcome,
@@ -1687,49 +1916,55 @@ mod tests {
                 for (space_confirms, punct_paging) in
                     [(false, false), (true, false), (false, true), (true, true)]
                 {
-                    let keymap = KeyMap {
-                        page_size,
-                        space_confirms,
-                        punct_paging,
-                    };
-                    for key in grid_keys() {
-                        for bits in 0u8..8 {
-                            let ev = KeyEvent {
-                                key,
-                                shift: bits & 1 != 0,
-                                ctrl: bits & 2 != 0,
-                                alt: bits & 4 != 0,
-                            };
-                            let probe = build_scene(scene, keymap);
-                            let before = (
-                                probe.state(),
-                                probe.selected(),
-                                probe.candidates().len(),
-                                probe.context().to_string(),
-                                probe.stats,
-                                probe.port().calls,
-                                probe.is_paused(),
-                            );
-                            let predicted = probe.would_consume(ev);
-                            let after = (
-                                probe.state(),
-                                probe.selected(),
-                                probe.candidates().len(),
-                                probe.context().to_string(),
-                                probe.stats,
-                                probe.port().calls,
-                                probe.is_paused(),
-                            );
-                            assert_eq!(before, after, "would_consume mutated {scene:?} {ev:?}");
-                            let actual = build_scene(scene, keymap).on_key(ev, 9).outcome
-                                == KeyOutcome::Consumed;
-                            assert_eq!(
-                                predicted, actual,
-                                "{scene:?} {keymap:?} {ev:?}: would_consume vs on_key"
-                            );
-                            if actual {
-                                consumed_total += 1;
-                                consumed_keys.insert(format!("{:?}", ev.key));
+                    for (tab_cycles, tab_to_host) in
+                        [(false, false), (false, true), (true, false), (true, true)]
+                    {
+                        let keymap = KeyMap {
+                            page_size,
+                            space_confirms,
+                            punct_paging,
+                            tab_cycles,
+                            tab_to_host,
+                        };
+                        for key in grid_keys() {
+                            for bits in 0u8..8 {
+                                let ev = KeyEvent {
+                                    key,
+                                    shift: bits & 1 != 0,
+                                    ctrl: bits & 2 != 0,
+                                    alt: bits & 4 != 0,
+                                };
+                                let probe = build_scene(scene, keymap);
+                                let before = (
+                                    probe.state(),
+                                    probe.selected(),
+                                    probe.candidates().len(),
+                                    probe.context().to_string(),
+                                    probe.stats,
+                                    probe.port().calls,
+                                    probe.is_paused(),
+                                );
+                                let predicted = probe.would_consume(ev);
+                                let after = (
+                                    probe.state(),
+                                    probe.selected(),
+                                    probe.candidates().len(),
+                                    probe.context().to_string(),
+                                    probe.stats,
+                                    probe.port().calls,
+                                    probe.is_paused(),
+                                );
+                                assert_eq!(before, after, "would_consume mutated {scene:?} {ev:?}");
+                                let actual = build_scene(scene, keymap).on_key(ev, 9).outcome
+                                    == KeyOutcome::Consumed;
+                                assert_eq!(
+                                    predicted, actual,
+                                    "{scene:?} {keymap:?} {ev:?}: would_consume vs on_key"
+                                );
+                                if actual {
+                                    consumed_total += 1;
+                                    consumed_keys.insert(format!("{:?}", ev.key));
+                                }
                             }
                         }
                     }
@@ -1769,6 +2004,8 @@ mod tests {
             page_size: 5,
             space_confirms: true,
             punct_paging: true,
+            tab_cycles: true,
+            tab_to_host: false,
         };
         for scene in [
             Scene::Direct,
@@ -1781,6 +2018,14 @@ mod tests {
         ] {
             let m = build_scene(scene, all);
             for key in grid_keys() {
+                if key == Key::Tab && matches!(scene, Scene::CandidatesNoCapture) {
+                    // the one exception: the candidate list is on screen, so the Tab key belongs to it
+                    assert!(
+                        m.would_consume(KeyEvent::plain(key)),
+                        "{scene:?} owns the Tab key"
+                    );
+                    continue;
+                }
                 assert!(
                     !m.would_consume(KeyEvent::plain(key)),
                     "{scene:?} must not claim {key:?}"

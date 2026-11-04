@@ -23,9 +23,41 @@ function scanQuoted(text, i, quote, escape) {
 }
 const lineEnd = (text, i) => { const n = text.indexOf('\n', i); return n < 0 ? text.length : n; };
 
+// ---------------------------------------------------------------- SQL family (the plugin languages)
+// SQL masking: `--` is a comment until the end of the line, `/* ... */` a comment until the next `*/` (not nested),
+// `'` a string and `"` a quoted identifier; a doubled quote (`''` / `""`) is an escaped quote and does NOT end the
+// string. Everything else is code. The masked text keeps every newline and blanks every masked character.
+// The scan returns the unterminated string as well: a quote that reaches the end of the text without closing.
+function maskSql(text, spans) {
+  const out = text.split('');
+  const n = text.length;
+  const blank = (a, b) => { for (let k = a; k < b && k < n; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '; };
+  let i = 0, unterminated = null;
+  while (i < n) {
+    const c = text[i], d = text[i + 1];
+    if (c === '-' && d === '-') { const e = lineEnd(text, i); blank(i, e); if (spans) spans.push({start: i, end: e, kind: 'comment'}); i = e; continue; }
+    if (c === '/' && d === '*') { const e = text.indexOf('*/', i + 2); const end = e < 0 ? n : e + 2; blank(i, end); if (spans) spans.push({start: i, end, kind: 'comment'}); i = end; continue; }
+    if (c === "'" || c === '"') {
+      let j = i + 1;
+      for (;;) {
+        if (j >= n) { unterminated = {start: i, end: n}; blank(i, n); if (spans) spans.push({start: i, end: n, kind: 'string'}); i = n; break; }
+        if (text[j] === c) {
+          if (text[j + 1] === c) { j += 2; continue; } // a doubled quote is an escaped quote: the string goes on
+          blank(i, j + 1); if (spans) spans.push({start: i, end: j + 1, kind: 'string'}); i = j + 1; break;
+        }
+        j++;
+      }
+      continue;
+    }
+    i++;
+  }
+  return {masked: out.join(''), unterminated};
+}
+
 // Replace comments and literals by blanks (newlines kept) so that bracket/indent logic only sees code.
 // Optional `spans` receives {start, end, kind: 'comment' | 'string'} for every blanked region (behaviour is unchanged).
 function maskSource(text, style, spans) {
+  if (style === 'sql') return maskSql(text, spans).masked;
   const out = text.split('');
   const blank = (a, b) => { for (let k = a; k < b && k < out.length; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '; };
   const n = text.length;
@@ -216,16 +248,78 @@ function hexIssues(text) {
   return issues;
 }
 
+// The SQL family: the dialect checks of the three shipped plugin profiles. The version list is ordered; a check
+// fires when the requested version is OLDER than the one the feature needs (index < since).
+// The patterns never cross a line break (a newline between the keyword and its argument is not a match).
+const SQL_PROFILES = Object.freeze({
+  cypher: Object.freeze({
+    versions: Object.freeze(['4', '5']),
+    checks: Object.freeze([
+      {re: /\bEXISTS[ \t]*\{/i, code: 'CYPHER5_EXISTS_SUBQUERY', since: 1, message: 'EXISTS { ... } needs Cypher 5'},
+      {re: /\bIN[ \t]+TRANSACTIONS\b/i, code: 'CYPHER5_IN_TRANSACTIONS', since: 1, message: 'IN TRANSACTIONS needs Cypher 5'}
+    ])
+  }),
+  plsql: Object.freeze({
+    versions: Object.freeze(['12c', '18c', '19c', '21c', '23ai']),
+    checks: Object.freeze([
+      {re: /\bLISTAGG\b/i, code: 'PLSQL19C_LISTAGG', since: 2, message: 'LISTAGG needs Oracle 19c'}
+    ])
+  }),
+  tsql: Object.freeze({
+    versions: Object.freeze(['2012', '2016', '2017', '2019', '2022']),
+    checks: Object.freeze([
+      {re: /\bCREATE[ \t]+OR[ \t]+ALTER\b/i, code: 'TSQL2016_CREATE_OR_ALTER', since: 1, message: 'CREATE OR ALTER needs SQL Server 2016'},
+      {re: /\bSTRING_AGG[ \t]*\(/i, code: 'TSQL2017_STRING_AGG', since: 2, message: 'STRING_AGG needs SQL Server 2017'}
+    ])
+  })
+});
+const lineOfOffset = (text, offset) => { let line = 1; for (let k = 0; k < offset && k < text.length; k++) if (text[k] === '\n') line++; return line; };
+// 1) an unterminated string, 2) the bracket issues of the masked text, 3) the dialect checks of the profile.
+function sqlIssues(text, dialect = {}, ctx = {}) {
+  const {masked, unterminated} = maskSql(text);
+  const issues = [];
+  if (unterminated) issues.push({line: lineOfOffset(text, unterminated.start), code: 'SQL_UNTERMINATED_STRING', message: 'the string is never closed'});
+  issues.push(...bracketIssues(masked));
+  const spec = SQL_PROFILES[ctx.profile];
+  const version = dialect && typeof dialect.version === 'string' ? dialect.version : '';
+  if (spec && version) {
+    const idx = spec.versions.indexOf(version);
+    if (idx >= 0) {
+      masked.split(/\r\n|\r|\n/).forEach((line, i) => {
+        for (const check of spec.checks) if (idx < check.since && check.re.test(line)) issues.push({line: i + 1, code: check.code, message: check.message});
+      });
+    }
+  }
+  return issues;
+}
+
 const VALIDATOR_BY_PROFILE = Object.freeze({
   rust: text => bracketIssues(maskSource(text, 'rust')),
   python: pythonIssues, typescript: tsIssues, powershell: powershellIssues, c: cIssues,
   assembly: assemblyIssues, 'machine-code': hexIssues
 });
-function validateSource(profileId, text, dialect = {}) {
-  const fn = VALIDATOR_BY_PROFILE[profileId];
+// The validator FAMILIES: a pack names its family in its `validator` field and the family decides the checks.
+// The built-in packs keep their per-profile dispatch (their `validator` values are no family names).
+const VALIDATOR_FAMILIES = Object.freeze({sql: sqlIssues});
+// profile id -> family of the ACTIVE plugin profiles (filled from the packs, never from the profile id).
+const profileFamilies = new Map();
+function setFamilies(map) {
+  profileFamilies.clear();
+  for (const [id, family] of map || []) profileFamilies.set(id, family);
+}
+function familyOf(profileId) { return profileFamilies.get(profileId); }
+function validatorFor(profileId, family) {
+  const name = family === undefined || family === null ? profileFamilies.get(profileId) : family;
+  if (name !== undefined && name !== null) return VALIDATOR_FAMILIES[name] || null; // an unknown family has no validator
+  return VALIDATOR_BY_PROFILE[profileId] || null;
+}
+// validateSource(profileId, text, dialect) keeps its signature; `options.family` names the family of the pack.
+function validateSource(profileId, text, dialect = {}, options = {}) {
+  const fn = validatorFor(profileId, options.family);
   if (!fn) return {ok: false, level: 'unchecked', issues: [{line: 0, code: 'NO_VALIDATOR', message: 'no validator for profile'}]};
   if (typeof text !== 'string') return {ok: false, level: 'invalid', issues: [{line: 0, code: 'NOT_TEXT', message: 'text expected'}]};
-  const issues = fn(text, dialect);
+  const issues = fn(text, dialect, {profile: profileId});
   return {ok: issues.length === 0, level: issues.length ? 'invalid' : 'valid', issues};
 }
-module.exports = {maskSource, bracketIssues, validateSource, pythonIssues, powershellIssues, cIssues, tsIssues, assemblyIssues, hexIssues};
+module.exports = {maskSource, maskSql, bracketIssues, validateSource, pythonIssues, powershellIssues, cIssues, tsIssues, assemblyIssues, hexIssues,
+  sqlIssues, SQL_PROFILES, VALIDATOR_FAMILIES, setFamilies, familyOf};
