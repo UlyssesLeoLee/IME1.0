@@ -501,7 +501,7 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 |---|---|---|---|
 | TIP（M3） | `crates/pime-tsf/src/{tip,keymap,controller}.rs`、`pime-core::InputMachine::would_consume` | TIP 63 项测试（pime-tsf 合计 122）；默认**不吞任何代码字符**（候选捕获与自动组合默认关闭），`Ctrl+Alt+Space` 显式进入组合后才有搜狗式按键 | COM 胶水从未在 TSF 中运行；虚拟机专属清单见 `docs/TSF_VM_TEST_PLAN.md` 与 TIP 报告：宿主调用顺序、同步编辑会话、候选窗位置滞后、密码框检测、死键/AltGr、Shift 单击 |
 | 候选窗 | `layout.rs`、`popup.rs`、`examples/popup_demo.rs` | 28 项布局测试；演示程序 100% 缩放目视检查 | 其他 DPI、多显示器、高对比度、真实宿主、读屏 |
-| 注册（M4 前置） | `register.rs`、`docs/TSF_VM_TEST_PLAN.md` | 纯计划 + 后端 trait + 回滚，29 项假后端测试；**从未对真实注册表执行**；只声明 `TIP_KEYBOARD` 与 `SYSTRAYSUPPORT` | `UIELEMENTENABLED`、`IMMERSIVESUPPORT` 有意不注册：TIP 尚未实现 TSF UI 元素协议（`ITfUIElementMgr`/`ITfCandidateListUIElement`），商店应用与开始菜单搜索里本输入法不可用，实现后再加 |
+| 注册（M4 前置） | `register.rs`、`docs/TSF_VM_TEST_PLAN.md` | 纯计划 + 后端 trait + 回滚，29 项假后端测试；**2026-11-04 对真实注册表执行过一次**（提权安装，regsvr32 不再报 E_FAIL；三个 profile 的 `IconFile` 指向 `pime.ico`）；只声明 `TIP_KEYBOARD` 与 `SYSTRAYSUPPORT` | `UIELEMENTENABLED`、`IMMERSIVESUPPORT` 有意不注册：TIP 尚未实现 TSF UI 元素协议（`ITfUIElementMgr`/`ITfCandidateListUIElement`），商店应用与开始菜单搜索里本输入法不可用，实现后再加 |
 | P2 AI Worker | `crates/pime-ai-worker`、`docs/AI_WORKER.md` | 90 项单元测试 + 25 项烟雾测试（对 HTTPS 模拟服务器）；默认拒绝自签名证书；密钥只在 Worker 内，按 host 绑定 | 真实服务商、代理、企业 TLS 检查、持久凭据、与扩展的实际对接 |
 | P3 IPC | `crates/pime-ipc`、`docs/IPC.md` | 91 项测试（单元 + 真实命名管道回环），重复 3 次 | 异 SID 拒绝（IT-003）、远程客户端、跨会话、完整 IT-004/ST-037、AppContainer、32 位；握手后的帧没有逐帧 MAC（同用户进程可中继握手，见 IPC.md 威胁模型） |
 | 安装器（M5） | `crates/pime-setup`、`scripts/{build-installer,package-vsix}.js`、`docs/INSTALLER.md` | 50 项单元测试；构建出 x64 安装器（≈3 MB）与 .vsix（vsce 钉 4.0.0）；`--dry-run` 不改动任何东西 | 临时目录集成测试在本机被终端防护拦截（os error 5），仅有代理的运行记录；注册/提权/UAC/开机删除/`code` 安装/签名/虚拟机安装均未运行；**未签名**，SmartScreen 会提示 |
@@ -551,4 +551,4 @@ Rust 引擎下性能（NFR-201）未重测；1 MiB 文档的端到端在 debug �
 补齐 2 到 6（7 视需要）并在虚拟机里的商店应用和开始菜单搜索里实测通过之前，不得注册 `IMMERSIVESUPPORT`；`SECUREMODE` 的理由不变（13.10 / `register.rs`）。
 
 **验证（本机，2026-10-31，`CARGO_TARGET_DIR` 为本工作项专用目录）**：`cargo test` 在 `crates/pime-tsf`：156 项通过（开始时 122，新增 34：`uielement` 26 项含模型 5 项、驱动 13 项、真实 `TipController` 脚本 8 项；`uielement_com` 8 项含 QI、getter、`GetPageIndex` 的缓冲区规则和 `Show`/`IsShown`；`register` 的类别、步骤数和调用数相关测试按 3 个类别更新，幂等与回滚测试保持通过）；`cargo clippy --all-targets -- -D warnings`、`cargo fmt --check` 干净。
-**没有验证**：COM 胶水从未在真实 TSF 里运行（`ITfUIElementMgr` 的实际获取、宿主在 `BeginUIElement` 里对元素的调用顺序和对答案的接受程度、各宿主的 `show` 回答、`E_UNEXPECTED` 递归保护是否会在真实调用顺序里触发）；`show=FALSE` 路径没有真实宿主可测；`UIELEMENTENABLED` 的注册只在内存假后端上测过。VM 步骤见 `TSF_VM_TEST_PLAN.md` 9.1。
+**没有验证**：COM 胶水从未在真实 TSF 里运行（注册本身已在真实注册表上跑过一次，见上表）（`ITfUIElementMgr` 的实际获取、宿主在 `BeginUIElement` 里对元素的调用顺序和对答案的接受程度、各宿主的 `show` 回答、`E_UNEXPECTED` 递归保护是否会在真实调用顺序里触发）；`show=FALSE` 路径没有真实宿主可测；`UIELEMENTENABLED` 的注册只在内存假后端上测过。VM 步骤见 `TSF_VM_TEST_PLAN.md` 9.1。

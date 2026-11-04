@@ -699,7 +699,7 @@ DD 5.3 / UT-009 原本写的是「默认不吃任何代码字符」。这一轮�
 
 #### 5.12.3 这一轮**没有**在真机上验证的地方（不虚报）
 
-* 本轮仍然**没有**在本机注册 TSF DLL。发光口的可见 / 可拖 / 贴边、面板跟随、激光变细，都只经过 `examples/laser_mouth_probe.rs`、`examples/ime_ui_probe.rs`、`examples/laser_beam_probe.rs` 的**进程内宿主**取证（`02_Verification/ime-ui/laser-mouth-top.png`、`ime-windows.png`、`laser-beam-zoom.png`）；**真实鼠标拖动、真实键盘下的候选选择、Ctrl+F12 的输入法切换，都还没在真实宿主里跑过。**
-* **托盘里显示的是 logo 还是文字，没有验证过**：profile 的图标是注册时交给 Windows 的，本机没有注册 TSF DLL，所以通知区里到底显示什么**没有看过**。
-* **提权安装 / 修复 / 卸载没有实测过**：向导的「已安装」页是在**进程内的向导窗口**里拍的（检测到了 `D:\IME1.0` 0.2.0），但真正的 `regsvr32` + 写 HKLM 需要有人点 UAC 的「是」，这一步没做，所以**不能说「安装已经修好了」**。
+* 发光口的可见 / 可拖 / 贴边、面板跟随、激光变细，都只经过 `examples/laser_mouth_probe.rs`、`examples/ime_ui_probe.rs`、`examples/laser_beam_probe.rs` 的**进程内宿主**取证（`02_Verification/ime-ui/laser-mouth-top.png`、`ime-windows.png`、`laser-beam-zoom.png`）；**真实鼠标拖动、真实键盘下的候选选择、Ctrl+F12 的输入法切换，都还没在真实宿主里跑过。**
+* **托盘里显示的是 logo 还是文字，还没有看到**：`IconFile` 已经写进真实注册表（三个 profile 全是 `D:\IME1.0\pime.ico`，见下条），但通知区要等**注销或重启**换上新 DLL 之后才会重画——这一轮实测时旧 DLL 还被系统占着（退出码 3010）。
+* **提权安装实测过了（2026-11-04 13:52）**，但只跑了「安装」这一条：`ProgrammingIME-0.2.0-win-x64-setup.exe --silent --prefix D:\` → 12 步全过、`DONE: IME1.0 0.2.0 installed (D:\IME1.0)`、**regsvr32 不再报 `E_FAIL`**（两个根因都验证了）；退出码 3010 = 旧 DLL 正被系统占用，要注销或重启才换新。真实注册表里：`CLSID\{43F95ED1-…}\InprocServer32` = `D:\IME1.0\pime_tsf.dll`；`CTF\TIP\{43F95ED1-…}\LanguageProfile\0x00000804 / 0x00000409 / 0x00000411` 各有 `IconFile = D:\IME1.0\pime.ico` 与 `Enable = 1`；三个 category（TIP_KEYBOARD / SYSTRAYSUPPORT / UIELEMENTENABLED）都在；ARP 条目的 `DisplayIcon` 也是 `D:\IME1.0\pime.ico`。**「修复」与「卸载」两条路径还没有在真机上跑过。**
 * 设置窗的 80% 半透明只读到 `GetLayeredWindowAttributes` 的 alpha=204，**没有在真实 TSF 宿主里跑过**；全新安装页里 EDIT 控件在分层窗口下的观感**没有实拍**。

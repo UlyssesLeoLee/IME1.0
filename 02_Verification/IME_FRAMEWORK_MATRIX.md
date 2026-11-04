@@ -19,7 +19,7 @@
 | **行为层** | 有自动化测试跑过真实代码路径 | 逻辑、边界、回滚、载荷格式正确 | 宿主（Windows / TSF）接受它 |
 | **判据层** | 在真实宿主上跑过 | 这是一个能被 Windows 认的输入法 | —— |
 
-**本项目目前只有前两层。第三层是空的**（`01_Source/docs/TSF_VM_TEST_PLAN.md:3-4`、`INSTALLER.md:3-6`、`RUST_MIGRATION_PLAN.md:430` 三处都写明"从未在真实 Windows 注册表或真实 TSF 上运行过"）。
+**本项目目前只有前两层。第三层只填了一半**：2026-11-04 在真实系统上做了一次提权安装，注册表那一半是真的（真实 HKLM 里的 COM 键、三个语言 profile、三个 category、ARP 条目、`regsvr32` 不再报 `E_FAIL`）；**但真实宿主里的那一半仍然是空的**——候选选择、Ctrl+F12 切换、语音识别都还没有在真实键盘 / 真实麦克风 / 真实语音服务上跑过（`01_Source/docs/TSF_VM_TEST_PLAN.md:3-4`、`INSTALLER.md:3-6`、`RUST_MIGRATION_PLAN.md:430` 写的是「从未在真实 Windows 注册表或真实 TSF 上运行过」，其中「真实注册表」这一半在本轮已经不成立了）。
 所以下文任何一格写着"是"，指的是**代码层**；真实系统一列**全部为否**。
 
 ## 1. 交付物：安装包
@@ -194,9 +194,9 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | JavaScript 单元 / 集成 + 引擎差分 | **345 / 345 通过**（0 失败 0 跳过） | `run-all-2026-11-04.log` |
 | **输入法场景套件**（21 个 TSF 行为场景：直打/组字/候选/翻页/取消/提交/语言切换…） | **21 / 21 通过** | `01_Source/tests/tsf/ime_scenarios.rs`、`01_Source/docs/IME_TEST_MATRIX.md` |
 | **输入法功能覆盖账本自检**（23 个功能逐个点名覆盖它的测试，名字必须在源码里真实存在） | **4 / 4 通过** | `01_Source/tests/tsf/ime_functions.rs` |
-| **宿主级测试**（真 COM 类对象：未知 class 拒绝且出参留 NULL；`PIME_IME_LIVE=1` 时走真 msctf） | **4 / 4 通过**（真 msctf 一档为 opt-in，本轮未在本机注册 TSF DLL） | `01_Source/tests/tsf/ime_host.rs` |
+| **宿主级测试**（真 COM 类对象：未知 class 拒绝且出参留 NULL；`PIME_IME_LIVE=1` 时走真 msctf） | **4 / 4 通过**（真 msctf 一档为 opt-in；本轮已在真实系统上注册并安装，真实宿主里跑一遍仍未做） | `01_Source/tests/tsf/ime_host.rs` |
 | **插件语言两引擎对拍**（SQL 校验 32 / 扩展名解析 275 / 预测 54 用例） | **0 处不一致** | `01_Source/tests/rust/plugin_languages.rs`、`01_Source/tests/js/ut-plugin-language.test.js` |
-| **常驻托盘与语音输入**（`crates/pime-tray`：托盘图标、Ctrl+F12 一键切换、Ctrl+Alt+V 录音识别、API key 存凭据管理器；AI worker 新增 `bodyBase64` 以发二进制请求体） | **代码层全绿**（pime-tray 9 项单测、AI worker 93 项单测、clippy 无警告）；**已随安装包分发**（payload 8 条，托盘与 worker 装进 `%ProgramFiles%\IME1.0`，托盘菜单里有「开机自动启动」开关）；**未在真机验证**（未注册 TSF DLL、未接真实麦克风与语音服务） | `crates/pime-tray/`、`crates/pime-ai-worker/src/engine.rs` |
+| **常驻托盘与语音输入**（`crates/pime-tray`：托盘图标、Ctrl+F12 一键切换、Ctrl+Alt+V 录音识别、API key 存凭据管理器；AI worker 新增 `bodyBase64` 以发二进制请求体） | **代码层全绿**（pime-tray 9 项单测、AI worker 93 项单测、clippy 无警告）；**已随安装包分发**（payload 8 条，托盘与 worker 装进 `%ProgramFiles%\IME1.0`，托盘菜单里有「开机自动启动」开关）；**未在真机验证**（TSF DLL 已于 2026-11-04 在真实系统上注册并安装；托盘图标本身、真实麦克风与语音服务仍未验证） | `crates/pime-tray/`、`crates/pime-ai-worker/src/engine.rs` |
 | **候选窗换激光彩虹**（分层窗口 `WS_EX_LAYERED` + `UpdateLayeredWindow`，逐像素画深蓝玻璃、圆角、投影、**渐变彩虹带**顶边、**选中行纵向彩虹**光条 + `>` 标记） | **代码层全绿**（`candidate_skin.rs`、`pime-tsf` 250 项 + clippy 干净）；**取证**：进程内宿主截图 `02_Verification/ime-ui/ime-windows.png`，放大图 `ime-ui/candidate-list-zoom.png`；**未在真实宿主里跑过** | `crates/pime-tsf/src/candidate_skin.rs`、`crates/pime-tsf/src/popup.rs` |
 | **悬浮栏换激光彩虹**（新增第 4 套皮肤「激光彩虹」，出厂默认；模式按钮下是**彩虹渐变胶囊**，顶边是**渐变彩虹带**） | **代码层全绿**（`bar_skin.rs`、`imesettings.rs` 的默认值与 `skin_label`）；**取证**：同一张截图，放大图 `ime-ui/floating-bar-zoom.png`；**菜单仍未换肤**（登记为 D-22 的后半段） | `crates/pime-tsf/src/bar_skin.rs`、`crates/pime-tsf/src/floating.rs` |
 | **托盘与 AI worker 随安装包分发**（载荷 6 → 8 项；托盘「开机自动启动」开关写当前用户的 Run 项；托盘「设置…」接通） | **代码层全绿**（`pime-setup` 116 项、托盘 9 项、clippy 干净；构建时逐个核对载荷程序的导入表）；**未在真机验证**（托盘图标、录音、开机自启的实际写入都没跑过） | `crates/pime-setup/src/payload.rs`、`scripts/build-installer.js`、`crates/pime-tray/src/autostart.rs` |

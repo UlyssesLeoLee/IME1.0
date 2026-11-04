@@ -1,7 +1,7 @@
 
 === syntax check (extension sources + all test scripts) ===
 syntax check: 77/77 files OK
-    Finished `test` profile [unoptimized] target(s) in 0.05s
+    Finished `test` profile [unoptimized] target(s) in 0.32s
      Running unittests src\lib.rs (D:\cargo-target-ime\debug\deps\pime_core-5265b36c6a104fc3.exe)
      Running unittests src\main.rs (D:\cargo-target-ime\debug\deps\pime_core-0d945285d205c57f.exe)
      Running ..\..\tests\rust\benchmark.rs (D:\cargo-target-ime\debug\deps\benchmark-0430b9510515699d.exe)
@@ -19,7 +19,7 @@ syntax check: 77/77 files OK
      Running ..\..\tests\rust\protocol_v03_edit.rs (D:\cargo-target-ime\debug\deps\protocol_v03_edit-088257fc73c0cce1.exe)
      Running ..\..\tests\rust\settings_io.rs (D:\cargo-target-ime\debug\deps\settings_io-3508cf4fb6cffbcb.exe)
    Doc-tests pime_core
-    Finished `test` profile [unoptimized] target(s) in 0.11s
+    Finished `test` profile [unoptimized] target(s) in 0.13s
      Running unittests src\lib.rs (D:\cargo-target-ime\debug\deps\pime_tsf-c7a88f2044148810.exe)
      Running ..\..\tests\tsf\ime_functions.rs (D:\cargo-target-ime\debug\deps\ime_functions-e7c2c7e8d8f02523.exe)
      Running ..\..\tests\tsf\ime_host.rs (D:\cargo-target-ime\debug\deps\ime_host-95d36bf22205f786.exe)
@@ -39,101 +39,101 @@ golden-v0.2: 239/239 frozen cases unchanged in the live fixtures
 === Rust: cargo test --workspace ===
 
 running 278 tests
-test ai::tests::endpoint_urls_are_validated_with_the_reference_messages ... ok
-test ai::tests::fences_are_tolerated_and_nul_is_stripped ... ok
-test ai::tests::crlf_is_restored_and_cross_file_plans_keep_only_the_current_file ... ok
-test ai::tests::effort_is_sent_only_when_the_capability_is_verified ... ok
-test ai::tests::family_builders_and_parsers_follow_the_reference_shapes ... ok
-test ai::tests::iso_dates_match_date_parse ... ok
-test ai::tests::integer_like_keys_come_first_in_ignored_keys ... ok
-test ai::tests::js_number_follows_the_number_function ... ok
-test ai::tests::prompts_keep_file_text_in_the_data_channel ... ok
-test ai::tests::transport_errors_are_timeouts_cancellations_or_network_failures ... ok
-test ai::tests::ut_054_model_output_is_data_unknown_keys_are_ignored ... ok
-test analysis::tests::enclosing_blocks ... ok
 test ai::tests::http_statuses_map_to_precise_codes ... ok
+test ai::tests::js_number_follows_the_number_function ... ok
+test ai::tests::transport_errors_are_timeouts_cancellations_or_network_failures ... ok
+test ai::tests::iso_dates_match_date_parse ... ok
+test ai::tests::prompts_keep_file_text_in_the_data_channel ... ok
+test ai::tests::family_builders_and_parsers_follow_the_reference_shapes ... ok
+test ai::tests::integer_like_keys_come_first_in_ignored_keys ... ok
+test ai::tests::fences_are_tolerated_and_nul_is_stripped ... ok
+test ai::tests::effort_is_sent_only_when_the_capability_is_verified ... ok
+test ai::tests::crlf_is_restored_and_cross_file_plans_keep_only_the_current_file ... ok
+test analysis::tests::enclosing_blocks ... ok
+test ai::tests::endpoint_urls_are_validated_with_the_reference_messages ... ok
 test analysis::tests::literal_positions_are_detected ... ok
+test ai::tests::ut_054_model_output_is_data_unknown_keys_are_ignored ... ok
 test analysis::tests::statement_expression_and_type_positions ... ok
 test analysis::tests::typescript_and_powershell_new_lines_start_statements ... ok
 test annotate::tests::ann_02_strip_comments_removes_comments_only ... ok
 test base64::tests::every_byte_survives_the_round_trip ... ok
 test annotate::tests::ann_06_the_prompt_keeps_file_text_in_the_data_channel ... ok
-test annotate::tests::ann_05_apply_reply_applies_safe_parts_and_falls_back_to_the_original ... ok
 test base64::tests::text_that_is_not_base64_is_refused ... ok
+test annotate::tests::ann_05_apply_reply_applies_safe_parts_and_falls_back_to_the_original ... ok
 test base64::tests::the_examples_of_the_standard_survive ... ok
 test base64::tests::the_line_breaks_of_a_long_text_do_not_matter ... ok
-test budget::tests::a_ticket_settles_or_releases_only_once ... ok
 test annotate::tests::ann_04_cypher_lines_are_rerendered_as_comments ... ok
 test budget::tests::configure_changes_limits_but_keeps_the_counters ... ok
+test budget::tests::a_ticket_settles_or_releases_only_once ... ok
 test budget::tests::the_token_limit_counts_the_reservation_and_zero_limits_are_not_special_here ... ok
 test budget::tests::ut_035_budget_reserve_before_sending_settle_with_real_usage_refuse_when_exceeded ... ok
 test candidate::tests::ut_006_invalid_values_are_rejected ... ok
+test candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable ... ok
 test candidate::tests::ut_007_usage_breaks_ties_before_weight ... ok
 test candidate::tests::ut_008_candidates_without_text_are_never_merged ... ok
-test candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable ... ok
 test candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row ... ok
-test clock::tests::manual_clock_clones_share_time ... ok
 test clock::tests::system_clock_is_epoch_milliseconds ... ok
+test clock::tests::manual_clock_clones_share_time ... ok
 test context::tests::excerpt_bounds_never_split_a_crlf ... ok
 test context::tests::ut_025_context_level_capability_lattice ... ok
-test context::tests::ut_028_snapshot_hash_comes_from_the_unsaved_buffer_not_the_disk ... ok
 test context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused ... ok
 test context::tests::ut_030_an_l4_disk_snapshot_can_never_be_written_back_and_l1_is_not_whole_file ... ok
-test annotate::tests::ann_03_only_comment_only_replies_are_accepted ... ok
+test context::tests::ut_028_snapshot_hash_comes_from_the_unsaved_buffer_not_the_disk ... ok
 test diag::tests::a_timestamp_that_is_not_a_number_never_reaches_the_record ... ok
 test diag::tests::counters_read_like_object_entries ... ok
-test diag::tests::the_ring_keeps_the_newest_events_and_the_summary_counts_what_is_left ... ok
 test diag::tests::the_session_id_is_an_anonymised_hash_of_the_seed ... ok
+test diag::tests::the_ring_keeps_the_newest_events_and_the_summary_counts_what_is_left ... ok
 test diag::tests::the_summary_follows_the_reference_rules ... ok
 test diag::tests::ut_071_only_whitelisted_token_like_metadata_is_recorded ... ok
-test edit::diff::tests::disjoint_hunks_make_edits_in_order_and_overlaps_are_refused ... ok
-test analysis::tests::nearby_identifiers_rank_by_frequency ... ok
-test edit::diff::tests::insertion_at_the_end_and_deletion_of_everything ... ok
 test edit::diff::tests::hunk_geometry_matches_the_js_engine ... ok
+test edit::diff::tests::disjoint_hunks_make_edits_in_order_and_overlaps_are_refused ... ok
+test edit::diff::tests::insertion_at_the_end_and_deletion_of_everything ... ok
 test edit::diff::tests::lone_cr_and_missing_trailing_newline_are_real_differences ... ok
 test edit::diff::tests::offsets_are_utf16_units_not_bytes_or_chars ... ok
 test edit::diff::tests::ut_045_hunks_replay_to_the_exact_after_hash_with_crlf_and_a_changed_trailing_newline ... ok
 test edit::transaction::tests::a_finish_without_a_begin_is_refused ... ok
+test edit::transaction::tests::a_read_only_document_is_rejected_after_the_baseline_checks ... ok
 test edit::transaction::tests::a_finish_after_the_deadline_is_edit_unknown_never_applied ... ok
 test edit::transaction::tests::a_missing_finish_apply_is_edit_unknown_on_the_next_call_that_touches_the_plan ... ok
-test edit::transaction::tests::a_read_only_document_is_rejected_after_the_baseline_checks ... ok
 test edit::transaction::tests::a_second_begin_apply_before_the_first_finish_is_refused_without_consuming_its_token ... ok
 test edit::transaction::tests::it_029_insert_is_refused_when_the_cursor_moved_after_the_proposal ... ok
 test edit::transaction::tests::it_032_a_verified_apply_can_be_undone_back_to_the_original_dirty_buffer ... ok
 test edit::transaction::tests::nfr_502_purge_drops_expired_plans_used_tokens_and_applied_source_fragments ... ok
-test edit::transaction::tests::purge_keeps_the_record_of_an_apply_that_is_still_waiting_for_its_result ... ok
-test edit::transaction::tests::ut_030_an_l4_disk_snapshot_can_never_become_a_plan ... ok
 test edit::transaction::tests::the_checks_run_in_the_order_of_the_js_coordinator ... ok
-test candidate::tests::ut_006_all_kinds_sources_validations_round_trip ... ok
+test edit::transaction::tests::ut_030_an_l4_disk_snapshot_can_never_become_a_plan ... ok
+test annotate::tests::ann_03_only_comment_only_replies_are_accepted ... ok
+test edit::transaction::tests::purge_keeps_the_record_of_an_apply_that_is_still_waiting_for_its_result ... ok
 test edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent ... ok
-test edit::transaction::tests::ut_048_overlapping_edits_are_rejected_disjoint_edits_build_a_reviewable_result ... ok
-test edit::transaction::tests::ut_046_it_029_zero_length_insert_at_line_3_col_6_with_emoji_changes_only_that_range ... ok
-test edit::transaction::tests::ut_049_it_031_st_027_a_changed_version_or_hash_yields_stale_document_and_no_token ... ok
-test edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown ... ok
-test edit::transaction::tests::ut_050_an_apply_token_works_once_replay_writes_nothing_more ... ok
-test edit::transaction::tests::ut_052_a_failed_syntax_check_disables_the_default_apply ... ok
-test edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed ... ok
 test edit::transaction::tests::ut_047_it_030_nothing_is_written_without_explicit_confirmation ... ok
+test edit::transaction::tests::ut_046_it_029_zero_length_insert_at_line_3_col_6_with_emoji_changes_only_that_range ... ok
+test edit::transaction::tests::ut_048_overlapping_edits_are_rejected_disjoint_edits_build_a_reviewable_result ... ok
+test edit::transaction::tests::ut_049_it_031_st_027_a_changed_version_or_hash_yields_stale_document_and_no_token ... ok
+test edit::transaction::tests::ut_052_a_failed_syntax_check_disables_the_default_apply ... ok
+test edit::transaction::tests::ut_050_an_apply_token_works_once_replay_writes_nothing_more ... ok
+test edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed ... ok
+test edit::transaction::tests::ut_051_a_rejected_write_that_changed_the_document_is_edit_unknown ... ok
 test edit::transaction::tests::ut_051_it_033_an_unknown_apply_result_is_final_edit_unknown_never_retried ... ok
-test grants::tests::find_returns_the_reusable_grant_and_require_returns_the_grant ... ok
+test analysis::tests::nearby_identifiers_rank_by_frequency ... ok
 test edit::transaction::tests::ut_075_it_015_a_revoked_grant_or_an_invalidated_plan_can_neither_prepare_nor_apply ... ok
+test grants::tests::find_returns_the_reusable_grant_and_require_returns_the_grant ... ok
 test grants::tests::import_skips_malformed_entries_instead_of_trusting_them ... ok
 test grants::tests::only_reusable_grants_are_exported_and_they_survive_a_round_trip ... ok
-test grants::tests::grant_ids_are_24_hex_characters_and_unique ... ok
-test grants::tests::ut_029_it_015_grants_any_mismatch_is_denied_revoke_stops_new_requests ... ok
 test grants::tests::revocation_variants_and_the_list_of_live_grants ... ok
+test grants::tests::ut_029_it_015_grants_any_mismatch_is_denied_revoke_stops_new_requests ... ok
 test grants::tests::workspace_tokens_hash_the_sorted_uris_and_never_contain_paths ... ok
-test edit::transaction::tests::plan_ids_and_tokens_are_unique ... ok
-test i18n::tests::bundles_render_without_arguments_unless_raw ... ok
 test i18n::tests::errors_describe_themselves_and_unknown_codes_fall_back ... ok
+test candidate::tests::ut_006_all_kinds_sources_validations_round_trip ... ok
+test i18n::tests::bundles_render_without_arguments_unless_raw ... ok
 test i18n::tests::ut_056_the_interface_locale_is_independent_of_the_editor_language ... ok
 test i18n::tests::ut_044_texts_are_translated_per_locale_and_arguments_fill_in_one_pass ... ok
-test i18n::tests::every_key_has_every_locale_and_the_same_placeholders_everywhere ... ok
 test ids::tests::the_same_entropy_gives_the_same_sequence_and_another_seed_a_different_one ... ok
-test ids::tests::weak_or_short_entropy_is_refused ... ok
 test imeswitch::tests::a_record_survives_the_round_trip ... ok
-test imeswitch::tests::coming_to_us_remembers_the_input_method_we_came_from ... ok
+test ids::tests::weak_or_short_entropy_is_refused ... ok
+test grants::tests::grant_ids_are_24_hex_characters_and_unique ... ok
+test i18n::tests::every_key_has_every_locale_and_the_same_placeholders_everywhere ... ok
 test imeswitch::tests::going_back_forgets_ours ... ok
+test imeswitch::tests::coming_to_us_remembers_the_input_method_we_came_from ... ok
+test edit::transaction::tests::plan_ids_and_tokens_are_unique ... ok
 test imeswitch::tests::the_key_comes_to_our_first_profile_when_no_language_matches ... ok
 test imeswitch::tests::the_key_comes_to_us_when_another_input_method_is_active ... ok
 test imeswitch::tests::the_key_does_nothing_when_there_is_nothing_to_go_to ... ok
@@ -141,19 +141,19 @@ test imeswitch::tests::the_key_goes_back_to_the_input_method_we_came_from ... ok
 test imeswitch::tests::the_key_never_goes_back_to_ours_own_profile ... ok
 test imeswitch::tests::the_key_prefers_our_profile_of_the_language_that_is_active ... ok
 test input::tests::key_01_pages_forward_and_back_and_stop_at_both_ends ... ok
-test input::tests::key_02_digits_pick_within_the_current_page_only ... ok
 test input::tests::key_03_a_nine_item_page_uses_all_digits_and_the_page_size_is_clamped ... ok
+test input::tests::key_02_digits_pick_within_the_current_page_only ... ok
 test input::tests::key_04_up_and_down_carry_the_page_with_them_and_shift_tab_goes_back ... ok
-test input::tests::key_05_single_page_keeps_page_keys_for_the_host ... ok
 test input::tests::key_06_space_confirms_when_enabled_and_stays_a_character_when_not ... ok
 test input::tests::key_07_punctuation_paging_is_off_by_default_and_never_eats_code_characters ... ok
+test input::tests::key_05_single_page_keeps_page_keys_for_the_host ... ok
 test input::tests::key_08_none_of_the_new_keys_is_consumed_outside_capture_or_composition ... ok
-test input::tests::key_10_secure_input_and_policy_outrank_the_users_pause_toggle ... ok
 test input::tests::key_09_a_shift_tap_pauses_and_resumes_and_is_never_consumed ... ok
+test input::tests::key_10_secure_input_and_policy_outrank_the_users_pause_toggle ... ok
 test input::tests::key_11_a_paused_direct_machine_resumes_to_direct_not_observing ... ok
 test input::tests::key_12_would_consume_is_false_in_direct_observing_and_every_suspension ... ok
-test input::tests::key_13_typed_prefix_survives_accepting_a_candidate_and_goes_with_the_context ... ok
 test input::tests::key_13_typed_prefix_is_what_the_last_prediction_was_asked_about ... ok
+test input::tests::key_13_typed_prefix_survives_accepting_a_candidate_and_goes_with_the_context ... ok
 test input::tests::tab_takes_the_candidate_while_the_list_is_on_screen_even_in_direct_mode ... ok
 test input::tests::tab_to_host_gives_the_key_back_to_the_host ... ok
 test input::tests::ut_003_direct_never_consumes_ascii ... ok
@@ -161,18 +161,18 @@ test input::tests::ut_003_observing_does_not_consume_ordinary_characters_either 
 test input::tests::ut_004_composition_cancel_writes_nothing ... ok
 test input::tests::ut_004_composition_needs_candidates_and_a_permitted_host_range ... ok
 test input::tests::ut_005_policy_disabled_behaves_like_secure_input ... ok
-test edit::diff::tests::a_middle_part_over_the_cell_limit_is_one_replace_hunk ... ok
 test input::tests::ut_005_secure_input_clears_context_and_never_predicts ... ok
 test input::tests::ut_009_capture_without_candidates_consumes_nothing ... ok
 test input::tests::ut_009_reserved_keys_are_consumed_only_in_enabled_candidate_mode ... ok
 test input::tests::ut_064_a_failure_while_candidates_show_hides_the_window ... ok
 test input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing ... ok
-test input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating ... ok
-test input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes ... ok
 test input::tests::ut_067_an_answered_request_never_triggers_the_watchdog ... ok
-test install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles ... ok
+test input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes ... ok
+test input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating ... ok
 test install_plan::tests::ut_002_selection_errors_and_subsets ... ok
 test install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned ... ok
+test edit::diff::tests::a_middle_part_over_the_cell_limit_is_one_replace_hunk ... ok
+test install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles ... ok
 test install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused ... ok
 test install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent ... ok
 test install_plan::tests::ut_061_uninstall_removes_only_own_guids ... ok
@@ -180,11 +180,11 @@ test json::tests::enforces_limits ... ok
 test json::tests::lone_surrogate_becomes_replacement_character ... ok
 test json::tests::parses_and_round_trips ... ok
 test json::tests::rejects_malformed_input ... ok
-test input::tests::ut_067_direct_is_in_force_within_two_seconds_on_a_virtual_clock ... ok
 test json::tests::serializer_escapes_control_characters ... ok
 test jsval::tests::dates_format_like_to_iso_string ... ok
 test jsval::tests::integer_like_keys_come_first_in_ascending_order ... ok
 test jsval::tests::numbers_print_like_javascript ... ok
+test input::tests::ut_067_direct_is_in_force_within_two_seconds_on_a_virtual_clock ... ok
 test jsval::tests::pretty_printing_matches_json_stringify_with_two_spaces ... ok
 test jsval::tests::values_stringify_truthify_and_round_like_javascript ... ok
 test pack::tests::unknown_keys_are_rejected_in_every_position ... ok
@@ -193,121 +193,121 @@ test profiles::tests::guid_text_round_trip ... ok
 test profiles::tests::ut_001_duplicate_guid_is_rejected ... ok
 test profiles::tests::ut_001_other_invalid_sets_are_rejected ... ok
 test profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids ... ok
+test predict::tests::literal_positions_yield_nothing ... ok
+test protocol::tests::health_reports_protocol_0_3_and_seven_languages ... ok
 test predict::tests::unsupported_dialect_is_explained_not_guessed ... ok
 test predict::tests::identifiers_come_from_nearby_text ... ok
 test predict::tests::rust_prefix_candidates ... ok
-test predict::tests::literal_positions_yield_nothing ... ok
 test input::tests::local_predictor_drives_the_real_engine ... ok
-test protocol::tests::health_reports_protocol_0_3_and_seven_languages ... ok
 test protocol::tests::resolve_validate_encode_and_hex ... ok
-test protocol::tests::scan_never_echoes_secret_values ... ok
 test protocol::tests::serve_answers_one_line_per_request_and_bounds_line_size ... ok
 test protocol::tests::predict_accepts_the_bridges_pins_and_usage_counts ... ok
+test protocol::tests::scan_never_echoes_secret_values ... ok
 test regex::tests::case_insensitive_matches_ascii_letters ... ok
 test regex::tests::greedy_and_lazy_quantifiers_backtrack_like_javascript ... ok
-test protocol::tests::framing_errors ... ok
-test pack::tests::builtin_packs_load_and_cover_seven_languages ... ok
 test regex::tests::literals_classes_and_anchors ... ok
 test regex::tests::optional_groups_alternation_and_negative_lookahead ... ok
-test resolve::tests::ext_of_matches_the_reference ... ok
 test pack::tests::dialect_resolution_defaults_and_reports_unsupported ... ok
-test pack::tests::user_packs_cannot_use_builtin_only_fields_or_collide ... ok
 test scheduler::tests::an_epoch_change_invalidates_and_a_failed_request_reports_its_code ... ok
-test protocol::tests::a_line_of_exactly_the_limit_is_accepted ... ok
+test resolve::tests::ext_of_matches_the_reference ... ok
+test pack::tests::builtin_packs_load_and_cover_seven_languages ... ok
 test scheduler::tests::debounce_is_clamped_and_defaults_when_not_a_number ... ok
-test pack::tests::schema_version_profile_and_semver_checks ... ok
 test scheduler::tests::epochs_locks_and_resolution ... ok
 test scheduler::tests::the_supervisor_goes_direct_at_the_first_failure ... ok
+test pack::tests::schema_version_profile_and_semver_checks ... ok
 test scheduler::tests::ut_039_only_the_latest_input_runs_and_stale_results_are_discarded ... ok
 test scheduler::tests::ut_040_pausing_blocks_the_timer ... ok
+test protocol::tests::framing_errors ... ok
 test scope::tests::ut_025_capability_lattice ... ok
 test scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf ... ok
 test scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned ... ok
-test scope::tests::ut_027_wider_requests_are_refused_not_trimmed ... ok
-test secrets::tests::placeholders_and_env_lookups_are_not_findings ... ok
+test protocol::tests::a_line_of_exactly_the_limit_is_accepted ... ok
 test scope::tests::ut_030_disk_content_is_preview_only ... ok
+test scope::tests::ut_027_wider_requests_are_refused_not_trimmed ... ok
+test pack::tests::user_packs_cannot_use_builtin_only_fields_or_collide ... ok
+test secrets::tests::placeholders_and_env_lookups_are_not_findings ... ok
 test secrets::tests::ut_062_env_files_are_sensitive_by_name ... ok
 test secrets::tests::token_shapes ... ok
 test session::tests::sessions_expire_when_idle_and_are_refreshed_by_use ... ok
-test secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values ... ok
 test session::tests::reusing_entropy_is_refused_and_close_removes_the_session ... ok
 test settings::tests::defaults_have_the_js_shape_and_order ... ok
+test secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values ... ok
 test settings::tests::endpoint_rules_follow_whatwg_url_parsing ... ok
 test settings::tests::integer_like_provider_ids_come_first_as_in_javascript ... ok
-test settings::tests::user_values_override_field_by_field ... ok
-test settings::tests::validation_reports_each_problem_with_its_path ... ok
-test session::tests::the_least_recently_used_session_is_evicted ... ok
-test settings::tests::wrong_types_are_reported_by_field_name ... ok
-test settings::tests::scenarios_resolve_independently ... ok
 test settings::tests::provider_profile_extras_pass_through_and_are_validated ... ok
-test settings_io::tests::a_corrupt_file_never_replaces_the_last_good_backup ... ok
+test settings::tests::wrong_types_are_reported_by_field_name ... ok
+test settings::tests::validation_reports_each_problem_with_its_path ... ok
+test settings::tests::scenarios_resolve_independently ... ok
 test settings::tests::every_effort_level_the_bridge_offers_is_valid_including_max ... ok
-test settings_io::tests::a_successful_write_keeps_the_previous_file_as_bak ... ok
+test settings::tests::user_values_override_field_by_field ... ok
+test settings_io::tests::a_corrupt_file_never_replaces_the_last_good_backup ... ok
+test session::tests::the_least_recently_used_session_is_evicted ... ok
 test settings_io::tests::ut_073_a_corrupt_file_is_recovered_from_the_bak ... ok
-test settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file ... ok
 test settings_io::tests::a_file_store_migrates_atomically ... ok
+test settings_io::tests::a_successful_write_keeps_the_previous_file_as_bak ... ok
 test settings_migrate::tests::a_stored_document_that_is_not_an_object_reads_as_a_fresh_install ... ok
+test settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file ... ok
 test settings_migrate::tests::conflicts_are_reported_and_a_newer_schema_is_refused ... ok
-test sha256::tests::hex_round_trip_and_strictness ... ok
-test sha256::tests::hmac_rfc_4231_vectors ... ok
-test settings_migrate::tests::ut_059_migration_keeps_the_previous_settings_when_the_write_fails ... ok
 test sha256::tests::nist_vector_448_bit_message ... ok
+test sha256::tests::hex_round_trip_and_strictness ... ok
+test settings_migrate::tests::ut_059_migration_keeps_the_previous_settings_when_the_write_fails ... ok
 test sha256::tests::nist_vector_896_bit_message ... ok
 test sha256::tests::nist_vector_abc ... ok
 test sha256::tests::nist_vector_empty_string ... ok
-test settings_migrate::tests::export_refuses_secrets_and_import_validates_everything ... ok
-test sha256::tests::chunking_never_changes_the_digest ... ok
+test sha256::tests::hmac_rfc_4231_vectors ... ok
 test sha256::tests::utf8_text_is_hashed_as_utf8_bytes ... ok
-test style::tests::a_deeper_colour_keeps_its_hue ... ok
 test style::tests::a_colour_survives_the_trip_through_linear_light ... ok
-test style::tests::a_rainbow_band_is_clipped_to_its_rounded_outline ... ok
+test style::tests::a_deeper_colour_keeps_its_hue ... ok
 test style::tests::a_shadow_is_darker_near_the_shape_and_gone_far_away ... ok
-test style::tests::a_vertical_rainbow_runs_from_the_first_stop_to_the_last ... ok
 test style::tests::a_rounded_rectangle_is_soft_at_its_edge_and_opaque_in_the_middle ... ok
+test style::tests::a_rainbow_band_is_clipped_to_its_rounded_outline ... ok
 test style::tests::blending_keeps_the_picture_transparent_where_nothing_was_drawn ... ok
 test style::tests::the_beam_is_brightest_near_the_mouth_and_flares_at_the_character ... ok
+test settings_migrate::tests::export_refuses_secrets_and_import_validates_everything ... ok
+test sha256::tests::chunking_never_changes_the_digest ... ok
+test style::tests::a_vertical_rainbow_runs_from_the_first_stop_to_the_last ... ok
 test style::tests::the_canvas_refuses_a_buffer_that_is_too_small ... ok
-test resolve::tests::manual_lock_beats_everything_and_bridge_id_beats_extension ... ok
 test style::tests::the_colour_of_a_colorref_survives_the_trip ... ok
 test style::tests::the_distance_to_a_rounded_box_is_the_distance_to_its_outline ... ok
 test style::tests::the_edge_of_a_shape_is_covered_partly ... ok
-test style::tests::the_beam_is_translucent_not_a_solid_rod ... ok
-test style::tests::the_gdi_order_puts_blue_first ... ok
 test style::tests::the_beam_only_reaches_what_it_has_travelled ... ok
+test style::tests::the_gdi_order_puts_blue_first ... ok
+test style::tests::the_beam_is_translucent_not_a_solid_rod ... ok
 test style::tests::the_glow_profile_falls_to_zero_at_its_edge ... ok
 test style::tests::the_laser_ramp_stays_in_the_blue_family ... ok
 test style::tests::the_mix_of_two_colours_is_the_one_the_eye_expects ... ok
-test style::tests::the_rainbow_ramp_does_not_jump ... ok
-test regex::tests::a_hostile_line_exhausts_the_budget_instead_of_running_away ... ok
 test style::tests::the_rainbow_ramp_runs_through_every_stop ... ok
+test style::tests::the_rainbow_ramp_does_not_jump ... ok
 test symbols::tests::directory_candidates_skip_self_credentials_and_unknown_extensions ... ok
 test symbols::tests::ann_07_rust_symbols_ignore_comments_and_strings ... ok
 test symbols::tests::ann_07_every_language_has_its_declarations ... ok
-test textrange::tests::edits_validate_and_apply ... ok
 test textrange::tests::eol_detection ... ok
+test textrange::tests::edits_validate_and_apply ... ok
 test textrange::tests::ut_026_crlf_is_not_split ... ok
-test textrange::tests::ut_026_offset_round_trip ... ok
-test textrange::tests::ut_026_positions_never_split_surrogates ... ok
-test textrange::tests::ut_026_out_of_range_is_rejected ... ok
-test uimodel::tests::ut_055_the_overlay_stays_on_the_caret_monitor_and_hides_when_it_cannot_be_located ... ok
 test symbols::tests::the_result_is_capped_and_deduplicated ... ok
+test textrange::tests::ut_026_out_of_range_is_rejected ... ok
+test textrange::tests::ut_026_positions_never_split_surrogates ... ok
+test uimodel::tests::ut_055_the_overlay_stays_on_the_caret_monitor_and_hides_when_it_cannot_be_located ... ok
+test textrange::tests::ut_026_offset_round_trip ... ok
 test uimodel::tests::ut_057_every_candidate_row_is_described_by_text ... ok
 test util::tests::boundary_and_words ... ok
-test uimodel::tests::ut_077_the_environment_check_explains_what_is_unsupported ... ok
 test util::tests::locale_compare_orders_like_icu ... ok
 test util::tests::split_lines_matches_js ... ok
-test util::tests::utf16_helpers_do_not_split_pairs ... ok
-test validators::tests::dialect_gated_features ... ok
+test uimodel::tests::ut_077_the_environment_check_explains_what_is_unsupported ... ok
+test resolve::tests::manual_lock_beats_everything_and_bridge_id_beats_extension ... ok
 test validators::tests::assembly_syntax_mix_and_hex ... ok
+test validators::tests::dialect_gated_features ... ok
 test validators::tests::masking_hides_strings_and_comments ... ok
 test validators::tests::python_indentation_rules ... ok
+test util::tests::utf16_helpers_do_not_split_pairs ... ok
 test validators::tests::unknown_profile_has_no_validator ... ok
 test x86::tests::documented_forms ... ok
 test x86::tests::normalize_matches_js ... ok
-test settings_migrate::tests::ut_058_bad_user_packs_are_rejected_and_skipped_valid_ones_are_kept ... ok
-test style::tests::the_glow_is_brightest_in_its_middle ... ok
 test x86::tests::unresolved_and_unsupported_never_yield_bytes ... ok
 test x86::tests::validate_hex_cases ... ok
+test style::tests::the_glow_is_brightest_in_its_middle ... ok
+test settings_migrate::tests::ut_058_bad_user_packs_are_rejected_and_skipped_valid_ones_are_kept ... ok
+test regex::tests::a_hostile_line_exhausts_the_budget_instead_of_running_away ... ok
 test resolve::tests::tsx_hint_and_weak_evidence ... ok
 test predict::tests::machine_code_is_verified_or_explained ... ok
 test protocol::tests::predict_returns_the_same_candidates_as_the_engine ... ok
@@ -318,7 +318,7 @@ test sha256::tests::nist_vector_one_million_a ... ok
 test symbols::tests::only_the_first_200_kib_are_scanned ... ok
 test input::tests::key_12_would_consume_is_the_pure_twin_of_on_key_for_every_state_key_and_option ... ok
 
-test result: ok. 278 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.99s
+test result: ok. 278 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.40s
 
 
 running 0 tests
@@ -329,13 +329,13 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 running 1 test
 test ut_068_local_candidate_p95_within_20ms ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
 
 
 running 5 tests
-test parity_x86_vectors ... ok
-test parity_secret_cases ... ok
 test parity_validate_cases ... ok
+test parity_secret_cases ... ok
+test parity_x86_vectors ... ok
 test parity_resolve_cases ... ok
 test parity_predict_cases ... ok
 
@@ -345,38 +345,38 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 running 10 tests
 test parity_redaction_and_restoration ... ok
 test parity_outbound_assessment ... ok
-test parity_request_builders_for_every_api_family ... ok
 test parity_prompts_keep_the_data_channel_separate ... ok
-test parity_response_parsers_and_usage ... ok
-test parity_effort_negotiation_covers_every_level_capability_and_family ... ok
-test parity_http_status_mapping ... ok
 test parity_transport_error_mapping ... ok
+test parity_effort_negotiation_covers_every_level_capability_and_family ... ok
+test parity_response_parsers_and_usage ... ok
+test parity_request_builders_for_every_api_family ... ok
+test parity_http_status_mapping ... ok
 test parity_the_whole_infer_flow_prepare_provider_complete ... ok
 test parity_model_output_validation ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
 
 
 running 9 tests
 test parity_directory_scan_decisions ... ok
 test parity_symbol_extraction_for_every_language ... ok
-test parity_annotation_language_support_and_comment_prefix ... ok
-test parity_template_marker_neutralising ... ok
-test parity_comment_stripping_and_code_fingerprints ... ok
 test parity_cypher_sanitising_and_rendering ... ok
 test parity_annotation_prompts_and_f1_addenda ... ok
-test parity_whole_replies_are_applied_or_fall_back_to_the_original ... ok
+test parity_comment_stripping_and_code_fingerprints ... ok
+test parity_annotation_language_support_and_comment_prefix ... ok
+test parity_template_marker_neutralising ... ok
 test parity_comment_only_verification ... ok
+test parity_whole_replies_are_applied_or_fall_back_to_the_original ... ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
 
 running 11 tests
 test parity_diagnostics_sanitize_and_ring ... ok
 test parity_effort_levels_are_the_bridges_list ... ok
 test parity_migrate_and_migrate_store_of_whole_documents ... ok
-test parity_every_interface_key_in_every_language ... ok
 test parity_migrate_v0_with_explicit_clocks ... ok
+test parity_every_interface_key_in_every_language ... ok
 test parity_export_and_import ... ok
 test parity_settings_effective_validate_and_resolve ... ok
 test parity_text_describe_resolve_and_bundle ... ok
@@ -388,39 +388,39 @@ test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
 
 running 7 tests
-test parity_workspace_tokens ... ok
-test parity_endpoint_rules_match_whatwg_url_parsing ... ok
 test parity_sha256 ... ok
+test parity_endpoint_rules_match_whatwg_url_parsing ... ok
 test parity_excerpt ... ok
+test parity_workspace_tokens ... ok
 test parity_settings_effective_validate_and_resolve ... ok
 test parity_diff_and_hunks ... ok
 test parity_diff_over_the_cell_limit_is_one_replace_hunk ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
 
 
 running 3 tests
 test parity_core_supervisor_goes_direct_at_the_first_failure ... ok
-test parity_realtime_scheduler_on_a_virtual_clock ... ok
 test parity_input_session_epochs_locks_and_language_resolution ... ok
+test parity_realtime_scheduler_on_a_virtual_clock ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
 
 running 15 tests
 test the_profile_id_rules_of_a_plugin_pack ... ok
-test the_sql_validator_masks_comments_and_literals ... ok
 test well_formed_sql_of_every_dialect_is_valid ... ok
 test the_sql_validator_reports_the_dialect_gated_features ... ok
-test the_protocol_validates_a_plugin_profile ... ok
-test the_protocol_switches_the_plugin_set ... ok
-test a_built_in_profile_behaves_exactly_as_before ... ok
-test the_three_shipped_plugin_packs_load_and_predict ... ok
-test switching_the_plugin_set_changes_what_predicts ... ok
-test a_plugin_pack_may_not_claim_what_a_built_in_pack_owns ... ok
-test a_disabled_plugin_profile_predicts_nothing_and_is_not_resolvable ... ok
-test the_plugin_extensions_resolve_to_their_profile ... ok
+test the_sql_validator_masks_comments_and_literals ... ok
 test the_schema_documents_the_plugin_operations ... ok
+test the_protocol_validates_a_plugin_profile ... ok
+test a_disabled_plugin_profile_predicts_nothing_and_is_not_resolvable ... ok
+test switching_the_plugin_set_changes_what_predicts ... ok
+test the_protocol_switches_the_plugin_set ... ok
+test a_plugin_pack_may_not_claim_what_a_built_in_pack_owns ... ok
+test a_built_in_profile_behaves_exactly_as_before ... ok
+test the_plugin_extensions_resolve_to_their_profile ... ok
+test the_three_shipped_plugin_packs_load_and_predict ... ok
 test the_default_plugin_set_is_cypher_and_plsql ... ok
 test the_sql_extension_is_ambiguous_when_two_plugins_own_it ... ok
 
@@ -430,102 +430,102 @@ test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 running 5 tests
 test schema_file_is_valid_json_and_describes_every_op ... ok
 test oversized_and_invalid_lines_do_not_stop_the_server ... ok
-test sample_requests_via_serve ... ok
 test sample_requests_via_handle_line ... ok
+test sample_requests_via_serve ... ok
 test sample_requests_via_the_real_binary ... ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.04s
 
 
 running 11 tests
 test every_0_3_operation_except_health_and_open_needs_a_live_session ... ok
 test session_open_validates_locale_entropy_and_settings ... ok
+test session_open_returns_an_id_and_the_protocol ... ok
 test session_close_forgets_the_session ... ok
 test an_idle_session_expires_and_use_keeps_it_alive ... ok
-test settings_apply_returns_effective_settings_and_issues ... ok
 test the_same_entropy_cannot_open_two_sessions ... ok
-test session_open_returns_an_id_and_the_protocol ... ok
+test settings_apply_returns_effective_settings_and_issues ... ok
 test health_reports_protocol_0_3_and_needs_no_session ... ok
 test the_0_2_operations_work_unchanged_next_to_sessions ... ok
 test only_operations_that_carry_document_text_may_use_long_lines ... ok
 test serve_with_keeps_session_state_across_lines_and_the_binary_does_too ... ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
 
 running 17 tests
 test prompts_parse_and_effort_are_reachable_over_the_protocol ... ok
 test it_040_a_high_risk_payload_is_blocked_unless_the_user_accepted_it ... ok
+test ut_035_prepare_reserves_complete_settles_with_the_real_usage ... ok
 test it_020_a_provider_error_settles_the_reservation_and_a_rate_limit_pauses_ai_until_the_retry_time ... ok
 test authorisation_is_checked_by_the_core_with_its_own_grants ... ok
 test ut_031_the_api_key_only_travels_in_the_prepared_headers ... ok
-test privacy_assess_redact_and_restore_keep_the_originals_in_the_core ... ok
-test ut_035_prepare_reserves_complete_settles_with_the_real_usage ... ok
 test ai_prepare_validates_its_fields_and_the_order_of_the_checks ... ok
+test privacy_assess_redact_and_restore_keep_the_originals_in_the_core ... ok
 test ut_039_the_core_decides_when_to_send_and_which_result_is_stale ... ok
-test every_new_operation_needs_an_open_session ... ok
+test the_schema_documents_every_new_operation_and_error_metadata ... ok
 test annotate_and_symbol_operations_return_the_reference_results ... ok
 test epochs_and_language_locks_live_in_the_session ... ok
-test the_schema_documents_every_new_operation_and_error_metadata ... ok
+test every_new_operation_needs_an_open_session ... ok
 test the_oldest_pending_request_is_settled_when_too_many_are_open ... ok
 test only_the_operations_that_carry_text_accept_long_lines ... ok
 test the_real_binary_serves_prepare_and_complete ... ok
 test a_response_over_the_size_limit_is_refused_but_still_settled ... ok
 
-test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.38s
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s
 
 
 running 15 tests
-test overlay_placement_and_the_environment_check ... ok
 test every_operation_needs_an_open_session ... ok
+test overlay_placement_and_the_environment_check ... ok
 test settings_migrate_returns_the_new_structure_and_the_document_to_store ... ok
 test candidate_rows_are_numbered_and_described_in_the_locale ... ok
-test interface_texts_follow_the_session_locale_or_the_named_one ... ok
+test the_status_bar_and_the_menu_are_rendered_from_the_state ... ok
 test diagnostics_record_only_whitelisted_metadata_and_stay_per_session ... ok
 test settings_validate_checks_the_session_settings_or_the_given_ones ... ok
-test the_status_bar_and_the_menu_are_rendered_from_the_state ... ok
+test interface_texts_follow_the_session_locale_or_the_named_one ... ok
 test bundles_carry_the_whole_table_or_the_asked_keys ... ok
 test settings_export_and_import_round_trip_and_refuse_secrets ... ok
-test only_the_documented_operations_may_use_long_lines ... ok
 test the_schema_documents_every_new_operation ... ok
+test only_the_documented_operations_may_use_long_lines ... ok
 test the_diagnostics_ring_is_bounded ... ok
 test rules_check_reports_accepted_and_rejected_packs_without_keeping_anything ... ok
 test the_real_binary_serves_settings_diagnostics_and_texts ... ok
 
-test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
 
 running 18 tests
-test excerpt_applies_the_policy_and_never_splits_characters ... ok
-test every_new_operation_needs_a_session ... ok
-test grants_report_what_to_persist_and_a_new_session_can_import_it ... ok
-test budget_accounting_over_the_protocol ... ok
-test invalidation_and_revoked_grants_block_the_apply ... ok
-test a_write_that_is_never_reported_is_edit_unknown_and_time_comes_from_the_clock ... ok
-test plans_refuse_other_files_unwritable_contexts_and_bad_edits ... ok
-test ids_of_every_family_are_hex_and_do_not_repeat_across_sessions ... ok
 test text_survives_unicode_and_control_characters ... ok
+test budget_accounting_over_the_protocol ... ok
+test excerpt_applies_the_policy_and_never_splits_characters ... ok
 test sessions_do_not_see_each_others_snapshots_or_grants ... ok
-test releasing_a_snapshot_forgets_its_text_and_proposals_and_the_store_is_bounded ... ok
+test every_new_operation_needs_a_session ... ok
+test plans_refuse_other_files_unwritable_contexts_and_bad_edits ... ok
+test invalidation_and_revoked_grants_block_the_apply ... ok
+test grants_report_what_to_persist_and_a_new_session_can_import_it ... ok
 test the_insert_path_uses_explicit_edits_and_a_selection ... ok
-test the_whole_f1_edit_flow_over_jsonl ... ok
+test ids_of_every_family_are_hex_and_do_not_repeat_across_sessions ... ok
+test releasing_a_snapshot_forgets_its_text_and_proposals_and_the_store_is_bounded ... ok
 test only_the_literal_true_confirms_and_every_check_stops_the_prepare ... ok
+test the_whole_f1_edit_flow_over_jsonl ... ok
+test a_write_that_is_never_reported_is_edit_unknown_and_time_comes_from_the_clock ... ok
 test the_v0_3_sample_requests_via_handle_line ... ok
 test the_v0_3_schema_describes_every_operation_and_error ... ok
 test the_v0_3_sample_requests_via_the_real_binary ... ok
 test a_one_megabyte_document_goes_through_the_whole_edit_flow ... ok
 
-test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s
 
 
 running 5 tests
 test a_corrupt_file_is_recovered_from_the_bak_and_the_bak_survives_the_next_write ... ok
 test a_write_replaces_the_file_keeps_the_previous_one_as_bak_and_leaves_no_temp_file ... ok
+test writers_in_parallel_never_expose_a_partial_file ... ok
 test a_failing_write_leaves_the_last_good_file_and_removes_its_temp_file ... ok
 test a_migration_through_a_file_keeps_the_old_file_when_it_cannot_write ... ok
-test writers_in_parallel_never_expose_a_partial_file ... ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
 
 
 running 0 tests
@@ -535,353 +535,353 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 --- Rust: cargo test --workspace: PASS 410 tests
 
 === JavaScript tests (+ engine differential tests, core exe found) ===
-✔ PARITY predict fixtures (94 cases) match the JS engine (57.3365ms)
-✔ PARITY validate fixtures match the JS validators (4.0321ms)
-✔ PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes) (1.5864ms)
-✔ PARITY resolve fixtures match the JS language resolver (1.7507ms)
-✔ PARITY secret fixtures match the JS scanner (3.6018ms)
-✔ PARITY plugin language fixtures match the JS resolver and predictor (98.2316ms)
-✔ PARITY fixtures are exactly what the generator produces (no hand edits) (1322.8587ms)
-✔ UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors (20.8033ms)
-✔ UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only (12.3986ms)
-✔ UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise (2.0674ms)
-✔ API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels (1.9846ms)
-✔ UT-072 / IT-046 a stale capability record is treated as unknown and never sent (0.3488ms)
-✔ UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work (15.4212ms)
-✔ UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded (2.4494ms)
-✔ UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI (13.9676ms)
-✔ UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens (108.8147ms)
-✔ UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only (3.9667ms)
-✔ UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves (1.8519ms)
-✔ UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed (1.011ms)
-✔ IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal (5.3057ms)
-✔ UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled (2.2655ms)
-✔ UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight (1.8225ms)
-✔ UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely (1.2369ms)
-✔ ANN-30 scopeAnchors: one entry per line with the line indentation, tabs preserved, a final line break gives a final empty line (4.3399ms)
-✔ ANN-30a anchors inside strings, raw strings, templates, block comments and here-strings are refused (every language) (1.7145ms)
-✔ ANN-31 line continuations: the line after a trailing backslash (Python, C, assembly) or backtick (PowerShell) is refused (0.5291ms)
-✔ ANN-31a things that must stay on line 1 or 2 of the file: hashbang and the Python encoding cookie (0.4393ms)
-✔ ANN-31b a scope that is a slice of a file: one that starts or ends inside a multi-line literal is not trusted (3.3989ms)
-✔ ANN-31c the file context never shrinks the anchors of a scope that lexes cleanly on its own (1.7488ms)
-✔ ANN-32 JSX (tsx): text and tag markup are refused, {expressions} are code again, TypeScript generics are not JSX (1.1989ms)
-✔ ANN-32a own TypeScript / C lexer: regex literals, template boundaries, apostrophes, C++ raw strings, digit separators (0.575ms)
-✔ ANN-33 the scope prompt: data channel, numbered lines, anchorable list, requested flags, GUARD, file text only in the JSON input (1.1576ms)
-✔ ANN-33a prompt variants: graph only, CRLF scopes, dialect, locale, unsupported language (0.9883ms)
-✔ ANN-34 applyScopeReply: a comment goes above its line at that line's indentation; the code is untouched (2.5685ms)
-✔ ANN-34a unusable replies keep the original and say why (3.2418ms)
-✔ ANN-34b duplicates: a second comment for one anchor, or the same words as the comment already above it, are dropped (0.7857ms)
-✔ ANN-35 line endings and the end of the text are preserved (1.0576ms)
-✔ ANN-35a rendering of the model text: markers, control characters, tabs, blank lines, trailing characters that would continue a comment (2.2727ms)
-✔ ANN-35b "${" decision: nothing is neutralised, the result is applied as a WorkspaceEdit (text), never as a snippet (1.2674ms)
-✔ ANN-36 limits: 1500 characters per comment, 40000 in total, min(lines, 200) comments, growth below 60000, a flood of items (32.875ms)
-✔ ANN-37 Cypher block: graph only, graph with comments, a first line that is not anchorable, sanitising stays as before (5.5821ms)
-✔ ANN-38 invariant (property): with a comment above every anchorable line the code is the original code and the new lines are comments (25.334ms)
-✔ ANN-38a invariant (property): seeded random anchors over every sample, random replies never change the code (94.2261ms)
-✔ ANN-38b the invariant check itself: when the code fingerprint differs the original comes back with invariant-failed (fault injection) (1.9135ms)
-✔ ANN-39 the existing exports and behaviour are unchanged (1.1551ms)
-✔ ANN-39a corpus: this repository's own .rs / .js / .ps1 / .cpp files with seeded random anchors keep their code (and .js still compiles) (3760.0841ms)
-✔ ANN-39b Python samples: ast.parse and the AST are identical with a comment above every anchorable line (skipped without py) (644.6024ms)
-✔ ANN-01 maskSource reports comment/string spans without changing its masked output (3.7132ms)
-✔ ANN-02 stripComments removes comments only, in every supported language (1.0034ms)
-✔ ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected (8.7235ms)
-✔ ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls (3.8937ms)
-✔ ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback (1.5501ms)
-✔ ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled (0.6ms)
-✔ ANN-06b F1 instructions are extended only when a setting is on and the language has line comments (0.4003ms)
-✔ ANN-07 symbol index: names of declarations only, comments and strings ignored, capped (3.4785ms)
-✔ UT-025 context level capability lattice (4.0696ms)
-✔ UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected (1.1919ms)
-✔ UT-027 nearby excerpt is minimal and wider requests are refused (0.4726ms)
-✔ UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk (1.6298ms)
-✔ UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests (1.3159ms)
-✔ UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file (0.5758ms)
-✔ UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only (0.4821ms)
-✔ UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline (0.8491ms)
-✔ UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range (1.2825ms)
-✔ UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths) (0.9915ms)
-✔ UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result (0.829ms)
-✔ UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token (0.6567ms)
-✔ UT-050 an apply token works once; replay writes nothing more (1.0916ms)
-✔ UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried (96.4778ms)
-✔ IT-032 a verified apply can be undone back to the original dirty buffer (0.5908ms)
-✔ UT-054 / IT-036 / ST-030 only the current file can be changed (0.3915ms)
-✔ UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply (0.4848ms)
-✔ UT-052 a failed syntax check disables the default apply (2.5251ms)
-✔ IT-029 insert is refused when the cursor moved after the proposal (0.3379ms)
-✔ NFR-502 purge drops expired plans, used tokens and applied source fragments (0.488ms)
-✔ static: the F1 flow writes only through the coordinator (0.8425ms)
-✔ AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01) (464.3859ms)
-✔ AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036) (1331.6323ms)
-✔ AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019) (583.4757ms)
-✔ AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070) (375.0482ms)
-✔ AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016) (150.0626ms)
-✔ AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021) (306.5299ms)
-✔ AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062) (165.7967ms)
-✔ AI engine: annotations and the symbol index are identical in both engines (ANN-02..07) (143.6301ms)
-✔ scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023) (2650.2873ms)
-✔ scheduler: with the core gone nothing is scheduled and nothing throws (the AI path is optional) (172.023ms)
-✔ CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056) (463.2348ms)
-✔ CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031) (358.8222ms)
-✔ CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046) (226.0357ms)
-✔ CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071) (270.9795ms)
-✔ CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077) (233.8757ms)
-✔ CFG engine adapter: the presentation methods answer like the JS engine, and still answer when the core is down (145.8751ms)
-✔ engine: the Rust engine starts, opens a session and reports itself available (556.7921ms)
-✔ engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine (402.4539ms)
-✔ engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045) (306.4388ms)
-✔ engine: excerpts and insert previews are identical in both engines (UT-027) (150.5501ms)
-✔ engine: prepare/apply give the same outcome in both engines (UT-047..052) (175.3993ms)
-✔ engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029) (130.9099ms)
-✔ engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015) (736.8743ms)
-✔ engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation (291.2495ms)
-✔ engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back (2419.1377ms)
-✔ engine: settings reach the core and scenarios resolve there as in JS (124.9971ms)
-✔ ANN-60 no selection: the declaration around the cursor is the scope, the request is the scope numbered plus the whole file, the highlight shows exactly it (59.605ms)
-✔ ANN-61 a selection is the scope: exactly the selected lines (snapped to whole lines), whatever declaration contains it (18.6218ms)
-✔ ANN-62 Wider / Narrower walk the chain, reset the tab to idle (no request on their own), move the highlight and disable at the ends (8.7408ms)
-✔ ANN-63 Wider stops where the next scope is too large: the entry is shown crossed out with the reason, and it is never selectable (129.8872ms)
-✔ ANN-64 options start from autoComment / graphComment, change for this session only, and say what to enable when both are off (29.2029ms)
-✔ ANN-65 consent: the whole file (L3) is asked first; the directory graph adds the symbol NAMES (L4) to the same modal; declining sends nothing (38.1749ms)
-✔ ANN-66 redaction: one redaction of the whole file, the request is built from it, the comments are applied to the ORIGINAL text, markers read <redacted> (19.3139ms)
-✔ ANN-67 redaction that changes the number of lines is refused before anything is sent (2.7263ms)
-✔ ANN-68 a reply with nothing to add is "ready" with a clear message (and why comments were skipped); an unusable reply is an error that can be retried (48.1965ms)
-✔ ANN-69 Apply writes the selected hunks as ONE WorkspaceEdit through the coordinator: one undo step, code unchanged, highlight cleared (6.132ms)
-✔ ANN-70 apply with every hunk deselected does nothing; an invalid selection cannot be applied (2.6402ms)
-✔ ANN-71 stale: a change to the document after the proposal disables Apply and drops the highlight; Generate starts over from a fresh snapshot (10.1161ms)
-✔ ANN-72 a one-line scope in a CRLF file: the inserted comment uses CRLF too, so the coordinator read-back of the edit holds (10.0138ms)
-✔ ANN-73 Open Diff shows the document next to the result of the SELECTED blocks, read-only (6.4024ms)
-✔ ANN-74 edit mode is the old F1: opens on the whole-file tab, starts nothing, Generate runs the whole-file and the insert request, the annotate tab stays idle (8.8588ms)
-✔ ANN-75 annotate mode: Generate and Enter run the ACTIVE tab only, so one F1 never spends three requests (5.301ms)
-✔ ANN-76 auto-start only in annotate mode, with f1AnnotateOnOpen, AI available, something to add and a configured provider (99.5931ms)
-✔ ANN-77 the annotate tab is unavailable, with a clear message, wherever it cannot work; no request is sent (117.6698ms)
-✔ ANN-78 every supported language: scope + a reply + apply gives comment-only hunks and the same code, on snippets and on real files of this repository (45.0192ms)
-✔ ANN-79 the highlight is a whole-line decoration in theme colours that follows the scope, never steals the cursor, and is disposed with the session (29.6059ms)
-✔ ANN-80 Generate on a stale session reopens with the same tab and the same options; the settings are still untouched (3.6542ms)
-✔ ANN-81 helpers: line counting and cutting keep the line breaks, markers become <redacted>, a one-line scope takes the document line break (0.8794ms)
-✔ ANN-82 the page script: static markup, tab ids, i18n keys in every locale, and the whole-file element ids the existing UAT specs rely on (1.4717ms)
-✔ ANN-83 the page renders the annotate tab from a real session state, posts the right messages, and keeps the whole-file ids (11.375ms)
-✔ ANN-84 the page: unavailable tab (message only), edit mode default tab, and the whole-file tab keeps #cb-h1 #preview #validation #open-diff #apply-full #regen-full (9.063ms)
-✔ ANN-85 the Rust engine: annotate through propose, select, hunkEdits, the coordinator and the redaction of the real core (247.2263ms)
-✔ PRM-20 routing: code goes to f1Full with the L3 consent and the numbered file; prose goes to f1Insert with the L1 consent and the selection only (88.6907ms)
-✔ PRM-21 code review with findings: the clipboard gets the 5W1H prompt with the checked evidence, the notice comes AFTER the copy, one progress with Cancel (8.3946ms)
-✔ PRM-22 prose: the language of the text picks the prompt language (Chinese text -> Chinese headings), a code file with prose in a comment stays prose (16.5381ms)
-✔ PRM-23 AI path not available: the UNREVIEWED template is copied, the notice says why, and not a single request is sent (139.8191ms)
-✔ PRM-24 redact: the secret never reaches the provider or the clipboard, the markers stay in the prompt, invented markers are dropped (12.9959ms)
-✔ PRM-25 needsOptimization:false is the genuine "nothing to fix" answer: a notice (own wording for code and prose), the clipboard UNTOUCHED (8.3417ms)
-✔ PRM-26 an unusable reply is an ERROR (warning, clipboard untouched), never "no optimisation needed" (7.5524ms)
-✔ PRM-27 findings the file does not contain are dropped: none left -> nothing copied; some left -> only those (4.5823ms)
-✔ PRM-28 a sensitive selection or file is never copied and never sent when the user does not accept it (6.1657ms)
-✔ PRM-29 a second F2 cancels the first: only the newer answer reaches the clipboard, the older one ends silently (23.3163ms)
-✔ PRM-30 Cancel on the progress notification ends the request silently with the clipboard untouched (12.0922ms)
-✔ PRM-31 gates: disabled, no selection (palette), blank selection and an over-large selection stop before anything is classified or sent (18.8488ms)
-✔ PRM-32 context keys and manifest: F2 only with enabled + the chosen binding + a language that is not excluded, and only with a selection (3.0505ms)
-✔ PRM-33 diagnostics and error text never carry the selection, the code, the prompt or a secret; one error message per failure (5.5677ms)
-✔ PRM-34 selectionInRedacted: the selection is cut out of the redacted file; a changed edge falls back to whole lines (0.4727ms)
-✔ PRM-35 every f2 text exists in all three locales with the same placeholders; f2.js writes no files and logs nothing (3.553ms)
-✔ UT-006 candidate kind/source/validation round-trip and invalid kind rejected (5.4173ms)
-✔ UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last (1.577ms)
-✔ UT-008 de-duplication keeps one row and every source (0.802ms)
-✔ UT-010 placeholders become snippet tab stops, or plain text without a bridge (0.7842ms)
-✔ UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected (80.1679ms)
-✔ UT-012 bridge languageId beats extension and lexical hints (0.5662ms)
-✔ UT-013 / IT-010 ambiguous signals keep the current language and only suggest (0.6027ms)
-✔ UT-014 / IT-011 manual lock outranks automatic detection until unlocked (0.4968ms)
-✔ UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys (0.3245ms)
-✔ UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged (2.5897ms)
-✔ UT-017 Rust: no semicolon is forced when the position is not provably a statement (1.179ms)
-✔ UT-018 Python templates follow the host indentation and EOL without mixing (0.9636ms)
-✔ UT-019 TSX: a generic arrow is never offered as a bare <T> (0.7925ms)
-✔ UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger (1.3823ms)
-✔ UT-037 nearby code feeds identifier candidates (no project-wide claims) (1.0104ms)
-✔ UT-041 candidates carry source, language and explanation; unverified AI never looks verified (1.046ms)
-✔ UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable (2.1051ms)
-✔ UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions (5.6332ms)
-✔ ANN-40 [toast] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item (18.7516ms)
-✔ ANN-40 [statusbar] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item (4.4915ms)
-✔ ANN-41 events inside graceMs are ignored (the keypress that produced the notice), events at graceMs close it (1.4105ms)
-✔ ANN-42 Output-channel documents (rewritten and auto-scrolled by every extension) never dismiss the notice, real editors do (0.8972ms)
-✔ ANN-43 WindowState: only an inactive -> active flip counts as activity; losing focus is "focus"; the baseline is read from window.state (6.0839ms)
-✔ ANN-44 show() while open closes the old notice as "replaced" first, then opens the new one with a single set of subscriptions (2.2485ms)
-✔ ANN-45 the timeout closes the notice at timeoutMs and not earlier; invalid options fall back to 20000 / 600 (3.2265ms)
-✔ ANN-46 dismiss() is idempotent: first reason wins, default reason is "api", no notice is a no-op (1.1143ms)
-✔ ANN-47 dispose() dismisses with "disposed", unsubscribes everything, and turns later show() into a no-op (2.581ms)
-✔ ANN-48 repeated show/dismiss cycles (every way of closing) leak no subscription, timer or visible item (7.8152ms)
-✔ ANN-49 a throwing VS Code API never escapes: fallback to the other presentation, else nothing (2.4714ms)
-✔ ANN-50 empty or blank text shows nothing, leaves an open notice alone and returns an already resolved dismissed (0.6991ms)
-✔ ANN-51 presentations: toast = static full-bar Notification progress, status bar = right-aligned item with escaped text and warning colour (1.7107ms)
-✔ ANN-52 presentation option: unknown values mean toast; statusbar-first falls back to the toast when creating the item throws (0.2819ms)
-✔ ANN-53 events that an older VS Code or a reduced host lacks only drop their own trigger (0.8742ms)
-✔ ANN-54 default wiring (real setTimeout/Date.now) shows and dismisses without leaving a timer or a throw (0.6297ms)
-✔ ANN-55 the module takes vscode by injection (never requires it) and documents the observability limits (0.9745ms)
-✔ UT-PLG-01 the three shipped plugin packs load next to the seven built-in packs (11.1409ms)
-✔ UT-PLG-02 a plugin profile predicts with its own rules and is validated with its own family (16.1952ms)
-✔ UT-PLG-03 a disabled plugin profile predicts nothing and cannot be locked (13.2645ms)
-✔ UT-PLG-04 the enabled set decides what is active (15.7273ms)
-✔ UT-PLG-05 .sql belongs to PL/SQL by default and becomes ambiguous when T-SQL is on as well (14.9423ms)
-✔ UT-PLG-06 a user-imported plugin pack adds a whole new language (6.5822ms)
-✔ UT-PLG-07 a plugin pack that claims a built-in language id or extension is rejected (22.8385ms)
-✔ UT-PLG-08 a bad plugin pack is reported and skipped; the previous registry is not degraded (6.0084ms)
-✔ UT-PLG-09 the SQL validator reports the dialect codes and validates well-formed SQL (2.6435ms)
-✔ UT-PLG-10 the validator family comes from the pack, an unknown family has no validator (4.8979ms)
-✔ UT-PLG-11 the built-in profiles behave exactly as before, also with plugins loaded (27.1911ms)
-✔ UT-PLG-12 the setting and the commands are declared in the manifest (English, Japanese, Simplified Chinese) (1.917ms)
-✔ PRM-01 detectTextLocale: kana means Japanese, Han without kana means Chinese, the rest English (2.2159ms)
-✔ PRM-02 classifySelection: prose languages, structured data, shell commands, short selections (16.1795ms)
-✔ PRM-02a (dogfood) a selection inside a Markdown fence is code even without the fence lines; without offsets the content decides (1.1726ms)
-✔ PRM-02b (dogfood) identifier fragments are not words: "Json::int(length as i64)" is code although "as" and "i" are stopwords (0.3857ms)
-✔ PRM-02c (dogfood) short code fragments: struct fields, quoted literals, method chains, trailing commas (0.6413ms)
-✔ PRM-02d (dogfood) comment lines and headings: the leaders are furniture, the rest decides (0.5301ms)
-✔ PRM-02e profile languages: prose only when wholly inside comments/strings AND it reads as sentences (5.5566ms)
-✔ PRM-03 buildReviewRequest (code): guard, 5W1H, evidence rules, JSON data channel with the file window (3.676ms)
-✔ PRM-03a the window uses absolute file line numbers, the same line splitter for CRLF, LF and lone CR, and says when it is cut (9.1238ms)
-✔ PRM-03b a selection longer than 20000 characters is cut in the request with its omission named (2.3098ms)
-✔ PRM-04 applyReviewReply: a verified finding and a clean field set pass through; ok does not depend on needsOptimization (1.6983ms)
-✔ PRM-04a invalid or wrongly typed replies are errors (reply-invalid), never "no optimisation needed" (0.8034ms)
-✔ PRM-04b code findings are verified against the file: line in range, evidence on that line or the next two, whitespace-insensitive, case-sensitive (4.6888ms)
-✔ PRM-04c severity is normalised, unknown severity is low; text fields of a finding are cleaned (0.7664ms)
-✔ PRM-04d needsOptimization needs the model to say so AND a surviving verified finding; the findings cap and duplicates are counted (0.6546ms)
-✔ PRM-04e prose findings: the element must be one of the six and the issue non-empty; cap 6 (0.5916ms)
-✔ PRM-04f fields: trimmed, control and invisible characters removed, 2000 characters at most, missing ones named (0.9015ms)
-✔ PRM-04g a reply never changes what WE know: facts and the file are not read from it (0.3324ms)
-✔ PRM-05 renderPrompt: six localised headings in order, material fenced, findings numbered with file lines, constraints and output format (5.0697ms)
-✔ PRM-05a "Where" is filled by us from the facts and combined with the model text (1.0636ms)
-✔ PRM-05b empty model fields are filled with sensible localised sentences from the facts: never empty, never a placeholder (2.0181ms)
-✔ PRM-05c the fence is longer than any backtick run in the content, and survives ``` and ~~~ inside the code (0.7664ms)
-✔ PRM-05d model text cannot become a heading or a fence of ours, in a section body or in a finding (0.8417ms)
-✔ PRM-05i (property-test finding) a field that starts with a tab and a heading must not become a heading once the tab is trimmed (0.435ms)
-✔ PRM-05e a selection over 20000 characters keeps head and tail with an explicit marker and says so (5.2256ms)
-✔ PRM-05f prose prompts: the improved prompt, the original as reference material, the gaps found, no code constraints (0.5436ms)
-✔ PRM-05g findings outside the selection are marked; the in-selection ones are not (0.3307ms)
-✔ PRM-05h (review finding) keys like "constructor" or "__proto__" in model-supplied severity / language / file extension never reach Object.prototype (1.3355ms)
-✔ PRM-06 localPrompt: an UNREVIEWED template with explicit questions, only local facts, nothing claimed as analysed (1.4297ms)
-✔ PRM-07 verify5W1H: order, missing and empty sections; headings inside fences do not count (1.3899ms)
-✔ PRM-08 property: renderPrompt/localPrompt never throw, always verify, never leak control characters or open a fence (117.6188ms)
-✔ PRM-08a property: applyReviewReply never throws on arbitrary JSON or garbage and always accounts for every finding (117.0511ms)
-✔ PRM-09 dogfood: Markdown paragraphs/fences, source comments and function bodies of THIS repository classify with at most 3% misses (3868.3384ms)
+✔ PARITY predict fixtures (94 cases) match the JS engine (34.1672ms)
+✔ PARITY validate fixtures match the JS validators (3.3443ms)
+✔ PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes) (1.5273ms)
+✔ PARITY resolve fixtures match the JS language resolver (1.281ms)
+✔ PARITY secret fixtures match the JS scanner (3.494ms)
+✔ PARITY plugin language fixtures match the JS resolver and predictor (53.0157ms)
+✔ PARITY fixtures are exactly what the generator produces (no hand edits) (803.0673ms)
+✔ UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors (5.6343ms)
+✔ UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only (5.1425ms)
+✔ UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise (1.6902ms)
+✔ API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels (1.5979ms)
+✔ UT-072 / IT-046 a stale capability record is treated as unknown and never sent (0.2743ms)
+✔ UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work (14.1624ms)
+✔ UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded (1.4035ms)
+✔ UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI (2.5701ms)
+✔ UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens (94.9012ms)
+✔ UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only (1.551ms)
+✔ UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves (3.4605ms)
+✔ UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed (1.4521ms)
+✔ IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal (4.4607ms)
+✔ UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled (1.9819ms)
+✔ UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight (1.5902ms)
+✔ UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely (0.6251ms)
+✔ ANN-30 scopeAnchors: one entry per line with the line indentation, tabs preserved, a final line break gives a final empty line (3.2947ms)
+✔ ANN-30a anchors inside strings, raw strings, templates, block comments and here-strings are refused (every language) (1.4741ms)
+✔ ANN-31 line continuations: the line after a trailing backslash (Python, C, assembly) or backtick (PowerShell) is refused (0.4689ms)
+✔ ANN-31a things that must stay on line 1 or 2 of the file: hashbang and the Python encoding cookie (0.3366ms)
+✔ ANN-31b a scope that is a slice of a file: one that starts or ends inside a multi-line literal is not trusted (2.7439ms)
+✔ ANN-31c the file context never shrinks the anchors of a scope that lexes cleanly on its own (1.0696ms)
+✔ ANN-32 JSX (tsx): text and tag markup are refused, {expressions} are code again, TypeScript generics are not JSX (0.7393ms)
+✔ ANN-32a own TypeScript / C lexer: regex literals, template boundaries, apostrophes, C++ raw strings, digit separators (0.3655ms)
+✔ ANN-33 the scope prompt: data channel, numbered lines, anchorable list, requested flags, GUARD, file text only in the JSON input (0.7103ms)
+✔ ANN-33a prompt variants: graph only, CRLF scopes, dialect, locale, unsupported language (0.5707ms)
+✔ ANN-34 applyScopeReply: a comment goes above its line at that line's indentation; the code is untouched (1.5014ms)
+✔ ANN-34a unusable replies keep the original and say why (1.0342ms)
+✔ ANN-34b duplicates: a second comment for one anchor, or the same words as the comment already above it, are dropped (0.5734ms)
+✔ ANN-35 line endings and the end of the text are preserved (0.4947ms)
+✔ ANN-35a rendering of the model text: markers, control characters, tabs, blank lines, trailing characters that would continue a comment (2.1026ms)
+✔ ANN-35b "${" decision: nothing is neutralised, the result is applied as a WorkspaceEdit (text), never as a snippet (0.7368ms)
+✔ ANN-36 limits: 1500 characters per comment, 40000 in total, min(lines, 200) comments, growth below 60000, a flood of items (23.985ms)
+✔ ANN-37 Cypher block: graph only, graph with comments, a first line that is not anchorable, sanitising stays as before (1.5183ms)
+✔ ANN-38 invariant (property): with a comment above every anchorable line the code is the original code and the new lines are comments (23.1478ms)
+✔ ANN-38a invariant (property): seeded random anchors over every sample, random replies never change the code (67.1416ms)
+✔ ANN-38b the invariant check itself: when the code fingerprint differs the original comes back with invariant-failed (fault injection) (1.9836ms)
+✔ ANN-39 the existing exports and behaviour are unchanged (0.7392ms)
+✔ ANN-39a corpus: this repository's own .rs / .js / .ps1 / .cpp files with seeded random anchors keep their code (and .js still compiles) (2349.5449ms)
+✔ ANN-39b Python samples: ast.parse and the AST are identical with a comment above every anchorable line (skipped without py) (278.6445ms)
+✔ ANN-01 maskSource reports comment/string spans without changing its masked output (2.2702ms)
+✔ ANN-02 stripComments removes comments only, in every supported language (0.7346ms)
+✔ ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected (2.2502ms)
+✔ ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls (1.1596ms)
+✔ ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback (1.3528ms)
+✔ ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled (0.466ms)
+✔ ANN-06b F1 instructions are extended only when a setting is on and the language has line comments (0.2873ms)
+✔ ANN-07 symbol index: names of declarations only, comments and strings ignored, capped (2.5944ms)
+✔ UT-025 context level capability lattice (3.4573ms)
+✔ UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected (0.8625ms)
+✔ UT-027 nearby excerpt is minimal and wider requests are refused (0.3993ms)
+✔ UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk (1.3712ms)
+✔ UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests (1.3023ms)
+✔ UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file (0.6959ms)
+✔ UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only (0.5246ms)
+✔ UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline (0.8743ms)
+✔ UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range (1.2722ms)
+✔ UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths) (0.8173ms)
+✔ UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result (0.567ms)
+✔ UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token (0.5369ms)
+✔ UT-050 an apply token works once; replay writes nothing more (0.9129ms)
+✔ UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried (82.23ms)
+✔ IT-032 a verified apply can be undone back to the original dirty buffer (0.7725ms)
+✔ UT-054 / IT-036 / ST-030 only the current file can be changed (0.5076ms)
+✔ UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply (0.5542ms)
+✔ UT-052 a failed syntax check disables the default apply (0.3497ms)
+✔ IT-029 insert is refused when the cursor moved after the proposal (0.4691ms)
+✔ NFR-502 purge drops expired plans, used tokens and applied source fragments (0.5289ms)
+✔ static: the F1 flow writes only through the coordinator (0.8769ms)
+✔ AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01) (319.7364ms)
+✔ AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036) (1317.5773ms)
+✔ AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019) (436.4954ms)
+✔ AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070) (246.4703ms)
+✔ AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016) (71.8355ms)
+✔ AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021) (126.6388ms)
+✔ AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062) (67.637ms)
+✔ AI engine: annotations and the symbol index are identical in both engines (ANN-02..07) (78.284ms)
+✔ scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023) (2508.0281ms)
+✔ scheduler: with the core gone nothing is scheduled and nothing throws (the AI path is optional) (109.643ms)
+✔ CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056) (320.4744ms)
+✔ CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031) (209.148ms)
+✔ CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046) (138.8837ms)
+✔ CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071) (139.0538ms)
+✔ CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077) (114.4179ms)
+✔ CFG engine adapter: the presentation methods answer like the JS engine, and still answer when the core is down (111.5838ms)
+✔ engine: the Rust engine starts, opens a session and reports itself available (322.8774ms)
+✔ engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine (269.5434ms)
+✔ engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045) (152.8553ms)
+✔ engine: excerpts and insert previews are identical in both engines (UT-027) (135.5564ms)
+✔ engine: prepare/apply give the same outcome in both engines (UT-047..052) (142.3279ms)
+✔ engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029) (95.841ms)
+✔ engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015) (957.1071ms)
+✔ engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation (172.2678ms)
+✔ engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back (1185.8093ms)
+✔ engine: settings reach the core and scenarios resolve there as in JS (50.9063ms)
+✔ ANN-60 no selection: the declaration around the cursor is the scope, the request is the scope numbered plus the whole file, the highlight shows exactly it (36.0023ms)
+✔ ANN-61 a selection is the scope: exactly the selected lines (snapped to whole lines), whatever declaration contains it (14.6989ms)
+✔ ANN-62 Wider / Narrower walk the chain, reset the tab to idle (no request on their own), move the highlight and disable at the ends (7.5713ms)
+✔ ANN-63 Wider stops where the next scope is too large: the entry is shown crossed out with the reason, and it is never selectable (96.9558ms)
+✔ ANN-64 options start from autoComment / graphComment, change for this session only, and say what to enable when both are off (7.2459ms)
+✔ ANN-65 consent: the whole file (L3) is asked first; the directory graph adds the symbol NAMES (L4) to the same modal; declining sends nothing (33.7314ms)
+✔ ANN-66 redaction: one redaction of the whole file, the request is built from it, the comments are applied to the ORIGINAL text, markers read <redacted> (24.2161ms)
+✔ ANN-67 redaction that changes the number of lines is refused before anything is sent (2.152ms)
+✔ ANN-68 a reply with nothing to add is "ready" with a clear message (and why comments were skipped); an unusable reply is an error that can be retried (47.1709ms)
+✔ ANN-69 Apply writes the selected hunks as ONE WorkspaceEdit through the coordinator: one undo step, code unchanged, highlight cleared (5.7994ms)
+✔ ANN-70 apply with every hunk deselected does nothing; an invalid selection cannot be applied (2.7447ms)
+✔ ANN-71 stale: a change to the document after the proposal disables Apply and drops the highlight; Generate starts over from a fresh snapshot (22.518ms)
+✔ ANN-72 a one-line scope in a CRLF file: the inserted comment uses CRLF too, so the coordinator read-back of the edit holds (20.217ms)
+✔ ANN-73 Open Diff shows the document next to the result of the SELECTED blocks, read-only (8.4077ms)
+✔ ANN-74 edit mode is the old F1: opens on the whole-file tab, starts nothing, Generate runs the whole-file and the insert request, the annotate tab stays idle (8.2476ms)
+✔ ANN-75 annotate mode: Generate and Enter run the ACTIVE tab only, so one F1 never spends three requests (7.0101ms)
+✔ ANN-76 auto-start only in annotate mode, with f1AnnotateOnOpen, AI available, something to add and a configured provider (87.9195ms)
+✔ ANN-77 the annotate tab is unavailable, with a clear message, wherever it cannot work; no request is sent (75.6592ms)
+✔ ANN-78 every supported language: scope + a reply + apply gives comment-only hunks and the same code, on snippets and on real files of this repository (37.2018ms)
+✔ ANN-79 the highlight is a whole-line decoration in theme colours that follows the scope, never steals the cursor, and is disposed with the session (12.499ms)
+✔ ANN-80 Generate on a stale session reopens with the same tab and the same options; the settings are still untouched (2.6167ms)
+✔ ANN-81 helpers: line counting and cutting keep the line breaks, markers become <redacted>, a one-line scope takes the document line break (0.5985ms)
+✔ ANN-82 the page script: static markup, tab ids, i18n keys in every locale, and the whole-file element ids the existing UAT specs rely on (1.4477ms)
+✔ ANN-83 the page renders the annotate tab from a real session state, posts the right messages, and keeps the whole-file ids (13.0396ms)
+✔ ANN-84 the page: unavailable tab (message only), edit mode default tab, and the whole-file tab keeps #cb-h1 #preview #validation #open-diff #apply-full #regen-full (7.389ms)
+✔ ANN-85 the Rust engine: annotate through propose, select, hunkEdits, the coordinator and the redaction of the real core (164.8426ms)
+✔ PRM-20 routing: code goes to f1Full with the L3 consent and the numbered file; prose goes to f1Insert with the L1 consent and the selection only (38.4917ms)
+✔ PRM-21 code review with findings: the clipboard gets the 5W1H prompt with the checked evidence, the notice comes AFTER the copy, one progress with Cancel (3.8994ms)
+✔ PRM-22 prose: the language of the text picks the prompt language (Chinese text -> Chinese headings), a code file with prose in a comment stays prose (17.7637ms)
+✔ PRM-23 AI path not available: the UNREVIEWED template is copied, the notice says why, and not a single request is sent (93.3368ms)
+✔ PRM-24 redact: the secret never reaches the provider or the clipboard, the markers stay in the prompt, invented markers are dropped (10.3627ms)
+✔ PRM-25 needsOptimization:false is the genuine "nothing to fix" answer: a notice (own wording for code and prose), the clipboard UNTOUCHED (5.4307ms)
+✔ PRM-26 an unusable reply is an ERROR (warning, clipboard untouched), never "no optimisation needed" (5.5918ms)
+✔ PRM-27 findings the file does not contain are dropped: none left -> nothing copied; some left -> only those (4.5484ms)
+✔ PRM-28 a sensitive selection or file is never copied and never sent when the user does not accept it (19.5817ms)
+✔ PRM-29 a second F2 cancels the first: only the newer answer reaches the clipboard, the older one ends silently (8.7942ms)
+✔ PRM-30 Cancel on the progress notification ends the request silently with the clipboard untouched (13.7795ms)
+✔ PRM-31 gates: disabled, no selection (palette), blank selection and an over-large selection stop before anything is classified or sent (24.3418ms)
+✔ PRM-32 context keys and manifest: F2 only with enabled + the chosen binding + a language that is not excluded, and only with a selection (10.6922ms)
+✔ PRM-33 diagnostics and error text never carry the selection, the code, the prompt or a secret; one error message per failure (10.0648ms)
+✔ PRM-34 selectionInRedacted: the selection is cut out of the redacted file; a changed edge falls back to whole lines (0.331ms)
+✔ PRM-35 every f2 text exists in all three locales with the same placeholders; f2.js writes no files and logs nothing (4.2577ms)
+✔ UT-006 candidate kind/source/validation round-trip and invalid kind rejected (4.1659ms)
+✔ UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last (0.841ms)
+✔ UT-008 de-duplication keeps one row and every source (0.6351ms)
+✔ UT-010 placeholders become snippet tab stops, or plain text without a bridge (0.5166ms)
+✔ UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected (32.1592ms)
+✔ UT-012 bridge languageId beats extension and lexical hints (0.47ms)
+✔ UT-013 / IT-010 ambiguous signals keep the current language and only suggest (0.574ms)
+✔ UT-014 / IT-011 manual lock outranks automatic detection until unlocked (0.4208ms)
+✔ UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys (0.2688ms)
+✔ UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged (2.0141ms)
+✔ UT-017 Rust: no semicolon is forced when the position is not provably a statement (0.9875ms)
+✔ UT-018 Python templates follow the host indentation and EOL without mixing (0.7231ms)
+✔ UT-019 TSX: a generic arrow is never offered as a bare <T> (0.7515ms)
+✔ UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger (1.1725ms)
+✔ UT-037 nearby code feeds identifier candidates (no project-wide claims) (1.2242ms)
+✔ UT-041 candidates carry source, language and explanation; unverified AI never looks verified (0.7103ms)
+✔ UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable (1.4583ms)
+✔ UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions (4.9725ms)
+✔ ANN-40 [toast] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item (11.4026ms)
+✔ ANN-40 [statusbar] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item (1.6986ms)
+✔ ANN-41 events inside graceMs are ignored (the keypress that produced the notice), events at graceMs close it (0.9928ms)
+✔ ANN-42 Output-channel documents (rewritten and auto-scrolled by every extension) never dismiss the notice, real editors do (0.6145ms)
+✔ ANN-43 WindowState: only an inactive -> active flip counts as activity; losing focus is "focus"; the baseline is read from window.state (0.816ms)
+✔ ANN-44 show() while open closes the old notice as "replaced" first, then opens the new one with a single set of subscriptions (0.9408ms)
+✔ ANN-45 the timeout closes the notice at timeoutMs and not earlier; invalid options fall back to 20000 / 600 (1.3333ms)
+✔ ANN-46 dismiss() is idempotent: first reason wins, default reason is "api", no notice is a no-op (1.0598ms)
+✔ ANN-47 dispose() dismisses with "disposed", unsubscribes everything, and turns later show() into a no-op (1.7961ms)
+✔ ANN-48 repeated show/dismiss cycles (every way of closing) leak no subscription, timer or visible item (6.1061ms)
+✔ ANN-49 a throwing VS Code API never escapes: fallback to the other presentation, else nothing (2.3075ms)
+✔ ANN-50 empty or blank text shows nothing, leaves an open notice alone and returns an already resolved dismissed (0.6197ms)
+✔ ANN-51 presentations: toast = static full-bar Notification progress, status bar = right-aligned item with escaped text and warning colour (1.4801ms)
+✔ ANN-52 presentation option: unknown values mean toast; statusbar-first falls back to the toast when creating the item throws (0.2316ms)
+✔ ANN-53 events that an older VS Code or a reduced host lacks only drop their own trigger (0.777ms)
+✔ ANN-54 default wiring (real setTimeout/Date.now) shows and dismisses without leaving a timer or a throw (0.929ms)
+✔ ANN-55 the module takes vscode by injection (never requires it) and documents the observability limits (1.1685ms)
+✔ UT-PLG-01 the three shipped plugin packs load next to the seven built-in packs (8.5497ms)
+✔ UT-PLG-02 a plugin profile predicts with its own rules and is validated with its own family (5.783ms)
+✔ UT-PLG-03 a disabled plugin profile predicts nothing and cannot be locked (9.573ms)
+✔ UT-PLG-04 the enabled set decides what is active (9.0317ms)
+✔ UT-PLG-05 .sql belongs to PL/SQL by default and becomes ambiguous when T-SQL is on as well (5.2226ms)
+✔ UT-PLG-06 a user-imported plugin pack adds a whole new language (5.0009ms)
+✔ UT-PLG-07 a plugin pack that claims a built-in language id or extension is rejected (4.4443ms)
+✔ UT-PLG-08 a bad plugin pack is reported and skipped; the previous registry is not degraded (4.611ms)
+✔ UT-PLG-09 the SQL validator reports the dialect codes and validates well-formed SQL (1.5016ms)
+✔ UT-PLG-10 the validator family comes from the pack, an unknown family has no validator (2.8363ms)
+✔ UT-PLG-11 the built-in profiles behave exactly as before, also with plugins loaded (30.2807ms)
+✔ UT-PLG-12 the setting and the commands are declared in the manifest (English, Japanese, Simplified Chinese) (1.6818ms)
+✔ PRM-01 detectTextLocale: kana means Japanese, Han without kana means Chinese, the rest English (3.447ms)
+✔ PRM-02 classifySelection: prose languages, structured data, shell commands, short selections (14.6071ms)
+✔ PRM-02a (dogfood) a selection inside a Markdown fence is code even without the fence lines; without offsets the content decides (1.0343ms)
+✔ PRM-02b (dogfood) identifier fragments are not words: "Json::int(length as i64)" is code although "as" and "i" are stopwords (0.3877ms)
+✔ PRM-02c (dogfood) short code fragments: struct fields, quoted literals, method chains, trailing commas (0.5216ms)
+✔ PRM-02d (dogfood) comment lines and headings: the leaders are furniture, the rest decides (0.4371ms)
+✔ PRM-02e profile languages: prose only when wholly inside comments/strings AND it reads as sentences (3.0858ms)
+✔ PRM-03 buildReviewRequest (code): guard, 5W1H, evidence rules, JSON data channel with the file window (1.7417ms)
+✔ PRM-03a the window uses absolute file line numbers, the same line splitter for CRLF, LF and lone CR, and says when it is cut (13.0298ms)
+✔ PRM-03b a selection longer than 20000 characters is cut in the request with its omission named (1.3172ms)
+✔ PRM-04 applyReviewReply: a verified finding and a clean field set pass through; ok does not depend on needsOptimization (1.3468ms)
+✔ PRM-04a invalid or wrongly typed replies are errors (reply-invalid), never "no optimisation needed" (0.7758ms)
+✔ PRM-04b code findings are verified against the file: line in range, evidence on that line or the next two, whitespace-insensitive, case-sensitive (0.6779ms)
+✔ PRM-04c severity is normalised, unknown severity is low; text fields of a finding are cleaned (0.9201ms)
+✔ PRM-04d needsOptimization needs the model to say so AND a surviving verified finding; the findings cap and duplicates are counted (0.7838ms)
+✔ PRM-04e prose findings: the element must be one of the six and the issue non-empty; cap 6 (0.6231ms)
+✔ PRM-04f fields: trimmed, control and invisible characters removed, 2000 characters at most, missing ones named (0.9931ms)
+✔ PRM-04g a reply never changes what WE know: facts and the file are not read from it (0.3612ms)
+✔ PRM-05 renderPrompt: six localised headings in order, material fenced, findings numbered with file lines, constraints and output format (4.4797ms)
+✔ PRM-05a "Where" is filled by us from the facts and combined with the model text (1.0839ms)
+✔ PRM-05b empty model fields are filled with sensible localised sentences from the facts: never empty, never a placeholder (3.4109ms)
+✔ PRM-05c the fence is longer than any backtick run in the content, and survives ``` and ~~~ inside the code (0.8047ms)
+✔ PRM-05d model text cannot become a heading or a fence of ours, in a section body or in a finding (0.8503ms)
+✔ PRM-05i (property-test finding) a field that starts with a tab and a heading must not become a heading once the tab is trimmed (0.4133ms)
+✔ PRM-05e a selection over 20000 characters keeps head and tail with an explicit marker and says so (5.0188ms)
+✔ PRM-05f prose prompts: the improved prompt, the original as reference material, the gaps found, no code constraints (0.779ms)
+✔ PRM-05g findings outside the selection are marked; the in-selection ones are not (0.5917ms)
+✔ PRM-05h (review finding) keys like "constructor" or "__proto__" in model-supplied severity / language / file extension never reach Object.prototype (2.2776ms)
+✔ PRM-06 localPrompt: an UNREVIEWED template with explicit questions, only local facts, nothing claimed as analysed (4.6892ms)
+✔ PRM-07 verify5W1H: order, missing and empty sections; headings inside fences do not count (0.7063ms)
+✔ PRM-08 property: renderPrompt/localPrompt never throw, always verify, never leak control characters or open a fence (162.782ms)
+✔ PRM-08a property: applyReviewReply never throws on arbitrary JSON or garbage and always accounts for every finding (100.7601ms)
+✔ PRM-09 dogfood: Markdown paragraphs/fences, source comments and function bodies of THIS repository classify with at most 3% misses (2101.3919ms)
 ℹ PRM-09 corpus: 4188 selections, 10 misclassified (0.24%, limit 3%)
-# UT-068 P95=1.545ms max=5.867ms node=v24.19.0 platform=win32/x64
-✔ UT-043 / IT-026 / ST-023 Ctrl+F1 never steals the key unless enabled, bound and not excluded (3.3946ms)
-✔ UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language (13.1668ms)
-✔ UT-057 every candidate row is described by text (source, validation, position, action), not colour (0.948ms)
-✔ UT-055 overlay placement stays on the caret monitor and hides when it cannot be located (2.3863ms)
-✔ UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained (8.0283ms)
-✔ UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules (11.0543ms)
-✔ UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption (3.0815ms)
-✔ UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working (11.6745ms)
-✔ UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing (9.3821ms)
-✔ UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working (49.7864ms)
-✔ UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context) (1056.1191ms)
-✔ UT-074 static: nothing in the source writes a key to settings, files or logs (4.8784ms)
-✔ FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings (0.5347ms)
-✔ ANN-20a rust: cursor anywhere in a function (attributes, doc comment, header, body, closing line) resolves to the whole function (9.9352ms)
-✔ ANN-20b rust: an impl block yields to the method inside it, a nested fn to its own body, a closure stays part of its method (2.5589ms)
-✔ ANN-20c rust: between items and at top level the paragraph is the block; a blank line uses the nearest paragraph above, else below (1.2221ms)
-✔ ANN-20d rust: items, macros, impl-for, generics and array types in the header are named like symbols.js names them (4.8644ms)
-✔ ANN-20e rust: braces, keywords and quotes inside strings, raw strings, char literals and comments are ignored (2.5407ms)
-✔ ANN-20f rust: else-if chains, match arms and closures are blocks of their function, never declarations (0.7171ms)
-✔ ANN-21a typescript: classes, constructors, methods, getters; control flow inside a method never becomes a declaration (9.6831ms)
-✔ ANN-21b typescript: functions assigned to a name, expression-bodied arrows, property functions and nested functions (2.2697ms)
-✔ ANN-21c typescript: if/else/for/while/switch/try/catch/with and call arguments are not methods (2.1223ms)
-✔ ANN-21d typescript: regex literals with quotes or braces, strings and template literals cannot unbalance the file (1.0286ms)
-✔ ANN-21g typescript: JSX text with apostrophes and closing tags does not break the structure of the file (TSX / JSX) (1.1696ms)
-✔ ANN-21e typescript: destructured and defaulted parameters and object types in the header belong to the header (1.3674ms)
-✔ ANN-21f typescript: interface, enum, namespace and type alias with a body are declarations (0.8941ms)
-✔ ANN-22a python: def and class end where the indentation falls back; decorators and comments directly above belong to them (5.1056ms)
-✔ ANN-22b python: lines inside brackets and triple-quoted strings (even `def` and column-0 text) do not end or start a declaration (1.0106ms)
-✔ ANN-22c python: between functions is a block, tabs and CRLF indent the same way, a half-typed header is no declaration (0.877ms)
-✔ ANN-23a powershell: function, filter, class and its methods; help comment and [CmdletBinding()] directly above belong to the function (7.9366ms)
-✔ ANN-23b powershell: a here-string that contains `function` and braces is a string; loops and hash tables are blocks (2.4575ms)
-✔ ANN-24a c: function definitions (K&R layout, `if` is no function), struct/enum/typedef, multi-line #define, prototypes are not declarations (9.6485ms)
-✔ ANN-24b c++: namespaces, classes with access labels, inline methods, constructors with initialiser lists, operators, templates (1.8496ms)
-✔ ANN-24c c: __declspec / __attribute__ / [[attributes]] in front of a function do not hide it, headers that continue over lines work (2.0626ms)
-✔ ANN-25a assembly: a label owns the lines up to the next label, local labels nest in it, PROC..ENDP is one region (3.0099ms)
-✔ ANN-25b assembly: comment characters per assembler, a `;` inside a string is no comment, a label-looking comment is no label (0.4214ms)
-✔ ANN-25c machine-code: blocks only, a paragraph is a run of non-blank lines, comment lines belong to it (0.3261ms)
-✔ ANN-26a selection: snapped to whole lines, a partial first or last line is included, an end at column 0 leaves that line out (0.9026ms)
-✔ ANN-26b selection: whole-file and whole-function selections, no duplicates in the chain, a selection across two functions widens to the common parent (0.5125ms)
-✔ ANN-26c selection: only whitespace or blank lines falls back to the cursor at its start; a cursor needs no selection (0.5692ms)
-✔ ANN-26d chain: widening candidates are strictly nested, innermost first, cut off before the first that exceeds maxChars; tooLarge when the first does (2.1583ms)
-✔ ANN-26e result shape: ok, kind, offsets, lines, label and symbol fields; chain[0] is the result itself; 0-based inclusive lines (0.6282ms)
-✔ ANN-26f every language: function lines, blank line after it, nesting, selection snapping, chain cut-off, tooLarge, BOM, unbalanced and half-typed code (51.7786ms)
-✔ ANN-27a broken code never throws: an unbalanced brace, a half-typed header or an unterminated comment/string degrade to a block (a stray quote in TypeScript, C and Python ends with its line, like in a tokenizer) (3.4126ms)
-✔ ANN-27b the same text with CRLF, LF, CR or mixed line ends resolves to the same lines; offsets are UTF-16 code units (28.1886ms)
-✔ ANN-27c a BOM, tabs, odd whitespace and unusual arguments are harmless (1.9968ms)
-✔ ANN-27d empty or whitespace-only documents and unsupported profiles are reported, not guessed (0.5355ms)
-✔ ANN-27e dogfooding regressions: header braces, one-line functions beside their parent, impl blocks, symbol naming (15.1191ms)
-✔ ANN-28a a 2 MiB file resolves quickly and still finds the declaration under the cursor (232.6405ms)
-✔ ANN-28b a text above the cap is analysed through a window of lines around the selection and never as a whole (222.2258ms)
-✔ ANN-28c hostile inputs stay cheap: floods of quotes, brackets and headers, unterminated arrows and strings, deep nesting (1685.2488ms)
-✔ ANN-29a property: at every cursor position of the samples (LF, CRLF, with BOM) the result is whole lines, contains the cursor and its chain is nested and bounded (635.4358ms)
-✔ ANN-29b property: selections of every kind and every maxChars keep the same invariants (180.2113ms)
-✔ ANN-29c property: every prefix and every one-character deletion of the samples (code that is being typed) resolves without throwing (207.46ms)
-✔ ANN-29d corpus: every line of this repository's own Rust, JavaScript and C++ sources resolves to whole lines around it, nested and agreeing with symbols.js (1308.4328ms)
-✔ SEC-30 a name that is not secret-class is let through at once: no dialog, no notification, nothing read, nothing recorded (13.1958ms)
-✔ SEC-31 interactive: a modal names the file and its kind, says reading is local and sending is asked separately, offers Allow once / Allow for this session; Esc refuses this call and remembers nothing (6.8925ms)
-✔ SEC-32 "Allow once" is spent by exactly one call; "Allow for this session" stays until it expires (4.7449ms)
-✔ SEC-33 typing path: never a modal; ONE non-modal notification per file and session; Keep off is remembered silently; Allow opens the file (17.296ms)
-✔ SEC-34 the gate fails closed: an error while deciding is "do not read", never "read" (0.7414ms)
-✔ SEC-35 real path: a name that hides a secret file behind a link is judged by where it points; the decision follows the real file; a failing realpath falls back to the plain path (4.5003ms)
-✔ SEC-36 isLocked / lockInfo are synchronous, open no dialog, read nothing; the real path is cached for a few seconds and shared with ensure (1.7515ms)
-✔ SEC-37 the setting programmingIme.secretFilePatterns adds patterns (live); the built-in rules cannot be switched off (8.7888ms)
-✔ SEC-38 diagnostics carry the rule id and the event only: never a path, a file name or content; a decision is recorded once, not once per keystroke (5.1206ms)
-✔ SEC-39 the command: a QuickPick of the decisions (label, state, expiry, folder) to forget them, and a way to allow the active file explicitly (57.4417ms)
-✔ SEC-40 F1: a secret-class file is not read until the user allows it; Esc opens no panel and says why; a non-secret file opens with no dialog (14.9794ms)
-✔ SEC-41 F1: a refusal changes nothing - the open session on another file stays, and a stale session that is refused on reopen is not regenerated (3.7498ms)
-✔ ANN-86 F1 opens on the Whole file tab when the annotate tab is unavailable only because of the language or an empty document and AI is otherwise available (17.43ms)
-✔ SEC-42 F2: the selection and the file are not read before a secret-class file is allowed; a refusal is a notice and the clipboard is untouched; a non-secret file runs with no dialog (26.2203ms)
-✔ SEC-43 annotate insertion: a protected file is not read and the snippet goes in unchanged; no AI configured means no read and no question at all (9.2459ms)
-✔ SEC-44 directorySymbols: a secret-class sibling is never read (open in the editor or not, any engine answer), a symlink stays excluded, and a folder behind a link is judged by where it really is (13.0448ms)
-✔ SEC-45 extension.js: typing and Show Code Candidates read nothing of a protected file; language detection uses the name only; the status shows the lock and its click opens the command; a normal file is not affected (39.7292ms)
-✔ SEC-46 manifest and texts: the command and the setting exist, every text exists in three locales with the same placeholders, no setting switches the gate off (8.5454ms)
-✔ SEC-01 the thinnest slice: .env and its variants are secret, the committed templates are not (10.8416ms)
-✔ SEC-02 paths are normalised before anything is decided: separators, case, drive, UNC, trailing dots, streams (1.8993ms)
-✔ SEC-02a every path segment is normalised, not only the last: `.ssh.\id_x` is inside `.ssh`; a colon in a POSIX name does not hide its extension (1.4285ms)
-✔ SEC-02b never throws, and a non-path is an empty answer; a bare string is taken as the path (a caller bug fails closed) (0.5802ms)
-✔ SEC-02c the label is what a dialog may show: original spelling, no directories, no control or bidi characters, bounded (5.9916ms)
-✔ SEC-03 gate: once is spent by one consume, session lasts until expiry, deny stays a deny (0.7884ms)
-✔ SEC-03a gate: one canonical key for every spelling of the same file, and only for that file (4.0779ms)
-✔ SEC-03b gate: record replaces an earlier answer and makes it the newest; eviction drops the oldest, expired entries go first (8.9501ms)
-✔ SEC-03c gate: a deny is remembered (no nagging) until revoked or expired; once and session do not outlive their ttl (0.6583ms)
-✔ SEC-03d gate: list() has exactly key, label, state, expiresAt and hands out copies; clear() empties; hostile input changes nothing (0.8631ms)
-✔ SEC-03e gate: a clock that goes backwards or is not a number fails closed; bad options fall back to the defaults (0.7089ms)
-✔ SEC-04 user patterns add secret-class names (glob, case-insensitive) and never throw on junk (3.5411ms)
-✔ SEC-04a glob: `*` and `?` stay inside a segment, `**` crosses, `**/` also matches no directory, a trailing `/` means everything below (6.8895ms)
-✔ SEC-04b glob: no separator = base name only (any case); a separator pattern is matched from any directory unless rooted; backslash is a separator (3.779ms)
-✔ SEC-04c glob: regex metacharacters are literal characters (3.7635ms)
-✔ SEC-04d glob: a pathological pattern is linear, and a spent step budget fails closed (the user is asked) (641.2673ms)
-✔ SEC-04d1 a rooted pattern sees the whole path: a long path must not push its root out of view (that would fail open) (4.5507ms)
-✔ SEC-04e user pattern limits: at most 200 valid patterns, none longer than 300 characters (skipped, not cut), junk does not count (10.5025ms)
-✔ SEC-05 the positive corpus: every secret-class name is found, with the right kind (32.5754ms)
-✔ SEC-06 the negative corpus: source, docs, public keys, templates, ciphertext and tool folders without secrets are never flagged (462.0948ms)
-✔ SEC-06a the result is the same under decoration: Windows or POSIX directories, any case, trailing dot or space, stream suffix (576.6851ms)
-✔ SEC-07 the table is data: frozen, unique ids, known kinds, one primary form, lower-case, and no rule is shadowed by an earlier one (28.9282ms)
-✔ SEC-08 the rules are a superset of secrets.js SENSITIVE_FILE; the only names given up are the committed templates (28.3298ms)
-✔ SEC-08a the template carve-out in full: a template word as the last or an inner part of an env name is not secret, any other word is (10.1698ms)
-✔ SEC-09 hostile names cannot make the rules or the key slow (no backtracking anywhere) (4462.9059ms)
-✔ SEC-10 backup and editor-swap copies of a secret are secret; of a public key or a template are not (1.551ms)
-✔ SEC-11 a virtualenv folder named `.env` does not make its contents secret; the names inside still count (0.5214ms)
-✔ SEC-12 dogfood on a real machine: .gnupg agent sockets and lock files are not secrets, its keys are (0.7775ms)
-✔ SEC-12a dogfood: the SQLite sidecars (-journal, -wal, -shm) of a browser credential store are as secret as the store (2.0569ms)
-✔ SEC-12b dogfood: key files without an extension (adb, sshd host keys); their .pub halves are not secret (0.8534ms)
-✔ SEC-12c dogfood: a login token kept in a file whose name ends in token (no extension); tokens.json, design tokens and code are not (1.5887ms)
-✔ SEC-12d dogfood: auth.json is a login store only inside the folders of the CLIs that keep one (a bare auth.json is a locale file) (1.3671ms)
-✔ SEC-12e dogfood: password stores by name (SourceTree passwd, Xshell .mpw, KeePass-format safes of an IDE); the similar names that are code are not (0.9664ms)
-✔ SEC-12f dogfood: names that look like secrets but are this project's own source stay unflagged (1.1642ms)
-✔ SEC-12g dogfood: a login or license key under a tool folder is a *.key and stays secret (the price of the SENSITIVE_FILE superset) (0.2216ms)
-✔ SEC-13 needsConfirmation: secret and not allowed -> needs; deny means skip silently, once is spent by consume (0.9871ms)
-✔ SEC-14 properties on random names: never throws, same answer twice, key is stable, separator/case/dot/stream spellings agree (1864.6603ms)
-✔ SEC-15 the module is pure: no require, no fs, no clock or randomness of its own (the gate takes now) (5.2144ms)
-✔ SCR-01 the status bar model renders exactly what the extension rendered inline, in every state and locale (26.6791ms)
-✔ SCR-01 the status menu lists the actions in order; the AI item names the action and is English in every locale (1.1727ms)
-✔ UT-020 PowerShell candidates are plain text only (never executed) (12.1104ms)
-✔ UT-021 C declarations and standard versions (1.0851ms)
-✔ UT-022 assembly dialect: Intel and AT&T are never silently mixed (2.8732ms)
-✔ UT-023 machine code hex: valid round-trip, incomplete/invalid rejected (2.0406ms)
-✔ UT-024 / ST-043 unresolved symbols never produce bytes (18.6568ms)
-✔ ST-043 independent golden vectors for the verified x86-64 forms (2.7677ms)
-✔ UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation (1.1585ms)
-✔ UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything (7.6329ms)
+# UT-068 P95=1.210ms max=8.626ms node=v24.19.0 platform=win32/x64
+✔ UT-043 / IT-026 / ST-023 Ctrl+F1 never steals the key unless enabled, bound and not excluded (3.1881ms)
+✔ UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language (16.5971ms)
+✔ UT-057 every candidate row is described by text (source, validation, position, action), not colour (1.0652ms)
+✔ UT-055 overlay placement stays on the caret monitor and hides when it cannot be located (0.5662ms)
+✔ UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained (1.0818ms)
+✔ UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules (4.0329ms)
+✔ UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption (2.7084ms)
+✔ UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working (6.3106ms)
+✔ UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing (6.9612ms)
+✔ UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working (55.3144ms)
+✔ UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context) (718.889ms)
+✔ UT-074 static: nothing in the source writes a key to settings, files or logs (1.6598ms)
+✔ FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings (0.2926ms)
+✔ ANN-20a rust: cursor anywhere in a function (attributes, doc comment, header, body, closing line) resolves to the whole function (10.8393ms)
+✔ ANN-20b rust: an impl block yields to the method inside it, a nested fn to its own body, a closure stays part of its method (1.9722ms)
+✔ ANN-20c rust: between items and at top level the paragraph is the block; a blank line uses the nearest paragraph above, else below (0.9062ms)
+✔ ANN-20d rust: items, macros, impl-for, generics and array types in the header are named like symbols.js names them (4.0013ms)
+✔ ANN-20e rust: braces, keywords and quotes inside strings, raw strings, char literals and comments are ignored (0.9113ms)
+✔ ANN-20f rust: else-if chains, match arms and closures are blocks of their function, never declarations (0.7093ms)
+✔ ANN-21a typescript: classes, constructors, methods, getters; control flow inside a method never becomes a declaration (9.8004ms)
+✔ ANN-21b typescript: functions assigned to a name, expression-bodied arrows, property functions and nested functions (2.0756ms)
+✔ ANN-21c typescript: if/else/for/while/switch/try/catch/with and call arguments are not methods (1.7221ms)
+✔ ANN-21d typescript: regex literals with quotes or braces, strings and template literals cannot unbalance the file (1.1577ms)
+✔ ANN-21g typescript: JSX text with apostrophes and closing tags does not break the structure of the file (TSX / JSX) (0.9408ms)
+✔ ANN-21e typescript: destructured and defaulted parameters and object types in the header belong to the header (1.3128ms)
+✔ ANN-21f typescript: interface, enum, namespace and type alias with a body are declarations (0.7332ms)
+✔ ANN-22a python: def and class end where the indentation falls back; decorators and comments directly above belong to them (4.8093ms)
+✔ ANN-22b python: lines inside brackets and triple-quoted strings (even `def` and column-0 text) do not end or start a declaration (1.0145ms)
+✔ ANN-22c python: between functions is a block, tabs and CRLF indent the same way, a half-typed header is no declaration (0.7314ms)
+✔ ANN-23a powershell: function, filter, class and its methods; help comment and [CmdletBinding()] directly above belong to the function (5.7241ms)
+✔ ANN-23b powershell: a here-string that contains `function` and braces is a string; loops and hash tables are blocks (1.2441ms)
+✔ ANN-24a c: function definitions (K&R layout, `if` is no function), struct/enum/typedef, multi-line #define, prototypes are not declarations (21.355ms)
+✔ ANN-24b c++: namespaces, classes with access labels, inline methods, constructors with initialiser lists, operators, templates (12.2543ms)
+✔ ANN-24c c: __declspec / __attribute__ / [[attributes]] in front of a function do not hide it, headers that continue over lines work (2.31ms)
+✔ ANN-25a assembly: a label owns the lines up to the next label, local labels nest in it, PROC..ENDP is one region (3.0916ms)
+✔ ANN-25b assembly: comment characters per assembler, a `;` inside a string is no comment, a label-looking comment is no label (0.3533ms)
+✔ ANN-25c machine-code: blocks only, a paragraph is a run of non-blank lines, comment lines belong to it (0.2938ms)
+✔ ANN-26a selection: snapped to whole lines, a partial first or last line is included, an end at column 0 leaves that line out (0.8205ms)
+✔ ANN-26b selection: whole-file and whole-function selections, no duplicates in the chain, a selection across two functions widens to the common parent (0.5626ms)
+✔ ANN-26c selection: only whitespace or blank lines falls back to the cursor at its start; a cursor needs no selection (0.5539ms)
+✔ ANN-26d chain: widening candidates are strictly nested, innermost first, cut off before the first that exceeds maxChars; tooLarge when the first does (3.1394ms)
+✔ ANN-26e result shape: ok, kind, offsets, lines, label and symbol fields; chain[0] is the result itself; 0-based inclusive lines (0.5213ms)
+✔ ANN-26f every language: function lines, blank line after it, nesting, selection snapping, chain cut-off, tooLarge, BOM, unbalanced and half-typed code (43.5874ms)
+✔ ANN-27a broken code never throws: an unbalanced brace, a half-typed header or an unterminated comment/string degrade to a block (a stray quote in TypeScript, C and Python ends with its line, like in a tokenizer) (1.3499ms)
+✔ ANN-27b the same text with CRLF, LF, CR or mixed line ends resolves to the same lines; offsets are UTF-16 code units (31.5031ms)
+✔ ANN-27c a BOM, tabs, odd whitespace and unusual arguments are harmless (2.2577ms)
+✔ ANN-27d empty or whitespace-only documents and unsupported profiles are reported, not guessed (0.4888ms)
+✔ ANN-27e dogfooding regressions: header braces, one-line functions beside their parent, impl blocks, symbol naming (12.551ms)
+✔ ANN-28a a 2 MiB file resolves quickly and still finds the declaration under the cursor (156.1456ms)
+✔ ANN-28b a text above the cap is analysed through a window of lines around the selection and never as a whole (159.1608ms)
+✔ ANN-28c hostile inputs stay cheap: floods of quotes, brackets and headers, unterminated arrows and strings, deep nesting (992.4603ms)
+✔ ANN-29a property: at every cursor position of the samples (LF, CRLF, with BOM) the result is whole lines, contains the cursor and its chain is nested and bounded (325.1816ms)
+✔ ANN-29b property: selections of every kind and every maxChars keep the same invariants (103.0231ms)
+✔ ANN-29c property: every prefix and every one-character deletion of the samples (code that is being typed) resolves without throwing (97.6437ms)
+✔ ANN-29d corpus: every line of this repository's own Rust, JavaScript and C++ sources resolves to whole lines around it, nested and agreeing with symbols.js (622.572ms)
+✔ SEC-30 a name that is not secret-class is let through at once: no dialog, no notification, nothing read, nothing recorded (26.3708ms)
+✔ SEC-31 interactive: a modal names the file and its kind, says reading is local and sending is asked separately, offers Allow once / Allow for this session; Esc refuses this call and remembers nothing (18.7567ms)
+✔ SEC-32 "Allow once" is spent by exactly one call; "Allow for this session" stays until it expires (15.4473ms)
+✔ SEC-33 typing path: never a modal; ONE non-modal notification per file and session; Keep off is remembered silently; Allow opens the file (16.6582ms)
+✔ SEC-34 the gate fails closed: an error while deciding is "do not read", never "read" (0.7366ms)
+✔ SEC-35 real path: a name that hides a secret file behind a link is judged by where it points; the decision follows the real file; a failing realpath falls back to the plain path (5.1717ms)
+✔ SEC-36 isLocked / lockInfo are synchronous, open no dialog, read nothing; the real path is cached for a few seconds and shared with ensure (1.6684ms)
+✔ SEC-37 the setting programmingIme.secretFilePatterns adds patterns (live); the built-in rules cannot be switched off (7.8077ms)
+✔ SEC-38 diagnostics carry the rule id and the event only: never a path, a file name or content; a decision is recorded once, not once per keystroke (7.4835ms)
+✔ SEC-39 the command: a QuickPick of the decisions (label, state, expiry, folder) to forget them, and a way to allow the active file explicitly (43.226ms)
+✔ SEC-40 F1: a secret-class file is not read until the user allows it; Esc opens no panel and says why; a non-secret file opens with no dialog (12.4986ms)
+✔ SEC-41 F1: a refusal changes nothing - the open session on another file stays, and a stale session that is refused on reopen is not regenerated (3.2041ms)
+✔ ANN-86 F1 opens on the Whole file tab when the annotate tab is unavailable only because of the language or an empty document and AI is otherwise available (13.727ms)
+✔ SEC-42 F2: the selection and the file are not read before a secret-class file is allowed; a refusal is a notice and the clipboard is untouched; a non-secret file runs with no dialog (20.3623ms)
+✔ SEC-43 annotate insertion: a protected file is not read and the snippet goes in unchanged; no AI configured means no read and no question at all (5.1047ms)
+✔ SEC-44 directorySymbols: a secret-class sibling is never read (open in the editor or not, any engine answer), a symlink stays excluded, and a folder behind a link is judged by where it really is (8.6548ms)
+✔ SEC-45 extension.js: typing and Show Code Candidates read nothing of a protected file; language detection uses the name only; the status shows the lock and its click opens the command; a normal file is not affected (29.4833ms)
+✔ SEC-46 manifest and texts: the command and the setting exist, every text exists in three locales with the same placeholders, no setting switches the gate off (6.841ms)
+✔ SEC-01 the thinnest slice: .env and its variants are secret, the committed templates are not (9.478ms)
+✔ SEC-02 paths are normalised before anything is decided: separators, case, drive, UNC, trailing dots, streams (1.4351ms)
+✔ SEC-02a every path segment is normalised, not only the last: `.ssh.\id_x` is inside `.ssh`; a colon in a POSIX name does not hide its extension (1.1815ms)
+✔ SEC-02b never throws, and a non-path is an empty answer; a bare string is taken as the path (a caller bug fails closed) (0.5933ms)
+✔ SEC-02c the label is what a dialog may show: original spelling, no directories, no control or bidi characters, bounded (3.9243ms)
+✔ SEC-03 gate: once is spent by one consume, session lasts until expiry, deny stays a deny (0.7698ms)
+✔ SEC-03a gate: one canonical key for every spelling of the same file, and only for that file (1.1113ms)
+✔ SEC-03b gate: record replaces an earlier answer and makes it the newest; eviction drops the oldest, expired entries go first (1.2437ms)
+✔ SEC-03c gate: a deny is remembered (no nagging) until revoked or expired; once and session do not outlive their ttl (0.8234ms)
+✔ SEC-03d gate: list() has exactly key, label, state, expiresAt and hands out copies; clear() empties; hostile input changes nothing (0.6774ms)
+✔ SEC-03e gate: a clock that goes backwards or is not a number fails closed; bad options fall back to the defaults (4.986ms)
+✔ SEC-04 user patterns add secret-class names (glob, case-insensitive) and never throw on junk (3.9921ms)
+✔ SEC-04a glob: `*` and `?` stay inside a segment, `**` crosses, `**/` also matches no directory, a trailing `/` means everything below (6.515ms)
+✔ SEC-04b glob: no separator = base name only (any case); a separator pattern is matched from any directory unless rooted; backslash is a separator (3.8108ms)
+✔ SEC-04c glob: regex metacharacters are literal characters (4.474ms)
+✔ SEC-04d glob: a pathological pattern is linear, and a spent step budget fails closed (the user is asked) (461.5892ms)
+✔ SEC-04d1 a rooted pattern sees the whole path: a long path must not push its root out of view (that would fail open) (3.2055ms)
+✔ SEC-04e user pattern limits: at most 200 valid patterns, none longer than 300 characters (skipped, not cut), junk does not count (6.0578ms)
+✔ SEC-05 the positive corpus: every secret-class name is found, with the right kind (24.412ms)
+✔ SEC-06 the negative corpus: source, docs, public keys, templates, ciphertext and tool folders without secrets are never flagged (252.1242ms)
+✔ SEC-06a the result is the same under decoration: Windows or POSIX directories, any case, trailing dot or space, stream suffix (290.2851ms)
+✔ SEC-07 the table is data: frozen, unique ids, known kinds, one primary form, lower-case, and no rule is shadowed by an earlier one (13.7475ms)
+✔ SEC-08 the rules are a superset of secrets.js SENSITIVE_FILE; the only names given up are the committed templates (14.4638ms)
+✔ SEC-08a the template carve-out in full: a template word as the last or an inner part of an env name is not secret, any other word is (7.6315ms)
+✔ SEC-09 hostile names cannot make the rules or the key slow (no backtracking anywhere) (2524.125ms)
+✔ SEC-10 backup and editor-swap copies of a secret are secret; of a public key or a template are not (1.4077ms)
+✔ SEC-11 a virtualenv folder named `.env` does not make its contents secret; the names inside still count (0.4389ms)
+✔ SEC-12 dogfood on a real machine: .gnupg agent sockets and lock files are not secrets, its keys are (0.6254ms)
+✔ SEC-12a dogfood: the SQLite sidecars (-journal, -wal, -shm) of a browser credential store are as secret as the store (1.3181ms)
+✔ SEC-12b dogfood: key files without an extension (adb, sshd host keys); their .pub halves are not secret (0.4401ms)
+✔ SEC-12c dogfood: a login token kept in a file whose name ends in token (no extension); tokens.json, design tokens and code are not (0.8532ms)
+✔ SEC-12d dogfood: auth.json is a login store only inside the folders of the CLIs that keep one (a bare auth.json is a locale file) (0.578ms)
+✔ SEC-12e dogfood: password stores by name (SourceTree passwd, Xshell .mpw, KeePass-format safes of an IDE); the similar names that are code are not (0.6083ms)
+✔ SEC-12f dogfood: names that look like secrets but are this project's own source stay unflagged (0.9077ms)
+✔ SEC-12g dogfood: a login or license key under a tool folder is a *.key and stays secret (the price of the SENSITIVE_FILE superset) (0.1883ms)
+✔ SEC-13 needsConfirmation: secret and not allowed -> needs; deny means skip silently, once is spent by consume (0.6386ms)
+✔ SEC-14 properties on random names: never throws, same answer twice, key is stable, separator/case/dot/stream spellings agree (893.4076ms)
+✔ SEC-15 the module is pure: no require, no fs, no clock or randomness of its own (the gate takes now) (0.6546ms)
+✔ SCR-01 the status bar model renders exactly what the extension rendered inline, in every state and locale (23.65ms)
+✔ SCR-01 the status menu lists the actions in order; the AI item names the action and is English in every locale (0.9079ms)
+✔ UT-020 PowerShell candidates are plain text only (never executed) (12.0753ms)
+✔ UT-021 C declarations and standard versions (0.9649ms)
+✔ UT-022 assembly dialect: Intel and AT&T are never silently mixed (2.7565ms)
+✔ UT-023 machine code hex: valid round-trip, incomplete/invalid rejected (2.2168ms)
+✔ UT-024 / ST-043 unresolved symbols never produce bytes (17.0697ms)
+✔ ST-043 independent golden vectors for the verified x86-64 forms (2.3136ms)
+✔ UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation (0.7044ms)
+✔ UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything (4.5488ms)
 ℹ tests 345
 ℹ suites 0
 ℹ pass 345
@@ -889,7 +889,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 9760.2014
+ℹ duration_ms 5488.1682
 --- JavaScript tests (+ engine differential tests, core exe found): PASS 
 
 === real pime-core.exe smoke test (JSON Lines) ===
@@ -899,59 +899,59 @@ core-binary-smoke: all checks passed (D:\cargo-target-ime\debug\pime-core.exe)
 === TSF crate (crates/pime-tsf): cargo test (the unit tests, the IME scenario suite and the function ledger) ===
 
 running 240 tests
+test controller::tests::a_fault_survives_a_plain_reset_but_not_a_focus_change ... ok
+test controller::tests::a_long_multi_line_template_is_one_short_line_in_the_window ... ok
 test controller::tests::a_lost_caret_position_keeps_the_last_known_one ... ok
-test controller::tests::a_commit_into_changed_text_is_refused_not_forced ... ok
-test controller::tests::a_commit_that_fails_inside_the_explicit_composition_degrades_like_any_other ... ok
+test controller::tests::a_pure_test_does_not_change_anything_for_an_eaten_key ... ok
+test controller::tests::a_host_that_refuses_the_retry_as_well_costs_one_attempt_and_the_next_composition_still_opens ... ok
+test controller::tests::a_refused_end_of_the_composition_is_retried_asynchronously_once_not_dropped ... ok
 test controller::tests::a_key_the_machine_has_no_use_for_changes_nothing ... ok
+test controller::tests::a_refused_end_gets_its_retry_on_focus_change_and_on_deactivate_too ... ok
+test controller::tests::a_commit_into_changed_text_is_refused_not_forced ... ok
+test controller::tests::a_panic_in_the_host_or_the_window_is_contained_too ... ok
 test controller::tests::a_held_key_is_observed_once_per_repeat_even_when_the_host_sends_no_key_up ... ok
 test controller::tests::a_digit_beyond_the_page_or_on_an_uninsertable_row_is_typed_not_eaten ... ok
-test controller::tests::a_long_multi_line_template_is_one_short_line_in_the_window ... ok
-test controller::tests::a_host_that_refuses_the_retry_as_well_costs_one_attempt_and_the_next_composition_still_opens ... ok
 test controller::tests::a_host_that_tests_one_key_twice_does_not_make_the_machine_see_it_twice ... ok
-test controller::tests::a_fault_survives_a_plain_reset_but_not_a_focus_change ... ok
-test controller::tests::a_refused_end_gets_its_retry_on_focus_change_and_on_deactivate_too ... ok
-test controller::tests::a_panic_in_the_host_or_the_window_is_contained_too ... ok
-test controller::tests::a_refused_end_of_the_composition_is_retried_asynchronously_once_not_dropped ... ok
-test controller::tests::a_field_that_turns_into_a_password_field_inside_one_context_is_noticed_at_the_next_key ... ok
-test controller::tests::a_pure_test_does_not_change_anything_for_an_eaten_key ... ok
+test controller::tests::a_commit_that_fails_inside_the_explicit_composition_degrades_like_any_other ... ok
 test controller::tests::a_list_that_disappears_without_a_hide_is_not_eaten_behind ... ok
 test controller::tests::a_typed_key_is_observed_exactly_once_under_every_host_call_pattern ... ok
-test controller::tests::a_window_that_fails_in_the_middle_of_a_composition_ends_it_and_hands_the_keys_back ... ok
+test controller::tests::a_field_that_turns_into_a_password_field_inside_one_context_is_noticed_at_the_next_key ... ok
 test controller::tests::after_a_commit_the_next_prediction_starts_from_the_new_text ... ok
-test controller::tests::after_esc_the_next_typed_characters_pass_through_again ... ok
+test controller::tests::a_window_that_fails_in_the_middle_of_a_composition_ends_it_and_hands_the_keys_back ... ok
 test controller::tests::becoming_secure_while_candidates_show_hides_them_and_clears_the_context ... ok
-test controller::tests::alt_f1_switches_between_direct_mode_and_input_mode ... ok
 test controller::tests::candidates_vanishing_while_composing_close_the_composition ... ok
+test controller::tests::alt_f1_switches_between_direct_mode_and_input_mode ... ok
+test controller::tests::after_esc_the_next_typed_characters_pass_through_again ... ok
 test controller::tests::ctrl_alt_space_with_candidates_starts_an_explicit_composition ... ok
-test controller::tests::ctrl_alt_space_without_candidates_passes_to_the_host ... ok
-test controller::tests::deactivate_leaves_no_window_and_no_open_composition ... ok
 test controller::tests::eaten_keys_work_under_every_host_call_pattern ... ok
+test controller::tests::ctrl_alt_space_without_candidates_passes_to_the_host ... ok
 test controller::tests::losing_the_focus_hides_the_window_and_forgets_the_prefix ... ok
-test controller::tests::keys_that_move_the_caret_or_paste_drop_the_stale_candidates ... ok
-test controller::tests::inside_the_explicit_composition_the_mainstream_keys_work ... ok
-test controller::tests::no_caret_position_means_no_eaten_keys_behind_a_hidden_window ... ok
-test controller::tests::secure_desktop_activation_is_secure_from_the_start ... ok
 test controller::tests::page_down_moves_the_page_and_updates_the_window ... ok
+test controller::tests::deactivate_leaves_no_window_and_no_open_composition ... ok
+test controller::tests::secure_desktop_activation_is_secure_from_the_start ... ok
+test controller::tests::keys_that_move_the_caret_or_paste_drop_the_stale_candidates ... ok
 test controller::tests::shift_plus_a_letter_is_a_capital_not_a_pause ... ok
-test controller::tests::space_confirms_in_the_composition_and_enter_confirms_too ... ok
 test controller::tests::space_is_the_hosts_when_the_host_refuses_the_composition_but_digits_still_work ... ok
-test controller::tests::tab_takes_the_candidate_in_the_direct_mode_too ... ok
-test controller::tests::tab_takes_the_candidate_that_is_highlighted ... ok
-test controller::tests::a_window_that_could_not_be_drawn_means_no_eaten_keys_behind_it ... ok
-test controller::tests::tab_to_host_gives_the_tab_key_back_to_the_host ... ok
+test controller::tests::no_caret_position_means_no_eaten_keys_behind_a_hidden_window ... ok
 test controller::tests::tab_walks_the_candidates_when_the_setting_says_so ... ok
+test controller::tests::tab_takes_the_candidate_in_the_direct_mode_too ... ok
+test controller::tests::tab_to_host_gives_the_tab_key_back_to_the_host ... ok
 test controller::tests::the_config_defaults_never_eat_code_characters ... ok
-test controller::tests::the_composition_opens_over_the_typed_prefix_at_the_next_key_event ... ok
-test controller::tests::the_chord_is_the_hosts_whenever_a_composition_is_impossible ... ok
+test controller::tests::tab_takes_the_candidate_that_is_highlighted ... ok
+test controller::tests::space_confirms_in_the_composition_and_enter_confirms_too ... ok
 test controller::tests::the_direct_mode_is_the_one_that_eats_nothing ... ok
-test controller::tests::the_pause_survives_a_focus_change ... ok
+test controller::tests::the_composition_opens_over_the_typed_prefix_at_the_next_key_event ... ok
+test controller::tests::a_window_that_could_not_be_drawn_means_no_eaten_keys_behind_it ... ok
+test controller::tests::inside_the_explicit_composition_the_mainstream_keys_work ... ok
 test controller::tests::the_host_is_asked_about_the_secure_field_once_per_key_event_and_never_on_a_key_up ... ok
+test controller::tests::the_pause_survives_a_focus_change ... ok
+test controller::tests::the_chord_is_the_hosts_whenever_a_composition_is_impossible ... ok
 test controller::tests::the_same_character_typed_twice_is_two_observations ... ok
 test controller::tests::the_shipped_default_walks_the_list_with_the_arrows ... ok
 test controller::tests::the_shipped_default_takes_a_candidate_with_the_mainstream_keys ... ok
 test controller::tests::typing_shows_a_window_of_labelled_rows_without_eating_anything ... ok
-test controller::tests::the_typed_prefix_is_what_the_machine_asked_the_engine_about ... ok
 test controller::tests::ut_004_esc_cancels_and_writes_nothing ... ok
+test controller::tests::the_typed_prefix_is_what_the_machine_asked_the_engine_about ... ok
 test controller::tests::ut_005_a_secure_field_shows_nothing_and_eats_nothing ... ok
 test controller::tests::ut_009_a_digit_commits_the_page_relative_candidate_exactly_once ... ok
 test controller::tests::ut_009_shift_tap_pauses_and_resumes_and_hides_the_window ... ok
@@ -960,14 +960,14 @@ test floating::tests::a_click_finds_the_button_under_it_and_nothing_else ... ok
 test floating::tests::every_button_has_a_label ... ok
 test controller::tests::ut_064_a_panic_inside_the_predictor_never_escapes ... ok
 test floating::tests::the_bar_falls_below_the_caret_when_there_is_no_room_above ... ok
-test controller::tests::with_capture_off_and_no_composition_nothing_is_eaten_but_the_tab_key ... ok
 test floating::tests::the_bar_lands_above_the_caret_when_there_is_room ... ok
-test controller::tests::typing_code_in_the_direct_mode_eats_and_commits_nothing ... ok
+test controller::tests::with_capture_off_and_no_composition_nothing_is_eaten_but_the_tab_key ... ok
 test floating::tests::the_bar_shows_the_product_the_language_and_the_mode ... ok
 test floating::tests::the_bar_stays_inside_the_work_area ... ok
 test floating::tests::the_layout_puts_the_parts_next_to_each_other_without_overlap ... ok
 test floating::tests::the_skin_is_shown_on_its_button ... ok
 test floating::tests::the_skins_have_readable_colours ... ok
+test controller::tests::typing_code_in_the_direct_mode_eats_and_commits_nothing ... ok
 test ime_switch::tests::a_guid_survives_the_round_trip_through_its_text ... ok
 test ime_switch::tests::our_own_profiles_are_the_three_languages ... ok
 test ime_switch::tests::text_that_is_not_a_guid_is_refused ... ok
@@ -981,22 +981,22 @@ test imesettings::tests::the_file_round_trips_through_text ... ok
 test imesettings::tests::the_settings_file_lives_in_the_local_application_data ... ok
 test imesettings::tests::the_three_profiles_are_known_in_both_directions ... ok
 test keymap::tests::a_half_seen_gesture_is_forgotten_on_reset ... ok
-test controller::tests::the_real_engine_suggests_without_taking_a_key_in_the_direct_mode ... ok
 test keymap::tests::any_other_key_in_between_disarms ... ok
-test controller::tests::the_production_predictor_drives_the_controller_end_to_end ... ok
 test keymap::tests::auto_repeat_and_both_shift_keys_still_make_one_tap ... ok
 test keymap::tests::a_translated_chord_is_never_consumed_even_with_candidates_and_capture ... ok
 test keymap::tests::chords_keep_their_flags_so_the_machine_passes_them_through ... ok
 test keymap::tests::context_breakers_are_navigation_editing_tab_and_chords ... ok
 test keymap::tests::keys_that_produce_characters_become_char_events ... ok
 test keymap::tests::keys_the_machine_has_no_use_for_are_none ... ok
+test controller::tests::the_real_engine_suggests_without_taking_a_key_in_the_direct_mode ... ok
+test controller::tests::the_production_predictor_drives_the_controller_end_to_end ... ok
 test keymap::tests::named_keys_map_one_to_one ... ok
 test keymap::tests::only_ctrl_alt_space_is_the_compose_chord ... ok
-test imesettings::tests::a_missing_file_means_the_defaults ... ok
 test keymap::tests::shift_down_then_up_is_exactly_one_tap ... ok
+test imesettings::tests::a_missing_file_means_the_defaults ... ok
 test keymap::tests::shift_tab_is_the_shifted_tab_event ... ok
-test keymap::tests::shift_with_ctrl_alt_or_win_is_a_windows_shortcut_not_a_tap ... ok
 test keymap::tests::windows_key_chords_belong_to_windows ... ok
+test keymap::tests::shift_with_ctrl_alt_or_win_is_a_windows_shortcut_not_a_tap ... ok
 test laser::tests::a_beam_is_over_after_half_a_second ... ok
 test laser::tests::a_click_on_a_row_opens_its_list ... ok
 test laser::tests::a_click_on_a_switch_turns_it_around ... ok
@@ -1005,25 +1005,25 @@ test laser::tests::a_mouth_that_is_dragged_cannot_be_dragged_out_of_the_screen .
 test laser::tests::a_mouth_that_is_dragged_goes_to_the_nearest_edge ... ok
 test laser::tests::every_row_of_the_panel_is_inside_it ... ok
 test laser::tests::the_head_of_the_beam_arrives_quickly_and_then_stays ... ok
-test laser::tests::the_mouth_is_on_the_left_edge_of_the_work_area ... ok
 test laser::tests::the_light_comes_on_at_once_and_dies_away_at_the_end ... ok
 test laser::tests::the_mouth_is_hit_only_by_the_lens ... ok
 test laser::tests::the_mouth_stays_inside_the_work_area ... ok
+test laser::tests::the_mouth_is_on_the_left_edge_of_the_work_area ... ok
 test layout::tests::a_broken_scale_behaves_like_one ... ok
 test layout::tests::dpi_one_and_a_half_rounds_each_padding_to_whole_pixels ... ok
 test layout::tests::dpi_scales_the_minimum_width_and_flips_with_the_taller_window ... ok
-test layout::tests::dpi_two_doubles_every_dimension ... ok
 test layout::tests::draw_ops_clamp_a_stale_selection_and_skip_empty_strings ... ok
 test layout::tests::draw_ops_paint_background_then_frame_then_rows_then_footer ... ok
+test layout::tests::dpi_two_doubles_every_dimension ... ok
 test layout::tests::ellipsize_is_char_safe_and_handles_zero_width ... ok
-test imesettings::tests::saving_and_loading_a_file_keeps_the_settings ... ok
+test layout::tests::every_paint_op_stays_inside_the_client_area ... ok
 test layout::tests::one_line_flattens_breaks_and_neutralises_bidi_controls ... ok
 test layout::tests::rows_stack_inside_the_window_without_overlap ... ok
-test layout::tests::every_paint_op_stays_inside_the_client_area ... ok
 test layout::tests::single_page_has_no_footer_and_multi_page_shows_the_page_in_digits ... ok
 test layout::tests::the_footer_can_widen_the_window_beyond_the_rows ... ok
 test layout::tests::ut_055_a_narrow_work_area_narrows_the_window_and_shortens_the_text ... ok
 test layout::tests::ut_055_a_window_that_fits_neither_side_is_not_shown ... ok
+test imesettings::tests::saving_and_loading_a_file_keeps_the_settings ... ok
 test layout::tests::ut_055_absurd_text_widths_from_the_metrics_do_not_overflow ... ok
 test layout::tests::ut_055_clamps_into_the_work_area_at_the_left_edge_including_negative_monitors ... ok
 test layout::tests::ut_055_clamps_into_the_work_area_at_the_right_edge ... ok
@@ -1036,38 +1036,38 @@ test layout::tests::ut_055_top_edge_stays_below_and_a_caret_above_the_work_area_
 test layout::tests::ut_057_the_accessible_name_carries_position_key_text_and_source_in_words ... ok
 test layout::tests::ut_057_the_selected_row_has_room_for_a_text_marker_in_front_of_the_label ... ok
 test layout::tests::ut_057_the_selected_row_is_marked_by_highlight_and_by_a_text_marker_not_colour_alone ... ok
-test menus::tests::a_click_finds_the_row_under_it ... ok
 test layout::tests::very_long_snippets_are_cut_with_an_ellipsis_and_the_window_stays_at_its_maximum_width ... ok
+test menus::tests::a_click_finds_the_row_under_it ... ok
+test imesettings::tests::saving_twice_leaves_no_temporary_file_behind ... ok
 test menus::tests::a_menu_without_a_search_box_has_no_search_row ... ok
 test menus::tests::an_empty_query_shows_every_item ... ok
 test menus::tests::the_menu_opens_below_when_there_is_room_and_above_when_there_is_none ... ok
 test menus::tests::the_query_filters_the_items ... ok
 test menus::tests::the_rows_of_the_layout_do_not_overlap_and_end_at_the_bottom ... ok
-test imesettings::tests::saving_twice_leaves_no_temporary_file_behind ... ok
 test popup::tests::a_handler_that_does_not_panic_is_passed_through_and_the_default_stays_unused ... ok
-test popup::tests::a_panic_in_a_message_handler_becomes_that_messages_safe_answer ... ok
 test popup::tests::the_candidate_list_is_drawn_at_the_dpi_of_the_coordinate_space_it_lives_in ... ok
+test popup::tests::a_panic_in_a_message_handler_becomes_that_messages_safe_answer ... ok
 test popup::tests::the_owner_of_the_candidate_list_is_never_a_foreign_window ... ok
 test popup::tests::the_window_procedure_answers_its_own_messages_without_a_window ... ok
-test register::tests::a_failed_run_puts_a_profile_that_was_already_there_back ... ok
-test register::tests::a_failing_rollback_step_is_reported_but_the_original_error_is_returned ... ok
 test register::tests::a_path_with_spaces_and_non_ascii_characters_is_stored_verbatim_and_unquoted ... ok
+test register::tests::a_failing_rollback_step_is_reported_but_the_original_error_is_returned ... ok
+test register::tests::a_failed_run_puts_a_profile_that_was_already_there_back ... ok
 test register::tests::a_rerun_that_fails_before_any_change_keeps_a_working_install ... ok
 test register::tests::categories_claim_only_what_the_tip_implements ... ok
 test register::tests::entry_points_return_failure_codes_for_errors_and_panics ... ok
 test register::tests::it_001_and_ut_061_unregister_removes_only_own_guids_and_keeps_other_imes ... ok
-test register::tests::it_001_each_of_the_three_languages_has_exactly_one_own_profile ... ok
 test register::tests::a_failure_at_every_step_rolls_everything_back_to_the_start ... ok
+test register::tests::a_failing_rerun_restores_the_previous_installation_exactly ... ok
 test register::tests::machine_plan_writes_exactly_the_com_server_keys_under_hklm_classes ... ok
+test register::tests::it_001_each_of_the_three_languages_has_exactly_one_own_profile ... ok
 test register::tests::only_the_win32_not_found_codes_count_as_missing ... ok
 test register::tests::own_dll_path_is_the_path_of_the_running_module ... ok
-test register::tests::a_failing_rerun_restores_the_previous_installation_exactly ... ok
 test register::tests::paths_that_would_be_ambiguous_or_relative_are_rejected ... ok
 test register::tests::profiles_are_enabled_for_users_but_never_hidden_or_process_local ... ok
 test register::tests::register_error_text_names_steps_and_codes_but_no_values ... ok
 test register::tests::registering_again_with_a_moved_dll_updates_the_path_only ... ok
-test register::tests::registration_applies_registry_then_profiles_then_categories ... ok
 test register::tests::registering_twice_is_fine_and_changes_nothing ... ok
+test register::tests::registration_applies_registry_then_profiles_then_categories ... ok
 test register::tests::the_path_reaches_the_fake_registry_unchanged ... ok
 test register::tests::the_registry_spelling_of_a_guid_is_uppercase_with_braces ... ok
 test register::tests::the_removal_plan_needs_no_dll_path_and_names_the_same_items ... ok
@@ -1076,71 +1076,71 @@ test register::tests::unregister_removes_each_item_itself_then_the_text_service_
 test register::tests::unregistering_a_full_installation_leaves_nothing_of_ours ... ok
 test register::tests::unregistering_an_empty_machine_is_fine_also_when_removals_report_not_found ... ok
 test register::tests::user_plan_differs_from_the_machine_plan_only_in_the_hive ... ok
-test register::tests::ut_061_every_registry_key_is_inside_the_own_clsid_subtree ... ok
-test settings_window::tests::every_language_gets_the_same_rows ... ok
 test register::tests::ut_002_registration_leaves_other_input_methods_untouched ... ok
+test register::tests::unregistering_partial_installations_removes_what_is_there ... ok
+test settings_window::tests::every_language_gets_the_same_rows ... ok
+test register::tests::ut_061_every_registry_key_is_inside_the_own_clsid_subtree ... ok
 test settings_window::tests::every_toggle_has_a_label ... ok
 test settings_window::tests::the_buttons_are_at_the_bottom_and_next_to_each_other ... ok
 test settings_window::tests::the_controls_do_not_overlap_each_other ... ok
 test settings_window::tests::the_window_is_big_enough_for_its_content ... ok
-test tests::the_clsid_matches_the_documented_prototype_value ... ok
-test tests::the_unload_decision_depends_on_the_live_objects_and_the_server_locks ... ok
 test tests::a_live_object_keeps_the_dll_loaded ... ok
 test tests::every_refused_request_leaves_the_out_pointer_null ... ok
-test register::tests::unregistering_partial_installations_removes_what_is_there ... ok
+test tests::the_clsid_matches_the_documented_prototype_value ... ok
+test tests::the_unload_decision_depends_on_the_live_objects_and_the_server_locks ... ok
 test tests::unknown_classes_and_null_pointers_are_refused_not_crashed_on ... ok
+test tip::tests::a_panic_after_the_advises_unadvises_both_sinks_and_the_retry_succeeds ... ok
 test tip::tests::a_refused_thread_sink_unadvises_the_key_sink_and_a_refused_key_sink_undoes_nothing ... ok
 test tip::tests::a_successful_build_keeps_the_advises_for_deactivate ... ok
-test tip::tests::a_panic_after_the_advises_unadvises_both_sinks_and_the_retry_succeeds ... ok
-test tip::tests::an_inactive_text_service_eats_nothing_and_survives_every_callback ... ok
 test tip::tests::guard_passes_a_value_through_and_turns_a_panic_into_the_fallback ... ok
-test tip::tests::only_the_secure_mode_flag_makes_the_activation_secure ... ok
+test tip::tests::an_inactive_text_service_eats_nothing_and_survives_every_callback ... ok
 test tip::tests::the_class_factory_helper_answers_every_interface_tsf_may_ask_for ... ok
+test tip::tests::only_the_secure_mode_flag_makes_the_activation_secure ... ok
 test uielement::tests::a_host_that_draws_the_list_never_sees_the_native_popup_under_the_controller ... ok
 test uielement::tests::a_missing_manager_leaves_the_controller_exactly_as_it_was ... ok
-test uielement::tests::a_list_the_host_hands_back_to_a_popup_that_cannot_draw_is_not_eaten_behind ... ok
 test uielement::tests::a_panicking_host_call_ends_in_a_clean_state_after_the_controllers_hide ... ok
 test uielement::tests::a_row_reads_as_one_line_and_the_selection_never_leaves_the_list ... ok
+test uielement::tests::a_popup_that_cannot_draw_cancels_the_list_under_the_controller_and_begin_still_pairs_with_end ... ok
 test uielement::tests::a_second_begin_without_an_end_ends_the_first ... ok
+test uielement::tests::a_list_the_host_hands_back_to_a_popup_that_cannot_draw_is_not_eaten_behind ... ok
 test uielement::tests::a_show_call_made_inside_begin_or_update_is_applied_after_the_call_returns ... ok
 test uielement::tests::a_show_call_made_inside_end_cannot_revive_the_popup ... ok
 test uielement::tests::a_snapshot_answers_what_the_element_is_asked ... ok
 test uielement::tests::an_unchanged_list_is_not_announced_again_but_the_native_window_still_follows ... ok
-test uielement::tests::a_popup_that_cannot_draw_cancels_the_list_under_the_controller_and_begin_still_pairs_with_end ... ok
 test uielement::tests::begin_when_a_list_appears_update_on_every_visible_change_end_when_it_hides ... ok
 test uielement::tests::cancel_ends_the_element ... ok
-test uielement::tests::dropping_the_window_ends_an_open_list_and_destroys_the_native_window ... ok
 test uielement::tests::deactivate_ends_the_element ... ok
+test uielement::tests::dropping_the_window_ends_an_open_list_and_destroys_the_native_window ... ok
 test uielement::tests::end_is_idempotent_and_leaves_nothing_published ... ok
 test uielement::tests::get_page_index_writes_only_what_the_caller_made_room_for ... ok
 test uielement::tests::no_manager_means_the_native_popup_and_one_attempt_per_list ... ok
-test uielement::tests::focus_loss_ends_the_element_and_the_next_list_begins_again ... ok
-test uielement::tests::show_answers_true_while_the_host_draws_whatever_the_native_popup_could_do ... ok
 test uielement::tests::show_answers_whether_the_user_sees_the_list_when_the_tip_draws ... ok
 test uielement::tests::show_answers_with_the_native_popup_when_there_is_no_manager ... ok
+test uielement::tests::show_answers_true_while_the_host_draws_whatever_the_native_popup_could_do ... ok
 test uielement::tests::show_false_keeps_the_native_popup_hidden_for_the_whole_list ... ok
+test uielement::tests::focus_loss_ends_the_element_and_the_next_list_begins_again ... ok
 test uielement::tests::show_true_keeps_the_native_popup_drawing ... ok
 test uielement::tests::the_hosts_show_call_toggles_the_same_decision_and_leaves_no_stale_popup ... ok
-test uielement::tests::the_identity_is_a_fixed_guid_and_the_flag_values_are_the_documented_bits ... ok
+test laser_ui::tests::the_lens_of_the_mouth_is_drawn_inside_the_window_of_the_glow ... ok
 test uielement::tests::switching_to_the_host_in_the_middle_of_a_script_hides_the_popup_at_once ... ok
+test uielement::tests::the_identity_is_a_fixed_guid_and_the_flag_values_are_the_documented_bits ... ok
 test uielement::tests::the_list_is_published_before_every_host_call ... ok
 test uielement::tests::typing_one_more_character_is_an_update_not_a_second_begin ... ok
 test uielement::tests::updated_flags_name_exactly_what_changed ... ok
 test uielement::tests::typing_paging_and_committing_pairs_every_begin_with_an_end ... ok
 test uielement_com::tests::the_behaviour_interface_reports_the_users_choice_to_the_text_service ... ok
-test uielement_com::tests::before_any_list_every_query_fails_cleanly_and_the_identity_is_fixed ... ok
 test uielement_com::tests::get_page_index_follows_the_documented_two_step_protocol_and_never_overruns ... ok
 test uielement_com::tests::the_element_answers_every_interface_a_host_may_ask_for ... ok
+test uielement_com::tests::before_any_list_every_query_fails_cleanly_and_the_identity_is_fixed ... ok
 test uielement_com::tests::the_flag_bits_of_the_model_are_the_windows_constants ... ok
 test uielement_com::tests::the_getters_answer_from_the_published_list ... ok
-test laser_ui::tests::the_lens_of_the_mouth_is_drawn_inside_the_window_of_the_glow ... ok
 test uielement_com::tests::the_host_cannot_re_page_the_list ... ok
 test uielement_com::tests::the_hosts_show_call_reaches_the_shared_decision ... ok
 test uielement_com::tests::without_a_manager_the_adapter_reports_unavailable_and_ends_nothing ... ok
 test controller::tests::ut_009_test_and_down_never_disagree_about_eating ... ok
 test layout::tests::the_window_stays_in_the_work_area_and_off_the_caret_line_everywhere ... ok
 
-test result: ok. 240 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+test result: ok. 240 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
 
 
 running 4 tests
@@ -1155,8 +1155,8 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 running 4 tests
 test a_keystroke_of_a_real_application_reaches_the_text_service ... ok
 test an_unknown_class_is_refused_and_nothing_is_left_behind ... ok
-test the_class_object_of_the_dll_yields_the_text_service ... ok
 test the_text_service_survives_an_activation_without_a_host ... ok
+test the_class_object_of_the_dll_yields_the_text_service ... ok
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
@@ -1166,7 +1166,7 @@ test every_scenario_belongs_to_a_known_function ... ok
 test the_scenario_ids_are_unique ... ok
 test every_scenario_of_the_table_passes ... ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
 
 running 4 tests
@@ -1175,7 +1175,7 @@ test the_direct_mode_leaves_the_code_characters_to_the_host ... ok
 test the_shipped_default_walks_the_list_with_the_arrows ... ok
 test the_shipped_default_takes_a_candidate_with_tab_space_and_enter ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
 
 running 0 tests
@@ -1270,14 +1270,14 @@ evidence-cross-check: all checks passed (the logs, the documents and the built i
 --- evidence cross-check: the build log, the sidecar and the prose agree with the built installer: PASS 
 
 ==== summary ====
-PASS  syntax check (extension sources + all test scripts)  (8.3s) 
-PASS  golden fixtures are unchanged (compare only)  (0.5s) 
+PASS  syntax check (extension sources + all test scripts)  (5.1s) 
+PASS  golden fixtures are unchanged (compare only)  (0.4s) 
 PASS  golden-v0.2 cases are still present in the live fixtures  (0.1s) 
-PASS  Rust: cargo test --workspace  (7.5s) 410 tests
-PASS  JavaScript tests (+ engine differential tests, core exe found)  (10.2s) 
-PASS  real pime-core.exe smoke test (JSON Lines)  (0.3s) 
-PASS  TSF crate (crates/pime-tsf): cargo test (the unit tests, the IME scenario suite and the function ledger)  (1.2s) 255 tests
-PASS  TSF DLL (crates/pime-tsf): builds on the GNU target, x64 PE, only system DLL imports (not registered or loaded)  (0.6s) 
-PASS  framework matrix: the quoted numbers match the built installer and the cited logs  (0.2s) 
-PASS  UAT claims: the quoted UAT numbers match the Playwright report in 02_Verification/uat  (0.2s) 
-PASS  evidence cross-check: the build log, the sidecar and the prose agree with the built installer  (0.2s) 
+PASS  Rust: cargo test --workspace  (22.5s) 410 tests
+PASS  JavaScript tests (+ engine differential tests, core exe found)  (5.6s) 
+PASS  real pime-core.exe smoke test (JSON Lines)  (0.1s) 
+PASS  TSF crate (crates/pime-tsf): cargo test (the unit tests, the IME scenario suite and the function ledger)  (5.6s) 255 tests
+PASS  TSF DLL (crates/pime-tsf): builds on the GNU target, x64 PE, only system DLL imports (not registered or loaded)  (0.3s) 
+PASS  framework matrix: the quoted numbers match the built installer and the cited logs  (0.1s) 
+PASS  UAT claims: the quoted UAT numbers match the Playwright report in 02_Verification/uat  (0.1s) 
+PASS  evidence cross-check: the build log, the sidecar and the prose agree with the built installer  (0.1s) 
