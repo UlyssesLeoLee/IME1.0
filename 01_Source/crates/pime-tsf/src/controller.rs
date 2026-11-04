@@ -32,7 +32,8 @@ use pime_core::input::{
 use pime_core::pack::render_plain;
 
 use crate::keymap::{
-    Modifiers, ShiftTapDetector, breaks_context, is_compose_chord, is_input_mode_chord, translate,
+    Modifiers, ShiftTapDetector, breaks_context, is_compose_chord, is_input_mode_chord,
+    is_language_chord, translate,
 };
 use crate::ui::{Anchor, CandidateRow, CandidateUi, CandidateView, ListAction};
 
@@ -240,6 +241,11 @@ pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPred
     /// the write). It must not block and must not unwind into the host: it runs inside the panic guard of the
     /// controller, so a panic in it degrades the input method instead of taking the host down.
     commit_hook: Option<Rc<dyn Fn(Option<Anchor>)>>,
+    /// Told to walk to the next language of the product (Alt+F2).
+    ///
+    /// The hook cannot touch the state of the text service: the controller has it borrowed while the key is handled,
+    /// so the request travels through the queue of the actions of the text service instead.
+    language_hook: Option<Rc<dyn Fn()>>,
     now_ms: u64,
 }
 
@@ -261,6 +267,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             seen: None,
             probed: None,
             commit_hook: None,
+            language_hook: None,
             now_ms: 0,
         }
     }
@@ -433,6 +440,11 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         self.commit_hook = Some(hook);
     }
 
+    /// The hook that is told to walk to the next language of the product (Alt+F2).
+    pub fn set_language_hook(&mut self, hook: Rc<dyn Fn()>) {
+        self.language_hook = Some(hook);
+    }
+
     /// `OnKeyUp`: the same as [`TipController::on_test_key_up`] (a repeated report of one release is harmless).
     pub fn on_key_up(&mut self, key: KeyInput) -> bool {
         self.guarded(false, |c| c.key_up(key))
@@ -498,6 +510,21 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             // `ITfUIElement::Show(TRUE)` and the popup could not be drawn): nothing may be eaten behind it
             self.visible = false;
             self.settle();
+        }
+        if is_language_chord(key.code, key.mods) {
+            // Alt+F2 walks through the three languages of the product (the panel of the laser interface offers the
+            // same as a row).
+            self.seen = None;
+            if self.secure {
+                return false; // nothing is collected in a secure field: the key stays with the host
+            }
+            if test_only {
+                return true; // the host asks whether the key is ours: it is
+            }
+            if let Some(hook) = self.language_hook.clone() {
+                hook();
+            }
+            return true;
         }
         if is_compose_chord(key.code, key.mods) && self.can_compose() {
             // the one chord that is ours: it starts an explicit composition, and only while candidates show
@@ -738,6 +765,7 @@ mod tests {
     use super::*;
     use crate::keymap::vk;
     use crate::ui::RecordingUi;
+    use std::cell::RefCell;
     use pime_core::candidate::CandidateSource;
     use pime_core::input::{CoreFault, PredictRequest};
 
@@ -1151,6 +1179,45 @@ mod tests {
             assert_eq!(rig.ctl.host().commits.len(), 1, "{name}");
             assert!(!rig.ctl.host().composing, "{name}");
         }
+    }
+
+    /// Alt+F2 is eaten and asks the text service to walk to the next language.
+    #[test]
+    fn alt_f2_is_eaten_and_asks_for_the_next_language() {
+        let alt_f2 = Modifiers { alt: true, ..NONE };
+        let mut rig = Rig::new();
+        let asked = Rc::new(RefCell::new(0));
+        {
+            let asked = asked.clone();
+            rig.ctl.set_language_hook(Rc::new(move || {
+                *asked.borrow_mut() += 1;
+            }));
+        }
+        // the host asks first: the key is ours
+        assert!(rig.ctl.on_test_key_down(input(vk::F2, None, alt_f2, 1)));
+        // and then the key itself: the text service is asked to walk to the next language
+        assert!(rig.press(vk::F2, None, alt_f2, Host::Contract));
+        assert_eq!(*asked.borrow(), 1, "the text service was asked once");
+        // the second press asks again
+        assert!(rig.press(vk::F2, None, alt_f2, Host::Contract));
+        assert_eq!(*asked.borrow(), 2);
+    }
+
+    /// A secure field collects nothing: the key stays with the host and the language does not change.
+    #[test]
+    fn alt_f2_stays_with_the_host_in_a_secure_field() {
+        let alt_f2 = Modifiers { alt: true, ..NONE };
+        let mut rig = Rig::new();
+        let asked = Rc::new(RefCell::new(0));
+        {
+            let asked = asked.clone();
+            rig.ctl.set_language_hook(Rc::new(move || {
+                *asked.borrow_mut() += 1;
+            }));
+        }
+        rig.ctl.host_mut().secure = true;
+        assert!(!rig.press(vk::F2, None, alt_f2, Host::Contract));
+        assert_eq!(*asked.borrow(), 0);
     }
 
     #[test]

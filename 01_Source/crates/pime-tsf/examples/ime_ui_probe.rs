@@ -1,7 +1,7 @@
-//! Opens the windows of the input method (the candidate window, the floating bar, the settings window and the laser
-//! interface: the glow on the left of the screen, the beam, the panel and the logo in the corner), keeps them on
-//! screen for a while and reports what it opened. A screenshot of the desktop taken while it runs is the evidence for
-//! the native look of the input method.
+//! Opens the windows of the input method (the candidate window, the settings window and the laser interface: the glow
+//! on the left of the screen, the beam, the panel and the logo in the corner), keeps them on screen for a while and
+//! reports what it opened. A screenshot of the desktop taken while it runs is the evidence for the native look of the
+//! input method.
 //!
 //!   cargo run --example ime_ui_probe -- [seconds to stay open]
 //!
@@ -12,7 +12,6 @@
 //!
 //! Nothing is registered, no profile is activated, no text is inserted anywhere.
 
-use pime_tsf::floating::{BarState, FloatingBar, no_bar_sink};
 use pime_tsf::imesettings::ImeSettings;
 use pime_tsf::laser::PanelItem;
 use pime_tsf::laser_ui::{LaserEvent, LaserUi};
@@ -58,17 +57,6 @@ fn main() -> std::process::ExitCode {
     let mut popup = PopupWindow::new();
     let popup_shown = popup.show(&view, anchor);
 
-    // ---- the floating bar ----------------------------------------------------
-    let mut bar = FloatingBar::new(no_bar_sink());
-    let bar_shown = bar.show(
-        &BarState {
-            language: "zh-CN".to_string(),
-            input_mode: true,
-            skin: "laser".to_string(),
-        },
-        anchor,
-    );
-
     // ---- the settings window -------------------------------------------------
     let sink: Rc<dyn Fn(SettingsEvent)> = Rc::new(|_: SettingsEvent| {});
     let settings = SettingsWindow::open(ImeSettings::default(), sink);
@@ -101,6 +89,11 @@ fn main() -> std::process::ExitCode {
                 label: "Tab 确认候选",
                 on: true,
             },
+            PanelItem::Toggle {
+                key: "tab_to_host",
+                label: "Tab 归宿主",
+                on: false,
+            },
             PanelItem::Menu {
                 key: "language",
                 label: "语言",
@@ -132,10 +125,6 @@ fn main() -> std::process::ExitCode {
         if popup_shown { "shown" } else { "NOT SHOWN" }
     );
     println!(
-        "floating bar: {}",
-        if bar_shown { "shown" } else { "NOT SHOWN" }
-    );
-    println!(
         "settings window: {}",
         if settings.is_some() {
             "shown"
@@ -144,9 +133,8 @@ fn main() -> std::process::ExitCode {
         }
     );
     println!(
-        "rects: candidate={:?} bar={:?} settings={:?}",
+        "rects: candidate={:?} settings={:?}",
         popup.window_rect(),
-        bar.button_rect(pime_tsf::floating::BarButtonKind::Language),
         settings.as_ref().map(|w| w.handle().0 as i64)
     );
     println!("READY");

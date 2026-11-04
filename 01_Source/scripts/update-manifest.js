@@ -35,7 +35,7 @@ const ADDITIONS = [
   '01_Source/crates/pime-setup/src/paint.rs',
   '01_Source/crates/pime-setup/src/wizard.rs',
   '01_Source/tests/smoke/evidence-cross-check.js',
-  '01_Source/crates/pime-tsf/src/floating.rs',
+  '01_Source/crates/pime-tsf/src/skin.rs',
   '01_Source/crates/pime-tsf/src/imesettings.rs',
   '01_Source/crates/pime-tsf/src/menus.rs',
   '01_Source/crates/pime-tsf/src/settings_window.rs',
@@ -62,6 +62,7 @@ const ADDITIONS = [
   '01_Source/tests/smoke/ime-ui-check.js',
   // the matrix of the IME functions and their tests
   '01_Source/docs/IME_TEST_MATRIX.md',
+  '01_Source/docs/HOTKEYS.md',
   // the plugin language on both engines: the JavaScript suite, the shared fixtures and the Rust core test
   '01_Source/tests/js/ut-plugin-language.test.js',
   '01_Source/tests/fixtures/plugin-cases.json',
@@ -86,7 +87,6 @@ const ADDITIONS = [
   '01_Source/tests/tsf/ime_selection.rs',
 
   '01_Source/crates/pime-tray/src/autostart.rs',
-  '01_Source/crates/pime-tsf/src/bar_skin.rs',
   '01_Source/crates/pime-tsf/src/candidate_skin.rs',
 
   '02_Verification/ime-ui/candidate-list-zoom.png',
@@ -130,6 +130,7 @@ for (const [relative, expected] of [...listed]) {
   if (!fs.existsSync(file)) {
     console.log(`gone   ${relative}`);
     gone++;
+    if (!check) listed.delete(relative);
     continue;
   }
   const actual = hashOf(file);

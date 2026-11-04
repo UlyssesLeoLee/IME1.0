@@ -27,11 +27,11 @@
 | 项 | 值 |
 |---|---|
 | 文件 | `01_Source/dist/ProgrammingIME-0.2.0-win-x64-setup.exe` |
-| 大小 | 7,714,135 字节 |
-| SHA-256 | `59a2f8fe3178b5827310366800b970545cd7795eb59ff7cb64e42059c0b57e48` |
+| 大小 | 7,703,669 字节 |
+| SHA-256 | `4698beea1062caa5e48962f768e447926f69a981c5bf3482f8d4571c8d293416` |
 | 形态 | x64 控制台子系统 EXE；载荷以 PE overlay 附在桩程序之后 |
 | 桩程序 | `pime-setup.exe`，787,968 字节（含安装向导与内嵌 logo） |
-| 载荷（8 条） | `pime_tsf.dll` 2,377,216 B ／ `pime-core.exe` 2,986,351 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,136 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 882,176 B ／ `pime-ai-worker.exe` 400,896 B ／ `meta.json` 87 B |
+| 载荷（8 条） | `pime_tsf.dll` 2,372,096 B ／ `pime-core.exe` 2,985,613 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,136 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 877,568 B ／ `pime-ai-worker.exe` 400,896 B ／ `meta.json` 87 B |
 | 导入表 | 只导入 Windows 系统 DLL。**桩程序**：advapi32 / bcryptprimitives / kernel32 / msvcrt / ntdll / ole32 / oleaut32 / shell32 / user32；**载荷里的每个程序**（DLL、core、托盘、worker）也逐个核过（托盘另需 `winmm`，worker 另需 `crypt32`/`winhttp`，都是 Windows 自带） |
 | 签名 | **无**。SmartScreen 会报"未知发布者"。签名流程已备好（`01_Source/scripts/sign-installer.ps1`），等证书 |
 
@@ -188,9 +188,9 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 
 | 检查 | 结果 | 证据 |
 |---|---|---|
-| Rust 核心 `cargo test --workspace` | **410 / 410 通过**（本轮修了"发光口看不见"的真因：镜头用的是屏幕坐标，而画布是 64×64 的窗口局部坐标，镜头被画到了画布外面；新增一条回归测试把它钉住） | `run-all-2026-11-04.log` |
-| Rust TSF `cargo test` | **255 / 255 通过**（本轮把发光口改成看得见的镜头（彩虹环 + 白核）、加上拖动与贴边（左/上/右，拖不出屏幕）、悬浮窗拖动贴边、位置写进设置文件；另修了拖动后面板不跟随的问题） | `run-all-2026-11-04.log` |
-| 安装器 `cargo test`（单元 5 + 真实文件系统 13 + 真实链接 105） | **123 / 123 通过**（本轮新增既有安装检测（manifest → ARP → COM 三级）与"已安装 → 修复/重新安装/卸载"向导页） | `setup-tests-2026-11-04.log` |
+| Rust 核心 `cargo test --workspace` | **411 / 411 通过**（本轮修了"发光口看不见"的真因：镜头用的是屏幕坐标，而画布是 64×64 的窗口局部坐标，镜头被画到了画布外面；新增一条回归测试把它钉住） | `run-all-2026-11-04.log` |
+| Rust TSF `cargo test` | **253 / 253 通过**（本轮把发光口改成看得见的镜头（彩虹环 + 白核）、加上拖动与贴边（左/上/右，拖不出屏幕）、悬浮窗拖动贴边、位置写进设置文件；另修了拖动后面板不跟随的问题） | `run-all-2026-11-04.log` |
+| 安装器 `cargo test`（单元 105 + 真实文件系统 13 + 真实链接 5） | **123 / 123 通过**（本轮新增既有安装检测（manifest → ARP → COM 三级）与"已安装 → 修复/重新安装/卸载"向导页） | `setup-tests-2026-11-04.log` |
 | JavaScript 单元 / 集成 + 引擎差分 | **345 / 345 通过**（0 失败 0 跳过） | `run-all-2026-11-04.log` |
 | **输入法场景套件**（21 个 TSF 行为场景：直打/组字/候选/翻页/取消/提交/语言切换…） | **21 / 21 通过** | `01_Source/tests/tsf/ime_scenarios.rs`、`01_Source/docs/IME_TEST_MATRIX.md` |
 | **输入法功能覆盖账本自检**（23 个功能逐个点名覆盖它的测试，名字必须在源码里真实存在） | **4 / 4 通过** | `01_Source/tests/tsf/ime_functions.rs` |
@@ -207,7 +207,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | 文档数字 ↔ 产物一致性（含反向对照：篡改任一数字必变红） | 通过 | `01_Source/tests/smoke/installer-claims-check.js` |
 | 证据集交叉核对（**构建日志 ↔ dist 产物 ↔ `.sha256` sidecar ↔ 文档正文 ↔ 两份测试日志**） | 通过（第六轮新增；18 项断言） | `01_Source/tests/smoke/evidence-cross-check.js` |
 | 签名脚本自检（`-Help` / 无证书 / 解析 / ASCII / 假 signtool 端到端） | 通过 | `01_Source/scripts/sign-installer.ps1`、`01_Source/docs/SIGNING.md` |
-| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **381 / 381 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`）），并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
+| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **381 / 381 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`））；**第十五轮再刷 19 条 + 补登记 2 个新文件**（`skin.rs`、`docs/HOTKEYS.md`）**并移除 2 个已删文件**（`floating.rs`、`bar_skin.rs`），并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
 
 **注意口径**：上一行 9 项全部是**代码层与行为层**的证据。它们**不**构成"这是一个能用的 Windows 输入法"的证明——那一层是空的（见第 4 节）。
 
@@ -347,26 +347,26 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 <!-- installer-claims:begin -->
 # machine-readable claims (checked by 01_Source/tests/smoke/installer-claims-check.js)
 installer_file = ProgrammingIME-0.2.0-win-x64-setup.exe
-installer_bytes = 7714135
-installer_sha256 = 59a2f8fe3178b5827310366800b970545cd7795eb59ff7cb64e42059c0b57e48
+installer_bytes = 7703669
+installer_sha256 = 4698beea1062caa5e48962f768e447926f69a981c5bf3482f8d4571c8d293416
 stub_bytes = 787968
 payload_entry_count = 8
-payload_pime_tsf_dll_bytes = 2377216
-payload_pime_core_exe_bytes = 2986351
+payload_pime_tsf_dll_bytes = 2372096
+payload_pime_core_exe_bytes = 2985613
 payload_license_bytes = 1085
 payload_programming_ime_vsix_bytes = 211136
 payload_pime_ico_bytes = 66724
-payload_pime_tray_exe_bytes = 882176
+payload_pime_tray_exe_bytes = 877568
 payload_pime_ai_worker_exe_bytes = 400896
 payload_meta_json_bytes = 87
-rust_core_tests = 410
-rust_tsf_tests = 255
+rust_core_tests = 411
+rust_tsf_tests = 253
 js_tests = 345
 evidence_run_all_log = run-all-2026-11-04.log
 evidence_setup_log = setup-tests-2026-11-04.log
-rust_setup_unit_tests = 5
+rust_setup_unit_tests = 105
 rust_setup_real_fs_tests = 13
-rust_setup_real_links_tests = 105
+rust_setup_real_links_tests = 5
 <!-- installer-claims:end -->
 
 <!-- uat-claims:begin -->

@@ -703,3 +703,35 @@ DD 5.3 / UT-009 原本写的是「默认不吃任何代码字符」。这一轮�
 * **托盘里显示的是 logo 还是文字，还没有看到**：`IconFile` 已经写进真实注册表（三个 profile 全是 `D:\IME1.0\pime.ico`，见下条），但通知区要等**注销或重启**换上新 DLL 之后才会重画——这一轮实测时旧 DLL 还被系统占着（退出码 3010）。
 * **提权安装实测过了（2026-11-04 13:52）**，但只跑了「安装」这一条：`ProgrammingIME-0.2.0-win-x64-setup.exe --silent --prefix D:\` → 12 步全过、`DONE: IME1.0 0.2.0 installed (D:\IME1.0)`、**regsvr32 不再报 `E_FAIL`**（两个根因都验证了）；退出码 3010 = 旧 DLL 正被系统占用，要注销或重启才换新。真实注册表里：`CLSID\{43F95ED1-…}\InprocServer32` = `D:\IME1.0\pime_tsf.dll`；`CTF\TIP\{43F95ED1-…}\LanguageProfile\0x00000804 / 0x00000409 / 0x00000411` 各有 `IconFile = D:\IME1.0\pime.ico` 与 `Enable = 1`；三个 category（TIP_KEYBOARD / SYSTRAYSUPPORT / UIELEMENTENABLED）都在；ARP 条目的 `DisplayIcon` 也是 `D:\IME1.0\pime.ico`。**「修复」与「卸载」两条路径还没有在真机上跑过。**
 * 设置窗的 80% 半透明只读到 `GetLayeredWindowAttributes` 的 alpha=204，**没有在真实 TSF 宿主里跑过**；全新安装页里 EDIT 控件在分层窗口下的观感**没有实拍**。
+
+### 5.13 第十五轮（2026-11-04）：切输入法/语言后不留悬浮窗 + 悬浮界面统一到左侧激光口 + 快捷键归档与 Alt+F2
+
+这一轮接了用户提的三件事：① 切输入法和语言后，悬浮窗不能残留在屏幕上；② 右下角要显示 logo 而不是文字，悬浮窗不要那么多，统一到左侧蓝色微光激光口区域；③ Ctrl+F12 / Ctrl+F1 / Ctrl+F2 / Alt+F1 / Alt+F2 的设计要归档到文档，并把开发做完。
+
+#### 5.13.1 这一轮做完的事
+
+| # | 项目 | 证据 |
+|---|---|---|
+| 1 | **「切输入法后悬浮窗残留」的真因找到了**：TSF 会在**我们自己的回调里**同步回调我们——用户在发光口上点一下切换，`switch_now()` → `ActivateLanguageProfile` → TSF 立刻回调我们的 `Deactivate`／`OnActivated`，而那时 state 正被借用 ⇒ `try_borrow_mut()` 失败 ⇒ 隐藏动作被**跳过** ⇒ 悬浮窗留在屏幕上 | `crates/pime-tsf/src/tip.rs` 的 `Tip::deactivate`（原来直接 `return Ok(())`）与新的 `settle` |
+| 2 | **隐藏不再依赖「能不能拿到 state」**：新增 `Flags`（`deactivated` / `hide`）与 `settle()`——TSF 重入时先把活记下，等回调一返回就补做 | `tip.rs` 的 `Flags`、`Tip::settle`、自由函数 `settle`；菜单与激光的 sink 收尾时调用 |
+| 3 | **新增 `ITfActiveLanguageProfileNotifySink`**：别的输入法接管时（`OnActivated` 的 CLSID 不是我们的）立刻清场；我们自己的 profile 重新变成活动档时，界面跟着回来 | `tip.rs` 的 `profile_change`（纯函数，2 项单测）、`language_of_profile`、`impl ITfActiveLanguageProfileNotifySink_Impl`；`Advises` 增加第三个 advise（`advise_language`／`unadvise_language`）与其回滚（1 项单测） |
+| 4 | **我们自己发起的切换先收工再切**：发光口点击（`LaserEvent::Switch`）与切语言都在切换**之前**把界面收掉 | `tip.rs` 的 `apply_laser_event` 与 `switch_language` |
+| 5 | **失去文档焦点时收起光标类窗口**：`OnSetFocus(FALSE)` 与文档焦点切换都会收起菜单与设置窗（激光界面属于输入法本身，不跟着文档走） | `tip.rs` 的 `Inner::hide_caret` |
+| 6 | **悬浮界面统一到左侧蓝色微光激光口区域**：**悬浮栏整块删掉**（`crates/pime-tsf/src/floating.rs` 与 `bar_skin.rs` 删除），面板（左侧发光口点开的那张）承载全部开关；**右下角只剩品牌 logo**（本来就是彩虹圆盘，没有文字） | 删除 `floating.rs`／`bar_skin.rs`；颜色独立成 `crates/pime-tsf/src/skin.rs`；面板新增「Tab 归宿主」一行（`PANEL_HEIGHT` 296 → 326） |
+| 7 | **「显示悬浮窗」设置改成「显示激光界面」**（JSON `floatingBar` → `laserUi`，旧键仍然读，老设置文件不会失效） | `crates/pime-tsf/src/imesettings.rs`、`settings_window.rs`、`tip.rs` 的 `set_option` |
+| 8 | **快捷键设计归档成文档**：新增 `01_Source/docs/HOTKEYS.md`——五个键的分层（系统级／编辑器级／输入法级）、作用、实现位置、冲突与处置、覆盖它的测试、未覆盖项 | `docs/HOTKEYS.md`；`docs/F1_ANNOTATE.md` 与 `docs/F2_PROMPT.md` 顶部加了指向 |
+| 9 | **Alt+F2 实现了**（五个键里唯一没做的那个）：在三个语言档之间循环（zh-CN → en-US → ja-JP → zh-CN） | `pime-core/src/imeswitch.rs` 的 `LANGUAGES` 与 `next_language`（纯函数，1 项单测）；`keymap.rs` 的 `is_language_chord`（1 项单测）；`controller.rs` 的 `language_hook`（2 项单测）；`tip.rs` 的 `Pending::SwitchLanguage` |
+| 10 | **账本与矩阵跟上**：功能账本 23 → 27 条；`docs/IME_TEST_MATRIX.md` 补 F-LANGUAGE / F-LASER / F-GLOW-PANEL / F-LASER-PANEL / F-SKIN 行 | `tests/tsf/common/scenarios.rs`、`docs/IME_TEST_MATRIX.md`；`pime-tsf` 单测 255 → 238（删掉悬浮栏的 21 项、补回颜色 1 项、新增 4 项） |
+
+#### 5.13.2 这一轮请你裁定的事项
+
+1. **D-29（新增）：删掉悬浮栏之后，「当前是哪种语言」只能在面板里看到。** 以前悬浮栏一直跟着光标，一眼就能看到语言；现在要悬停发光口、或者点右下角 logo 打开面板才知道。这是你说的「统一成左侧蓝色微光激光口区域」的直接后果，我先按你说的做了；如果你想留一个极简的语言指示（例如发光口旁边一个小字），说一声我加回去。
+2. **D-30（新增）：本轮删除了两个既有文件**——`crates/pime-tsf/src/floating.rs` 与 `crates/pime-tsf/src/bar_skin.rs`，两个文件里的 21 项单测随悬浮栏一起删除（颜色模块补回 1 项，净减 20 项）。这同样是「不需要 3 个悬浮窗」的直接后果；如果你只想隐藏而不删除，回退方式是把两个文件从回收站取回，并把 `tip.rs` 的接线改回去。
+3. **D-27 仍未决**（激光界面开着时一个 CPU 核跑满）：删掉悬浮栏少了一个窗口，但激光界面的 4 个窗口仍然每 16ms 重绘一次。
+4. **D-22 / D-23 / D-24 / D-20 / D-25 / D-16 / D-17 / D-26 仍未决**：见 §5.10.2 与 §5.11.2。
+
+#### 5.13.3 这一轮**没有**在真机上验证的地方（不虚报）
+
+* **切输入法/语言后不留悬浮窗，只在单元测试层面验证了决策与接线**；真实宿主里的切换（Ctrl+F12、发光口点击、语言栏切换）**一次都没跑过**——新 DLL 还没换上（上一轮安装退出码 3010，注销或重启才生效）。
+* **Alt+F2 同理**：单元测试覆盖了「键被吃掉、请求被发出、密码框里不吃」，但真实宿主里的 profile 切换没有跑过。
+* **新的面板行（Tab 归宿主）与更高的面板（326 px）没有实拍**；取证图 `02_Verification/ime-ui/ime-windows.png` 是上一轮的（画面里还有悬浮栏），下一轮重新取证。

@@ -13,7 +13,7 @@
 //! Nothing here takes the focus: the user is typing in another program, and the input method must not take the
 //! caret away from it.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use pime_core::style::{
@@ -77,8 +77,8 @@ const LOGO_SIZE: i32 = 34;
 /// How wide the panel is.
 const PANEL_WIDTH: i32 = 268;
 
-/// How tall the panel is.
-const PANEL_HEIGHT: i32 = 296;
+/// How tall the panel is (the header, the nine rows and the room the light needs around them).
+const PANEL_HEIGHT: i32 = 326;
 
 /// How tall a row of the panel is.
 const PANEL_ROW_HEIGHT: i32 = 30;
@@ -145,6 +145,12 @@ pub struct LaserUi {
     place: Option<MouthPlace>,
     /// The drag that is going on right now.
     drag: Option<Drag>,
+    /// That the interface has to go off the screen, asked for while it was busy.
+    ///
+    /// The switch of the input method happens in the callback of the mouth, and TSF deactivates the text service
+    /// inside that very call: the interface is borrowed at that moment, so it cannot be asked to hide itself. The
+    /// flag is set instead, and the windows go off the screen as soon as the callback returns.
+    hide_requested: Rc<Cell<bool>>,
 }
 
 /// What is being dragged right now.
@@ -188,6 +194,7 @@ impl LaserUi {
                 visible: false,
                 place: None,
                 drag: None,
+                hide_requested: Rc::new(Cell::new(false)),
             };
             ui.ensure_windows();
             RefCell::new(ui)
@@ -198,6 +205,14 @@ impl LaserUi {
     pub fn set_items(&mut self, items: Vec<PanelItem>) {
         self.items = items;
         self.refresh_panel_layout();
+    }
+
+    /// The flag that says the interface has to go off the screen.
+    ///
+    /// The owner of the interface keeps a copy of it, so that it can ask the interface to go away even while one
+    /// of its own windows is calling back (the switch of the input method happens exactly then).
+    pub fn hide_flag(&self) -> Rc<Cell<bool>> {
+        Rc::clone(&self.hide_requested)
     }
 
     /// Put the mouth where the user put it the last time.
@@ -211,6 +226,7 @@ impl LaserUi {
 
     /// Put the interface on the screen (the work area of the monitor the caret is on).
     pub fn show(&mut self, work: Rect) {
+        self.hide_requested.set(false);
         self.work = work;
         self.visible = true;
         self.ensure_windows();
@@ -291,6 +307,7 @@ impl LaserUi {
 
     /// Take the interface off the screen.
     pub fn hide(&mut self) {
+        self.hide_requested.set(false);
         self.visible = false;
         self.stop_timer();
         self.close_panel();
@@ -677,12 +694,20 @@ impl LaserUi {
         // The windows call back into the interface through a weak handle: the interface owns the windows, so a strong
         // handle here would be a cycle that nothing would ever break.
         let weak = self.weak.clone();
+        let hide_requested = Rc::clone(&self.hide_requested);
         let sink: Rc<dyn Fn(Role, GlassEvent)> = Rc::new(move |role, event| {
             let Some(ui) = weak.upgrade() else {
                 return;
             };
             if let Ok(mut ui) = ui.try_borrow_mut() {
                 ui.handle(role, event);
+            }
+            // The interface is free again: a hide that was asked for during the callback (the switch of the input
+            // method happens in the callback of the mouth) happens now, and the windows go off the screen at once.
+            if hide_requested.get()
+                && let Ok(mut ui) = ui.try_borrow_mut()
+            {
+                ui.hide();
             }
         });
         let model = Rc::clone(&self.model);

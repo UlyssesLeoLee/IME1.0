@@ -20,7 +20,8 @@ use windows::Win32::Foundation::{BOOL, E_FAIL, E_INVALIDARG, LPARAM, RECT, WPARA
 use windows::Win32::System::Com::CoTaskMemFree;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetKeyState, GetKeyboardLayout, ToUnicodeEx};
 use windows::Win32::UI::TextServices::{
-    GUID_COMPARTMENT_KEYBOARD_DISABLED, GUID_PROP_INPUTSCOPE, IS_PASSWORD, ITfCompartmentMgr,
+    GUID_COMPARTMENT_KEYBOARD_DISABLED, GUID_PROP_INPUTSCOPE, IS_PASSWORD,
+    ITfActiveLanguageProfileNotifySink, ITfActiveLanguageProfileNotifySink_Impl, ITfCompartmentMgr,
     ITfComposition, ITfCompositionSink, ITfCompositionSink_Impl, ITfContext, ITfContextComposition,
     ITfDocumentMgr, ITfEditSession, ITfEditSession_Impl, ITfInputScope, ITfKeyEventSink,
     ITfKeyEventSink_Impl, ITfKeystrokeMgr, ITfRange, ITfSource, ITfTextInputProcessor_Impl,
@@ -32,9 +33,7 @@ use windows::Win32::UI::TextServices::{
 use windows::core::{GUID, IUnknown, IUnknownImpl, Interface, Result, implement};
 
 use crate::controller::{HostError, HostText, KeyInput, TipConfig, TipController};
-use crate::floating::{
-    BarAction, BarMenu, BarSink, BarState, FloatingBar, button_of_menu, skin_colors,
-};
+use crate::skin::skin_colors;
 use crate::imesettings::{self, ImeSettings, LanguageSettings};
 use crate::keymap::{Modifiers, vk};
 use crate::laser::PanelItem;
@@ -496,18 +495,29 @@ impl HostText for TsfHost {
     }
 }
 
+/// The menus of the product: the ones the panel of the laser interface opens.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MenuKind {
+    /// The language of the input method.
+    Language,
+    /// The effort of the AI features.
+    Effort,
+    /// The skin of the product.
+    Skin,
+}
+
 /// Everything that exists between `Activate` and `Deactivate`.
 struct Inner {
     thread_mgr: ITfThreadMgr,
     client_id: u32,
     thread_sink_cookie: u32,
+    /// The cookie of the sink that hears about the active language profile.
+    language_sink_cookie: u32,
     controller: TipController<BoxedUi, TsfHost>,
     started: Instant,
     /// Actions the user or the host asked for while the text service was busy: they are applied now. A host that
     /// answers an update by calling back into the element produces one more action, so the rounds are bounded.
     pending_actions: Rc<RefCell<Vec<Pending>>>,
-    /// The floating bar of this thread (the small strip with the mode and the settings button).
-    bar: FloatingBar,
     /// The menu that is open (at most one).
     menu: Option<MenuWindow>,
     /// The settings window while it is open; `None` when it is closed.
@@ -528,20 +538,25 @@ struct Inner {
     mouth_place: String,
     /// The laser interface of this thread: the glow on the left of the screen, the beam, the panel and the logo.
     laser: Rc<RefCell<LaserUi>>,
+    /// That the laser interface has to go off the screen, asked for while it was busy.
+    ///
+    /// The interface cannot be asked to hide itself while one of its own windows is calling back, and that is
+    /// exactly what happens when the user switches the input method from the mouth of the light.
+    laser_hide: Rc<Cell<bool>>,
 }
 
 /// An action that arrived while the text service was busy.
 enum Pending {
     /// The user clicked in the candidate window, or a host that draws the list itself selected something.
     List(crate::ui::ListAction),
-    /// The user clicked in the floating bar.
-    Bar(BarAction),
     /// The user chose something in a menu of the floating bar.
     Menu(MenuAction),
     /// The settings window was saved: the settings are read again.
     ReloadSettings,
     /// The user used the laser panel (the glow, the beam or the logo).
     Laser(LaserEvent),
+    /// The user pressed Alt+F2: walk to the next language of the product.
+    SwitchLanguage,
 }
 
 impl Inner {
@@ -554,46 +569,17 @@ impl Inner {
             for action in actions {
                 match action {
                     Pending::List(action) => self.controller.apply_list_action(action),
-                    Pending::Bar(action) => self.apply_bar_action(action),
                     Pending::Menu(action) => self.apply_menu_action(action),
                     Pending::ReloadSettings => self.reload_settings(),
                     Pending::Laser(event) => self.apply_laser_event(event),
+                    Pending::SwitchLanguage => self.switch_to_next_language(),
                 }
             }
         }
     }
 
-    /// What the user asked for in the floating bar.
-    fn apply_bar_action(&mut self, action: BarAction) {
-        match action {
-            BarAction::ToggleInputMode => {
-                // The same thing Alt+F1 does.
-                let on = !self.controller.input_mode();
-                self.controller.set_input_mode(on);
-                self.sync_bar();
-            }
-            BarAction::OpenMenu(which) => self.open_menu(which),
-        }
-    }
-
-    /// Open one of the menus of the bar under (or above) its button.
-    fn open_menu(&mut self, which: BarMenu) {
-        if which == BarMenu::Settings {
-            self.open_settings();
-            return;
-        }
-        let Some(rect) = self.bar.button_rect(button_of_menu(which)) else {
-            return;
-        };
-        self.open_menu_at(which, rect);
-    }
-
-    /// Open one of the menus under the rectangle the user clicked (the button of the bar or a row of the panel).
-    fn open_menu_at(&mut self, which: BarMenu, rect: Rect) {
-        if which == BarMenu::Settings {
-            self.open_settings();
-            return;
-        }
+    /// Open one of the menus under the rectangle the user clicked (a row of the panel).
+    fn open_menu_at(&mut self, which: MenuKind, rect: Rect) {
         // Only one menu at a time: the old one goes away.
         self.menu = None;
         let items = self.menu_items(which);
@@ -601,7 +587,7 @@ impl Inner {
         let sink = self.menu_sink.clone();
         self.menu = MenuWindow::open(
             items,
-            which == BarMenu::Language,
+            which == MenuKind::Language,
             rect,
             work,
             skin_colors(&self.skin),
@@ -610,9 +596,9 @@ impl Inner {
     }
 
     /// The items of one menu.
-    fn menu_items(&self, which: BarMenu) -> Vec<MenuItem> {
+    fn menu_items(&self, which: MenuKind) -> Vec<MenuItem> {
         match which {
-            BarMenu::Effort => imesettings::EFFORT_LEVELS
+            MenuKind::Effort => imesettings::EFFORT_LEVELS
                 .iter()
                 .map(|level| {
                     MenuItem::checked(
@@ -622,7 +608,7 @@ impl Inner {
                     )
                 })
                 .collect(),
-            BarMenu::Skin => imesettings::SKINS
+            MenuKind::Skin => imesettings::SKINS
                 .iter()
                 .map(|skin| {
                     MenuItem::checked(
@@ -632,37 +618,7 @@ impl Inner {
                     )
                 })
                 .collect(),
-            BarMenu::Convenience => vec![
-                MenuItem::checked(
-                    "Tab 确认候选上屏（勾选＝只移动选择）",
-                    MenuAction::SetOption("tab_cycles".to_string(), !self.settings.tab_cycles),
-                    self.settings.tab_cycles,
-                ),
-                MenuItem::checked(
-                    "候选窗显示时 Tab 交给宿主",
-                    MenuAction::SetOption("tab_to_host".to_string(), !self.settings.tab_to_host),
-                    self.settings.tab_to_host,
-                ),
-                MenuItem::checked(
-                    "空格上屏",
-                    MenuAction::SetOption(
-                        "space_confirms".to_string(),
-                        !self.settings.space_confirms,
-                    ),
-                    self.settings.space_confirms,
-                ),
-                MenuItem::checked(
-                    "自动开组合",
-                    MenuAction::SetOption("auto_compose".to_string(), !self.settings.auto_compose),
-                    self.settings.auto_compose,
-                ),
-                MenuItem::checked(
-                    "显示悬浮窗",
-                    MenuAction::SetOption("floating_bar".to_string(), !self.settings.floating_bar),
-                    self.settings.floating_bar,
-                ),
-            ],
-            BarMenu::Language => imesettings::LANGUAGES
+            MenuKind::Language => imesettings::LANGUAGES
                 .iter()
                 .map(|language| {
                     MenuItem::new(
@@ -671,7 +627,6 @@ impl Inner {
                     )
                 })
                 .collect(),
-            BarMenu::Settings => Vec::new(),
         }
     }
 
@@ -681,7 +636,7 @@ impl Inner {
             MenuAction::ToggleInputMode => {
                 let on = !self.controller.input_mode();
                 self.controller.set_input_mode(on);
-                self.sync_bar();
+                self.sync_laser();
             }
             MenuAction::SetEffort(effort) => {
                 self.effort = effort;
@@ -690,7 +645,7 @@ impl Inner {
             MenuAction::SetSkin(skin) => {
                 self.skin = skin;
                 self.save_settings();
-                self.sync_bar();
+                self.sync_laser();
             }
             MenuAction::SetOption(name, on) => {
                 self.set_option(&name, on);
@@ -704,8 +659,7 @@ impl Inner {
 
     /// Switch one of the settings of the active language on or off.
     ///
-    /// The floating bar, the menus and the laser panel all go through here, so the three of them can never disagree
-    /// about what the setting is.
+    /// The menus and the laser panel all go through here, so that they can never disagree about what the setting is.
     fn set_option(&mut self, name: &str, on: bool) {
         let mut value = self.settings;
         match name {
@@ -713,12 +667,11 @@ impl Inner {
             "tab_to_host" => value.tab_to_host = on,
             "space_confirms" => value.space_confirms = on,
             "auto_compose" => value.auto_compose = on,
-            "floating_bar" => value.floating_bar = on,
+            "laser_ui" => value.laser_ui = on,
             "input_mode" => {
                 // The input mode is a state of the controller, not a file: it is the same thing Alt+F1 does.
                 self.controller.set_input_mode(on);
                 self.settings = value;
-                self.sync_bar();
                 self.sync_laser();
                 return;
             }
@@ -727,7 +680,6 @@ impl Inner {
         self.settings = value;
         self.controller.apply_settings(&value);
         self.save_settings();
-        self.sync_bar();
         self.sync_laser();
     }
 
@@ -739,6 +691,10 @@ impl Inner {
             LaserEvent::Settings => self.open_settings(),
             LaserEvent::Switch => {
                 // The mouth of the light is the switch between the input methods.
+                //
+                // The windows go off the screen before the switch: TSF deactivates the text service inside that very
+                // call, and the state is borrowed at that moment, so nothing could be hidden after the switch.
+                self.hide_floating();
                 crate::ime_switch::switch_now();
             }
             LaserEvent::MouthMoved { edge, offset } => {
@@ -752,9 +708,9 @@ impl Inner {
     /// Open one of the lists of the laser panel under the row the user clicked.
     fn open_laser_menu(&mut self, key: &str) {
         let which = match key {
-            "language" => BarMenu::Language,
-            "effort" => BarMenu::Effort,
-            "skin" => BarMenu::Skin,
+            "language" => MenuKind::Language,
+            "effort" => MenuKind::Effort,
+            "skin" => MenuKind::Skin,
             _ => return,
         };
         let anchor = self
@@ -768,12 +724,24 @@ impl Inner {
         self.open_menu_at(which, anchor);
     }
 
+    /// Switch to the next language of the product (Alt+F2).
+    ///
+    /// The three languages of the product (zh-CN, en-US and ja-JP) are walked through in that order; the decision
+    /// itself is pure and lives in the core.
+    fn switch_to_next_language(&mut self) {
+        let next = pime_core::imeswitch::next_language(&self.language);
+        self.switch_language(next);
+    }
+
     /// Switch the input language: TSF activates the profile of the language, and the settings of that language apply
     /// from then on.
     fn switch_language(&mut self, language: &str) {
         let Some((langid, profile)) = profile_of(language) else {
             return;
         };
+        // The windows that belong to the document go off the screen before the switch: TSF changes the profile
+        // inside that very call, and the state is borrowed at that moment.
+        self.hide_caret();
         if !activate_profile(langid, &profile) {
             trace(&format!("the profile of {language} could not be activated"));
             return;
@@ -785,7 +753,19 @@ impl Inner {
         let value = settings.get(language);
         self.settings = value;
         self.controller.apply_settings(&value);
-        self.sync_bar();
+        self.sync_laser();
+    }
+
+    /// Take the settings of another language (the profile of that language became the active one).
+    fn set_language(&mut self, language: &str) {
+        if self.language == language {
+            return;
+        }
+        self.language = language.to_string();
+        let settings = load_settings();
+        let value = settings.get(language);
+        self.settings = value;
+        self.controller.apply_settings(&value);
     }
 
     /// Write the settings back to the file of the user.
@@ -829,6 +809,11 @@ impl Inner {
                 label: "Tab 确认候选",
                 on: self.settings.tab_cycles,
             },
+            PanelItem::Toggle {
+                key: "tab_to_host",
+                label: "Tab 归宿主",
+                on: self.settings.tab_to_host,
+            },
             PanelItem::Menu {
                 key: "language",
                 label: "语言",
@@ -858,26 +843,10 @@ impl Inner {
         laser.set_place(
             crate::laser::MouthPlace::from_text(&self.mouth_place),
         );
-        if !laser.is_visible() {
-            let work = work_area_of(Rect::new(0, 0, 0, 0));
-            laser.show(work);
-        }
-    }
-
-    /// Show the floating bar at the caret (or hide it, when the settings say so).
-    fn sync_bar(&mut self) {        if !self.settings.floating_bar {
-            self.bar.hide();
-            return;
-        }
-        let state = BarState {
-            language: self.language.clone(),
-            input_mode: self.controller.input_mode(),
-            skin: self.skin.clone(),
-        };
-        let Some(anchor) = self.controller.host_mut().caret_anchor() else {
-            return; // the host cannot say where the caret is: the bar stays where it is
-        };
-        self.bar.show(&state, anchor);
+        // The interface is put on the screen every time: the switch of the input method can hide it while the state
+        // says nothing about it (the hide happened in a callback of one of its own windows).
+        let work = work_area_of(Rect::new(0, 0, 0, 0));
+        laser.show(work);
     }
 
     /// Open the settings window (once; a second click does nothing while it is open).
@@ -900,7 +869,50 @@ impl Inner {
         self.skin = settings.skin.clone();
         self.mouth_place = settings.mouth_place.clone();
         self.controller.apply_settings(&value);
-        self.sync_bar();
+        self.sync_laser();
+    }
+
+    /// Take every floating window of this thread off the screen.
+    ///
+    /// The laser interface (the glow, the beam, the panel and the logo), the menus and the settings window belong to
+    /// the input method: when the user switches to another one, or to another language, nothing of it may stay on the
+    /// screen.
+    fn hide_floating(&mut self) {
+        self.menu = None;
+        self.settings_window = None;
+        // The laser interface: it cannot be asked to hide itself while one of its own windows is calling back (that
+        // is exactly what happens when the user switches the input method from the mouth of the light), so the flag
+        // is set and the windows go off the screen as soon as the callback returns.
+        if let Ok(mut laser) = self.laser.try_borrow_mut() {
+            laser.hide();
+        } else {
+            self.laser_hide.set(true);
+        }
+    }
+
+    /// Take the windows that belong to the document off the screen (the menus and the settings window).
+    ///
+    /// The laser interface belongs to the input method and not to the document: it stays, because the input method is
+    /// still the one the user is in.
+    fn hide_caret(&mut self) {
+        self.menu = None;
+        self.settings_window = None;
+    }
+
+    /// Take the text service apart: the windows go off the screen, the composition ends and the advises are undone.
+    fn shutdown(&mut self) {
+        self.controller.deactivate();
+        self.hide_floating();
+        // SAFETY: the advises made in `activate`; failures here cannot be acted on (the thread is going away).
+        unsafe {
+            if let Ok(keystrokes) = self.thread_mgr.cast::<ITfKeystrokeMgr>() {
+                let _ = keystrokes.UnadviseKeyEventSink(self.client_id);
+            }
+            if let Ok(source) = self.thread_mgr.cast::<ITfSource>() {
+                let _ = source.UnadviseSink(self.thread_sink_cookie);
+                let _ = source.UnadviseSink(self.language_sink_cookie);
+            }
+        }
     }
 }
 
@@ -980,8 +992,13 @@ fn active_profile_language() -> Option<u16> {
     }
 }
 
-/// The three interfaces of the object that TSF is given to call back.
-type Sinks = (ITfKeyEventSink, ITfThreadMgrEventSink, ITfCompositionSink);
+/// The four interfaces of the object that TSF is given to call back.
+type Sinks = (
+    ITfKeyEventSink,
+    ITfThreadMgrEventSink,
+    ITfCompositionSink,
+    ITfActiveLanguageProfileNotifySink,
+);
 
 /// The two advises `activate` makes and their undo, as a trait so that the rollback is tested without a thread manager.
 trait Advises {
@@ -990,6 +1007,9 @@ trait Advises {
     /// The cookie of the thread-manager event sink.
     fn advise_thread(&self) -> Result<u32>;
     fn unadvise_thread(&self, cookie: u32);
+    /// The cookie of the sink that hears about the active language profile.
+    fn advise_language(&self) -> Result<u32>;
+    fn unadvise_language(&self, cookie: u32);
 }
 
 /// [`Advises`] on the thread manager TSF handed to `Activate`.
@@ -998,6 +1018,7 @@ struct TsfAdvises<'a> {
     client_id: u32,
     key_sink: &'a ITfKeyEventSink,
     thread_sink: &'a ITfThreadMgrEventSink,
+    language_sink: &'a ITfActiveLanguageProfileNotifySink,
 }
 
 impl Advises for TsfAdvises<'_> {
@@ -1026,6 +1047,20 @@ impl Advises for TsfAdvises<'_> {
             let _ = unsafe { source.UnadviseSink(cookie) };
         }
     }
+
+    fn advise_language(&self) -> Result<u32> {
+        let source: ITfSource = self.thread_mgr.cast()?;
+        // SAFETY: plain COM call; the sink is a live object of ours. The thread manager tells its sinks about the
+        // active language profile, so that we hear when another input method takes over.
+        unsafe { source.AdviseSink(&ITfActiveLanguageProfileNotifySink::IID, self.language_sink) }
+    }
+
+    fn unadvise_language(&self, cookie: u32) {
+        if let Ok(source) = self.thread_mgr.cast::<ITfSource>() {
+            // SAFETY: undoes `advise_language` with the cookie it returned; a failure cannot be acted on.
+            let _ = unsafe { source.UnadviseSink(cookie) };
+        }
+    }
 }
 
 /// What has been advised so far; dropped armed, it undoes it in reverse order. Disarmed once `deactivate` owns the advises.
@@ -1033,10 +1068,14 @@ struct Rollback<'a, A: Advises> {
     advises: &'a A,
     keys: bool,
     thread: Option<u32>,
+    language: Option<u32>,
 }
 
 impl<A: Advises> Drop for Rollback<'_, A> {
     fn drop(&mut self) {
+        if let Some(cookie) = self.language.take() {
+            self.advises.unadvise_language(cookie);
+        }
         if let Some(cookie) = self.thread.take() {
             self.advises.unadvise_thread(cookie);
         }
@@ -1046,27 +1085,47 @@ impl<A: Advises> Drop for Rollback<'_, A> {
     }
 }
 
-/// Advise both sinks, then run `build` with the thread-sink cookie. When an advise fails, or `build` panics (the unwind
-/// goes on to the caller's `guard`), every advise made so far is undone, so a retry starts clean: TSF refuses a second
-/// key-event sink for the same client id. After a normal return the advises stay, to be undone by `deactivate`.
-fn advised<A: Advises, T>(advises: &A, build: impl FnOnce(u32) -> T) -> Result<T> {
+/// Advise the sinks, then run `build` with the cookies of the two advise sinks. When an advise fails, or `build`
+/// panics (the unwind goes on to the caller's `guard`), every advise made so far is undone, so a retry starts clean:
+/// TSF refuses a second key-event sink for the same client id. After a normal return the advises stay, to be undone
+/// by `deactivate`.
+fn advised<A: Advises, T>(advises: &A, build: impl FnOnce(u32, u32) -> T) -> Result<T> {
     let mut undo = Rollback {
         advises,
         keys: false,
         thread: None,
+        language: None,
     };
     advises.advise_keys()?;
     undo.keys = true;
     let cookie = advises.advise_thread()?;
     undo.thread = Some(cookie);
-    let built = build(cookie);
+    let language = advises.advise_language()?;
+    undo.language = Some(language);
+    let built = build(cookie, language);
     undo.keys = false;
     undo.thread = None;
+    undo.language = None;
     Ok(built)
 }
 
 const PENDING_FOCUS: u8 = 1;
 const PENDING_COMPOSITION_ENDED: u8 = 2;
+
+/// What TSF asked for while the state of the text service was borrowed.
+///
+/// TSF re-enters us from inside our own callbacks: the switch of the input method happens in the callback of the
+/// mouth, and TSF deactivates the text service inside that very call. The state is borrowed at that moment, so the
+/// work cannot be done right away: it is remembered here, and done as soon as the callback returns.
+#[derive(Default)]
+struct Flags {
+    /// Events that arrived while the state was borrowed (the focus and the end of a composition).
+    pending: Cell<u8>,
+    /// That the text service is being deactivated, and the state could not be taken yet.
+    deactivated: Cell<bool>,
+    /// That the floating windows have to go off the screen, and the state could not be reached yet.
+    hide: Cell<bool>,
+}
 
 /// The text input processor object: one per thread that activates the profile (TSF calls it on that thread's
 /// apartment, so interior mutability without locking is enough).
@@ -1074,12 +1133,13 @@ const PENDING_COMPOSITION_ENDED: u8 = 2;
     ITfTextInputProcessorEx,
     ITfKeyEventSink,
     ITfThreadMgrEventSink,
-    ITfCompositionSink
+    ITfCompositionSink,
+    ITfActiveLanguageProfileNotifySink
 )]
 struct Tip {
     inner: Rc<RefCell<Option<Inner>>>,
-    /// Events that arrived while `inner` was borrowed (TSF re-entered us from inside one of our edit sessions).
-    pending: Cell<u8>,
+    /// What TSF asked for while the state was borrowed.
+    flags: Rc<Flags>,
     /// Counts this object in the DLL's live-object counter while it exists.
     _live: crate::LiveGuard,
 }
@@ -1088,7 +1148,7 @@ impl Tip {
     fn new() -> Tip {
         Tip {
             inner: Rc::new(RefCell::new(None)),
-            pending: Cell::new(0),
+            flags: Rc::new(Flags::default()),
             _live: crate::LiveGuard::new(),
         }
     }
@@ -1096,38 +1156,63 @@ impl Tip {
     /// Run `f` on the active state; `fallback` when not activated or when TSF re-entered us (then the event is
     /// remembered if it matters).
     fn with<R>(&self, fallback: R, f: impl FnOnce(&mut Inner) -> R) -> R {
-        let Ok(mut slot) = self.inner.try_borrow_mut() else {
-            return fallback;
+        let result = {
+            let Ok(mut slot) = self.inner.try_borrow_mut() else {
+                return fallback;
+            };
+            let Some(inner) = slot.as_mut() else {
+                return fallback;
+            };
+            let pending = self.flags.pending.replace(0);
+            if pending & PENDING_FOCUS != 0 {
+                inner.controller.host_mut().forget_context();
+                inner.controller.focus_changed();
+            }
+            if pending & PENDING_COMPOSITION_ENDED != 0 {
+                inner.controller.host_mut().composition = None;
+                inner.controller.composition_terminated();
+            }
+            let result = f(inner);
+            inner.drain_actions();
+            result
         };
-        let Some(inner) = slot.as_mut() else {
-            return fallback;
-        };
-        let pending = self.pending.replace(0);
-        if pending & PENDING_FOCUS != 0 {
-            inner.controller.host_mut().forget_context();
-            inner.controller.focus_changed();
-        }
-        if pending & PENDING_COMPOSITION_ENDED != 0 {
-            inner.controller.host_mut().composition = None;
-            inner.controller.composition_terminated();
-        }
-        let result = f(inner);
-        inner.drain_actions();
+        // The state is free again: the work that had to wait for it can be done now.
+        self.settle();
         result
     }
 
     /// Note an event for the next `with` when the state is busy right now.
     fn remember_if_busy(&self, flag: u8) {
         if self.inner.try_borrow_mut().is_err() {
-            self.pending.set(self.pending.get() | flag);
+            self.flags.pending.set(self.flags.pending.get() | flag);
         }
+    }
+
+    /// Do the work that had to wait for the state to be free.
+    fn settle(&self) {
+        settle(&self.inner, &self.flags);
+    }
+
+    /// Take every floating window of this thread off the screen.
+    ///
+    /// The windows belong to the input method: when another one takes over, they have to go, and they have to go
+    /// at once. When the state is busy (TSF re-enters us from inside our own callbacks), the work waits for it.
+    fn hide_floating(&self) {
+        let Ok(mut slot) = self.inner.try_borrow_mut() else {
+            self.flags.hide.set(true);
+            return;
+        };
+        let Some(inner) = slot.as_mut() else {
+            return;
+        };
+        inner.hide_floating();
     }
     fn activate(
         &self,
         thread_mgr: Option<&ITfThreadMgr>,
         client_id: u32,
         flags: u32,
-        (key_sink, thread_sink, composition_sink): Sinks,
+        (key_sink, thread_sink, composition_sink, language_sink): Sinks,
     ) -> Result<()> {
         let thread_mgr = thread_mgr.ok_or(E_INVALIDARG)?.clone();
         if self.inner.try_borrow().map(|s| s.is_some()).unwrap_or(true) {
@@ -1138,10 +1223,11 @@ impl Tip {
             client_id,
             key_sink: &key_sink,
             thread_sink: &thread_sink,
+            language_sink: &language_sink,
         };
         // Everything after the advises runs inside `advised`: an error or a panic there (the popup, the controller, the
         // store below) undoes both advises, so that TSF's retry of `Activate` is not refused as "already advised".
-        advised(&tsf, |thread_sink_cookie| {
+        advised(&tsf, |thread_sink_cookie, language_sink_cookie| {
             // The actions of the user (a click in the candidate window, a click in the floating bar) and of a host
             // that draws the candidate list itself travel through this one channel: they are applied at once, or
             // queued when the text service is busy inside a call of ours (then the queue is drained when that call
@@ -1162,25 +1248,6 @@ impl Tip {
                             i.controller.apply_list_action(action);
                         }
                         Err(_) => pending.borrow_mut().push(Pending::List(action)),
-                    }
-                })
-            };
-            // The floating bar: the same pattern, for the two buttons of the bar.
-            let bar_sink: BarSink = {
-                let weak = Rc::downgrade(&self.inner);
-                let pending = pending_actions.clone();
-                Rc::new(move |action| {
-                    let Some(inner) = weak.upgrade() else {
-                        return;
-                    };
-                    match inner.try_borrow_mut() {
-                        Ok(mut slot) => {
-                            let Some(i) = slot.as_mut() else {
-                                return;
-                            };
-                            i.apply_bar_action(action);
-                        }
-                        Err(_) => pending.borrow_mut().push(Pending::Bar(action)),
                     }
                 })
             };
@@ -1210,6 +1277,7 @@ impl Tip {
             let menu_sink: MenuSink = {
                 let weak = Rc::downgrade(&self.inner);
                 let pending = pending_actions.clone();
+                let flags = Rc::clone(&self.flags);
                 Rc::new(move |action| {
                     let Some(inner) = weak.upgrade() else {
                         return;
@@ -1223,6 +1291,9 @@ impl Tip {
                         }
                         Err(_) => pending.borrow_mut().push(Pending::Menu(action)),
                     }
+                    // The state is free again: the work that had to wait for it (the switch of the input method
+                    // deactivates the text service inside this very call) happens now.
+                    settle(&inner, &flags);
                 })
             };
             // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
@@ -1248,6 +1319,7 @@ impl Tip {
             let laser: Rc<RefCell<LaserUi>> = {
                 let weak = Rc::downgrade(&self.inner);
                 let pending = pending_actions.clone();
+                let flags = Rc::clone(&self.flags);
                 let sink: Rc<dyn Fn(LaserEvent)> = Rc::new(move |event| {
                     let Some(inner) = weak.upgrade() else {
                         return;
@@ -1261,9 +1333,13 @@ impl Tip {
                         }
                         Err(_) => pending.borrow_mut().push(Pending::Laser(event)),
                     }
+                    // The state is free again: the work that had to wait for it (the switch of the input method
+                    // deactivates the text service inside this very call) happens now.
+                    settle(&inner, &flags);
                 });
                 LaserUi::create(sink)
             };
+            let laser_hide = laser.borrow().hide_flag();
             let mut controller = TipController::new(
                 BoxedUi(Box::new(ui)),
                 TsfHost::new(client_id, composition_sink),
@@ -1282,15 +1358,24 @@ impl Tip {
                     }
                 }));
             }
+            // Alt+F2 walks through the three languages of the product. The hook cannot touch the state of the text
+            // service (the controller has it borrowed while the key is handled), so the request travels through the
+            // queue of the actions and is applied when the key is done.
+            {
+                let pending = pending_actions.clone();
+                controller.set_language_hook(Rc::new(move || {
+                    pending.borrow_mut().push(Pending::SwitchLanguage);
+                }));
+            }
             controller.activate(is_secure_mode(flags));
             *self.inner.borrow_mut() = Some(Inner {
                 thread_mgr: thread_mgr.clone(),
                 client_id,
                 thread_sink_cookie,
+                language_sink_cookie,
                 controller,
                 started: Instant::now(),
                 pending_actions,
-                bar: FloatingBar::new(bar_sink),
                 menu: None,
                 settings_window: None,
                 settings_sink,
@@ -1301,6 +1386,7 @@ impl Tip {
                 skin: settings.skin.clone(),
                 mouth_place: settings.mouth_place.clone(),
                 laser,
+                laser_hide,
             });
             // The laser interface comes on the screen with the text service.
             if let Ok(mut slot) = self.inner.try_borrow_mut()
@@ -1312,31 +1398,11 @@ impl Tip {
     }
 
     fn deactivate(&self) -> Result<()> {
-        let Ok(mut slot) = self.inner.try_borrow_mut() else {
-            return Ok(());
-        };
-        let Some(mut inner) = slot.take() else {
-            return Ok(());
-        };
-        inner.controller.deactivate();
-        // The floating bar, its menus and the settings window belong to this thread: they go with it.
-        inner.bar.hide();
-        inner.menu = None;
-        inner.settings_window = None;
-        // The laser interface (the glow, the beam, the panel and the logo) goes with it as well.
-        if let Ok(mut laser) = inner.laser.try_borrow_mut() {
-            laser.hide();
-        }
-        // SAFETY: the advises made in `activate`; failures here cannot be acted on (the thread is going away).
-        unsafe {
-            if let Ok(keystrokes) = inner.thread_mgr.cast::<ITfKeystrokeMgr>() {
-                let _ = keystrokes.UnadviseKeyEventSink(inner.client_id);
-            }
-            if let Ok(source) = inner.thread_mgr.cast::<ITfSource>() {
-                let _ = source.UnadviseSink(inner.thread_sink_cookie);
-            }
-        }
-        self.pending.set(0);
+        // The text service is going away. The flag says so even when the state is busy: TSF re-enters us from inside
+        // our own callbacks (the switch of the input method happens in the callback of the mouth), and the state
+        // cannot be taken then. The work happens as soon as the callback returns.
+        self.flags.deactivated.set(true);
+        self.settle();
         Ok(())
     }
 
@@ -1351,10 +1417,97 @@ impl Tip {
                 KeyKind::TestUp => inner.controller.on_test_key_up(input),
                 KeyKind::Up => inner.controller.on_key_up(input),
             };
-            // The floating bar follows the caret: it is shown and moved after every key.
-            inner.sync_bar();
             eaten
         })
+    }
+
+    /// TSF tells us that the active language profile changed.
+    ///
+    /// Another text service took over, or one of ours is not the active one any more: nothing of ours may stay on
+    /// the screen. When IME1.0 is the active one again, the interface comes back with it.
+    fn profile_activated(&self, clsid: GUID, profile: GUID, activated: bool) {
+        match profile_change(clsid, profile, activated) {
+            ProfileChange::Ours(language) => {
+                self.with((), |inner| {
+                    if let Some(language) = language {
+                        inner.set_language(language);
+                    }
+                    inner.sync_laser();
+                });
+            }
+            ProfileChange::Other | ProfileChange::OursGone => self.hide_floating(),
+            ProfileChange::Nothing => {}
+        }
+    }
+}
+
+/// Do the work that had to wait for the state of the text service to be free.
+///
+/// TSF re-enters us from inside our own callbacks: the switch of the input method happens in the callback of the
+/// mouth, and TSF deactivates the text service inside that very call. The state is borrowed at that moment, so the
+/// work waits until the callback returns.
+fn settle(inner: &RefCell<Option<Inner>>, flags: &Flags) {
+    let Ok(mut slot) = inner.try_borrow_mut() else {
+        return; // still busy: the next callback settles it
+    };
+    if flags.hide.get() {
+        flags.hide.set(false);
+        if let Some(state) = slot.as_mut() {
+            state.hide_floating();
+        }
+    }
+    if flags.deactivated.get() {
+        flags.deactivated.set(false);
+        let Some(mut state) = slot.take() else {
+            return;
+        };
+        state.shutdown();
+    }
+}
+
+/// What the notification of the active profile means for the floating windows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ProfileChange {
+    /// One of our own profiles is the active one: the language of that profile is what the product shows.
+    Ours(Option<&'static str>),
+    /// Another text service took over: everything floating has to go off the screen.
+    Other,
+    /// One of our own profiles is not the active one any more: everything floating has to go off the screen.
+    OursGone,
+    /// Nothing that concerns us.
+    Nothing,
+}
+
+/// What the notification of the active profile means, as a pure decision.
+///
+/// The text service of the product has three profiles (zh-CN, en-US and ja-JP). When one of them is the active one,
+/// the product is the input method of the user; when another text service is, it is not.
+fn profile_change(clsid: GUID, profile: GUID, activated: bool) -> ProfileChange {
+    if clsid != crate::CLSID_PIME {
+        // Another text service: it matters only when it takes over.
+        return if activated {
+            ProfileChange::Other
+        } else {
+            ProfileChange::Nothing
+        };
+    }
+    if activated {
+        ProfileChange::Ours(language_of_profile(profile))
+    } else {
+        ProfileChange::OursGone
+    }
+}
+
+/// The language of one of the three profiles of the product.
+fn language_of_profile(profile: GUID) -> Option<&'static str> {
+    if profile == crate::PROFILE_ZH {
+        Some("zh-CN")
+    } else if profile == crate::PROFILE_EN {
+        Some("en-US")
+    } else if profile == crate::PROFILE_JA {
+        Some("ja-JP")
+    } else {
+        None
     }
 }
 
@@ -1437,6 +1590,7 @@ impl Tip_Impl {
             this.to_interface(),
             this.to_interface(),
             this.to_interface(),
+            this.to_interface(),
         )
     }
 }
@@ -1470,6 +1624,8 @@ impl ITfKeyEventSink_Impl for Tip_Impl {
                 self.with((), |inner| {
                     inner.controller.host_mut().forget_context();
                     inner.controller.focus_changed();
+                    // The windows that belong to the document go off the screen with it.
+                    inner.hide_caret();
                 });
             }
             Ok(())
@@ -1556,6 +1712,8 @@ impl ITfThreadMgrEventSink_Impl for Tip_Impl {
             self.with((), |inner| {
                 inner.controller.host_mut().forget_context();
                 inner.controller.focus_changed();
+                // The windows that belong to the document go off the screen with it.
+                inner.hide_caret();
             });
             Ok(())
         })
@@ -1607,6 +1765,20 @@ impl ITfCompositionSink_Impl for Tip_Impl {
     }
 }
 
+/// The text service hears about the active language profile, so that nothing of it stays on the screen when the
+/// user switches to another input method or to another language.
+impl ITfActiveLanguageProfileNotifySink_Impl for Tip_Impl {
+    fn OnActivated(&self, clsid: *const GUID, guidprofile: *const GUID, factivated: BOOL) -> Result<()> {
+        guard(Ok(()), || {
+            // SAFETY: the two pointers are read-only GUIDs that TSF gave us for the length of the call.
+            let clsid = unsafe { clsid.as_ref().copied().unwrap_or_default() };
+            let profile = unsafe { guidprofile.as_ref().copied().unwrap_or_default() };
+            self.profile_activated(clsid, profile, factivated.as_bool());
+            Ok(())
+        })
+    }
+}
+
 /// Called by the class factory: create a TIP and return the requested interface.
 ///
 /// # Safety
@@ -1649,14 +1821,16 @@ mod tests {
     struct FakeAdvises {
         keys: Cell<bool>,
         thread: Cell<Option<u32>>,
+        language: Cell<Option<u32>>,
         next_cookie: Cell<u32>,
         fail_thread: Cell<bool>,
+        fail_language: Cell<bool>,
         calls: RefCell<Vec<&'static str>>,
     }
 
     impl FakeAdvises {
         fn outstanding(&self) -> bool {
-            self.keys.get() || self.thread.get().is_some()
+            self.keys.get() || self.thread.get().is_some() || self.language.get().is_some()
         }
     }
 
@@ -1693,6 +1867,26 @@ mod tests {
             );
             self.thread.set(None);
         }
+
+        fn advise_language(&self) -> Result<u32> {
+            self.calls.borrow_mut().push("advise_language");
+            if self.fail_language.get() || self.language.get().is_some() {
+                return Err(E_FAIL.into());
+            }
+            self.next_cookie.set(self.next_cookie.get() + 1);
+            self.language.set(Some(self.next_cookie.get()));
+            Ok(self.next_cookie.get())
+        }
+
+        fn unadvise_language(&self, cookie: u32) {
+            self.calls.borrow_mut().push("unadvise_language");
+            assert_eq!(
+                self.language.get(),
+                Some(cookie),
+                "the cookie that was advised"
+            );
+            self.language.set(None);
+        }
     }
 
     #[test]
@@ -1701,7 +1895,7 @@ mod tests {
         // E_FAIL and left both sinks advised, so TSF's retry of Activate was refused
         let tsf = FakeAdvises::default();
         let got = guard(Err(E_FAIL.into()), || {
-            advised(&tsf, |_| -> () {
+            advised(&tsf, |_, _| -> () {
                 panic!("popup or controller panicked (test)")
             })
         });
@@ -1712,13 +1906,15 @@ mod tests {
             [
                 "advise_keys",
                 "advise_thread",
+                "advise_language",
+                "unadvise_language",
                 "unadvise_thread",
                 "unadvise_keys"
             ],
             "undone in reverse order"
         );
         // the retry is not refused, and its advises are the live ones
-        let cookie = advised(&tsf, |cookie| cookie).expect("the retry succeeds");
+        let cookie = advised(&tsf, |cookie, _| cookie).expect("the retry succeeds");
         assert_eq!(tsf.thread.get(), Some(cookie));
         assert!(tsf.keys.get());
     }
@@ -1726,16 +1922,19 @@ mod tests {
     #[test]
     fn a_successful_build_keeps_the_advises_for_deactivate() {
         let tsf = FakeAdvises::default();
-        let seen = advised(&tsf, |cookie| cookie).unwrap();
+        let seen = advised(&tsf, |cookie, _| cookie).unwrap();
         assert_eq!(
             tsf.thread.get(),
             Some(seen),
             "build got the cookie of the advise"
         );
         assert!(tsf.keys.get());
-        assert_eq!(*tsf.calls.borrow(), ["advise_keys", "advise_thread"]);
+        assert_eq!(
+            *tsf.calls.borrow(),
+            ["advise_keys", "advise_thread", "advise_language"]
+        );
         // a second activation without a deactivate is refused by the advise itself, and changes nothing
-        assert!(advised(&tsf, |_| ()).is_err());
+        assert!(advised(&tsf, |_, _| ()).is_err());
         assert!(
             tsf.keys.get(),
             "the live advises are not undone by the refused second attempt"
@@ -1746,16 +1945,78 @@ mod tests {
     fn a_refused_thread_sink_unadvises_the_key_sink_and_a_refused_key_sink_undoes_nothing() {
         let tsf = FakeAdvises::default();
         tsf.fail_thread.set(true);
-        assert!(advised(&tsf, |_| ()).is_err());
+        assert!(advised(&tsf, |_, _| ()).is_err());
         assert!(!tsf.outstanding(), "{:?}", tsf.calls.borrow());
         tsf.fail_thread.set(false);
-        assert!(advised(&tsf, |_| ()).is_ok(), "the retry is not refused");
+        assert!(advised(&tsf, |_, _| ()).is_ok(), "the retry is not refused");
         // the key sink is refused (already advised): nothing of this attempt exists, so nothing is undone
         let tsf = FakeAdvises::default();
         tsf.keys.set(true);
-        assert!(advised(&tsf, |_| ()).is_err());
+        assert!(advised(&tsf, |_, _| ()).is_err());
         assert_eq!(*tsf.calls.borrow(), ["advise_keys"]);
         assert!(tsf.keys.get(), "someone else's advise stays");
+    }
+
+    /// The refused third sink undoes the two before it: a retry of `Activate` must start clean.
+    #[test]
+    fn a_refused_language_sink_unadvises_the_two_before_it() {
+        let tsf = FakeAdvises::default();
+        tsf.fail_language.set(true);
+        assert!(advised(&tsf, |_, _| ()).is_err());
+        assert!(!tsf.outstanding(), "{:?}", tsf.calls.borrow());
+        assert_eq!(
+            *tsf.calls.borrow(),
+            [
+                "advise_keys",
+                "advise_thread",
+                "advise_language",
+                "unadvise_thread",
+                "unadvise_keys"
+            ],
+            "the language sink never existed, so it is not undone"
+        );
+    }
+
+    /// The notification of the active profile is what tells the product that another input method took over.
+    #[test]
+    fn another_text_service_that_takes_over_empties_the_screen() {
+        let other = GUID::from_u128(0xe3600580_1cf5_4305_a3b4_8f1a0f0a2b5d);
+        assert_eq!(
+            profile_change(other, GUID::default(), true),
+            ProfileChange::Other,
+            "another text service became the active one"
+        );
+        assert_eq!(
+            profile_change(other, GUID::default(), false),
+            ProfileChange::Nothing,
+            "another text service went away: nothing of ours changes"
+        );
+    }
+
+    #[test]
+    fn our_own_profiles_are_the_ones_the_product_shows() {
+        assert_eq!(
+            profile_change(crate::CLSID_PIME, crate::PROFILE_ZH, true),
+            ProfileChange::Ours(Some("zh-CN"))
+        );
+        assert_eq!(
+            profile_change(crate::CLSID_PIME, crate::PROFILE_EN, true),
+            ProfileChange::Ours(Some("en-US"))
+        );
+        assert_eq!(
+            profile_change(crate::CLSID_PIME, crate::PROFILE_JA, true),
+            ProfileChange::Ours(Some("ja-JP"))
+        );
+        assert_eq!(
+            profile_change(crate::CLSID_PIME, crate::PROFILE_ZH, false),
+            ProfileChange::OursGone,
+            "our profile is not the active one any more"
+        );
+        assert_eq!(
+            profile_change(crate::CLSID_PIME, GUID::default(), true),
+            ProfileChange::Ours(None),
+            "a profile we do not know: the product shows what it had"
+        );
     }
 
     #[test]

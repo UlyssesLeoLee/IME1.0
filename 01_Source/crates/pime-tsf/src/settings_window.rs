@@ -72,8 +72,8 @@ pub enum Toggle {
     AutoCompose,
     /// The input method starts in input mode.
     InputMode,
-    /// The floating bar is shown.
-    FloatingBar,
+    /// The laser interface is shown.
+    LaserUi,
 }
 
 /// The kind of one control of the window.
@@ -154,7 +154,7 @@ pub fn compute_layout() -> SettingsLayout {
             Toggle::SpaceConfirms,
             Toggle::AutoCompose,
             Toggle::InputMode,
-            Toggle::FloatingBar,
+            Toggle::LaserUi,
         ] {
             controls.push(ControlSlot {
                 kind: ControlKind::Check(toggle),
@@ -192,7 +192,7 @@ pub fn toggle_label(toggle: Toggle) -> &'static str {
         Toggle::SpaceConfirms => "空格上屏（否则空格就是空格）",
         Toggle::AutoCompose => "自动开组合",
         Toggle::InputMode => "默认进入输入模式",
-        Toggle::FloatingBar => "显示悬浮窗",
+        Toggle::LaserUi => "显示激光界面",
     }
 }
 
@@ -254,7 +254,7 @@ impl SettingsState {
                         Toggle::SpaceConfirms => value.space_confirms = checked,
                         Toggle::AutoCompose => value.auto_compose = checked,
                         Toggle::InputMode => value.input_mode = checked,
-                        Toggle::FloatingBar => value.floating_bar = checked,
+                        Toggle::LaserUi => value.laser_ui = checked,
                     }
                 }
                 _ => {}
@@ -287,7 +287,7 @@ impl SettingsState {
                         Toggle::SpaceConfirms => defaults.space_confirms,
                         Toggle::AutoCompose => defaults.auto_compose,
                         Toggle::InputMode => defaults.input_mode,
-                        Toggle::FloatingBar => defaults.floating_bar,
+                        Toggle::LaserUi => defaults.laser_ui,
                     };
                     // SAFETY: a plain call on our own check box.
                     unsafe {
@@ -589,7 +589,7 @@ fn on_create(hwnd: HWND) -> bool {
             Toggle::SpaceConfirms => value.space_confirms,
             Toggle::AutoCompose => value.auto_compose,
             Toggle::InputMode => value.input_mode,
-            Toggle::FloatingBar => value.floating_bar,
+            Toggle::LaserUi => value.laser_ui,
         };
         // SAFETY: a plain call on our own check box.
         unsafe {
@@ -822,7 +822,7 @@ mod tests {
             Toggle::SpaceConfirms,
             Toggle::AutoCompose,
             Toggle::InputMode,
-            Toggle::FloatingBar,
+            Toggle::LaserUi,
         ] {
             assert!(!toggle_label(toggle).is_empty());
         }

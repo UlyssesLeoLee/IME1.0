@@ -160,11 +160,27 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
     },
     ImeFunction {
         id: "F-FLOATING",
-        name: "The floating bar shows the product, the language and the mode",
-        module: "floating",
+        name: "The floating interface of the product is the laser interface (the blue glow, the beam, the panel and the logo)",
+        module: "laser_ui",
         scenarios: &[],
-        unit_test: "the_bar_shows_the_product_the_language_and_the_mode",
-        unit_file: "floating.rs",
+        unit_test: "the_lens_of_the_mouth_is_drawn_inside_the_window_of_the_glow",
+        unit_file: "laser_ui.rs",
+    },
+    ImeFunction {
+        id: "F-LANGUAGE",
+        name: "Alt+F2 walks through the three languages of the product",
+        module: "keymap",
+        scenarios: &[],
+        unit_test: "alt_f2_is_the_language_shortcut_and_nothing_else_is",
+        unit_file: "keymap.rs",
+    },
+    ImeFunction {
+        id: "F-SKIN",
+        name: "The colours of the product: the panel of the laser interface and its menus",
+        module: "skin",
+        scenarios: &[],
+        unit_test: "the_skins_have_readable_colours",
+        unit_file: "skin.rs",
     },
     ImeFunction {
         id: "F-MENU",
@@ -271,8 +287,8 @@ pub const CRATE_SOURCES: &[(&str, &str)] = &[
         include_str!("../../../crates/pime-tsf/src/menus.rs"),
     ),
     (
-        "floating.rs",
-        include_str!("../../../crates/pime-tsf/src/floating.rs"),
+        "skin.rs",
+        include_str!("../../../crates/pime-tsf/src/skin.rs"),
     ),
     (
         "settings_window.rs",

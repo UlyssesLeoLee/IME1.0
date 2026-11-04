@@ -24,10 +24,8 @@ use windows::Win32::Foundation::{
 use windows::Win32::System::Com::{IClassFactory, IClassFactory_Impl};
 use windows::core::{GUID, HRESULT, IUnknown, Interface, Result, implement};
 
-pub mod bar_skin;
 pub mod candidate_skin;
 pub mod controller;
-pub mod floating;
 pub mod glass;
 pub mod imesettings;
 pub mod ime_switch;
@@ -40,6 +38,7 @@ pub mod paint;
 pub mod popup;
 pub mod register;
 pub mod settings_window;
+pub mod skin;
 pub mod tip;
 pub mod ui;
 pub mod uielement;

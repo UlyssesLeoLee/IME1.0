@@ -1,5 +1,7 @@
 # F2 prompt: select text or code, press Ctrl+F2, get a 5W1H prompt on the clipboard
 
+(The shortcut of the whole product - Ctrl+F12, Ctrl+F1, Ctrl+F2, Alt+F1, Alt+F2 - is archived in `docs/HOTKEYS.md`.)
+
 **The shortcut is `Ctrl+F2`, not the plain `F2`.** The plain `F2` renames a symbol and the plain `F1` opens the editor's Help (the Command Palette), so
 Programming IME binds `Ctrl+F2` / `Ctrl+Shift+F2` (this feature) and `Ctrl+F1` / `Ctrl+Shift+F1` (the F1 annotate panel) instead: the editor keeps its own
 keys, and the binding can still be moved with `programmingIme.f2Binding` or switched off with `none`.

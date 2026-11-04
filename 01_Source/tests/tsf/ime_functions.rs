@@ -80,7 +80,7 @@ fn the_ledger_covers_every_module_of_the_text_service() {
         "layout",
         "popup",
         "menus",
-        "floating",
+        "skin",
         "settings_window",
         "imesettings",
         "register",

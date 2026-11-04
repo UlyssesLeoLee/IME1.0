@@ -30,7 +30,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{PCWSTR, w};
 
-use crate::floating::{SkinColors, skin_colors};
+use crate::skin::{SkinColors, skin_colors};
 use crate::layout::{Rect, TextMetrics};
 use crate::popup::{
     GdiMetrics, GdiObject, MemDc, Selection, message_font, module_instance, to_rect,

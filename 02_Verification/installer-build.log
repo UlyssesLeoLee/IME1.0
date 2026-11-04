@@ -1,21 +1,17 @@
-﻿IME1.0 installer 0.2.0
+IME1.0 installer 0.2.0
   cargo target dir: D:\cargo-target-ime
 
 == pime-core: cargo build --release --target x86_64-pc-windows-gnu -p pime-core --bin pime-core  (.)
-Compiling pime-core v0.2.0 (E:\IME1.0\01_Source\crates\pime-core)
-    Finished `release` profile [optimized] target(s) in 42.17s
+Finished `release` profile [optimized] target(s) in 0.04s
 
 == pime-tsf (text service DLL): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tsf)
-   Compiling pime-tsf v0.2.0 (E:\IME1.0\01_Source\crates\pime-tsf)
-    Finished `release` profile [optimized] target(s) in 38.76s
+Finished `release` profile [optimized] target(s) in 0.04s
 
 == pime-tray (resident tray): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tray)
-   Compiling pime-tray v0.1.0 (E:\IME1.0\01_Source\crates\pime-tray)
-    Finished `release` profile [optimized] target(s) in 1m 00s
+Finished `release` profile [optimized] target(s) in 0.04s
 
 == pime-ai-worker (speech service client): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-ai-worker)
-   Compiling pime-ai-worker v0.2.0 (E:\IME1.0\01_Source\crates\pime-ai-worker)
-    Finished `release` profile [optimized] target(s) in 30.42s
+Finished `release` profile [optimized] target(s) in 0.04s
 
 == VS Code extension
   note: the extension has no media/ folder yet (P6 produces it); the .vsix is built without one
@@ -121,8 +117,7 @@ Compiling pime-core v0.2.0 (E:\IME1.0\01_Source\crates\pime-core)
   ok   negative control: without the packaged language-packs/ the same call fails (it does not find the repository copy)
 
 == pime-setup (installer stub): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-setup)
-   Compiling pime-setup v0.2.0 (E:\IME1.0\01_Source\crates\pime-setup)
-    Finished `release` profile [optimized] target(s) in 38.16s
+Finished `release` profile [optimized] target(s) in 0.08s
 
 == checks on the result
 ok   machine is x64 (0x8664), found x64 (AMD64)
@@ -138,8 +133,8 @@ ok   --dry-run created nothing
 
 build-installer: OK
   installer   E:\IME1.0\01_Source\dist\ProgrammingIME-0.2.0-win-x64-setup.exe
-              7714135 bytes   sha256 59a2f8fe3178b5827310366800b970545cd7795eb59ff7cb64e42059c0b57e48   (ProgrammingIME-0.2.0-win-x64-setup.exe.sha256 written)
+              7703669 bytes   sha256 4698beea1062caa5e48962f768e447926f69a981c5bf3482f8d4571c8d293416   (ProgrammingIME-0.2.0-win-x64-setup.exe.sha256 written)
   stub        787968 bytes (pime-setup.exe, x64 console, unsigned)
-  payload     pime_tsf.dll 2377216, pime-core.exe 2986351, LICENSE 1085, programming-ime.vsix 211136, pime.ico 66724, pime-tray.exe 882176, pime-ai-worker.exe 400896, meta.json 87
+  payload     pime_tsf.dll 2372096, pime-core.exe 2985613, LICENSE 1085, programming-ime.vsix 211136, pime.ico 66724, pime-tray.exe 877568, pime-ai-worker.exe 400896, meta.json 87
   extension   programming-ime-vscode-bridge-0.2.0.vsix 211136 bytes, 49 files, id pime-local-prototype.programming-ime-vscode-bridge
   NOT signed (SmartScreen will warn). NOT run: the text service DLL is unverified in a VM, so this is a pre-release.

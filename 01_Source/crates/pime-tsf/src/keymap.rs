@@ -45,6 +45,8 @@ pub mod vk {
     pub const PACKET: u32 = 0xE7;
     /// The F1 key.
     pub const F1: u32 = 0x70;
+    /// The F2 key.
+    pub const F2: u32 = 0x71;
 }
 
 /// Modifier state at the time of a key message.
@@ -126,6 +128,12 @@ pub fn is_compose_chord(code: u32, mods: Modifiers) -> bool {
 /// button.
 pub fn is_input_mode_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::F1 && mods.alt && !mods.ctrl && !mods.shift && !mods.win
+}
+
+/// Alt+F2: walk through the three languages of the product (zh-CN, en-US, ja-JP). The panel of the laser interface
+/// offers the same as a row.
+pub fn is_language_chord(code: u32, mods: Modifiers) -> bool {
+    code == vk::F2 && mods.alt && !mods.ctrl && !mods.shift && !mods.win
 }
 
 /// True for a key that moves the caret or edits the text behind the machine's back, so that what it observed (the typed
@@ -383,6 +391,25 @@ mod tests {
         ));
         assert!(!is_compose_chord(vk::RETURN, both));
         assert!(!is_compose_chord(0x41, both));
+    }
+
+    /// Alt+F2 is the shortcut of the product that walks through the three languages.
+    #[test]
+    fn alt_f2_is_the_language_shortcut_and_nothing_else_is() {
+        let alt_f2 = Modifiers { alt: true, ..NONE };
+        assert!(is_language_chord(vk::F2, alt_f2));
+        assert!(!is_language_chord(vk::F1, alt_f2), "Alt+F1 is the input mode");
+        assert!(
+            !is_language_chord(vk::F2, NONE),
+            "the plain F2 belongs to the editor"
+        );
+        for extra in [
+            Modifiers { ctrl: true, ..alt_f2 },
+            Modifiers { shift: true, ..alt_f2 },
+            Modifiers { win: true, ..alt_f2 },
+        ] {
+            assert!(!is_language_chord(vk::F2, extra), "{extra:?}");
+        }
     }
 
     #[test]

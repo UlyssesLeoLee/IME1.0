@@ -28,7 +28,8 @@ L1 已经在门禁链里（`node tests/run-all.js --tsf`）。本轮补上的是
 | 功能 ID | 功能 | 模块 | 覆盖它的测试 | 层次 |
 |---|---|---|---|---|
 | F-ACTIVATE | 激活 / 停用 / 焦点切换不留痕迹 | controller | `IME-S13` `IME-S15` + `deactivate_leaves_no_window_and_no_open_composition` | L1+L2 |
-| F-INPUT-MODE | 直打 / 输入模式切换（Alt+F1、悬浮栏按钮） | controller | `IME-S10` + `alt_f1_switches_between_direct_mode_and_input_mode` | L1+L2 |
+| F-INPUT-MODE | 直打 / 输入模式切换（Alt+F1、面板开关） | controller | `IME-S10` + `alt_f1_switches_between_direct_mode_and_input_mode` | L1+L2 |
+| F-LANGUAGE | 切换语言（Alt+F2：zh-CN / en-US / ja-JP） | keymap | `alt_f2_is_the_language_shortcut_and_nothing_else_is` + `alt_f2_is_eaten_and_asks_for_the_next_language` | L1 |
 | F-OBSERVE | 键位只观察不吞（直打模式） | controller | `IME-S01` + `typing_code_with_the_defaults_eats_and_commits_nothing` | L1+L2 |
 | F-CANDIDATE-WINDOW | 候选窗的行、标签、选中项、页脚 | controller | `IME-S01` + `typing_shows_a_window_of_labelled_rows_without_eating_anything` | L1+L2 |
 | F-LAYOUT | 候选窗位置（光标下方 / 上翻 / 夹在工作区） | layout | `ut_055_flips_above_the_caret_when_the_bottom_edge_is_too_close` | L1 |
@@ -42,7 +43,11 @@ L1 已经在门禁链里（`node tests/run-all.js --tsf`）。本轮补上的是
 | F-HOST-ACTION | 宿主（或用户）对候选列表的动作 | controller | `IME-S17` + `the_behaviour_interface_reports_the_users_choice_to_the_text_service` | L1+L2 |
 | F-UI-ELEMENT | 候选列表作为 UI 元素发布给宿主 | uielement | `IME-S18` + `begin_when_a_list_appears_update_on_every_visible_change_end_when_it_hides` | L1+L2 |
 | F-POPUP | 原生候选窗的绘制与 DPI | popup | `the_candidate_list_is_drawn_at_the_dpi_of_the_coordinate_space_it_lives_in` | L1 |
-| F-FLOATING | 悬浮栏（按钮 / 布局 / 皮肤） | floating | `the_bar_shows_the_product_the_language_and_the_mode` | L1 |
+| F-FLOATING | 悬浮界面（左侧蓝色微光激光口区域：发光口 / 光束 / 面板 / 右下角 logo） | laser_ui | `the_lens_of_the_mouth_is_drawn_inside_the_window_of_the_glow` | L1 |
+| F-SKIN | 皮肤配色（面板与菜单） | skin | `the_skins_have_readable_colours` | L1 |
+| F-LASER | 写出的字符被光束点亮 | laser | `IME-S22` + `a_beam_is_over_after_half_a_second` | L1+L2 |
+| F-GLOW-PANEL | 发光口打开快捷面板 | laser | `the_mouth_is_hit_only_by_the_lens` | L1 |
+| F-LASER-PANEL | 面板的行切换设置并打开列表 | laser | `a_click_on_a_switch_turns_it_around` | L1 |
 | F-MENU | 菜单（筛选 / 布局 / 命中） | menus | `a_click_finds_the_row_under_it` | L1 |
 | F-SETTINGS-WINDOW | 设置窗口布局 | settings_window | `the_controls_do_not_overlap_each_other` | L1 |
 | F-SETTINGS-STORE | 设置持久化（每语言 / 全局 / 坏文件） | imesettings | `a_broken_file_does_not_take_the_input_method_down` | L1 |
@@ -51,7 +56,7 @@ L1 已经在门禁链里（`node tests/run-all.js --tsf`）。本轮补上的是
 | F-ENGINE | 候选生成、校验、排序 | predict | `IME-S20` | L2 |
 | F-PLUGIN-LANGUAGE | 插件语言（可开可关） | languages | `IME-S21` | L2 |
 
-**23 个功能，全部有测试。** 账本文件：`01_Source/tests/tsf/common/scenarios.rs` 的 `IME_FUNCTIONS`。
+**27 个功能，全部有测试。** 账本文件：`01_Source/tests/tsf/common/scenarios.rs` 的 `IME_FUNCTIONS`。
 
 ---
 

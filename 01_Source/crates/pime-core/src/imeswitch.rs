@@ -7,6 +7,20 @@
 //! The decision itself is pure and lives here so that it can be tested without Windows: the Windows part only
 //! answers two questions - which profile is active now, and how do I activate another one.
 
+/// The three languages of the product, in the order the switch key walks through them.
+pub const LANGUAGES: [&str; 3] = ["zh-CN", "en-US", "ja-JP"];
+
+/// The language that follows the one that is active.
+///
+/// The switch key walks through the three languages of the product: zh-CN, en-US, ja-JP and around. A language that
+/// is not one of ours (the profile of another text service) is followed by the first one.
+pub fn next_language(current: &str) -> &'static str {
+    match LANGUAGES.iter().position(|l| *l == current) {
+        Some(index) => LANGUAGES[(index + 1) % LANGUAGES.len()],
+        None => LANGUAGES[0],
+    }
+}
+
 /// The identity of one input method profile of the system.
 ///
 /// The two GUIDs are the ones Windows uses: the class of the text service (the input method itself) and the profile
@@ -151,6 +165,18 @@ mod tests {
             "{fa550b03-5ad7-411f-a5ac-ca038ec3d5f2}",
             0x0411,
         )
+    }
+
+    #[test]
+    fn the_switch_key_walks_through_the_three_languages() {
+        assert_eq!(next_language("zh-CN"), "en-US");
+        assert_eq!(next_language("en-US"), "ja-JP");
+        assert_eq!(next_language("ja-JP"), "zh-CN", "and around");
+        assert_eq!(
+            next_language("de-DE"),
+            LANGUAGES[0],
+            "a language that is not ours is followed by the first one"
+        );
     }
 
     #[test]

@@ -25,7 +25,9 @@ use pime_core::json::{Json, Limits};
 pub const VERSION: i64 = 1;
 
 /// The language profiles the product ships, in the order the settings window lists them.
-pub const LANGUAGES: [&str; 3] = ["zh-CN", "en-US", "ja-JP"];
+///
+/// The list itself is the one of the core: the switch key walks through the same three languages.
+pub const LANGUAGES: [&str; 3] = pime_core::imeswitch::LANGUAGES;
 
 /// The name of the settings file inside the local application data folder.
 pub const FILE_NAME: &str = "settings.json";
@@ -84,8 +86,9 @@ pub struct LanguageSettings {
     pub auto_compose: bool,
     /// The input method starts in input mode (typing opens a composition) instead of direct mode.
     pub input_mode: bool,
-    /// The floating bar is shown while this profile is active.
-    pub floating_bar: bool,
+    /// The laser interface (the blue glow at the left of the screen and the panel on it) is shown while this
+    /// profile is active.
+    pub laser_ui: bool,
 }
 
 impl Default for LanguageSettings {
@@ -100,7 +103,7 @@ impl Default for LanguageSettings {
             auto_compose: false,
             // The input method starts in input mode (the mainstream behaviour), not in direct mode.
             input_mode: true,
-            floating_bar: true,
+            laser_ui: true,
         }
     }
 }
@@ -205,7 +208,7 @@ impl ImeSettings {
                         ("tabToHost".to_string(), Json::Bool(value.tab_to_host)),
                         ("autoCompose".to_string(), Json::Bool(value.auto_compose)),
                         ("inputMode".to_string(), Json::Bool(value.input_mode)),
-                        ("floatingBar".to_string(), Json::Bool(value.floating_bar)),
+                        ("laserUi".to_string(), Json::Bool(value.laser_ui)),
                     ]),
                 )
             })
@@ -327,10 +330,13 @@ fn language_settings_of(value: &Json) -> LanguageSettings {
             .get("inputMode")
             .and_then(Json::as_bool)
             .unwrap_or(default.input_mode),
-        floating_bar: value
-            .get("floatingBar")
+        // The old name of the setting (it showed the floating bar) is read as well: the file of the user may still
+        // have it, and the meaning is the same one - the floating interface of the product is shown.
+        laser_ui: value
+            .get("laserUi")
+            .or_else(|| value.get("floatingBar"))
             .and_then(Json::as_bool)
-            .unwrap_or(default.floating_bar),
+            .unwrap_or(default.laser_ui),
     }
 }
 
@@ -394,7 +400,7 @@ mod tests {
                 value.input_mode,
                 "the input method starts in input mode (the mainstream behaviour)"
             );
-            assert!(value.floating_bar);
+            assert!(value.laser_ui);
         }
     }
 
@@ -426,7 +432,7 @@ mod tests {
             tab_to_host: true,
             auto_compose: true,
             input_mode: true,
-            floating_bar: false,
+            laser_ui: false,
         };
         settings.set("ja-JP", changed);
         assert_eq!(settings.get("ja-JP"), changed);

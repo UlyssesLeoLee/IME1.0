@@ -1,5 +1,7 @@
 # F1 annotate: press Ctrl+F1, the scope under the cursor (or the selection) gets comments
 
+(The shortcut of the whole product - Ctrl+F12, Ctrl+F1, Ctrl+F2, Alt+F1, Alt+F2 - is archived in `docs/HOTKEYS.md`.)
+
 **The shortcut is `Ctrl+F1`, not the plain `F1`.** The plain `F1` is the editor's own Help key (it opens the Command Palette) and the plain `F2` renames a
 symbol, so Programming IME binds `Ctrl+F1` / `Ctrl+Shift+F1` (this feature) and `Ctrl+F2` / `Ctrl+Shift+F2` (the F2 prompt) instead: the editor keeps its
 own keys, and the binding can still be moved with `programmingIme.f1Binding` or switched off with `none`.
