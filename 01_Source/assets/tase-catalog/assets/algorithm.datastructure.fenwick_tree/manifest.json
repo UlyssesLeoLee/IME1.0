@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.datastructure.fenwick_tree",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "树状数组",
+    "en-US": "Fenwick Tree (Binary Indexed Tree)"
+  },
+  "aliases": [
+    "fenwick_tree",
+    "树状数组",
+    "binary indexed tree",
+    "BIT"
+  ],
+  "category": "datastructure",
+  "status": "DOCUMENTED",
+  "intent": "用 O(n) 空间与 O(log n) 时间维护前缀和，并由前缀和相减得到任意区间和。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log n) 前缀查询与单点更新",
+      "space": "O(n)",
+      "operation": "invertible_prefix_aggregate",
+      "build": "O(n)"
+    },
+    "counterexamples": [
+      "需要任意区间上的非前缀聚合（如区间最值）时——树状数组做不到",
+      "需要区间更新 + 区间查询时——树状数组要用两个树或改用线段树"
+    ],
+    "alternatives": [
+      "algorithm.datastructure.segment_tree",
+      "algorithm.datastructure.hash_table"
+    ]
+  },
+  "complexity": {
+    "time": "O(log n) 查询与更新，建树 O(n)",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Fenwick_tree"
+    ],
+    "license": "MIT"
+  }
+}

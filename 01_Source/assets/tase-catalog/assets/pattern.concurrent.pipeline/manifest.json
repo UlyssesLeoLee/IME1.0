@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.concurrent.pipeline",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "流水线",
+    "en-US": "Pipeline"
+  },
+  "aliases": [
+    "Pipeline",
+    "流水线",
+    "pipeline pattern",
+    "数据流水线"
+  ],
+  "category": "concurrent",
+  "status": "DOCUMENTED",
+  "intent": "把处理拆成若干阶段，数据依次流过每个阶段，各阶段可独立并发与扩展。",
+  "applicability": {
+    "constraints": {
+      "stages": "ordered_and_composable",
+      "stage_interface": "uniform_item_in_item_out",
+      "concurrency": "per_stage_independent",
+      "buffering": "bounded_between_stages"
+    },
+    "counterexamples": [
+      "只有一两个阶段时——直接顺序调用即可",
+      "阶段之间需要共享可变状态时——流水线的前提被破坏"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.iterator",
+      "pattern.concurrent.actor"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Pipeline_(computing)"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.arch.repository",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "仓储",
+    "en-US": "Repository"
+  },
+  "aliases": [
+    "Repository",
+    "仓储模式",
+    "repository pattern"
+  ],
+  "category": "arch",
+  "status": "DOCUMENTED",
+  "intent": "以集合语义封装持久化细节，让领域代码像操作内存集合一样读写聚合。",
+  "applicability": {
+    "constraints": {
+      "collection_semantics": "true",
+      "persistence_hidden": "true",
+      "aggregate_boundary": "one_repo_per_aggregate",
+      "query_semantics": "explicit_not_arbitrary_sql"
+    },
+    "counterexamples": [
+      "只是单表 CRUD 且没有领域规则时，直接用 ORM/查询构建器更省事",
+      "需要任意组合的复杂报表查询时，仓储语义会与 SQL 语义打架"
+    ],
+    "alternatives": [
+      "pattern.arch.unit_of_work",
+      "pattern.arch.cqrs"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Repository_pattern"
+    ],
+    "license": "MIT"
+  }
+}

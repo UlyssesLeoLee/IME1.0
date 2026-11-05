@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.sorting.heap_sort",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "堆排序",
+    "en-US": "Heap Sort"
+  },
+  "aliases": [
+    "heap_sort",
+    "堆排序",
+    "heapsort"
+  ],
+  "category": "sorting",
+  "status": "DOCUMENTED",
+  "intent": "用最大堆原地排序，以 O(n log n) 的时间和 O(1) 的额外空间完成，但不稳定。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n log n)",
+      "stability": "unstable",
+      "space": "O(1)",
+      "data": "in_memory_comparable",
+      "best_case": "O(n log n)"
+    },
+    "counterexamples": [
+      "需要稳定排序时不能使用堆排序",
+      "数据量小或已接近有序时，堆排序的常数劣于插入排序与快速排序"
+    ],
+    "alternatives": [
+      "algorithm.sorting.merge_sort",
+      "algorithm.sorting.quick_sort"
+    ]
+  },
+  "complexity": {
+    "time": "O(n log n)",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Heapsort"
+    ],
+    "license": "MIT"
+  }
+}

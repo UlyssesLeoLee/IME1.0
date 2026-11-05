@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tase.local/schemas/preview.schema.json",
+  "title": "TASE preview result",
+  "description": "The result of `tase.code.preview` (design §2.4). The preview is a candidate tree, not a commit: `new_tree_digest` is the digest of the content that would be committed, and the preview must not be reused after it expires or after the base moved.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "preview_id",
+    "plan_id",
+    "base_commit",
+    "new_tree_digest",
+    "changes",
+    "checks",
+    "requires_approval",
+    "expires_at"
+  ],
+  "properties": {
+    "preview_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "The id of the preview."
+    },
+    "plan_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "The plan the preview was made of."
+    },
+    "base_commit": {
+      "type": "string",
+      "description": "The commit the preview starts from."
+    },
+    "new_tree_digest": {
+      "type": "string",
+      "description": "The digest of the tree the preview would produce. It is not the SHA of a commit."
+    },
+    "changes": {
+      "type": "array",
+      "description": "The changes of the preview, one per file.",
+      "items": {
+        "$ref": "#/$defs/change"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "description": "The checks that ran on the preview.",
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "requires_approval": {
+      "type": "boolean",
+      "description": "Whether a human has to approve the plan before it is applied."
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "When the preview expires (RFC 3339, UTC)."
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "description": "An identifier of the contract: not empty, at most 128 characters, `[A-Za-z0-9._:-]` only.",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "symbols", "added_lines", "deleted_lines", "diff_uri"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "The path of the file that changed."
+        },
+        "symbols": {
+          "type": "array",
+          "description": "The symbols the change touches.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "added_lines": {
+          "type": "integer",
+          "description": "How many lines were added.",
+          "minimum": 0
+        },
+        "deleted_lines": {
+          "type": "integer",
+          "description": "How many lines were removed.",
+          "minimum": 0
+        },
+        "diff_uri": {
+          "type": ["string", "null"],
+          "description": "Where the diff of the change is stored."
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "status"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the check: `format`, `parse`, `cargo-check`, ..."
+        },
+        "status": {
+          "type": "string",
+          "description": "The state of the check.",
+          "enum": ["PASS", "FAIL", "SKIPPED", "NOT_RUN"]
+        }
+      }
+    }
+  }
+}

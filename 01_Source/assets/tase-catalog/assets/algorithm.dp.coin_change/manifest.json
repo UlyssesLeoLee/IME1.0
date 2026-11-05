@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.dp.coin_change",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "找零（硬币兑换）",
+    "en-US": "Coin Change"
+  },
+  "aliases": [
+    "coin_change",
+    "找零",
+    "硬币兑换",
+    "最少硬币数"
+  ],
+  "category": "dp",
+  "status": "DOCUMENTED",
+  "intent": "用最少数量的硬币凑出指定金额，或判断能否凑出。",
+  "applicability": {
+    "constraints": {
+      "time": "O(amount * coins)",
+      "space": "O(amount)",
+      "coins": "unlimited_reuse",
+      "amount": "integer",
+      "ordering": "irrelevant"
+    },
+    "counterexamples": [
+      "每种硬币只能用一次时——应改用 0-1 背包",
+      "金额非常大时——O(amount) 的空间不可接受"
+    ],
+    "alternatives": [
+      "algorithm.dp.knapsack_01",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(amount * coins)",
+    "extra_space": "O(amount)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Change-making_problem"
+    ],
+    "license": "MIT"
+  }
+}

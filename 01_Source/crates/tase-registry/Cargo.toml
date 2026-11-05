@@ -1,0 +1,37 @@
+# TASE-REGISTRY: the template/asset registry of TASE - it loads the manifests of the catalog, computes the
+# content digests, applies the license and the approval policy and searches the catalog by condition.
+#
+# Deliberately NOT a member of the main workspace: the registry is a layer above `tase-contract` and must be
+# able to build on its own; it has its own Cargo.lock and no third-party dependency (the strict JSON parser and
+# the SHA-256 come from `pime-core`).
+[package]
+name = "tase-registry"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE template/asset registry: loads the asset manifests, digests them, applies the approval and license policy and searches the catalog"
+
+# The unit tests live inside the modules of src/ (the pure parts are tested without a desktop); there is no tests/
+# directory, so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_registry"
+path = "src/lib.rs"
+
+[dependencies]
+# The strict JSON parser and the SHA-256 come from the core, the DTOs and the error codes from the contract; no
+# other dependency is allowed.
+pime-core = { path = "../pime-core" }
+tase-contract = { path = "../tase-contract" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the host of the MCP client down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.datastructure.hash_table",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "哈希表",
+    "en-US": "Hash Table"
+  },
+  "aliases": [
+    "hash_table",
+    "哈希表",
+    "散列表",
+    "hash map"
+  ],
+  "category": "datastructure",
+  "status": "DOCUMENTED",
+  "intent": "用哈希函数把键映射到桶，实现期望 O(1) 的插入、查找与删除。",
+  "applicability": {
+    "constraints": {
+      "time": "O(1) 期望",
+      "space": "O(n)",
+      "load_factor": "bounded",
+      "collision": "handled_by_probing_or_chaining",
+      "key_requirement": "hash_and_eq_consistent"
+    },
+    "counterexamples": [
+      "需要按键有序遍历时——哈希表不保证顺序",
+      "键的分布无法预测且冲突严重时——排序数组或树更可靠"
+    ],
+    "alternatives": [
+      "algorithm.datastructure.binary_heap",
+      "algorithm.datastructure.lru_cache"
+    ]
+  },
+  "complexity": {
+    "time": "O(1) 期望每次操作",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Hash_table",
+      "https://doc.rust-lang.org/std/collections/struct.HashMap.html"
+    ],
+    "license": "MIT"
+  }
+}

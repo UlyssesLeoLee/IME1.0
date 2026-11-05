@@ -12,9 +12,10 @@
 //! Nothing is registered, no profile is activated, no text is inserted anywhere.
 
 use pime_tsf::glass::{GlassEvent, Role};
-use pime_tsf::laser::{MouthPlace, PanelItem, PanelOrigin};
+use pime_tsf::laser::{MouthPlace, PanelItem};
 use pime_tsf::laser_ui::{LaserEvent, LaserUi};
 use pime_tsf::layout::Rect;
+use pime_tsf::mouths::{MOUTH_RADIUS, USER_KEY};
 use std::cell::RefCell;
 use std::rc::Rc;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -26,10 +27,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 ///
 /// The mouth sits in the middle of it, so the mouse is pressed in the middle of the window. The value is the one of
 /// `laser_ui::GLOW_SIZE`.
-const GLOW_SIZE: i32 = 64;
-
-/// The radius of the lens of the mouth (the value of `laser_ui::MOUTH_RADIUS`).
-const MOUTH_RADIUS: i32 = 15;
+const GLOW_SIZE: i32 = 40;
 
 fn main() -> std::process::ExitCode {
     let seconds: u64 = std::env::args()
@@ -83,7 +81,7 @@ fn main() -> std::process::ExitCode {
         ]);
         laser.show(work);
         // The panel is open, so that the picture shows it next to the mouth.
-        laser.open_panel(PanelOrigin::Glow);
+        laser.open_panel();
     }
     // The windows need a moment to appear on the screen.
     pump_for(0.6);
@@ -100,6 +98,7 @@ fn main() -> std::process::ExitCode {
         // The mouse is pressed in the middle of the window of the glow: that is the mouth itself.
         laser.handle(
             Role::Glow,
+            USER_KEY,
             GlassEvent::Press {
                 x: GLOW_SIZE / 2,
                 y: GLOW_SIZE / 2,
@@ -109,11 +108,12 @@ fn main() -> std::process::ExitCode {
         for step in 1..=8 {
             let x = start.0 + (target.0 - start.0) * step / 8;
             let y = start.1 + (target.1 - start.1) * step / 8;
-            laser.handle(Role::Glow, GlassEvent::Drag { x, y });
+            laser.handle(Role::Glow, USER_KEY, GlassEvent::Drag { x, y });
         }
         // The button is let go.
         laser.handle(
             Role::Glow,
+            USER_KEY,
             GlassEvent::Release {
                 x: target.0,
                 y: target.1,

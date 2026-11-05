@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.datastructure.segment_tree",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "线段树",
+    "en-US": "Segment Tree"
+  },
+  "aliases": [
+    "segment_tree",
+    "线段树",
+    "区间树",
+    "segment tree"
+  ],
+  "category": "datastructure",
+  "status": "DOCUMENTED",
+  "intent": "在 O(log n) 时间内完成区间聚合查询与单点更新，并支持区间更新（懒标记）。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log n) 查询与更新",
+      "space": "O(n)",
+      "operation": "associative_aggregate",
+      "lazy_propagation": "optional",
+      "build": "O(n)"
+    },
+    "counterexamples": [
+      "只有前缀查询时——树状数组更省空间更简单",
+      "数据静态且只需一次性查询时——直接扫描或稀疏表更合适"
+    ],
+    "alternatives": [
+      "algorithm.datastructure.fenwick_tree",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(log n) 查询与更新，建树 O(n)",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Segment_tree"
+    ],
+    "license": "MIT"
+  }
+}

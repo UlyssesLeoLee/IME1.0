@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.structural.adapter",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "适配器",
+    "en-US": "Adapter"
+  },
+  "aliases": [
+    "Adapter",
+    "适配器模式",
+    "adapter pattern"
+  ],
+  "category": "structural",
+  "status": "DOCUMENTED",
+  "intent": "在不修改既有接口的前提下，把一个类的接口转换成调用方期望的接口。",
+  "applicability": {
+    "constraints": {
+      "interface_mismatch": "true",
+      "existing_interface": "must_not_change",
+      "adaptation_direction": "target_defines_contract",
+      "delegation": "prefer_delegation_over_inheritance"
+    },
+    "counterexamples": [
+      "两个接口本就可以统一设计时，改接口比加适配器更省事",
+      "只需要转换一个值或一段参数时，写一个转换函数比写适配器类更轻"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.facade",
+      "pattern.gof.structural.bridge"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Adapter_pattern"
+    ],
+    "license": "MIT"
+  }
+}

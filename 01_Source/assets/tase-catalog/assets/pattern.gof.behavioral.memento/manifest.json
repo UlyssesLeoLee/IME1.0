@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.memento",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "备忘录",
+    "en-US": "Memento"
+  },
+  "aliases": [
+    "Memento",
+    "备忘录模式",
+    "memento pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "在不破坏封装的前提下捕获对象内部状态，以便之后恢复该状态。",
+  "applicability": {
+    "constraints": {
+      "snapshot_scope": "internal_state_only",
+      "encapsulation": "originator_cannot_read_memento",
+      "history": "optional",
+      "memory_cost": "proportional_to_snapshot_size"
+    },
+    "counterexamples": [
+      "状态可以直接整体复制（如纯值结构体）时，复制即可，无需备忘录",
+      "快照很大且需要很多份时，内存开销不可接受"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.command",
+      "pattern.gof.creational.prototype"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Memento_pattern"
+    ],
+    "license": "MIT"
+  }
+}

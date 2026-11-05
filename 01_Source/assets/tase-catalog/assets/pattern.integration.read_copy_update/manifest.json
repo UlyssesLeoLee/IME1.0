@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.integration.read_copy_update",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "读副本更新",
+    "en-US": "Read-Copy-Update"
+  },
+  "aliases": [
+    "ReadCopyUpdate",
+    "读副本更新",
+    "read copy update",
+    "RCU"
+  ],
+  "category": "integration",
+  "status": "DOCUMENTED",
+  "intent": "通过\"读旧值 → 复制 → 修改副本 → 原子替换\"实现无锁读取，保证读到的永远是一致快照。",
+  "applicability": {
+    "constraints": {
+      "write_model": "copy_on_write",
+      "read_latency": "lock_free",
+      "memory": "higher_due_to_copies",
+      "write_cost": "copy_is_expensive_for_large_state"
+    },
+    "counterexamples": [
+      "状态很小且更新频繁时——复制成本可能超过加锁",
+      "需要读-改-写原子性时——RCU 本身不提供跨副本的复合操作原子性"
+    ],
+    "alternatives": [
+      "pattern.integration.cache_aside",
+      "pattern.gof.structural.flyweight"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Copy-on-write",
+      "https://en.wikipedia.org/wiki/Optimistic_concurrency_control"
+    ],
+    "license": "MIT"
+  }
+}

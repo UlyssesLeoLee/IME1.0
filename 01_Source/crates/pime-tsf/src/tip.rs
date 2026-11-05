@@ -567,6 +567,14 @@ impl TsfHost {
 /// The rules are the ones of the product: nothing is ever written into a password field, and a write that the host
 /// refuses is reported as refused instead of being retried behind the user's back.
 fn answer_agent(inner: &mut Inner, request: BridgeRequest) -> BridgeReply {
+    let mut reply = answer_the_request(inner, &request);
+    // The answer says who the request was from: the agent learns that its own mouth is the one that wrote.
+    reply.source = request.source.clone();
+    reply
+}
+
+/// The work of the bridge: what the request of the agent asks for.
+fn answer_the_request(inner: &mut Inner, request: &BridgeRequest) -> BridgeReply {
     match request.op {
         BridgeOp::Insert => {
             if request.text.is_empty() {
@@ -579,6 +587,8 @@ fn answer_agent(inner: &mut Inner, request: BridgeRequest) -> BridgeReply {
                 );
             }
             let text = request.text.clone();
+            // Where the text lands: the caret before the write is the place the character appears at.
+            let anchor = inner.controller.host_mut().caret_anchor();
             let written = if request.replace {
                 inner.controller.host_mut().replace_selection(&text)
             } else {
@@ -586,6 +596,17 @@ fn answer_agent(inner: &mut Inner, request: BridgeRequest) -> BridgeReply {
             };
             match written {
                 Ok(()) => {
+                    // The light of the agent: the beam comes out of the mouth of that agent and has its colour, so
+                    // that the user sees at once which agent wrote the character.
+                    if let Some(anchor) = anchor
+                        && let Ok(mut laser) = inner.laser.try_borrow_mut()
+                    {
+                        laser.fire_for(
+                            &request.source.key(),
+                            request.source.display_name(),
+                            anchor,
+                        );
+                    }
                     let mut reply = BridgeReply::ok();
                     reply.inserted = text.chars().count();
                     reply.language = Some(inner.language.clone());
@@ -688,7 +709,7 @@ struct Inner {
     skin: String,
     /// Where the mouth of the light is on the screen (a global setting, not one of a language).
     mouth_place: String,
-    /// The laser interface of this thread: the glow on the left of the screen, the beam, the panel and the logo.
+    /// The laser interface of this thread: the glow on the left of the screen, the beam and the panel.
     laser: Rc<RefCell<LaserUi>>,
     /// That the laser interface has to go off the screen, asked for while it was busy.
     ///
@@ -708,7 +729,7 @@ enum Pending {
     Menu(MenuAction),
     /// The settings window was saved: the settings are read again.
     ReloadSettings,
-    /// The user used the laser panel (the glow, the beam or the logo).
+    /// The user used the laser panel (the glow or the beam).
     Laser(LaserEvent),
     /// The user pressed Alt+F2: walk to the next language of the product.
     SwitchLanguage,
@@ -1083,7 +1104,7 @@ impl Inner {
 
     /// Take every floating window of this thread off the screen.
     ///
-    /// The laser interface (the glow, the beam, the panel and the logo), the menus and the settings window belong to
+    /// The laser interface (the glow, the beam and the panel), the menus and the settings window belong to
     /// the input method: when the user switches to another one, or to another language, nothing of it may stay on the
     /// screen.
     fn hide_floating(&mut self) {
@@ -1531,8 +1552,8 @@ impl Tip {
             // The profile of the engine follows the language: the Chinese and the Japanese are answered by the
             // dictionaries of the core, the English one by the engine of the code.
             config.language = pime_core::imeswitch::profile_of(&language).to_string();
-            // The laser interface: the glow on the left of the screen, the beam, the panel and the logo in the
-            // corner. What the user does in the panel travels the same way as the actions of the bar.
+            // The laser interface: the glow on the left of the screen, the beam and the panel. What the user does
+            // in the panel travels the same way as the actions of the bar.
             let laser: Rc<RefCell<LaserUi>> = {
                 let weak = Rc::downgrade(&self.inner);
                 let pending = pending_actions.clone();
@@ -1580,6 +1601,7 @@ impl Tip {
                         return;
                     };
                     if let Ok(mut laser) = laser_for_hook.try_borrow_mut() {
+                        // The human writes with the mouth of the human (the pale blue one).
                         laser.fire(anchor);
                     }
                 }));

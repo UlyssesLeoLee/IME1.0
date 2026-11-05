@@ -10,7 +10,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，404 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，651 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -58,7 +58,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **345 / 345** 通过；Rust 核心 **434 / 434** 通过；Rust TSF crate **285 / 285** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **51 / 51** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **345 / 345** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **298 / 298** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **60 / 60** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器的实际安装/卸载与签名、IPC 的异用户/远程场景、AI Worker 与扩展的对接、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
@@ -87,7 +87,7 @@ AI 默认关闭；开启后按每次 F1 / 每个工作区授权，会把整文�
 
 ### 三、界面：激光彩虹
 
-左侧蓝色辉光、光口、上屏时射向字符的约 0.5 秒激光束、悬停展开的激光风设置面板、右下角彩虹 logo —— 都在 `pime-tsf` 的分层窗口层（逐像素 alpha）。向导换成了同一套令牌（`pime-core/src/style.rs` 是向导与输入法共用的设计语言）。
+左侧蓝色辉光、光口、上屏时射向字符的约 0.5 秒激光束、悬停展开的激光风设置面板 —— 都在 `pime-tsf` 的分层窗口层（逐像素 alpha）。**右下角那颗球形彩虹 logo 已于第十八轮整条删除**（见文末）。向导换成了同一套令牌（`pime-core/src/style.rs` 是向导与输入法共用的设计语言）。
 
 ### 四、这一轮没有在真机上验证的
 
@@ -275,3 +275,59 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 12. **`curate`（整理词库）与 `misses`（没找到的词）诚实地回 `UNSUPPORTED`**——用户词库落盘还没做，不会假装成功。
 13. **VS Code 扩展侧本轮没做**（按你的决定）；不过接口是独立的，Claude Code / Cursor / Cline 这类自带 MCP 的客户端在 VS Code 里已经能直接用。
 
+## 2026-11-05 第十八轮改动（本轮：删掉右下角球形彩虹悬浮窗，只留屏幕边缘的激光口）
+
+这一轮接的是你点的要求：**「把球形彩虹悬浮窗全都去掉，我需要的是屏幕边缘的激光口，之前做过一个。」**
+
+### 一、你看到的那颗球是什么
+
+右下角那颗**白核 + 七色光环 + 光晕**的球，是 `laser_ui.rs` 里一个**独立的分层悬浮窗**（窗口类 `ProgrammingIME.Logo`，34×34 像素，自绘品牌彩虹圆盘，每 2.4 秒呼吸一次）。它不跟着光口走，永远钉在屏幕右下角的工作区里。
+
+### 二、这一轮删掉的（整条链路，不是只藏起来）
+
+1. **`laser_ui.rs`**：`paint_logo()`（画彩虹圆盘那段）、`on_logo_click()`、`LOGO_SIZE`、`logo` 窗口字段、建窗/定位/重绘/隐藏里的 logo 分支、每帧的呼吸动画。
+2. **`glass.rs`**：`Role::Logo`（角色枚举）、`GlassEvent::LogoClick`、`LogoState`（rect/hover/pulse）、`Model.logo`、`LOGO_CLASS`（窗口类名）、`class_bit` 里的 logo 位。
+3. **`laser.rs`**：`PanelOrigin::Logo`。面板原来能从两处打开（光口 / 右下角 logo），现在只剩光口一处 ⇒ 这个枚举整体删掉，`open_panel()` 不再带参数。
+4. 连带删掉了只为 logo 服务的 `desktop_work_area()`（它当初是为了不遮任务栏时钟才去问工作区的）。
+
+### 三、留下的（你要的那个「屏幕边缘的激光口」）
+
+5. **左边缘那道细淡蓝激光缝原样保留**：26 px 长、1 px 宽的光缝 + 5 px 光晕，半透明、2.6 秒一个呼吸周期（`draw_glow()`，注释里明写「no ring of the brand colours, no white core」）。
+6. **光束、左侧激光面板、候选列表、设置窗都没动**；面板顶边那道彩虹渐变带也保留（那是**一条渐变**，不是球）。
+
+### 四、验证到哪一步（不虚报）
+
+7. **代码层**：`pime-tsf` **285 项单测全绿**；`cargo clippy --all-targets` 与上一轮**完全一致**——用 `git stash` 对照实验跑过：三条告警在 HEAD 上原样存在，**不是本轮引入的**（其中一条是上一轮登记 D-41 时漏报的，见 §5.16.3）。
+8. **实拍取证**：`--tsf-ui` 重跑，截图 `02_Verification/ime-ui/ime-windows.png`；右下角区域**已无任何强着色像素簇**（旧图那里是 168 个环绕 121 个浅色核心像素的彩虹环 ⇒ 现在 35 个、**0 个**核心像素）。
+9. **门禁加了断言**：以后那颗球再出现，`ime-ui-check.js` 会直接让本步失败（判据是「一圈强着色像素 + 中间一块浅色核心」这个**形状**，不靠肉眼）。
+10. **没在真实宿主里跑过**：新 DLL 还没换上（要注销或重启）。
+
+### 五、留给你裁定的
+
+11. **D-42（新增）：面板的入口只剩「悬停左边缘激光口」一条了。** 托盘菜单和设置窗还在，但**快速开关面板**以前还能点右下角那颗球，现在必须把鼠标移到屏幕边缘。键盘用户 / 鼠标不便的用户要不要一个快捷键（比如 F1 / Ctrl+F1）直接弹面板？
+12. **D-43（新增）：托盘图标本身也是彩虹圆盘**，但它是**通知区图标**、不是悬浮窗（`crates/pime-tray/src/icon.rs`），本轮**没动**。你说的「球形彩虹」如果也包括它，说一声我改。
+
+## 2026-11-05 第十九、二十轮改动（本轮：每个输入源一颗自己的彩色激光口 + TASE v1.1 的文档归档与第一波实现）
+
+这一轮接的是你点的两件事：**「多个agent使用的时候，给它们开颜色区分比较明显的随机rgb激光口……」** 和 **「开子代理把这套文档整理进现有文档，缺少的文件夹补上，然后并行开发，实现里面的需求」**（附件 `IDE1_TASE_v1_1_Docs.zip`）。
+
+### 一、每个输入源一颗自己的激光口（第十九轮）
+
+1. **协议层多了「谁在写」**（`crates/pime-core/src/agent_proto.rs`）：新增 `SourceIdentity { kind, provider, agent, instance, label }`；请求与回答各多一个 `source` 字段。**老客户端不受影响**（请求里没有 `source` 就是用户本人）。
+2. **口与颜色**（`crates/pime-tsf/src/mouths.rs`，新）：用户本人是那道**淡蓝**光缝（不变）；每个 Agent 在 24 个色相槽上用**贪心最远点**挑一个**离已用颜色最远**的色相——看着随机、彼此拉得开，**同一个来源永远同一个颜色**；饱和度与明度也由来源键的哈希决定（色相接近时靠明暗分开）。**用户那道淡蓝的色相一开始就占着**，Agent 不会挑到跟用户像的颜色。
+3. **位置与光束**：Agent 的口按**上 → 右 → 左**轮转铺开（**不许重叠**）；谁写字，就从**它自己颜色的口**射出**它自己颜色的激光**（`Canvas::fill_beam_coloured`）。面板仍然挂在用户的口上。
+4. **同厂商的子代理也是不同的输入者**：身份里带 **instance**（每个客户端进程一个，可用 `PIME_AGENT_INSTANCE` / `--instance` 固定）；MCP 的工具参数还能带 `agent` 覆盖进程级代理名 ⇒ 同一进程里的两个同厂商子代理是**两个来源、两种颜色**。
+5. **看得见的证据**：实拍截图里**上边缘橙色**、**右边缘品红色**、左边缘淡蓝**三道口**；门禁现在会断言「口 ≥2、颜色互不相同、Agent 之间色相差 ≥45°、口分布在 ≥2 条边」，并且**右下角那颗球形彩虹不许再出现**（判据是形状，不是肉眼）。
+
+### 二、TASE v1.1：文档归档 + 第一波实现（第二十轮）
+
+6. **文档归档**：`00_Documents/` 补齐成四层 + 一个新目录 `04_Complete_Design/`，5 份设计文件**逐字节 sha256 核对一致**；另写了一份全树索引 `00_Documents/README.md` 和一份 **`IDE1_TASE_vs_IME1.0_Mapping_v1.1.md`**（TASE 每个 crate → 本仓库落点：可复用的 4 个、要适配的 18 处、必须新建的 15 个、M0→M4 里程碑、**13 条已知落差 G1~G13**）。
+7. **93 项统一资产目录**：GoF 23 + 现代工程模式 20 + 经典算法 50，每项一份 manifest + 一张知识卡（8 个固定小节）；`scripts/validate-tase-catalog.js` 是新增的门禁脚本（零依赖，9 类规则，**当前 0 问题**）。**诚实状态**：93 项全部 `DOCUMENTED`、`implementations` 全空——本仓库没有任何已认证的语言实现。
+8. **六个新 crate（312 项测试全绿、clippy 全干净、零第三方依赖）**：`tase-contract`（契约与 Schema）60、`tase-registry`（注册表与策略）59、`tase-planner`（计划与摘要）64、`tase-metrics`（Token 与成本）50、`tase-local-ipc`（本地多 Agent 传输层，**真用 Linux target 交叉编译验证过**）43、`tase-ime-core`（候选排序与隐私过滤）36。
+9. **门禁**：`run-all.js` 增加 `--tase`（每个 crate 各自的构建目录——共用一个会让 `windows` crate 整包重编、把本机内存吃光）；claims 增加 `rust_tase_tests`。
+
+### 三、这一轮**没有**做的（不假承诺）
+
+10. `tase-semantic`（AST 索引）、`tase-executor`（Preview/Apply/Git CAS）、`tase-local-hub` / `-store` / `tase-agent-scheduler`（常驻 Hub、公平队列、租约）、`tase-catalog`（Rust 侧）、`tase-catalog-mcp`（MCP 工具）——**都还没写**；`pime-agent` 也**还没有** `tase.*` 工具。**M0 与 M1 的一部分已落地，M1 的 Hub 与 M2 还没落地。**
+11. **这套设计是为另一个仓库 IDE1.0 写的**（它假定有 `ide-kernel` / `editcore` / `ide-shell-protocol`）；本仓库的对应物是 `pime-core` / `pime-agent` / `pime-ipc` / `pime-tsf`，落地时是按映射文档逐条适配的，不是照单施工。
+12. **新 crate 没有进根 workspace**（沿用 `pime-agent` 的独立 workspace 惯例），因此主 workspace 的测试数不变，另有门禁单独跑它们。

@@ -1,0 +1,38 @@
+# TASE-METRICS: the metering of the usage of the model, the cost, the structured assertions (ACI) and the events of
+# the telemetry (detailed design §9 and §10).
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that the worker and
+# the application service can build it on their own.
+#
+# The crate never goes on the network and never reads the clock: every time comes from the caller, so a measurement can
+# be replayed and a test can be deterministic.
+[package]
+name = "tase-metrics"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE metrics: the token metering, the cost, the ACI assertions and the telemetry events"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_metrics"
+path = "src/lib.rs"
+
+[dependencies]
+# The strict JSON parser/serializer comes from the core; the states of a check come from the contract layer.
+# No other dependency is allowed.
+pime-core = { path = "../pime-core" }
+tase-contract = { path = "../tase-contract" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take a worker down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

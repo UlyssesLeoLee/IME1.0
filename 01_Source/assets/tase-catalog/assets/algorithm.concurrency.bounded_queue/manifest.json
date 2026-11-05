@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.concurrency.bounded_queue",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "有界队列",
+    "en-US": "Bounded Queue"
+  },
+  "aliases": [
+    "bounded_queue",
+    "有界队列",
+    "bounded buffer",
+    "环形缓冲"
+  ],
+  "category": "concurrency",
+  "status": "DOCUMENTED",
+  "intent": "用固定容量的缓冲区在生产者与消费者之间传递数据，用阻塞或拒绝实现背压。",
+  "applicability": {
+    "constraints": {
+      "capacity": "fixed",
+      "backpressure": "block_or_reject",
+      "memory": "bounded",
+      "ordering": "fifo",
+      "blocking": "producer_or_consumer"
+    },
+    "counterexamples": [
+      "生产速度远低于消费且需要削峰时——无界队列或磁盘队列更合适",
+      "不需要背压语义时——无界队列更简单，但有内存风险"
+    ],
+    "alternatives": [
+      "pattern.concurrent.pipeline",
+      "pattern.resilience.rate_limiter"
+    ]
+  },
+  "complexity": {
+    "time": "O(1) 每次入队出队",
+    "extra_space": "O(容量)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Queue_(abstract_data_type)",
+      "https://doc.rust-lang.org/std/collections/struct.VecDeque.html"
+    ],
+    "license": "MIT"
+  }
+}

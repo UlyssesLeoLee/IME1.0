@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.searching.binary_search",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "二分查找",
+    "en-US": "Binary Search"
+  },
+  "aliases": [
+    "binary_search",
+    "二分查找",
+    "二分搜索",
+    "折半查找"
+  ],
+  "category": "searching",
+  "status": "DOCUMENTED",
+  "intent": "在有序序列上每次砍掉一半比较，以 O(log n) 找到目标位置。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log n)",
+      "space": "O(1)",
+      "precondition": "sorted_input",
+      "result": "index_or_presence"
+    },
+    "counterexamples": [
+      "输入无序时不能直接二分——除非先排序（但排序代价更高）",
+      "数据量小或需要多次查找时——哈希表 O(1) 更合适"
+    ],
+    "alternatives": [
+      "algorithm.searching.lower_bound",
+      "algorithm.searching.upper_bound",
+      "algorithm.datastructure.hash_table"
+    ]
+  },
+  "complexity": {
+    "time": "O(log n)",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Binary_search_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

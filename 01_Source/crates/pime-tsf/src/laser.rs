@@ -2,10 +2,11 @@
 //! a character is written, and the panel that opens when the mouse rests on the mouth of the glow.
 //!
 //! Everything in this file is pure: where the mouth is, how far the beam has come, what the panel shows and which
-//! row is under the mouse. The windows that show it are in `glow`, `panel` and `logo`; the geometry and the timing
+//! row is under the mouse. The windows that show it are in `glow` and `panel`; the geometry and the timing
 //! live here so that they can be tested without a screen.
 
 use crate::layout::Rect;
+use pime_core::style::Rgb;
 
 /// How long the light shines on the character after it was written (in milliseconds).
 ///
@@ -264,6 +265,9 @@ impl Inside for (i32, i32) {
 }
 
 /// A beam that is on its way to a character.
+///
+/// The beam carries the colour of the mouth it comes out of: the human writes in the pale blue of the keyboard, every
+/// agent writes in the colour of its own mouth, and the user sees at once who wrote the character.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Beam {
     /// Where the beam starts (the mouth of the glow).
@@ -272,15 +276,18 @@ pub struct Beam {
     pub to: (i32, i32),
     /// When the beam was fired (the clock of the input method, in milliseconds).
     pub started_ms: u64,
+    /// The colour of the light of the beam (the colour of the mouth that fired it).
+    pub colour: Rgb,
 }
 
 impl Beam {
-    /// A beam from the mouth to a point.
-    pub fn new(from: (i32, i32), to: (i32, i32), started_ms: u64) -> Beam {
+    /// A beam from the mouth to a point, in the colour of the mouth that fires it.
+    pub fn new(from: (i32, i32), to: (i32, i32), started_ms: u64, colour: Rgb) -> Beam {
         Beam {
             from,
             to,
             started_ms,
+            colour,
         }
     }
 
@@ -460,18 +467,10 @@ impl PanelLayout {
     }
 }
 
-/// Where the panel is opened from.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PanelOrigin {
-    /// The mouse rested on the mouth of the glow.
-    Glow,
-    /// The logo in the corner was clicked.
-    Logo,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pime_core::style::LaserTheme;
 
     #[test]
     fn the_mouth_is_on_the_left_edge_of_the_work_area() {
@@ -615,7 +614,7 @@ mod tests {
 
     #[test]
     fn a_beam_is_over_after_half_a_second() {
-        let beam = Beam::new((0, 0), (100, 100), 1_000);
+        let beam = Beam::new((0, 0), (100, 100), 1_000, LaserTheme::MOUTH_SLIT);
         assert!(!beam.is_finished(1_000));
         assert!(!beam.is_finished(1_000 + BEAM_DURATION_MS - 1));
         assert!(beam.is_finished(1_000 + BEAM_DURATION_MS));
@@ -623,7 +622,7 @@ mod tests {
 
     #[test]
     fn the_head_of_the_beam_arrives_quickly_and_then_stays() {
-        let beam = Beam::new((0, 0), (100, 100), 0);
+        let beam = Beam::new((0, 0), (100, 100), 0, LaserTheme::MOUTH_SLIT);
         assert_eq!(beam.progress(0), 0.0);
         assert!(beam.progress(100) > 0.0 && beam.progress(100) < 1.0);
         assert_eq!(beam.progress(BEAM_DURATION_MS), 1.0, "the head stays on the character");
@@ -631,7 +630,7 @@ mod tests {
 
     #[test]
     fn the_light_comes_on_at_once_and_dies_away_at_the_end() {
-        let beam = Beam::new((0, 0), (100, 100), 0);
+        let beam = Beam::new((0, 0), (100, 100), 0, LaserTheme::MOUTH_SLIT);
         assert!(beam.strength(0) < 0.2, "the light needs a moment to come on");
         assert!(beam.strength(60) > 0.9, "the light is at its strongest while it travels");
         assert!(beam.strength(BEAM_DURATION_MS - 1) < 0.3, "the light dies away");

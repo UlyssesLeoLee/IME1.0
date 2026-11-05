@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.resilience.circuit_breaker",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "断路器",
+    "en-US": "Circuit Breaker"
+  },
+  "aliases": [
+    "CircuitBreaker",
+    "断路器",
+    "circuit breaker"
+  ],
+  "category": "resilience",
+  "status": "DOCUMENTED",
+  "intent": "在下游持续失败时主动切断调用，快速失败并给下游留出恢复时间。",
+  "applicability": {
+    "constraints": {
+      "failure_detection": "consecutive_failures_or_error_rate",
+      "states": "closed_open_half_open",
+      "fallback": "explicit_or_error",
+      "recovery": "probe_after_cooldown"
+    },
+    "counterexamples": [
+      "下游失败率本来就很低且恢复很快时——断路器会让偶发失败变成整体不可用",
+      "调用本身是无害的本地操作时——快速失败没有价值"
+    ],
+    "alternatives": [
+      "pattern.resilience.bulkhead",
+      "pattern.resilience.retry_with_exponential_backoff_and_jitter"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Circuit_breaker_design_pattern"
+    ],
+    "license": "MIT"
+  }
+}

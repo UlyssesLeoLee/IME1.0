@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.math.modular_exponentiation",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "模幂运算",
+    "en-US": "Modular Exponentiation"
+  },
+  "aliases": [
+    "modular_exponentiation",
+    "模幂",
+    "模快速幂",
+    "pow mod"
+  ],
+  "category": "math",
+  "status": "DOCUMENTED",
+  "intent": "在 O(log e) 次乘法内求出 base^e mod m，且中间值始终保持在 m 以内。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log e)",
+      "space": "O(1)",
+      "modulus": "positive",
+      "overflow": "intermediate_product_can_exceed_type"
+    },
+    "counterexamples": [
+      "不需要取模时——用快速幂（但要注意溢出）",
+      "模数是质数且需要逆元时——应结合扩展欧几里得算法"
+    ],
+    "alternatives": [
+      "algorithm.math.fast_power",
+      "algorithm.math.extended_euclidean"
+    ]
+  },
+  "complexity": {
+    "time": "O(log 指数)",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Modular_exponentiation"
+    ],
+    "license": "MIT"
+  }
+}

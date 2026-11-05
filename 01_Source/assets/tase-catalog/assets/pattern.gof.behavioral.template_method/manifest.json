@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.template_method",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "模板方法",
+    "en-US": "Template Method"
+  },
+  "aliases": [
+    "TemplateMethod",
+    "模板方法模式",
+    "template method"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "在父类中定义算法的骨架步骤，把其中若干步骤留给子类实现。",
+  "applicability": {
+    "constraints": {
+      "algorithm_steps": "fixed_skeleton",
+      "varying_steps": "overridable_hooks",
+      "inheritance": "required_or_emulated",
+      "skeleton_stability": "stable"
+    },
+    "counterexamples": [
+      "骨架只有两三步时，直接用组合（把步骤作为函数传入）更好",
+      "子类需求差异大到骨架不再稳定时，继承会变成负担"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.strategy",
+      "pattern.gof.structural.adapter"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Template_method_pattern"
+    ],
+    "license": "MIT"
+  }
+}

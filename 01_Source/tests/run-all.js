@@ -28,9 +28,9 @@ const tests = __dirname, src = path.resolve(tests, '..'), root = path.resolve(sr
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|installer|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'installer'];
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -114,6 +114,39 @@ if (has('--tsf-ui')) {
 }
 // The front-ends the AI clients call (the MCP server, the command line and the local server). They live in a
 // workspace of their own, and their tests include the real WM_COPYDATA round trip against the bridge.
+// The TASE crates (the template-aware semantic execution system): every one of them is a crate of its own, with
+// its own Cargo.lock, so each gets its own build directory (the shared one would rebuild the windows crate for
+// every new feature set, and that is what runs the machine out of memory).
+const TASE_CRATES = [
+  'tase-contract',
+  'tase-registry',
+  'tase-catalog',
+  'tase-planner',
+  'tase-metrics',
+  'tase-semantic',
+  'tase-executor',
+  'tase-local-ipc',
+  'tase-local-store',
+  'tase-agent-scheduler',
+  'tase-local-hub',
+  'tase-catalog-mcp',
+  'tase-ime-core',
+];
+if (want('tase')) {
+  step('TASE crates (the template-aware semantic execution system): cargo test (every crate of its own)', () => {
+    let tests = 0;
+    let done = 0;
+    for (const crate of TASE_CRATES) {
+      const dir = path.join(src, 'crates', crate);
+      if (!fs.existsSync(dir)) continue;
+      const r = cargoRetry(crate, ['test'], {CARGO_TARGET_DIR: path.join(targetDir, crate)});
+      if (!r.ok) return r;
+      tests += Number((r.note.match(/(\d+) tests/) || [0, 0])[1]);
+      done++;
+    }
+    return {ok: done > 0, note: `${done} crates, ${tests} tests`};
+  });
+}
 if (want('agent')) {
   step('AI agent front-ends (crates/pime-agent): cargo test (the MCP server, the CLI and the local server)', () => cargoRetry('pime-agent', ['test']));
 }

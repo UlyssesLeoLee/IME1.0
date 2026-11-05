@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.arch.hexagonal_architecture",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "六边形架构",
+    "en-US": "Hexagonal Architecture"
+  },
+  "aliases": [
+    "HexagonalArchitecture",
+    "六边形架构",
+    "ports and adapters",
+    "端口与适配器"
+  ],
+  "category": "arch",
+  "status": "DOCUMENTED",
+  "intent": "把核心业务放在中心，用\"端口\"定义对外契约、由外层\"适配器\"实现，使技术细节可自由替换。",
+  "applicability": {
+    "constraints": {
+      "core": "pure_business_logic",
+      "ports": "interfaces_owned_by_core",
+      "adapters": "technology_specific",
+      "inbound_outbound": "two_kinds_of_ports"
+    },
+    "counterexamples": [
+      "只有一种技术实现且不打算替换时——端口抽象会变成纯样板",
+      "业务逻辑本身没有复杂度时——边界画得再漂亮也无内容可放"
+    ],
+    "alternatives": [
+      "pattern.arch.clean_architecture",
+      "pattern.arch.dependency_injection"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)"
+    ],
+    "license": "MIT"
+  }
+}

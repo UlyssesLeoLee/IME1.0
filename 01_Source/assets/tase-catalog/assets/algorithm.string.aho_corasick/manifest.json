@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.string.aho_corasick",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "Aho-Corasick 多模式匹配",
+    "en-US": "Aho–Corasick Algorithm"
+  },
+  "aliases": [
+    "aho_corasick",
+    "AhoCorasick",
+    "AC自动机",
+    "多模式匹配"
+  ],
+  "category": "string",
+  "status": "DOCUMENTED",
+  "intent": "用一次文本扫描同时匹配大量模式串，并报告全部出现位置。",
+  "applicability": {
+    "constraints": {
+      "time": "O(total_pattern_len + text_len + matches)",
+      "space": "O(total_pattern_len * alphabet)",
+      "patterns": "multiple",
+      "matches": "all_overlapping",
+      "alphabet": "fixed_small_preferred"
+    },
+    "counterexamples": [
+      "只有一个模式串时——KMP 更简单且常数更小",
+      "模式串数量少且文本短时——逐个匹配可能更省内存"
+    ],
+    "alternatives": [
+      "algorithm.string.trie",
+      "algorithm.string.kmp"
+    ]
+  },
+  "complexity": {
+    "time": "O(总模式长度 + 文本长度 + 匹配数)",
+    "extra_space": "O(总模式长度)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

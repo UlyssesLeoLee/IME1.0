@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.dp.bitmask_dp",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "位掩码动态规划",
+    "en-US": "Bitmask DP (Subset DP)"
+  },
+  "aliases": [
+    "bitmask_dp",
+    "位掩码DP",
+    "状压DP",
+    "subset dp"
+  ],
+  "category": "dp",
+  "status": "DOCUMENTED",
+  "intent": "用二进制位表示\"已选集合\"，把子集问题从组合枚举降到 2^n 级别。",
+  "applicability": {
+    "constraints": {
+      "time": "O(2^n * n^2)",
+      "space": "O(2^n)",
+      "n": "small_typically_<=20",
+      "state_encoding": "bitmask",
+      "transitions": "add_or_remove_element"
+    },
+    "counterexamples": [
+      "n 超过 25 左右时——2^n 的空间已不可接受",
+      "问题可被贪心或多项式算法解决时——状压是暴力做法"
+    ],
+    "alternatives": [
+      "algorithm.dp.interval_dp",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(2^n * n^2)",
+    "extra_space": "O(2^n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Dynamic_programming",
+      "https://en.wikipedia.org/wiki/Bitwise_operation"
+    ],
+    "license": "MIT"
+  }
+}

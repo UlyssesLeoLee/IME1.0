@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.resilience.rate_limiter",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "限流器",
+    "en-US": "Rate Limiter"
+  },
+  "aliases": [
+    "RateLimiter",
+    "限流",
+    "rate limiting",
+    "throttling"
+  ],
+  "category": "resilience",
+  "status": "DOCUMENTED",
+  "intent": "限制单位时间内允许通过的请求数量，保护系统与下游不被过载流量击穿。",
+  "applicability": {
+    "constraints": {
+      "metric": "requests_per_second_or_concurrency",
+      "scope": "per_key_tenant_api_ip",
+      "algorithm": "token_bucket_leaky_bucket_sliding_window",
+      "rejection": "explicit_429_or_queue",
+      "distributed": "shared_store_or_per_node"
+    },
+    "counterexamples": [
+      "内部可信调用且不会过载时——限流只增加延迟",
+      "需求其实是\"限制并发\"而非\"限制速率\"时——应使用隔离舱或信号量"
+    ],
+    "alternatives": [
+      "pattern.resilience.bulkhead",
+      "algorithm.concurrency.bounded_queue"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Token_bucket",
+      "https://en.wikipedia.org/wiki/Rate_limiting"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.strategy",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "策略",
+    "en-US": "Strategy"
+  },
+  "aliases": [
+    "Strategy",
+    "策略模式",
+    "strategy pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "把一组可互换的算法封装成同族接口，让算法能在运行期替换。",
+  "applicability": {
+    "constraints": {
+      "algorithms": "interchangeable",
+      "selection": "runtime",
+      "interface_stability": "shared_contract",
+      "state_handling": "stateless_preferred"
+    },
+    "counterexamples": [
+      "算法只有一个且不会变时，直接内联即可",
+      "算法差异只在参数取值上时，用参数而不是策略对象"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.state",
+      "pattern.gof.structural.bridge"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Strategy_pattern"
+    ],
+    "license": "MIT"
+  }
+}

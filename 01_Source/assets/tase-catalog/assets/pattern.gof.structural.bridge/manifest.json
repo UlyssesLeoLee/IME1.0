@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.structural.bridge",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "桥接",
+    "en-US": "Bridge"
+  },
+  "aliases": [
+    "Bridge",
+    "桥接模式",
+    "bridge pattern"
+  ],
+  "category": "structural",
+  "status": "DOCUMENTED",
+  "intent": "把抽象与实现分离成两个可独立变化的层次，使两个维度都能自由扩展组合。",
+  "applicability": {
+    "constraints": {
+      "dimensions": "two_independent_variation_axes",
+      "hierarchy": "flat_two_tier",
+      "combinatorics": "cross_product",
+      "coupling": "abstraction_depends_on_bridge_interface"
+    },
+    "counterexamples": [
+      "只有一个维度会变化时，普通继承层次足够",
+      "变体组合很少（2×2 且不再增加）时，桥接带来的类数量增长不划算"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.adapter",
+      "pattern.gof.behavioral.strategy"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Bridge_pattern"
+    ],
+    "license": "MIT"
+  }
+}

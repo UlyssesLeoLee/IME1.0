@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.dp.interval_dp",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "区间动态规划",
+    "en-US": "Interval Dynamic Programming"
+  },
+  "aliases": [
+    "interval_dp",
+    "区间DP",
+    "矩阵链乘法",
+    "区间调度"
+  ],
+  "category": "dp",
+  "status": "DOCUMENTED",
+  "intent": "把问题按\"区间\"划分状态，从短区间递推到长区间，解决分割、合并与最优括号类问题。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n^3) 典型",
+      "space": "O(n^2)",
+      "state": "interval_start_end",
+      "split_point": "enumerated",
+      "problem": "interval_partition_or_merge"
+    },
+    "counterexamples": [
+      "问题不是区间结构时——区间 DP 不适用",
+      "存在更简单的贪心或线性解法时——应优先使用"
+    ],
+    "alternatives": [
+      "algorithm.dp.bitmask_dp",
+      "algorithm.dp.longest_common_subsequence"
+    ]
+  },
+  "complexity": {
+    "time": "O(n^3)",
+    "extra_space": "O(n^2)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Dynamic_programming",
+      "https://en.wikipedia.org/wiki/Matrix_chain_multiplication"
+    ],
+    "license": "MIT"
+  }
+}

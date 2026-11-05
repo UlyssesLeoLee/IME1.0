@@ -1,0 +1,1456 @@
+{
+  "schema_version": "tase.asset.v1",
+  "catalog_version": "1.0.0",
+  "generated_for": "IDE1.0 TASE v1.1",
+  "count": 93,
+  "assets": [
+    {
+      "id": "pattern.gof.creational.abstract_factory",
+      "kind": "pattern",
+      "category": "creational",
+      "name_zh": "抽象工厂",
+      "name_en": "Abstract Factory",
+      "aliases": [
+        "AbstractFactory",
+        "抽象工厂模式",
+        "abstract factory"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.creational.abstract_factory/manifest.json",
+      "card": "assets/pattern.gof.creational.abstract_factory/card.md"
+    },
+    {
+      "id": "pattern.gof.creational.builder",
+      "kind": "pattern",
+      "category": "creational",
+      "name_zh": "生成器",
+      "name_en": "Builder",
+      "aliases": [
+        "Builder",
+        "生成器模式",
+        "builder pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.creational.builder/manifest.json",
+      "card": "assets/pattern.gof.creational.builder/card.md"
+    },
+    {
+      "id": "pattern.gof.creational.factory_method",
+      "kind": "pattern",
+      "category": "creational",
+      "name_zh": "工厂方法",
+      "name_en": "Factory Method",
+      "aliases": [
+        "FactoryMethod",
+        "工厂方法模式",
+        "factory method"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.creational.factory_method/manifest.json",
+      "card": "assets/pattern.gof.creational.factory_method/card.md"
+    },
+    {
+      "id": "pattern.gof.creational.prototype",
+      "kind": "pattern",
+      "category": "creational",
+      "name_zh": "原型",
+      "name_en": "Prototype",
+      "aliases": [
+        "Prototype",
+        "原型模式",
+        "clone pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.creational.prototype/manifest.json",
+      "card": "assets/pattern.gof.creational.prototype/card.md"
+    },
+    {
+      "id": "pattern.gof.creational.singleton",
+      "kind": "pattern",
+      "category": "creational",
+      "name_zh": "单例",
+      "name_en": "Singleton",
+      "aliases": [
+        "Singleton",
+        "单例模式",
+        "单例"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.creational.singleton/manifest.json",
+      "card": "assets/pattern.gof.creational.singleton/card.md"
+    },
+    {
+      "id": "pattern.gof.structural.adapter",
+      "kind": "pattern",
+      "category": "structural",
+      "name_zh": "适配器",
+      "name_en": "Adapter",
+      "aliases": [
+        "Adapter",
+        "适配器模式",
+        "adapter pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.structural.adapter/manifest.json",
+      "card": "assets/pattern.gof.structural.adapter/card.md"
+    },
+    {
+      "id": "pattern.gof.structural.bridge",
+      "kind": "pattern",
+      "category": "structural",
+      "name_zh": "桥接",
+      "name_en": "Bridge",
+      "aliases": [
+        "Bridge",
+        "桥接模式",
+        "bridge pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.structural.bridge/manifest.json",
+      "card": "assets/pattern.gof.structural.bridge/card.md"
+    },
+    {
+      "id": "pattern.gof.structural.composite",
+      "kind": "pattern",
+      "category": "structural",
+      "name_zh": "组合",
+      "name_en": "Composite",
+      "aliases": [
+        "Composite",
+        "组合模式",
+        "composite pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.structural.composite/manifest.json",
+      "card": "assets/pattern.gof.structural.composite/card.md"
+    },
+    {
+      "id": "pattern.gof.structural.decorator",
+      "kind": "pattern",
+      "category": "structural",
+      "name_zh": "装饰",
+      "name_en": "Decorator",
+      "aliases": [
+        "Decorator",
+        "装饰器模式",
+        "decorator pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.structural.decorator/manifest.json",
+      "card": "assets/pattern.gof.structural.decorator/card.md"
+    },
+    {
+      "id": "pattern.gof.structural.facade",
+      "kind": "pattern",
+      "category": "structural",
+      "name_zh": "外观",
+      "name_en": "Facade",
+      "aliases": [
+        "Facade",
+        "外观模式",
+        "facade pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.structural.facade/manifest.json",
+      "card": "assets/pattern.gof.structural.facade/card.md"
+    },
+    {
+      "id": "pattern.gof.structural.flyweight",
+      "kind": "pattern",
+      "category": "structural",
+      "name_zh": "享元",
+      "name_en": "Flyweight",
+      "aliases": [
+        "Flyweight",
+        "享元模式",
+        "flyweight pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.structural.flyweight/manifest.json",
+      "card": "assets/pattern.gof.structural.flyweight/card.md"
+    },
+    {
+      "id": "pattern.gof.structural.proxy",
+      "kind": "pattern",
+      "category": "structural",
+      "name_zh": "代理",
+      "name_en": "Proxy",
+      "aliases": [
+        "Proxy",
+        "代理模式",
+        "proxy pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.structural.proxy/manifest.json",
+      "card": "assets/pattern.gof.structural.proxy/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.chain_of_responsibility",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "责任链",
+      "name_en": "Chain of Responsibility",
+      "aliases": [
+        "ChainOfResponsibility",
+        "责任链模式",
+        "chain of responsibility"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.chain_of_responsibility/manifest.json",
+      "card": "assets/pattern.gof.behavioral.chain_of_responsibility/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.command",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "命令",
+      "name_en": "Command",
+      "aliases": [
+        "Command",
+        "命令模式",
+        "command pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.command/manifest.json",
+      "card": "assets/pattern.gof.behavioral.command/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.interpreter",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "解释器",
+      "name_en": "Interpreter",
+      "aliases": [
+        "Interpreter",
+        "解释器模式",
+        "interpreter pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.interpreter/manifest.json",
+      "card": "assets/pattern.gof.behavioral.interpreter/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.iterator",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "迭代器",
+      "name_en": "Iterator",
+      "aliases": [
+        "Iterator",
+        "迭代器模式",
+        "iterator pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.iterator/manifest.json",
+      "card": "assets/pattern.gof.behavioral.iterator/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.mediator",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "中介者",
+      "name_en": "Mediator",
+      "aliases": [
+        "Mediator",
+        "中介者模式",
+        "mediator pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.mediator/manifest.json",
+      "card": "assets/pattern.gof.behavioral.mediator/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.memento",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "备忘录",
+      "name_en": "Memento",
+      "aliases": [
+        "Memento",
+        "备忘录模式",
+        "memento pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.memento/manifest.json",
+      "card": "assets/pattern.gof.behavioral.memento/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.observer",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "观察者",
+      "name_en": "Observer",
+      "aliases": [
+        "Observer",
+        "观察者模式",
+        "observer pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.observer/manifest.json",
+      "card": "assets/pattern.gof.behavioral.observer/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.state",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "状态",
+      "name_en": "State",
+      "aliases": [
+        "State",
+        "状态模式",
+        "state pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.state/manifest.json",
+      "card": "assets/pattern.gof.behavioral.state/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.strategy",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "策略",
+      "name_en": "Strategy",
+      "aliases": [
+        "Strategy",
+        "策略模式",
+        "strategy pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.strategy/manifest.json",
+      "card": "assets/pattern.gof.behavioral.strategy/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.template_method",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "模板方法",
+      "name_en": "Template Method",
+      "aliases": [
+        "TemplateMethod",
+        "模板方法模式",
+        "template method"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.template_method/manifest.json",
+      "card": "assets/pattern.gof.behavioral.template_method/card.md"
+    },
+    {
+      "id": "pattern.gof.behavioral.visitor",
+      "kind": "pattern",
+      "category": "behavioral",
+      "name_zh": "访问者",
+      "name_en": "Visitor",
+      "aliases": [
+        "Visitor",
+        "访问者模式",
+        "visitor pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.gof.behavioral.visitor/manifest.json",
+      "card": "assets/pattern.gof.behavioral.visitor/card.md"
+    },
+    {
+      "id": "pattern.arch.dependency_injection",
+      "kind": "pattern",
+      "category": "arch",
+      "name_zh": "依赖注入",
+      "name_en": "Dependency Injection",
+      "aliases": [
+        "DependencyInjection",
+        "依赖注入",
+        "DI",
+        "dependency injection"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.arch.dependency_injection/manifest.json",
+      "card": "assets/pattern.arch.dependency_injection/card.md"
+    },
+    {
+      "id": "pattern.arch.repository",
+      "kind": "pattern",
+      "category": "arch",
+      "name_zh": "仓储",
+      "name_en": "Repository",
+      "aliases": [
+        "Repository",
+        "仓储模式",
+        "repository pattern"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.arch.repository/manifest.json",
+      "card": "assets/pattern.arch.repository/card.md"
+    },
+    {
+      "id": "pattern.arch.unit_of_work",
+      "kind": "pattern",
+      "category": "arch",
+      "name_zh": "工作单元",
+      "name_en": "Unit of Work",
+      "aliases": [
+        "UnitOfWork",
+        "工作单元",
+        "unit of work"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.arch.unit_of_work/manifest.json",
+      "card": "assets/pattern.arch.unit_of_work/card.md"
+    },
+    {
+      "id": "pattern.arch.cqrs",
+      "kind": "pattern",
+      "category": "arch",
+      "name_zh": "命令查询职责分离",
+      "name_en": "CQRS",
+      "aliases": [
+        "CQRS",
+        "命令查询职责分离",
+        "command query responsibility segregation"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.arch.cqrs/manifest.json",
+      "card": "assets/pattern.arch.cqrs/card.md"
+    },
+    {
+      "id": "pattern.arch.event_sourcing",
+      "kind": "pattern",
+      "category": "arch",
+      "name_zh": "事件溯源",
+      "name_en": "Event Sourcing",
+      "aliases": [
+        "EventSourcing",
+        "事件溯源",
+        "event sourcing"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.arch.event_sourcing/manifest.json",
+      "card": "assets/pattern.arch.event_sourcing/card.md"
+    },
+    {
+      "id": "pattern.arch.clean_architecture",
+      "kind": "pattern",
+      "category": "arch",
+      "name_zh": "整洁架构",
+      "name_en": "Clean Architecture",
+      "aliases": [
+        "CleanArchitecture",
+        "整洁架构",
+        "clean architecture"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.arch.clean_architecture/manifest.json",
+      "card": "assets/pattern.arch.clean_architecture/card.md"
+    },
+    {
+      "id": "pattern.arch.hexagonal_architecture",
+      "kind": "pattern",
+      "category": "arch",
+      "name_zh": "六边形架构",
+      "name_en": "Hexagonal Architecture",
+      "aliases": [
+        "HexagonalArchitecture",
+        "六边形架构",
+        "ports and adapters",
+        "端口与适配器"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.arch.hexagonal_architecture/manifest.json",
+      "card": "assets/pattern.arch.hexagonal_architecture/card.md"
+    },
+    {
+      "id": "pattern.integration.saga",
+      "kind": "pattern",
+      "category": "integration",
+      "name_zh": " Saga（长事务编排）",
+      "name_en": "Saga",
+      "aliases": [
+        "Saga",
+        "saga pattern",
+        "长事务",
+        "saga orchestration"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.integration.saga/manifest.json",
+      "card": "assets/pattern.integration.saga/card.md"
+    },
+    {
+      "id": "pattern.integration.transactional_outbox",
+      "kind": "pattern",
+      "category": "integration",
+      "name_zh": "事务发件箱",
+      "name_en": "Transactional Outbox",
+      "aliases": [
+        "TransactionalOutbox",
+        "事务发件箱",
+        "outbox pattern",
+        "发件箱模式"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.integration.transactional_outbox/manifest.json",
+      "card": "assets/pattern.integration.transactional_outbox/card.md"
+    },
+    {
+      "id": "pattern.integration.publish_subscribe",
+      "kind": "pattern",
+      "category": "integration",
+      "name_zh": "发布–订阅",
+      "name_en": "Publish–Subscribe",
+      "aliases": [
+        "PublishSubscribe",
+        "发布订阅",
+        "pub/sub",
+        "publish subscribe"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.integration.publish_subscribe/manifest.json",
+      "card": "assets/pattern.integration.publish_subscribe/card.md"
+    },
+    {
+      "id": "pattern.integration.idempotent_consumer",
+      "kind": "pattern",
+      "category": "integration",
+      "name_zh": "幂等消费者",
+      "name_en": "Idempotent Consumer",
+      "aliases": [
+        "IdempotentConsumer",
+        "幂等消费者",
+        "idempotent consumer",
+        "幂等消费"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.integration.idempotent_consumer/manifest.json",
+      "card": "assets/pattern.integration.idempotent_consumer/card.md"
+    },
+    {
+      "id": "pattern.integration.cache_aside",
+      "kind": "pattern",
+      "category": "integration",
+      "name_zh": "旁路缓存",
+      "name_en": "Cache-Aside",
+      "aliases": [
+        "CacheAside",
+        "旁路缓存",
+        "cache aside",
+        "缓存旁路"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.integration.cache_aside/manifest.json",
+      "card": "assets/pattern.integration.cache_aside/card.md"
+    },
+    {
+      "id": "pattern.integration.read_copy_update",
+      "kind": "pattern",
+      "category": "integration",
+      "name_zh": "读副本更新",
+      "name_en": "Read-Copy-Update",
+      "aliases": [
+        "ReadCopyUpdate",
+        "读副本更新",
+        "read copy update",
+        "RCU"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.integration.read_copy_update/manifest.json",
+      "card": "assets/pattern.integration.read_copy_update/card.md"
+    },
+    {
+      "id": "pattern.resilience.circuit_breaker",
+      "kind": "pattern",
+      "category": "resilience",
+      "name_zh": "断路器",
+      "name_en": "Circuit Breaker",
+      "aliases": [
+        "CircuitBreaker",
+        "断路器",
+        "circuit breaker"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.resilience.circuit_breaker/manifest.json",
+      "card": "assets/pattern.resilience.circuit_breaker/card.md"
+    },
+    {
+      "id": "pattern.resilience.bulkhead",
+      "kind": "pattern",
+      "category": "resilience",
+      "name_zh": "隔离舱",
+      "name_en": "Bulkhead",
+      "aliases": [
+        "Bulkhead",
+        "隔离舱",
+        "bulkhead pattern",
+        "舱壁隔离"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.resilience.bulkhead/manifest.json",
+      "card": "assets/pattern.resilience.bulkhead/card.md"
+    },
+    {
+      "id": "pattern.resilience.retry_with_exponential_backoff_and_jitter",
+      "kind": "pattern",
+      "category": "resilience",
+      "name_zh": "带指数退避与抖动的重试",
+      "name_en": "Retry with Exponential Backoff and Jitter",
+      "aliases": [
+        "RetryWithBackoff",
+        "指数退避重试",
+        "exponential backoff jitter",
+        "重试退避"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.resilience.retry_with_exponential_backoff_and_jitter/manifest.json",
+      "card": "assets/pattern.resilience.retry_with_exponential_backoff_and_jitter/card.md"
+    },
+    {
+      "id": "pattern.resilience.rate_limiter",
+      "kind": "pattern",
+      "category": "resilience",
+      "name_zh": "限流器",
+      "name_en": "Rate Limiter",
+      "aliases": [
+        "RateLimiter",
+        "限流",
+        "rate limiting",
+        "throttling"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.resilience.rate_limiter/manifest.json",
+      "card": "assets/pattern.resilience.rate_limiter/card.md"
+    },
+    {
+      "id": "pattern.concurrent.actor",
+      "kind": "pattern",
+      "category": "concurrent",
+      "name_zh": "Actor",
+      "name_en": "Actor",
+      "aliases": [
+        "Actor",
+        "Actor模型",
+        "actor model"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.concurrent.actor/manifest.json",
+      "card": "assets/pattern.concurrent.actor/card.md"
+    },
+    {
+      "id": "pattern.concurrent.pipeline",
+      "kind": "pattern",
+      "category": "concurrent",
+      "name_zh": "流水线",
+      "name_en": "Pipeline",
+      "aliases": [
+        "Pipeline",
+        "流水线",
+        "pipeline pattern",
+        "数据流水线"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.concurrent.pipeline/manifest.json",
+      "card": "assets/pattern.concurrent.pipeline/card.md"
+    },
+    {
+      "id": "pattern.concurrent.object_pool",
+      "kind": "pattern",
+      "category": "concurrent",
+      "name_zh": "对象池",
+      "name_en": "Object Pool",
+      "aliases": [
+        "ObjectPool",
+        "对象池",
+        "object pool",
+        "连接池"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/pattern.concurrent.object_pool/manifest.json",
+      "card": "assets/pattern.concurrent.object_pool/card.md"
+    },
+    {
+      "id": "algorithm.sorting.merge_sort",
+      "kind": "algorithm",
+      "category": "sorting",
+      "name_zh": "归并排序",
+      "name_en": "Merge Sort",
+      "aliases": [
+        "merge_sort",
+        "归并排序",
+        "mergesort",
+        "归并"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.sorting.merge_sort/manifest.json",
+      "card": "assets/algorithm.sorting.merge_sort/card.md"
+    },
+    {
+      "id": "algorithm.sorting.heap_sort",
+      "kind": "algorithm",
+      "category": "sorting",
+      "name_zh": "堆排序",
+      "name_en": "Heap Sort",
+      "aliases": [
+        "heap_sort",
+        "堆排序",
+        "heapsort"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.sorting.heap_sort/manifest.json",
+      "card": "assets/algorithm.sorting.heap_sort/card.md"
+    },
+    {
+      "id": "algorithm.sorting.quick_sort",
+      "kind": "algorithm",
+      "category": "sorting",
+      "name_zh": "快速排序",
+      "name_en": "Quicksort",
+      "aliases": [
+        "quick_sort",
+        "快速排序",
+        "quicksort"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.sorting.quick_sort/manifest.json",
+      "card": "assets/algorithm.sorting.quick_sort/card.md"
+    },
+    {
+      "id": "algorithm.sorting.quickselect",
+      "kind": "algorithm",
+      "category": "sorting",
+      "name_zh": "快速选择",
+      "name_en": "Quickselect",
+      "aliases": [
+        "quickselect",
+        "快速选择",
+        "nth_element",
+        "第 k 大"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.sorting.quickselect/manifest.json",
+      "card": "assets/algorithm.sorting.quickselect/card.md"
+    },
+    {
+      "id": "algorithm.sorting.counting_sort",
+      "kind": "algorithm",
+      "category": "sorting",
+      "name_zh": "计数排序",
+      "name_en": "Counting Sort",
+      "aliases": [
+        "counting_sort",
+        "计数排序",
+        "计数"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.sorting.counting_sort/manifest.json",
+      "card": "assets/algorithm.sorting.counting_sort/card.md"
+    },
+    {
+      "id": "algorithm.sorting.radix_sort",
+      "kind": "algorithm",
+      "category": "sorting",
+      "name_zh": "基数排序",
+      "name_en": "Radix Sort",
+      "aliases": [
+        "radix_sort",
+        "基数排序",
+        "LSD",
+        "MSD"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.sorting.radix_sort/manifest.json",
+      "card": "assets/algorithm.sorting.radix_sort/card.md"
+    },
+    {
+      "id": "algorithm.sorting.top_k_heap",
+      "kind": "algorithm",
+      "category": "sorting",
+      "name_zh": "前 K 大（堆）",
+      "name_en": "Top-K with a Heap",
+      "aliases": [
+        "top_k_heap",
+        "前k大",
+        "top k",
+        "小顶堆选前K"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.sorting.top_k_heap/manifest.json",
+      "card": "assets/algorithm.sorting.top_k_heap/card.md"
+    },
+    {
+      "id": "algorithm.searching.binary_search",
+      "kind": "algorithm",
+      "category": "searching",
+      "name_zh": "二分查找",
+      "name_en": "Binary Search",
+      "aliases": [
+        "binary_search",
+        "二分查找",
+        "二分搜索",
+        "折半查找"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.searching.binary_search/manifest.json",
+      "card": "assets/algorithm.searching.binary_search/card.md"
+    },
+    {
+      "id": "algorithm.searching.lower_bound",
+      "kind": "algorithm",
+      "category": "searching",
+      "name_zh": "下界查找",
+      "name_en": "Lower Bound",
+      "aliases": [
+        "lower_bound",
+        "下界",
+        "partition_point",
+        "第一个大于等于"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.searching.lower_bound/manifest.json",
+      "card": "assets/algorithm.searching.lower_bound/card.md"
+    },
+    {
+      "id": "algorithm.searching.upper_bound",
+      "kind": "algorithm",
+      "category": "searching",
+      "name_zh": "上界查找",
+      "name_en": "Upper Bound",
+      "aliases": [
+        "upper_bound",
+        "上界",
+        "第一个大于",
+        "partition_point_rev"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.searching.upper_bound/manifest.json",
+      "card": "assets/algorithm.searching.upper_bound/card.md"
+    },
+    {
+      "id": "algorithm.searching.two_pointers",
+      "kind": "algorithm",
+      "category": "searching",
+      "name_zh": "双指针",
+      "name_en": "Two Pointers",
+      "aliases": [
+        "two_pointers",
+        "双指针",
+        "对撞指针",
+        "双指针法"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.searching.two_pointers/manifest.json",
+      "card": "assets/algorithm.searching.two_pointers/card.md"
+    },
+    {
+      "id": "algorithm.searching.sliding_window",
+      "kind": "algorithm",
+      "category": "searching",
+      "name_zh": "滑动窗口",
+      "name_en": "Sliding Window",
+      "aliases": [
+        "sliding_window",
+        "滑动窗口",
+        "滑窗"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.searching.sliding_window/manifest.json",
+      "card": "assets/algorithm.searching.sliding_window/card.md"
+    },
+    {
+      "id": "algorithm.graph.bfs",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "广度优先搜索",
+      "name_en": "Breadth-First Search",
+      "aliases": [
+        "bfs",
+        "广度优先搜索",
+        "breadth first search"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.bfs/manifest.json",
+      "card": "assets/algorithm.graph.bfs/card.md"
+    },
+    {
+      "id": "algorithm.graph.dfs",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "深度优先搜索",
+      "name_en": "Depth-First Search",
+      "aliases": [
+        "dfs",
+        "深度优先搜索",
+        "depth first search"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.dfs/manifest.json",
+      "card": "assets/algorithm.graph.dfs/card.md"
+    },
+    {
+      "id": "algorithm.graph.topological_sort",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "拓扑排序",
+      "name_en": "Topological Sort",
+      "aliases": [
+        "topological_sort",
+        "拓扑排序",
+        "toposort",
+        "拓扑序"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.topological_sort/manifest.json",
+      "card": "assets/algorithm.graph.topological_sort/card.md"
+    },
+    {
+      "id": "algorithm.graph.dijkstra",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "Dijkstra 最短路径",
+      "name_en": "Dijkstra Shortest Path",
+      "aliases": [
+        "Dijkstra",
+        "最短路径",
+        "single source shortest path"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.dijkstra/manifest.json",
+      "card": "assets/algorithm.graph.dijkstra/card.md"
+    },
+    {
+      "id": "algorithm.graph.bellman_ford",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "Bellman-Ford 最短路径",
+      "name_en": "Bellman-Ford Algorithm",
+      "aliases": [
+        "bellman_ford",
+        "BellmanFord",
+        "贝尔曼-福特",
+        "负权最短路"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.bellman_ford/manifest.json",
+      "card": "assets/algorithm.graph.bellman_ford/card.md"
+    },
+    {
+      "id": "algorithm.graph.floyd_warshall",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "Floyd-Warshall 全源最短路",
+      "name_en": "Floyd-Warshall Algorithm",
+      "aliases": [
+        "floyd_warshall",
+        "FloydWarshall",
+        "弗洛伊德-沃肖尔",
+        "全源最短路"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.floyd_warshall/manifest.json",
+      "card": "assets/algorithm.graph.floyd_warshall/card.md"
+    },
+    {
+      "id": "algorithm.graph.kruskal",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "Kruskal 最小生成树",
+      "name_en": "Kruskal’s Minimum Spanning Tree",
+      "aliases": [
+        "Kruskal",
+        "最小生成树",
+        "MST",
+        "克鲁斯卡尔算法"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.kruskal/manifest.json",
+      "card": "assets/algorithm.graph.kruskal/card.md"
+    },
+    {
+      "id": "algorithm.graph.prim",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "Prim 最小生成树",
+      "name_en": "Prim’s Minimum Spanning Tree",
+      "aliases": [
+        "Prim",
+        "普里姆算法",
+        "Prim 最小生成树"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.prim/manifest.json",
+      "card": "assets/algorithm.graph.prim/card.md"
+    },
+    {
+      "id": "algorithm.graph.union_find",
+      "kind": "algorithm",
+      "category": "graph",
+      "name_zh": "并查集",
+      "name_en": "Disjoint Set Union (Union-Find)",
+      "aliases": [
+        "union_find",
+        "disjoint_set_union",
+        "并查集",
+        "不相交集合",
+        "DSU"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.graph.union_find/manifest.json",
+      "card": "assets/algorithm.graph.union_find/card.md"
+    },
+    {
+      "id": "algorithm.string.kmp",
+      "kind": "algorithm",
+      "category": "string",
+      "name_zh": "KMP 字符串匹配",
+      "name_en": "Knuth–Morris–Pratt Algorithm",
+      "aliases": [
+        "KMP",
+        "Knuth-Morris-Pratt",
+        "前缀函数匹配"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.string.kmp/manifest.json",
+      "card": "assets/algorithm.string.kmp/card.md"
+    },
+    {
+      "id": "algorithm.string.z_algorithm",
+      "kind": "algorithm",
+      "category": "string",
+      "name_zh": "Z 算法",
+      "name_en": "Z Algorithm",
+      "aliases": [
+        "z_algorithm",
+        "Z算法",
+        "Z-function",
+        "扩展KMP"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.string.z_algorithm/manifest.json",
+      "card": "assets/algorithm.string.z_algorithm/card.md"
+    },
+    {
+      "id": "algorithm.string.trie",
+      "kind": "algorithm",
+      "category": "string",
+      "name_zh": "字典树",
+      "name_en": "Trie (Prefix Tree)",
+      "aliases": [
+        "trie",
+        "字典树",
+        "前缀树",
+        "prefix tree"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.string.trie/manifest.json",
+      "card": "assets/algorithm.string.trie/card.md"
+    },
+    {
+      "id": "algorithm.string.aho_corasick",
+      "kind": "algorithm",
+      "category": "string",
+      "name_zh": "Aho-Corasick 多模式匹配",
+      "name_en": "Aho–Corasick Algorithm",
+      "aliases": [
+        "aho_corasick",
+        "AhoCorasick",
+        "AC自动机",
+        "多模式匹配"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.string.aho_corasick/manifest.json",
+      "card": "assets/algorithm.string.aho_corasick/card.md"
+    },
+    {
+      "id": "algorithm.string.rabin_karp",
+      "kind": "algorithm",
+      "category": "string",
+      "name_zh": "Rabin-Karp 字符串匹配",
+      "name_en": "Rabin–Karp Algorithm",
+      "aliases": [
+        "rabin_karp",
+        "RabinKarp",
+        "滚动哈希",
+        "rolling hash"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.string.rabin_karp/manifest.json",
+      "card": "assets/algorithm.string.rabin_karp/card.md"
+    },
+    {
+      "id": "algorithm.string.edit_distance",
+      "kind": "algorithm",
+      "category": "string",
+      "name_zh": "编辑距离",
+      "name_en": "Edit Distance (Levenshtein)",
+      "aliases": [
+        "edit_distance",
+        "编辑距离",
+        "Levenshtein",
+        "levenshtein distance"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.string.edit_distance/manifest.json",
+      "card": "assets/algorithm.string.edit_distance/card.md"
+    },
+    {
+      "id": "algorithm.dp.knapsack_01",
+      "kind": "algorithm",
+      "category": "dp",
+      "name_zh": "0-1 背包",
+      "name_en": "0/1 Knapsack",
+      "aliases": [
+        "knapsack_01",
+        "0-1背包",
+        "背包问题",
+        "knapsack"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.dp.knapsack_01/manifest.json",
+      "card": "assets/algorithm.dp.knapsack_01/card.md"
+    },
+    {
+      "id": "algorithm.dp.longest_increasing_subsequence",
+      "kind": "algorithm",
+      "category": "dp",
+      "name_zh": "最长上升子序列",
+      "name_en": "Longest Increasing Subsequence",
+      "aliases": [
+        "longest_increasing_subsequence",
+        "LIS",
+        "最长上升子序列",
+        "最长递增子序列"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.dp.longest_increasing_subsequence/manifest.json",
+      "card": "assets/algorithm.dp.longest_increasing_subsequence/card.md"
+    },
+    {
+      "id": "algorithm.dp.longest_common_subsequence",
+      "kind": "algorithm",
+      "category": "dp",
+      "name_zh": "最长公共子序列",
+      "name_en": "Longest Common Subsequence",
+      "aliases": [
+        "longest_common_subsequence",
+        "LCS",
+        "最长公共子序列"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.dp.longest_common_subsequence/manifest.json",
+      "card": "assets/algorithm.dp.longest_common_subsequence/card.md"
+    },
+    {
+      "id": "algorithm.dp.coin_change",
+      "kind": "algorithm",
+      "category": "dp",
+      "name_zh": "找零（硬币兑换）",
+      "name_en": "Coin Change",
+      "aliases": [
+        "coin_change",
+        "找零",
+        "硬币兑换",
+        "最少硬币数"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.dp.coin_change/manifest.json",
+      "card": "assets/algorithm.dp.coin_change/card.md"
+    },
+    {
+      "id": "algorithm.dp.interval_dp",
+      "kind": "algorithm",
+      "category": "dp",
+      "name_zh": "区间动态规划",
+      "name_en": "Interval Dynamic Programming",
+      "aliases": [
+        "interval_dp",
+        "区间DP",
+        "矩阵链乘法",
+        "区间调度"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.dp.interval_dp/manifest.json",
+      "card": "assets/algorithm.dp.interval_dp/card.md"
+    },
+    {
+      "id": "algorithm.dp.bitmask_dp",
+      "kind": "algorithm",
+      "category": "dp",
+      "name_zh": "位掩码动态规划",
+      "name_en": "Bitmask DP (Subset DP)",
+      "aliases": [
+        "bitmask_dp",
+        "位掩码DP",
+        "状压DP",
+        "subset dp"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.dp.bitmask_dp/manifest.json",
+      "card": "assets/algorithm.dp.bitmask_dp/card.md"
+    },
+    {
+      "id": "algorithm.datastructure.binary_heap",
+      "kind": "algorithm",
+      "category": "datastructure",
+      "name_zh": "二叉堆",
+      "name_en": "Binary Heap",
+      "aliases": [
+        "binary_heap",
+        "二叉堆",
+        "堆",
+        "heap"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.datastructure.binary_heap/manifest.json",
+      "card": "assets/algorithm.datastructure.binary_heap/card.md"
+    },
+    {
+      "id": "algorithm.datastructure.segment_tree",
+      "kind": "algorithm",
+      "category": "datastructure",
+      "name_zh": "线段树",
+      "name_en": "Segment Tree",
+      "aliases": [
+        "segment_tree",
+        "线段树",
+        "区间树",
+        "segment tree"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.datastructure.segment_tree/manifest.json",
+      "card": "assets/algorithm.datastructure.segment_tree/card.md"
+    },
+    {
+      "id": "algorithm.datastructure.fenwick_tree",
+      "kind": "algorithm",
+      "category": "datastructure",
+      "name_zh": "树状数组",
+      "name_en": "Fenwick Tree (Binary Indexed Tree)",
+      "aliases": [
+        "fenwick_tree",
+        "树状数组",
+        "binary indexed tree",
+        "BIT"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.datastructure.fenwick_tree/manifest.json",
+      "card": "assets/algorithm.datastructure.fenwick_tree/card.md"
+    },
+    {
+      "id": "algorithm.datastructure.lru_cache",
+      "kind": "algorithm",
+      "category": "datastructure",
+      "name_zh": "LRU 缓存",
+      "name_en": "LRU Cache",
+      "aliases": [
+        "lru_cache",
+        "LRU",
+        "最近最少使用缓存",
+        "least recently used"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.datastructure.lru_cache/manifest.json",
+      "card": "assets/algorithm.datastructure.lru_cache/card.md"
+    },
+    {
+      "id": "algorithm.datastructure.hash_table",
+      "kind": "algorithm",
+      "category": "datastructure",
+      "name_zh": "哈希表",
+      "name_en": "Hash Table",
+      "aliases": [
+        "hash_table",
+        "哈希表",
+        "散列表",
+        "hash map"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.datastructure.hash_table/manifest.json",
+      "card": "assets/algorithm.datastructure.hash_table/card.md"
+    },
+    {
+      "id": "algorithm.datastructure.monotonic_stack",
+      "kind": "algorithm",
+      "category": "datastructure",
+      "name_zh": "单调栈",
+      "name_en": "Monotonic Stack",
+      "aliases": [
+        "monotonic_stack",
+        "单调栈",
+        "monotonic deque",
+        "单调队列"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.datastructure.monotonic_stack/manifest.json",
+      "card": "assets/algorithm.datastructure.monotonic_stack/card.md"
+    },
+    {
+      "id": "algorithm.math.euclidean_gcd",
+      "kind": "algorithm",
+      "category": "math",
+      "name_zh": "欧几里得求最大公约数",
+      "name_en": "Euclidean GCD",
+      "aliases": [
+        "euclidean_gcd",
+        "gcd",
+        "最大公约数",
+        "辗转相除法"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.math.euclidean_gcd/manifest.json",
+      "card": "assets/algorithm.math.euclidean_gcd/card.md"
+    },
+    {
+      "id": "algorithm.math.sieve_of_eratosthenes",
+      "kind": "algorithm",
+      "category": "math",
+      "name_zh": "埃氏筛",
+      "name_en": "Sieve of Eratosthenes",
+      "aliases": [
+        "sieve_of_eratosthenes",
+        "埃氏筛",
+        "筛法",
+        "prime sieve"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.math.sieve_of_eratosthenes/manifest.json",
+      "card": "assets/algorithm.math.sieve_of_eratosthenes/card.md"
+    },
+    {
+      "id": "algorithm.math.fast_power",
+      "kind": "algorithm",
+      "category": "math",
+      "name_zh": "快速幂（平方求幂）",
+      "name_en": "Exponentiation by Squaring",
+      "aliases": [
+        "fast_power",
+        "binary_exponentiation",
+        "快速幂",
+        "平方求幂"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.math.fast_power/manifest.json",
+      "card": "assets/algorithm.math.fast_power/card.md"
+    },
+    {
+      "id": "algorithm.math.modular_exponentiation",
+      "kind": "algorithm",
+      "category": "math",
+      "name_zh": "模幂运算",
+      "name_en": "Modular Exponentiation",
+      "aliases": [
+        "modular_exponentiation",
+        "模幂",
+        "模快速幂",
+        "pow mod"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.math.modular_exponentiation/manifest.json",
+      "card": "assets/algorithm.math.modular_exponentiation/card.md"
+    },
+    {
+      "id": "algorithm.math.extended_euclidean",
+      "kind": "algorithm",
+      "category": "math",
+      "name_zh": "扩展欧几里得算法",
+      "name_en": "Extended Euclidean Algorithm",
+      "aliases": [
+        "extended_euclidean",
+        "扩展欧几里得",
+        "exgcd",
+        "贝祖系数"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.math.extended_euclidean/manifest.json",
+      "card": "assets/algorithm.math.extended_euclidean/card.md"
+    },
+    {
+      "id": "algorithm.math.reservoir_sampling",
+      "kind": "algorithm",
+      "category": "math",
+      "name_zh": "蓄水池抽样",
+      "name_en": "Reservoir Sampling",
+      "aliases": [
+        "reservoir_sampling",
+        "蓄水池抽样",
+        "水塘抽样",
+        "reservoir"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.math.reservoir_sampling/manifest.json",
+      "card": "assets/algorithm.math.reservoir_sampling/card.md"
+    },
+    {
+      "id": "algorithm.concurrency.bounded_queue",
+      "kind": "algorithm",
+      "category": "concurrency",
+      "name_zh": "有界队列",
+      "name_en": "Bounded Queue",
+      "aliases": [
+        "bounded_queue",
+        "有界队列",
+        "bounded buffer",
+        "环形缓冲"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.concurrency.bounded_queue/manifest.json",
+      "card": "assets/algorithm.concurrency.bounded_queue/card.md"
+    },
+    {
+      "id": "algorithm.concurrency.producer_consumer",
+      "kind": "algorithm",
+      "category": "concurrency",
+      "name_zh": "生产者–消费者",
+      "name_en": "Producer-Consumer Problem",
+      "aliases": [
+        "producer_consumer",
+        "生产者消费者",
+        "bounded buffer problem"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.concurrency.producer_consumer/manifest.json",
+      "card": "assets/algorithm.concurrency.producer_consumer/card.md"
+    },
+    {
+      "id": "algorithm.concurrency.work_stealing",
+      "kind": "algorithm",
+      "category": "concurrency",
+      "name_zh": "工作窃取",
+      "name_en": "Work Stealing",
+      "aliases": [
+        "work_stealing",
+        "工作窃取",
+        "work stealing scheduler",
+        "窃取调度"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.concurrency.work_stealing/manifest.json",
+      "card": "assets/algorithm.concurrency.work_stealing/card.md"
+    },
+    {
+      "id": "algorithm.concurrency.exponential_backoff_jitter",
+      "kind": "algorithm",
+      "category": "concurrency",
+      "name_zh": "指数退避与抖动",
+      "name_en": "Exponential Backoff with Jitter",
+      "aliases": [
+        "exponential_backoff_jitter",
+        "指数退避抖动",
+        "backoff jitter",
+        "退避算法"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.concurrency.exponential_backoff_jitter/manifest.json",
+      "card": "assets/algorithm.concurrency.exponential_backoff_jitter/card.md"
+    },
+    {
+      "id": "algorithm.concurrency.token_bucket",
+      "kind": "algorithm",
+      "category": "concurrency",
+      "name_zh": "令牌桶",
+      "name_en": "Token Bucket",
+      "aliases": [
+        "token_bucket",
+        "令牌桶",
+        "token bucket",
+        "令牌算法"
+      ],
+      "status": "DOCUMENTED",
+      "manifest": "assets/algorithm.concurrency.token_bucket/manifest.json",
+      "card": "assets/algorithm.concurrency.token_bucket/card.md"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.integration.transactional_outbox",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "事务发件箱",
+    "en-US": "Transactional Outbox"
+  },
+  "aliases": [
+    "TransactionalOutbox",
+    "事务发件箱",
+    "outbox pattern",
+    "发件箱模式"
+  ],
+  "category": "integration",
+  "status": "DOCUMENTED",
+  "intent": "把业务写入与\"要发出的消息\"放进同一个本地事务提交，再由独立进程把消息可靠地投递出去。",
+  "applicability": {
+    "constraints": {
+      "atomicity_scope": "local_transaction_only",
+      "delivery": "at_least_once",
+      "publisher": "separate_process_or_poller",
+      "deduplication": "consumer_side_required"
+    },
+    "counterexamples": [
+      "不需要把状态变更通知给外部系统时——直接提交即可，无需发件箱",
+      "消息发送方与接收方在同一个进程、同一个事务里时——直接调用即可"
+    ],
+    "alternatives": [
+      "pattern.integration.publish_subscribe",
+      "pattern.integration.idempotent_consumer"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Transactional_outbox_pattern"
+    ],
+    "license": "MIT"
+  }
+}

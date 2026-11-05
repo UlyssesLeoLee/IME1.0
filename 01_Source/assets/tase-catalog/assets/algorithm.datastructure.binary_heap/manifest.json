@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.datastructure.binary_heap",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "二叉堆",
+    "en-US": "Binary Heap"
+  },
+  "aliases": [
+    "binary_heap",
+    "二叉堆",
+    "堆",
+    "heap"
+  ],
+  "category": "datastructure",
+  "status": "DOCUMENTED",
+  "intent": "用完全二叉树维护\"最值在根\"的性质，支持 O(log n) 的插入与弹出。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log n) insert_pop / O(1) peek",
+      "space": "O(n)",
+      "order": "partial_only_top",
+      "layout": "array",
+      "duplicates": "allowed"
+    },
+    "counterexamples": [
+      "需要全部元素有序时——堆不提供有序遍历",
+      "只需要最大/最小且数据量小且不变时——直接扫描一次即可"
+    ],
+    "alternatives": [
+      "algorithm.sorting.top_k_heap",
+      "algorithm.datastructure.monotonic_stack"
+    ]
+  },
+  "complexity": {
+    "time": "O(log n) 插入/弹出，O(1) 取顶，建堆 O(n)",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Binary_heap",
+      "https://doc.rust-lang.org/std/collections/binary_heap/index.html"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.integration.saga",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": " Saga（长事务编排）",
+    "en-US": "Saga"
+  },
+  "aliases": [
+    "Saga",
+    "saga pattern",
+    "长事务",
+    "saga orchestration"
+  ],
+  "category": "integration",
+  "status": "DOCUMENTED",
+  "intent": "把跨多个独立系统的长业务事务拆成一系列本地事务，用补偿动作处理失败。",
+  "applicability": {
+    "constraints": {
+      "span": "across_independent_services",
+      "isolation": "none_eventual_consistency",
+      "compensation": "required_for_each_step",
+      "coordinator": "orchestration_or_choreography"
+    },
+    "counterexamples": [
+      "所有写操作在同一个数据库里——本地事务就能保证原子性，不需要 Saga",
+      "业务允许\"部分成功且不需回滚\"（例如只是统计埋点）——补偿机制是过度设计"
+    ],
+    "alternatives": [
+      "pattern.integration.transactional_outbox",
+      "pattern.arch.unit_of_work"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Saga_pattern"
+    ],
+    "license": "MIT"
+  }
+}

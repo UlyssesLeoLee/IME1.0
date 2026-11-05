@@ -1,0 +1,40 @@
+# TASE-LOCAL-IPC: the transport layer of the TASE Local Agent Hub - the frame format of TASE, the protocol
+# negotiation, the connection and the access control of the pipe.
+#
+# Deliberately NOT a member of the main workspace: it sits between `tase-local-hub` and the agents of the
+# same machine, it has its own Cargo.lock, and the Windows named pipe (with its DACL, its
+# `PIPE_REJECT_REMOTE_CLIENTS` and its deadline-bound I/O) comes from `pime-ipc`, which pins the `windows`
+# crate to 0.58 for the x86_64-pc-windows-gnu toolchain. The frame format of TASE is the one of this crate:
+# `pime-ipc` speaks `PIME-IPC/1`, the Hub speaks TASE, and both may live on the same machine.
+[package]
+name = "tase-local-ipc"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE local IPC: the TASE frame format, the protocol negotiation, the connection and the pipe ACL"
+
+# The unit tests live inside the modules of src/ (the crate is a library and has no tests/ directory), so
+# cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_local_ipc"
+path = "src/lib.rs"
+
+[dependencies]
+# The strict JSON parser/serializer comes from the core; no other third-party dependency is allowed.
+pime-core = { path = "../pime-core" }
+# The named pipe, its security descriptor and its deadline-bound I/O come from the IPC crate of the
+# repository: this crate does not write a second transport.
+pime-ipc = { path = "../pime-ipc" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the Hub down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

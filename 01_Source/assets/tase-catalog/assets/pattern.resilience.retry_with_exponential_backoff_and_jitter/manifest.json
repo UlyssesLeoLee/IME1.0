@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.resilience.retry_with_exponential_backoff_and_jitter",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "带指数退避与抖动的重试",
+    "en-US": "Retry with Exponential Backoff and Jitter"
+  },
+  "aliases": [
+    "RetryWithBackoff",
+    "指数退避重试",
+    "exponential backoff jitter",
+    "重试退避"
+  ],
+  "category": "resilience",
+  "status": "DOCUMENTED",
+  "intent": "对失败的操作按指数增长的间隔重试，并加入随机抖动，避免重试风暴。",
+  "applicability": {
+    "constraints": {
+      "retryable_errors": "explicit_allowlist",
+      "delay": "exponential_with_cap",
+      "jitter": "required_to_avoid_thundering_herd",
+      "attempt_limit": "bounded",
+      "idempotency": "required_for_safe_retry"
+    },
+    "counterexamples": [
+      "操作不可逆（扣款、发短信）且无幂等键时——重试会造成重复副作用",
+      "错误是确定性失败（参数非法、权限不足）时——重试只会浪费时间"
+    ],
+    "alternatives": [
+      "pattern.resilience.circuit_breaker",
+      "pattern.resilience.bulkhead"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Exponential_backoff",
+      "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+    ],
+    "license": "MIT"
+  }
+}

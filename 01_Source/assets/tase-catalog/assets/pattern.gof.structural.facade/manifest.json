@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.structural.facade",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "外观",
+    "en-US": "Facade"
+  },
+  "aliases": [
+    "Facade",
+    "外观模式",
+    "facade pattern"
+  ],
+  "category": "structural",
+  "status": "DOCUMENTED",
+  "intent": "为一个复杂子系统提供一个统一的高层入口，简化调用方需要面对的接口面。",
+  "applicability": {
+    "constraints": {
+      "subsystem_count": "multiple",
+      "caller_simplification": "single_entry_point",
+      "coupling_to_subsystems": "hidden_behind_facade",
+      "lifecycle": "facade_owns_or_borrows_subsystems"
+    },
+    "counterexamples": [
+      "子系统只有一个或接口本来就很简单时，外观是多余的间接",
+      "调用方确实需要精细控制各子系统时，外观会挡路，应提供底层直连路径"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.adapter",
+      "pattern.gof.structural.proxy"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Facade_pattern"
+    ],
+    "license": "MIT"
+  }
+}

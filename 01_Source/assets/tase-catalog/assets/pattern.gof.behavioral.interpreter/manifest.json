@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.interpreter",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "解释器",
+    "en-US": "Interpreter"
+  },
+  "aliases": [
+    "Interpreter",
+    "解释器模式",
+    "interpreter pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "为一种简单的语言或表达式定义其文法和求值器，使该语言可以被解析并执行。",
+  "applicability": {
+    "constraints": {
+      "language_scope": "small_and_defined",
+      "grammar": "explicit_and_small",
+      "evaluation": "parse_then_evaluate",
+      "input_trust": "untrusted_input_needs_limits"
+    },
+    "counterexamples": [
+      "表达式只是一次性计算的参数——写个函数比做解释器便宜得多",
+      "语言特性会持续增长时，解释器模式会退化成自己写一门编译器"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.chain_of_responsibility",
+      "pattern.arch.dependency_injection"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Interpreter_pattern"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.dijkstra",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "Dijkstra 最短路径",
+    "en-US": "Dijkstra Shortest Path"
+  },
+  "aliases": [
+    "Dijkstra",
+    "最短路径",
+    "single source shortest path"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "在边权非负的单源图中求出到所有顶点的最短距离及前驱路径。",
+  "applicability": {
+    "constraints": {
+      "time": "O((V + E) log V)",
+      "space": "O(V + E)",
+      "edge_weight": "nonnegative",
+      "directed_graph": "optional",
+      "negative_edges": "forbidden",
+      "output": "distances_and_predecessors"
+    },
+    "counterexamples": [
+      "存在负权边时——Dijkstra 的贪心假设失效，应改用 Bellman-Ford",
+      "边权为负且图有环时——最短路可能不存在（负环）"
+    ],
+    "alternatives": [
+      "algorithm.graph.bellman_ford",
+      "algorithm.graph.bfs",
+      "algorithm.graph.floyd_warshall"
+    ]
+  },
+  "complexity": {
+    "time": "O((V + E) log V)",
+    "extra_space": "O(V + E)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

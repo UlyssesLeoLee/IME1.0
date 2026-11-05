@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.command",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "命令",
+    "en-US": "Command"
+  },
+  "aliases": [
+    "Command",
+    "命令模式",
+    "command pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "把一个请求封装成对象，使其可以被排队、记录、撤销或延迟执行。",
+  "applicability": {
+    "constraints": {
+      "request_as_value": "true",
+      "reversibility": "optional_but_common",
+      "queuing": "optional",
+      "audit_log": "optional"
+    },
+    "counterexamples": [
+      "只有一个同步调用且不需要撤销/排队时，函数指针或闭包就够",
+      "命令对象开始携带大量业务状态时，它已经变成了一个用例对象（另一种模式）"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.strategy",
+      "pattern.arch.unit_of_work"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Command_pattern"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.string.z_algorithm",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "Z 算法",
+    "en-US": "Z Algorithm"
+  },
+  "aliases": [
+    "z_algorithm",
+    "Z算法",
+    "Z-function",
+    "扩展KMP"
+  ],
+  "category": "string",
+  "status": "DOCUMENTED",
+  "intent": "线性计算字符串每个位置开始的最长公共前缀长度。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n)",
+      "space": "O(n)",
+      "input": "single_string",
+      "output": "z_array",
+      "prefix_relation": "suffers_to_pattern_matching"
+    },
+    "counterexamples": [
+      "只需要判断一个模式是否出现时——KMP 更直接",
+      "字符串在流式到达且无法回看时——无法预处理"
+    ],
+    "alternatives": [
+      "algorithm.string.kmp",
+      "algorithm.string.aho_corasick"
+    ]
+  },
+  "complexity": {
+    "time": "O(n)",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Z_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,5 +1,5 @@
 //! Opens the windows of the input method (the settings window and the laser interface: the glow on the left of the
-//! screen, the beam, the panel with the list of the candidates, and the logo in the corner), keeps them on screen for a
+//! screen, the beam and the panel with the list of the candidates), keeps them on screen for a
 //! while and reports what it opened. A screenshot of the desktop taken while it runs is the evidence for the native look
 //! of the input method.
 //!
@@ -26,11 +26,12 @@
 //! Nothing is registered, no profile is activated, no text is inserted anywhere.
 
 use pime_tsf::imesettings::ImeSettings;
-use pime_tsf::laser::PanelItem;
+use pime_tsf::laser::{Edge, PanelItem};
 use pime_tsf::laser_candidates::LaserCandidates;
 use pime_tsf::laser_ui::{LaserEvent, LaserUi};
 use pime_tsf::settings_window::{SettingsEvent, SettingsPage, SettingsWindow, PAGES};
 use pime_tsf::ui::{Anchor, CandidateRow, CandidateUi, CandidateView};
+use std::cell::RefCell;
 use std::rc::Rc;
 use windows::Win32::Foundation::{HWND, LPARAM, RECT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -49,6 +50,21 @@ const TCN_SELCHANGE: u32 = 0xFFFF_FDD9;
 /// The id of the strip of the pages (the one of the settings window).
 const ID_TABS: usize = 9004;
 
+/// The key of the first agent whose mouth is opened by the probe.
+///
+/// The key is the identity of the source: the provider, the name of the agent and the instance of the client. Two
+/// sub-agents of the same provider are two different sources, and therefore two different mouths.
+const AGENT_KEY: &str = "agent:anthropic:claude-code:demo";
+
+/// The name of that agent, as it is shown on the screen.
+const AGENT_LABEL: &str = "claude-code";
+
+/// The key of the second agent: two sub-agents of the same provider are two different sources.
+const AGENT2_KEY: &str = "agent:anthropic:claude-code:demo-2";
+
+/// The name of the second agent, as it is shown on the screen.
+const AGENT2_LABEL: &str = "claude-code-2";
+
 /// The header of a notification (`NMHDR`).
 #[repr(C)]
 struct NmHdr {
@@ -58,6 +74,22 @@ struct NmHdr {
     id_from: usize,
     /// What happened.
     code: u32,
+}
+
+/// What the probe found about one mouth of light.
+struct MouthReport {
+    /// The key of the source the mouth belongs to.
+    key: String,
+    /// The name of the source.
+    label: String,
+    /// The colour of the slit of light, as the screen shows it (#RRGGBB).
+    colour: String,
+    /// The edge of the screen the mouth is on.
+    edge: &'static str,
+    /// The place of the mouth on the screen.
+    x: i32,
+    /// The place of the mouth on the screen.
+    y: i32,
 }
 
 /// What the probe found. It is written next to the picture, so that the check script can read it.
@@ -76,6 +108,8 @@ struct Report {
     settings_rect: [i32; 4],
     /// The size of the screen.
     screen: [i32; 2],
+    /// The mouths of light that are on the screen (the human and every agent).
+    mouths: Vec<MouthReport>,
 }
 
 fn main() -> std::process::ExitCode {
@@ -106,7 +140,7 @@ fn main() -> std::process::ExitCode {
         None => (0, -1),
     };
 
-    // ---- the laser interface (the glow, the beam, the panel and the logo) ----
+    // ---- the laser interface (the glow, the beam and the panel) ----
     let laser_sink: Rc<dyn Fn(LaserEvent)> = Rc::new(|_: LaserEvent| {});
     let laser = LaserUi::create(laser_sink);
     {
@@ -154,9 +188,13 @@ fn main() -> std::process::ExitCode {
         // The work area of the primary monitor.
         laser.show(pime_tsf::layout::Rect::new(0, 0, screen_w, screen_h));
         // The panel is open, so that the picture shows it.
-        laser.open_panel(pime_tsf::laser::PanelOrigin::Glow);
-        // A beam is fired at the candidate window: the light of the character.
-        laser.fire(anchor);
+        laser.open_panel();
+        // Two agents write, so that the picture shows two mouths of light in two colours and on two edges of the
+        // screen. The first one gets the top edge, the second one the right edge.
+        laser.fire_for(AGENT_KEY, AGENT_LABEL, anchor);
+        laser.fire_for(AGENT2_KEY, AGENT2_LABEL, anchor);
+        // The beam that is left on the screen comes out of the mouth of the first agent.
+        laser.fire_for(AGENT_KEY, AGENT_LABEL, anchor);
     }
 
     // ---- the list of the candidates, in the panel of the light ----------------------
@@ -185,6 +223,7 @@ fn main() -> std::process::ExitCode {
         candidate_rows: list_rows,
         settings_rect: settings_rect(settings.as_ref().map(|w| w.handle())),
         screen: [screen_w, screen_h],
+        mouths: mouths_of(&laser),
     };
     write_report(&report);
 
@@ -206,16 +245,54 @@ fn main() -> std::process::ExitCode {
         if list_shown { "shown" } else { "NOT SHOWN" },
         list_rows
     );
+    for mouth in &report.mouths {
+        println!(
+            "mouth: {} ({}), colour {}, on the {} edge at ({}, {})",
+            mouth.label, mouth.key, mouth.colour, mouth.edge, mouth.x, mouth.y
+        );
+    }
     println!("READY");
     // The windows stay on screen while the screenshot is taken. The messages of this thread are pumped, because the
     // animation of the laser interface is driven by a timer.
     pump_for(seconds, settings.as_ref().map(|w| w.handle()));
     println!("done");
     // The probe fails when the windows are not what they must be: the gate then refuses the picture.
-    if report.settings_pages != PAGES.len() as i32 || report.candidate_rows == 0 {
+    if report.settings_pages != PAGES.len() as i32
+        || report.candidate_rows == 0
+        || report.mouths.len() < 2
+    {
         std::process::ExitCode::FAILURE
     } else {
         std::process::ExitCode::SUCCESS
+    }
+}
+
+/// The mouths of light that are on the screen, in the shape the check script reads.
+fn mouths_of(laser: &Rc<RefCell<LaserUi>>) -> Vec<MouthReport> {
+    laser
+        .borrow()
+        .mouths()
+        .iter()
+        .map(|mouth| MouthReport {
+            key: mouth.key.clone(),
+            label: mouth.label.clone(),
+            colour: format!(
+                "#{:02X}{:02X}{:02X}",
+                mouth.colour.r, mouth.colour.g, mouth.colour.b
+            ),
+            edge: edge_name(mouth.mouth.edge),
+            x: mouth.mouth.x,
+            y: mouth.mouth.y,
+        })
+        .collect()
+}
+
+/// The name of an edge of the screen.
+fn edge_name(edge: Edge) -> &'static str {
+    match edge {
+        Edge::Top => "top",
+        Edge::Right => "right",
+        Edge::Left => "left",
     }
 }
 
@@ -258,7 +335,7 @@ fn select_page(hwnd: HWND, page: SettingsPage) -> (i32, i32) {
     }
     // SAFETY: the tab control is a child of our window; the message only changes which tab is selected.
     unsafe {
-        SendMessageW(tabs, TCM_SETCURSEL, WPARAM(index as usize), LPARAM(0));
+        SendMessageW(tabs, TCM_SETCURSEL, WPARAM(index), LPARAM(0));
     }
     let header = NmHdr {
         hwnd_from: tabs,
@@ -285,8 +362,19 @@ fn write_report(report: &Report) {
     if let Some(folder) = path.parent() {
         let _ = std::fs::create_dir_all(folder);
     }
+    let mouths: String = report
+        .mouths
+        .iter()
+        .map(|mouth| {
+            format!(
+                "{{\"key\": \"{}\", \"label\": \"{}\", \"colour\": \"{}\", \"edge\": \"{}\", \"x\": {}, \"y\": {}}}",
+                mouth.key, mouth.label, mouth.colour, mouth.edge, mouth.x, mouth.y
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(",\n    ");
     let text = format!(
-        "{{\n  \"settingsWindow\": {},\n  \"settingsPages\": {},\n  \"selectedPage\": {},\n  \"selectedPageTitle\": \"{}\",\n  \"candidateRows\": {},\n  \"settingsRect\": [{}, {}, {}, {}],\n  \"screen\": [{}, {}]\n}}\n",
+        "{{\n  \"settingsWindow\": {},\n  \"settingsPages\": {},\n  \"selectedPage\": {},\n  \"selectedPageTitle\": \"{}\",\n  \"candidateRows\": {},\n  \"settingsRect\": [{}, {}, {}, {}],\n  \"screen\": [{}, {}],\n  \"mouths\": [{}]\n}}\n",
         report.settings_window,
         report.settings_pages,
         report.selected_page,
@@ -297,7 +385,8 @@ fn write_report(report: &Report) {
         report.settings_rect[2],
         report.settings_rect[3],
         report.screen[0],
-        report.screen[1]
+        report.screen[1],
+        mouths
     );
     let _ = std::fs::write(path, text);
 }

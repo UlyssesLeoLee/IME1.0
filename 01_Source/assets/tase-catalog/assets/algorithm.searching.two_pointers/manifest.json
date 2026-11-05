@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.searching.two_pointers",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "双指针",
+    "en-US": "Two Pointers"
+  },
+  "aliases": [
+    "two_pointers",
+    "双指针",
+    "对撞指针",
+    "双指针法"
+  ],
+  "category": "searching",
+  "status": "DOCUMENTED",
+  "intent": "用两个相向或同向移动的指针在一次扫描内解决有序数组上的查找与配对问题。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n)",
+      "space": "O(1)",
+      "precondition": "sorted_for_two_sum",
+      "movement": "monotonic"
+    },
+    "counterexamples": [
+      "数组无序时——对撞指针的正确性前提不成立",
+      "需要多次配对查询时——哈希表 O(n) 一次建表可复用"
+    ],
+    "alternatives": [
+      "algorithm.searching.sliding_window",
+      "algorithm.datastructure.hash_table"
+    ]
+  },
+  "complexity": {
+    "time": "O(n)",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://doc.rust-lang.org/std/slice/index.html"
+    ],
+    "license": "MIT"
+  }
+}

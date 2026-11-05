@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.prim",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "Prim 最小生成树",
+    "en-US": "Prim’s Minimum Spanning Tree"
+  },
+  "aliases": [
+    "Prim",
+    "普里姆算法",
+    "Prim 最小生成树"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "从一个点出发，每次把连接到已生成树的最便宜边加入，直到覆盖全部顶点。",
+  "applicability": {
+    "constraints": {
+      "time": "O(E log V)（二叉堆）/ O(V²)（邻接矩阵）",
+      "space": "O(V)",
+      "graph": "undirected_connected",
+      "edge_weight": "any_ordering",
+      "output": "spanning_tree_edges"
+    },
+    "counterexamples": [
+      "图极度稀疏时——Kruskal 的边排序更省",
+      "图是有向的——最小生成树无定义"
+    ],
+    "alternatives": [
+      "algorithm.graph.kruskal",
+      "algorithm.graph.union_find"
+    ]
+  },
+  "complexity": {
+    "time": "O(E log V) 堆实现 / O(V²) 矩阵实现",
+    "extra_space": "O(V)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Prim%27s_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.topological_sort",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "拓扑排序",
+    "en-US": "Topological Sort"
+  },
+  "aliases": [
+    "topological_sort",
+    "拓扑排序",
+    "toposort",
+    "拓扑序"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "对有向无环图求出满足所有依赖方向的线性顺序。",
+  "applicability": {
+    "constraints": {
+      "time": "O(V + E)",
+      "space": "O(V)",
+      "graph": "directed_acyclic",
+      "input": "dependency_graph",
+      "cycle_handling": "must_be_explicit"
+    },
+    "counterexamples": [
+      "图中有环时——不存在拓扑序，必须显式检测并报错",
+      "只需要任意一个合法顺序时——Kahn 算法与 DFS 都可，但需确认依赖语义"
+    ],
+    "alternatives": [
+      "algorithm.graph.dfs",
+      "algorithm.graph.bfs"
+    ]
+  },
+  "complexity": {
+    "time": "O(V + E)",
+    "extra_space": "O(V)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Topological_sorting"
+    ],
+    "license": "MIT"
+  }
+}

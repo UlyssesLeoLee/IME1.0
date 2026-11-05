@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.sorting.counting_sort",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "计数排序",
+    "en-US": "Counting Sort"
+  },
+  "aliases": [
+    "counting_sort",
+    "计数排序",
+    "计数"
+  ],
+  "category": "sorting",
+  "status": "DOCUMENTED",
+  "intent": "统计每个键出现的次数，再按键值顺序回填，以 O(n + k) 完成非比较排序。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n + k)",
+      "stability": "stable",
+      "space": "O(k)",
+      "key_range": "small_integer_domain",
+      "comparisons": "none"
+    },
+    "counterexamples": [
+      "键值范围很大（如 64 位哈希）时——O(k) 的额外空间不可接受",
+      "键不是整数或无法映射到小范围时——不适用"
+    ],
+    "alternatives": [
+      "algorithm.sorting.radix_sort",
+      "algorithm.sorting.merge_sort"
+    ]
+  },
+  "complexity": {
+    "time": "O(n + k)",
+    "extra_space": "O(k)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Counting_sort"
+    ],
+    "license": "MIT"
+  }
+}

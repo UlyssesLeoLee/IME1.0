@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.string.rabin_karp",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "Rabin-Karp 字符串匹配",
+    "en-US": "Rabin–Karp Algorithm"
+  },
+  "aliases": [
+    "rabin_karp",
+    "RabinKarp",
+    "滚动哈希",
+    "rolling hash"
+  ],
+  "category": "string",
+  "status": "DOCUMENTED",
+  "intent": "用滚动哈希把模式串的每次比较降到常数时间，配合冲突处理达到期望 O(n + m)。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n + m) 期望",
+      "space": "O(1)（不计哈希计算）",
+      "pattern": "single_or_few",
+      "hash": "rolling_modular",
+      "collision": "must_verify_on_match"
+    },
+    "counterexamples": [
+      "只有一个模式且文本很长时——KMP 的确定性 O(n+m) 更稳",
+      "需要处理极大输入时——滚动哈希的模数选择与碰撞率需谨慎"
+    ],
+    "alternatives": [
+      "algorithm.string.kmp",
+      "algorithm.string.z_algorithm"
+    ]
+  },
+  "complexity": {
+    "time": "O(n + m) 期望",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Rabin%E2%80%93Karp_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

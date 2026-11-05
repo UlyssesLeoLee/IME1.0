@@ -1,0 +1,34 @@
+# TASE-CONTRACT: the contract layer of the TASE system - the DTOs, the JSON schemas, the error codes and the
+# identifiers that every TASE module shares.
+#
+# Deliberately NOT a member of the main workspace: it is the lowest layer of TASE (it depends on no other TASE
+# crate), it has its own Cargo.lock, and the six crates above it (registry, semantic, planner, executor, worker,
+# metrics) must be able to build it on their own.
+[package]
+name = "tase-contract"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE contract layer: the shared DTOs, JSON schemas, error codes and identifiers"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_contract"
+path = "src/lib.rs"
+
+[dependencies]
+# The strict JSON parser/serializer and the SHA-256 come from the core; no other dependency is allowed.
+pime-core = { path = "../pime-core" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take a worker down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.structural.decorator",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "装饰",
+    "en-US": "Decorator"
+  },
+  "aliases": [
+    "Decorator",
+    "装饰器模式",
+    "decorator pattern"
+  ],
+  "category": "structural",
+  "status": "DOCUMENTED",
+  "intent": "在不改被装饰对象本身的前提下，动态叠加一层或多层额外行为。",
+  "applicability": {
+    "constraints": {
+      "composition": "same_interface",
+      "order_matters": "true",
+      "runtime_composition": "true",
+      "decoration_depth": "bounded"
+    },
+    "counterexamples": [
+      "只需要一两种固定增强时，直接在原类里加字段或方法更简单",
+      "增强逻辑与被装饰对象无关且不需要组合时，单独写一个包装函数即可"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.proxy",
+      "pattern.gof.structural.composite"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Decorator_pattern"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.sorting.merge_sort",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "归并排序",
+    "en-US": "Merge Sort"
+  },
+  "aliases": [
+    "merge_sort",
+    "归并排序",
+    "mergesort",
+    "归并"
+  ],
+  "category": "sorting",
+  "status": "DOCUMENTED",
+  "intent": "把序列不断二分并归并，以 O(n log n) 的最坏时间保证得到稳定的有序序列。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n log n)",
+      "stability": "stable",
+      "space": "O(n)",
+      "data": "in_memory_comparable",
+      "best_case": "O(n log n)"
+    },
+    "counterexamples": [
+      "数据量小且追求常数性能时，插入排序在 n < 32 左右更快",
+      "数据已是近乎有序时，归并的拷贝开销高于原地排序"
+    ],
+    "alternatives": [
+      "algorithm.sorting.heap_sort",
+      "algorithm.sorting.quick_sort",
+      "algorithm.sorting.radix_sort"
+    ]
+  },
+  "complexity": {
+    "time": "O(n log n)",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Merge_sort"
+    ],
+    "license": "MIT"
+  }
+}

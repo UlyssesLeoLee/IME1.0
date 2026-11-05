@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.sorting.quick_sort",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "快速排序",
+    "en-US": "Quicksort"
+  },
+  "aliases": [
+    "quick_sort",
+    "快速排序",
+    "quicksort"
+  ],
+  "category": "sorting",
+  "status": "DOCUMENTED",
+  "intent": "以分区（partition）为核心的原地排序，平均 O(n log n)、常数极小，但最坏情况 O(n²)。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n log n) 平均 / O(n²) 最坏",
+      "stability": "unstable",
+      "space": "O(log n) 递归栈",
+      "data": "in_memory_comparable",
+      "pivot": "random_or_median_of_three"
+    },
+    "counterexamples": [
+      "输入已排序且枢轴选择固定（取首元素）时——会退化成 O(n²)",
+      "需要稳定性或最坏情况保证时——应选归并或堆排序"
+    ],
+    "alternatives": [
+      "algorithm.sorting.merge_sort",
+      "algorithm.sorting.heap_sort"
+    ]
+  },
+  "complexity": {
+    "time": "O(n log n) 平均 / O(n²) 最坏",
+    "extra_space": "O(log n) 递归栈"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Quicksort"
+    ],
+    "license": "MIT"
+  }
+}

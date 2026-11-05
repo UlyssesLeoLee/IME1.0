@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.string.kmp",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "KMP 字符串匹配",
+    "en-US": "Knuth–Morris–Pratt Algorithm"
+  },
+  "aliases": [
+    "KMP",
+    "Knuth-Morris-Pratt",
+    "前缀函数匹配"
+  ],
+  "category": "string",
+  "status": "DOCUMENTED",
+  "intent": "用模式串的前缀函数表把朴素匹配的 O(nm) 降到 O(n + m)。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n + m)",
+      "space": "O(m)",
+      "pattern": "single",
+      "occurrences": "overlapping_allowed",
+      "preprocessing": "required"
+    },
+    "counterexamples": [
+      "只匹配一次且模式串很短时——朴素匹配常数更小",
+      "需要同时匹配很多模式串时——应改用 Aho-Corasick"
+    ],
+    "alternatives": [
+      "algorithm.string.z_algorithm",
+      "algorithm.string.rabin_karp",
+      "algorithm.string.aho_corasick"
+    ]
+  },
+  "complexity": {
+    "time": "O(n + m)",
+    "extra_space": "O(m)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

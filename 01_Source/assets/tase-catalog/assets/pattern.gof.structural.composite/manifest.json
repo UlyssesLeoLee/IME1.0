@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.structural.composite",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "组合",
+    "en-US": "Composite"
+  },
+  "aliases": [
+    "Composite",
+    "组合模式",
+    "composite pattern"
+  ],
+  "category": "structural",
+  "status": "DOCUMENTED",
+  "intent": "用统一的接口把一组对象组织成树形结构，使调用方无需区分叶子与容器。",
+  "applicability": {
+    "constraints": {
+      "structure": "tree",
+      "uniform_interface": "true",
+      "child_access": "recursive",
+      "traversal": "depth_or_breadth_first"
+    },
+    "counterexamples": [
+      "结构其实是图（含共享节点或环）时，组合模式的树假设不成立",
+      "叶子与容器的行为差异很大时，统一接口会塞满类型判断分支"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.decorator",
+      "pattern.gof.behavioral.iterator"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Composite_pattern"
+    ],
+    "license": "MIT"
+  }
+}

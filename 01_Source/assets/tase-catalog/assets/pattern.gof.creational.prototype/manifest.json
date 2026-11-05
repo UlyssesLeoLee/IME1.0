@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.creational.prototype",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "原型",
+    "en-US": "Prototype"
+  },
+  "aliases": [
+    "Prototype",
+    "原型模式",
+    "clone pattern"
+  ],
+  "category": "creational",
+  "status": "DOCUMENTED",
+  "intent": "通过复制一个已存在的实例来创建新对象，绕开昂贵的构造过程或保证初始状态一致。",
+  "applicability": {
+    "constraints": {
+      "creation_cost": "high_relative_to_copy",
+      "initial_state": "must_be_valid_after_copy",
+      "copy_semantics": "shallow_or_deep_explicit",
+      "resource_ownership": "clone_must_not_share_mutable_state"
+    },
+    "counterexamples": [
+      "构造本身很便宜（大多数值类型）时，clone 没有收益",
+      "对象内部持有不可克隆资源（文件句柄、连接、锁）时，克隆语义会变得危险"
+    ],
+    "alternatives": [
+      "pattern.gof.creational.builder",
+      "pattern.gof.creational.abstract_factory"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Prototype_pattern"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.creational.builder",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "生成器",
+    "en-US": "Builder"
+  },
+  "aliases": [
+    "Builder",
+    "生成器模式",
+    "builder pattern"
+  ],
+  "category": "creational",
+  "status": "DOCUMENTED",
+  "intent": "把一个多参数、含可选参数或需分步校验的对象的构造过程拆成可读、可校验的若干步。",
+  "applicability": {
+    "constraints": {
+      "parameter_count": "many_or_optional",
+      "validation": "required_at_construction_end",
+      "mutability": "consumed_into_finished_value",
+      "api_style": "fluent_chain"
+    },
+    "counterexamples": [
+      "对象只有两三个必填参数时，直接用结构体字面量更短更清楚",
+      "构造过程没有校验规则时，builder 只是把参数搬了家，还多了一层类型"
+    ],
+    "alternatives": [
+      "pattern.gof.creational.abstract_factory",
+      "pattern.gof.creational.factory_method"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Builder_pattern"
+    ],
+    "license": "MIT"
+  }
+}

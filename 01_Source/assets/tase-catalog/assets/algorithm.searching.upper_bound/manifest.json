@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.searching.upper_bound",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "上界查找",
+    "en-US": "Upper Bound"
+  },
+  "aliases": [
+    "upper_bound",
+    "上界",
+    "第一个大于",
+    "partition_point_rev"
+  ],
+  "category": "searching",
+  "status": "DOCUMENTED",
+  "intent": "在有序序列中找出第一个严格大于给定值的位置，即等价区间的右端。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log n)",
+      "space": "O(1)",
+      "precondition": "sorted_input",
+      "result": "index_after_all_equal_elements"
+    },
+    "counterexamples": [
+      "数据无序时不能使用",
+      "只需要\"最后一个等于 x 的位置\"时——用 upper_bound 再减一即可"
+    ],
+    "alternatives": [
+      "algorithm.searching.lower_bound",
+      "algorithm.searching.binary_search"
+    ]
+  },
+  "complexity": {
+    "time": "O(log n)",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Binary_search_algorithm",
+      "https://doc.rust-lang.org/std/slice/index.html"
+    ],
+    "license": "MIT"
+  }
+}

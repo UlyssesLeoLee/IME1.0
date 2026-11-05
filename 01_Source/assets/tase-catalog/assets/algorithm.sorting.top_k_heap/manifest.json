@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.sorting.top_k_heap",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "前 K 大（堆）",
+    "en-US": "Top-K with a Heap"
+  },
+  "aliases": [
+    "top_k_heap",
+    "前k大",
+    "top k",
+    "小顶堆选前K"
+  ],
+  "category": "sorting",
+  "status": "DOCUMENTED",
+  "intent": "用一个大小为 k 的堆在流式数据上维护最大的 k 个元素，避免完整排序。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n log k)",
+      "stability": "not_applicable",
+      "space": "O(k)",
+      "streaming": "true",
+      "order": "kth_element_or_full_set"
+    },
+    "counterexamples": [
+      "数据量小且需要完整排序结果时——直接排序更简单",
+      "k 接近 n 时——堆的优势消失，排序反而更省事"
+    ],
+    "alternatives": [
+      "algorithm.sorting.quickselect",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(n log k)",
+    "extra_space": "O(k)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Selection_algorithm",
+      "https://en.wikipedia.org/wiki/Binary_heap"
+    ],
+    "license": "MIT"
+  }
+}

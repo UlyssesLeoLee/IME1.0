@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.arch.unit_of_work",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "工作单元",
+    "en-US": "Unit of Work"
+  },
+  "aliases": [
+    "UnitOfWork",
+    "工作单元",
+    "unit of work"
+  ],
+  "category": "arch",
+  "status": "DOCUMENTED",
+  "intent": "把一次业务事务中的多次仓储操作纳入同一个原子边界，并在结束时统一提交或回滚。",
+  "applicability": {
+    "constraints": {
+      "transaction_scope": "one_business_operation",
+      "atomicity": "required",
+      "change_tracking": "explicit_or_implicit",
+      "lifetime": "short_and_scoped"
+    },
+    "counterexamples": [
+      "只有一次写操作时，数据库自带的单语句事务已经够用",
+      "跨系统的写操作无法靠本地事务保证原子性时，应改用 Saga 或事务发件箱"
+    ],
+    "alternatives": [
+      "pattern.integration.transactional_outbox",
+      "pattern.integration.saga"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Unit_of_work"
+    ],
+    "license": "MIT"
+  }
+}

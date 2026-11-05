@@ -821,3 +821,133 @@ DD 5.3 / UT-009 原本写的是「默认不吃任何代码字符」。这一轮�
 * **CLI / MCP / 本地服务这三条通道**：MCP 的 `initialize` / `tools/list` / `tools/call`、CLI 的各操作、HTTP 的健康检查 / 令牌 / 拒绝、命名管道的四个请求，**都在本机跑过**（用本机构建的 `pime-core.exe`）；**没有**在装好的正式安装目录里跑过（那要等新安装包装上）。
 * **写入之后的真实观感**（光标位置、选区折叠、输入法自身的候选窗会不会跟着冒出来）没看过——这一版写入走的是 `commit("", text)`，它**不经过候选流程**，所以不会弹候选窗，但这一点也没有真机截图。
 * 文档里写的是「安装到 `C:\Program Files\IME1.0`」这个默认路径；**本轮没有**在真实安装目录里验证过 MCP 的 `command` 路径能不能被各家客户端正常拉起。
+
+### 5.16 第十八轮（2026-11-05）：删掉右下角球形彩虹悬浮窗，只留屏幕边缘的激光口
+
+这一轮接的是你点名的要求：**「把球形彩虹悬浮窗全都去掉，我需要的是屏幕边缘的激光口，之前做过一个。」**
+
+#### 5.16.1 这一轮做完的事
+
+| # | 项目 | 证据 |
+|---|---|---|
+| 1 | **右下角那颗球（白核 + 七色光环 + 光晕）整条链路删除**：`laser_ui.rs` 的 `paint_logo()` / `on_logo_click()` / `LOGO_SIZE` / `logo` 字段 / 建窗·定位·重绘·隐藏里的 logo 分支 / 每帧呼吸动画；`glass.rs` 的 `Role::Logo` / `GlassEvent::LogoClick` / `LogoState` / `Model.logo` / `LOGO_CLASS` / `class_bit` 的 logo 位；`laser.rs` 的 `PanelOrigin::Logo`；连带删掉只为 logo 服务的 `desktop_work_area()` | `crates/pime-tsf/src/laser_ui.rs`、`glass.rs`、`laser.rs`；`pime-tsf` **285 项单测全绿** |
+| 2 | **屏幕边缘的激光口原样保留**：左边缘 26 px 长、1 px 宽的淡蓝光缝 + 5 px 光晕，半透明、2.6 s 一个呼吸周期；`draw_glow()` 的注释里本来就写着「no ring of the brand colours, no white core」 | `laser_ui.rs` 的 `draw_glow()`；单测 `the_mouth_is_a_thin_pale_line_inside_the_window_of_the_glow` |
+| 3 | **面板入口收敛到一处**：面板原来能从「光口」和「右下角 logo」两处打开，现在只剩光口 ⇒ `PanelOrigin` 枚举整体删除，`open_panel()` 不再带参数，`glass::PanelState` 少一个 `origin` 字段 | `laser.rs`、`glass.rs`、`laser_ui.rs` |
+| 4 | **实拍取证**：`--tsf-ui` 重跑，截图 `02_Verification/ime-ui/ime-windows.png`；右下角区域**没有彩虹环也没有白核** | 旧图：168 个强着色像素环绕 121 个浅色核心像素；新图：35 个强着色像素、**0** 个核心像素 |
+| 5 | **门禁新增断言**（防止它再回来）：`ime-ui-check.js` 现在会在右下角搜「一圈强着色像素 + 中间一块浅色核心」这个**形状**，命中即失败。判据用**两张真实截图标定**：旧截图当正样本必须检出，新截图当负样本不得误报 | `01_Source/tests/smoke/ime-ui-check.js` |
+
+#### 5.16.2 这一轮请你裁定的事项
+
+1. **D-42（新增）：面板的入口只剩「把鼠标悬停到左边缘的激光口」一条了。** 托盘菜单和设置窗都还在（托盘菜单里能开设置窗），但**快速开关面板**（那 8 行常用开关）以前还能点右下角那颗球打开，现在必须把鼠标移到屏幕边缘。键盘用户、鼠标不便的用户、触摸屏用户都少了一条路。**要不要加一个快捷键（比如 F1 / Ctrl+F1）直接弹出这个面板？** 这一轮我没有擅自加——它会改变键盘行为，而 F1 在你的文档里已经有别的归属（第十三轮登记过）。
+2. **D-43（新增）：托盘图标本身也是彩虹圆盘，但它不是悬浮窗，本轮没有动。** `crates/pime-tray/src/icon.rs` 的 `logo_pixels()` 在运行时画的是「彩虹圆盘 + 激光光晕」，它是**系统通知区里的图标**（托盘），跟右下角那个**分层悬浮窗**是两回事——它不进 TSF 进程、不盖在别的窗口上。你说的「球形彩虹**全都**去掉」如果也包括通知区图标，说一声我就改（改成单色或线性图标）。
+3. **D-27 仍未决**（激光界面开着时一个 CPU 核跑满）；**D-29 / D-30 仍未决**；**D-16 / D-17 / D-20 / D-22 ~ D-26 仍未决**；**D-31 ~ D-36**（第十六轮登记的）**仍未决**；**D-37 ~ D-41**（第十七轮登记的）**仍未决**。
+
+#### 5.16.3 对 D-41 的更正（上一轮登记漏了一条）
+
+上一轮 D-41 说「`pime-tsf` 的 clippy 不是干净的（**两条**）」。这一轮用 `git stash` 把工作区退回 HEAD 再跑一遍 `cargo clippy --all-targets` 做对照，实测 HEAD 上是**三条**：
+
+* `predictor.rs:21` —— `PluginPredictor` 没有 `Default` 实现（`clippy::new_without_default`）；
+* `tip.rs:1669` —— `fn key()` 里 `let eaten = match kind { … }; eaten` 可以直接返回（`clippy::let_and_return`）；
+* `examples/ime_ui_probe.rs:261` —— `WPARAM(index as usize)` 里 `index` 本来就是 `usize`（`clippy::unnecessary_cast`）。
+
+第三条**上一轮就在**（在 `ime_ui_probe.rs` 的 `select_page()` 里；那一行本轮一个字没动），只是上一轮登记时漏了。三条都**不是本轮引入的**，**我都没有动手改**——按规矩交给你裁定。处置建议不变：三条都是纯风格改写，各改 1~3 行，不改行为。
+
+#### 5.16.4 这一轮**没有**在真机上验证的地方（不虚报）
+
+* **「记事本 / VS Code 里看到的就是没有那颗球」这条没验证过**：新 DLL 还没换上（上次安装退出码 3010＝旧 DLL 正被系统占用，要注销或重启）。
+* **实拍取证是进程内宿主**（`examples/ime_ui_probe.rs` 开窗 → 抓屏 → 断言），不是真实宿主里的输入法。
+* **面板入口少了一条**这件事在真实使用里的手感（要不要加快捷键）没人试过——就是 D-42。
+
+### 5.17 第十九轮（2026-11-05）：每个输入源一颗自己的激光口——多 Agent 协作状态看得见
+
+这一轮接的是你点的要求：**「多个agent使用的时候，给它们开颜色区分比较明显的随机rgb激光口，不同agent或者用户本人输入的时候，散落在屏幕上方左侧右侧的激光口动态发射属于它们颜色的激光，这样有助于识别它们的协作状态，同一个提供商的子代理也一样视为不同的输入者。」**
+
+#### 5.17.1 你的四条要求，逐条落地
+
+| # | 你的要求 | 落地方式 | 证据 |
+|---|---|---|---|
+| 1 | 每个 Agent 一颗**颜色区分明显**的**随机 RGB** 激光口 | 24 个色相槽（每 15°）上的**贪心最远点**：新来源挑「到已用色相最小角距离最大」的槽，并列时用 key 的哈希决定 ⇒ 看起来随机、彼此拉得开、**同一个 key 永远同一个颜色**；饱和度 0.80~0.95、明度 0.88~1.00 也由哈希决定（色相近也能靠明暗分开）；**用户那道淡蓝的色相一开始就在已用集合里**，Agent 不会挑到跟用户像的颜色 | `crates/pime-tsf/src/mouths.rs` 的色相槽与取色规则；单测「两个 Agent 颜色不同」「第三个离前两个都远」「Agent 离用户的淡蓝足够远」 |
+| 2 | **用户本人**也有自己的口 | 用户的口固定是那道**淡蓝色**光缝（`LaserTheme::MOUTH_SLIT`，你之前点名要的样子），**不给用户随机色** | 同上；实拍截图左边缘的淡蓝细缝 |
+| 3 | 口**散落在上方/左侧/右侧**，谁写字就从**自己颜色的口**发射激光 | Agent 的口按 `上 → 右 → 左` 轮转，同一条边上均匀铺开、**不许重叠**；光束用 `fill_beam_coloured` 按**发射者自己的颜色**画，命中字符那圈光晕同色 | 实拍截图：**上边缘橙色**、**右边缘品红色**、左边缘淡蓝；`probe-report.json` 记着三个口的 key、颜色、边与坐标 |
+| 4 | **同一个提供商的子代理也算不同的输入者** | 身份里有 **instance**（每个客户端进程一个，可由 `PIME_AGENT_INSTANCE` / `--instance` 覆盖），来源键是 `agent:<厂商>:<代理名>:<实例>`；MCP 的工具参数可带 `agent` 覆盖进程级代理名 ⇒ **同一进程里的两个同厂商子代理也是两个来源、两个颜色** | `pime-core/src/agent_proto.rs` 的 `SourceIdentity::key()`；单测「两个同厂商不同实例 ⇒ 键不同」 |
+
+#### 5.17.2 协议与绘制的基础（我在本轮自己改的部分）
+
+* **协议**（`pime-core/src/agent_proto.rs`）：新增 `SourceKind` 与 `SourceIdentity { kind, provider, agent, instance, label }`；`Request` 与 `Reply` 各多一个 `source` 字段。**线上格式向后兼容**：请求里没有 `source` 就是用户（老客户端不受影响）；`Reply` 回带来源，客户端能确认是回给它自己的。
+* **彩色绘制**（`pime-core/src/style.rs`）：新增 `Rgb::from_hsv`、`Rgb::hue`、`Canvas::fill_glow_coloured`、`Canvas::fill_beam_coloured`。旧的 `fill_beam` / `fill_glow` **一个字没动**（默认配色不变），所以旧证据不受影响。
+* **输入法侧**（`pime-tsf`）：`Model` 从「一个口」改成「一组口」（`MouthState` 带 key/label/颜色/位置）；`Beam` 带颜色；每个口一个辉光窗口；`fire_for(source, anchor)` 从指定来源的口射出该来源颜色的光束；**面板仍然挂在用户的口上**（快速开关是给人的）。
+* **客户端侧**（`pime-agent`）：每个进程启动时生成 16 位 hex 的实例标识（纳秒 + 进程 id + 计数器 → SHA-256；**不是安全值，只是身份**）；厂商与代理名来自 `PIME_AGENT_PROVIDER` / `PIME_AGENT_NAME` 或 `--provider` / `--agent`，MCP 的 `initialize` 可用 `clientInfo.name`。
+
+#### 5.17.3 验证到哪一步（不虚报）
+
+* **代码层**：`pime-core` **309 项**（+7）、`pime-tsf` **298 项**（+13）、`pime-agent` **60 项**（+9），全绿；`pime-agent` 的 clippy 干净，`pime-tsf` 只剩**上一轮就有**的两条（D-41）。
+* **实拍取证**：`--tsf-ui` 重跑，截图 `02_Verification/ime-ui/ime-windows.png`——**三道口、三种颜色、三条边**（左=淡蓝/用户，上=橙，右=品红）。
+* **门禁加了三条断言**（`tests/smoke/ime-ui-check.js`）：① 右下角**不得**再有球形彩虹（判据是「一圈强着色像素 + 中间一块浅色核心」这个**形状**：旧图 168/121 命中，新图 0/0 不命中）；② 口必须 ≥2、颜色互不相同、**Agent 之间的色相差 ≥45°**；③ 口必须分布在 ≥2 条边上。
+* **没在真实宿主里跑过**：新 DLL 还没换上（注销/重启后才有）。截图仍是**进程内宿主**的实拍，不是记事本里的实拍。
+
+#### 5.17.4 这一轮请你裁定的事项
+
+1. **D-44（新增）：Agent 的口在输入法停用时会被清掉。** 现在口是「跟着输入会话走」的：Agent 写一次字就亮一次口，停用输入法（或切换语言）时全清。**要不要让口在停用后仍然留着**（像托盘图标那样，直到你手动关）？我按「界面必须能收干净」的老规矩做的（第十五轮定的「切输入法/语言后不留悬浮窗」）。
+2. **D-45（新增）：口的位置是「按来源序号」定的，不是「按空闲位置」避让的。** 三个来源以内不会有重叠；来源很多时（同边超过 4 个）会开始挤。要不要改成「同边上自动避开已占的位置」？
+3. **D-42 / D-43 仍未决**（上一轮登记）：面板入口只剩悬停光口；托盘图标本身也是彩虹圆盘但不是悬浮窗。
+
+### 5.18 第二十轮（2026-11-05）：TASE v1.1 设计落地——文档归档 + 六个新 crate + 93 项统一资产目录
+
+这一轮接的是你点的另一件事：**「开子代理把这套文档整理进现有文档，缺少的文件夹补上，然后并行开发，实现里面的需求」**（附件 `IDE1_TASE_v1_1_Docs.zip`：要件定义书 / 基本设计书 / 详细设计书 / 需求追踪矩阵 / 全量合并阅读版）。
+
+#### 5.18.1 文档整理（子代理做的，逐字节核对过）
+
+| 原文件 | 落点 | 校验 |
+|---|---|---|
+| `01_Requirements.md` | `00_Documents/00_Requirements_and_Basic_Design/IDE1_TASE_Requirements_v1.1.md` | **sha256 一致**（32744 B） |
+| `02_Basic_Design.md` | `00_Documents/00_Requirements_and_Basic_Design/IDE1_TASE_Basic_Design_v1.1.md` | **sha256 一致**（33579 B） |
+| `03_Detailed_Design.md` | `00_Documents/01_Detailed_Design/IDE1_TASE_Detailed_Design_v1.1.md` | **sha256 一致**（66051 B） |
+| `04_Traceability.xlsx` | `00_Documents/03_Traceability/IDE1_TASE_Traceability_v1.1.xlsx` | **sha256 一致**（57934 B） |
+| `05_Complete_Design.md` | `00_Documents/04_Complete_Design/IDE1_TASE_Complete_Design_v1.1.md`（**新建的文件夹**） | **sha256 一致**（132798 B） |
+| `README.md`（交付说明） | `00_Documents/04_Complete_Design/IDE1_TASE_Delivery_README_v1.1.md` | 里面的文件清单改成实际落地的新文件名 |
+
+外加两份**新写**的文档：`00_Documents/README.md`（整棵文档树的索引）与 `00_Documents/04_Complete_Design/IDE1_TASE_vs_IME1.0_Mapping_v1.1.md`（**TASE 每个 crate → 本仓库落点**的映射：可复用的 4 个、要适配的 18 处点名、必须新建的 15 个 crate、M0→M4 里程碑现状、以及 **13 条已知落差 G1~G13**）。
+
+**一件必须说清楚的事**：这套设计是为**另一个仓库** IDE1.0 写的（它假定有 `ide-kernel` / `editcore` / `ide-shell-protocol`），本仓库没有这三个 crate，对应物是 `pime-core` / `pime-agent` / `pime-ipc` / `pime-tsf`。落地时**没有照单施工**，而是按映射文档逐条落到本仓库的形状上。
+
+#### 5.18.2 统一标准资产目录（93 项）
+
+* GoF **23** + 现代工程模式 **20** + 经典算法 **50** = **93** 项，每项一份 `manifest.json`（字段名逐字照设计书 §19.1）**和**一张知识卡（8 个固定小节：定位 / 典型源文件形状 / 适用条件 / 反例 / 并发风险 / 替代方案 / 测试说明 / 实现注意）。
+* `catalog.json` 是全量索引；`01_Source/scripts/validate-tase-catalog.js` 是**新增的门禁脚本**（零依赖），校验 9 类规则（条数、字段、状态、别名不得虚增资产数、替代方案必须指向真实资产、知识卡小节齐全、知识卡里的资产引用必须存在……）——**当前 0 问题**。
+* **诚实状态**：全部 93 项 `status = DOCUMENTED`、`implementations = []`。**本仓库没有任何已认证的语言实现**，写上去就是造假；注册表里有单测专门钉住这条（「知识卡 ≠ 可执行模板」）。
+* 用了 **JSON 而不是 YAML**：设计与安装器都是零第三方依赖（没有 serde、没有 yaml 解析器），JSON 两边都能直接读；**字段名与 YAML 参考完全一致**，偏离理由写在 `assets/tase-catalog/README.md` 里。
+
+#### 5.18.3 六个新 crate（合计 312 项测试，clippy 全干净，零第三方依赖）
+
+| crate | 职责 | 测试 |
+|---|---|---:|
+| `tase-contract` | 契约层：DTO、JSON Schema（plan/template/job/preview 四份）、12 个业务错误码、16 个 ID 类型 | 60 |
+| `tase-registry` | 注册表：装载 93 项资产、算内容摘要、许可与审批策略、按语言/标签/类别检索 | 59 |
+| `tase-planner` | 计划器：决策路由、上下文裁剪、计划校验、规范化 JSON 与计划摘要（**只产出计划，绝不写文件**） | 64 |
+| `tase-metrics` | 指标：Token 计量、成本、ACI 结构化断言、遥测事件 | 50 |
+| `tase-local-ipc` | 本地多 Agent 传输层：帧格式、协议协商、ACL 策略、背压（**复用 `pime-ipc` 的管道与 ACL**） | 43 |
+| `tase-ime-core` | 输入法侧纯逻辑：候选模型、上下文隐私过滤、确定性排序（**不依赖 COM**） | 36 |
+
+`tase-local-ipc` 还**真的用 `x86_64-unknown-linux-gnu` 交叉编译验证过**跨平台（不只是「结构上看起来跨平台」）。
+
+#### 5.18.4 门禁
+
+* `run-all.js` 增加 `--tase`（并进 FAST 集合）：每个 crate **用各自的构建目录**跑 `cargo test`（共用一个目录会让 `windows` crate 为了新 feature 整包重编，把本机内存吃光）。
+* claims 增加 `rust_tase_tests`（从同一份日志里读，与其它数字同一个来源）。
+
+#### 5.18.5 这一轮**没有**做的（不做假承诺）
+
+* `tase-semantic`（AST/符号索引）、`tase-executor`（Preview/Apply/Rebase/Git CAS）、`tase-local-hub` / `tase-local-store` / `tase-agent-scheduler`（常驻 Hub、公平队列、租约）、`tase-catalog`（Rust 侧目录）、`tase-catalog-mcp`（MCP 工具投影）——**都还没写**。
+* `pime-agent` **还没有** `tase.*` 的 MCP 工具；`pime-tsf` 也**还没**用上 `tase-ime-core` 的候选排序。
+* 也就是说：**M0 的契约与资产目录、M1 的注册表/计划器/指标/传输层**已经落地，**M1 的常驻 Hub 与 M2 的目录工具还没落地**。
+
+#### 5.18.6 这一轮请你裁定的事项
+
+1. **D-46（新增）：设计书 §4.1 要求版本不兼容时回 `UNSUPPORTED_VERSION`，但 §4.3 的错误码表里没有这个码。** 契约层按冻结的 12 个码实现，所以版本不兼容现在只能回 `INVALID_ARGUMENT`。加第 13 个码会改动**冻结的** `ErrorCode` 表面（后面 6 个 crate 照它写），所以我没有擅自加。
+2. **D-47（新增）：`pime-ipc` 没有「带任意前缀」的管道名构造器**（只有 `PIME-IPC-1-` 与 `PIME-IPC-1-TEST-`），所以设计书 §16.2 的 `\\.\pipe\ide1-tase-{logon-sid}` 这个名字**够不着**。要么给 `pime-ipc` 加一个 `PipeName::with_prefix(prefix, sid)`（那是别的 crate 的文件），要么接受 `PIME-IPC-1-` 前缀。
+3. **D-48（新增）：`pime-ipc` 只读 `TokenUser`，不读 `TokenLogonSid`。** 设计书 §17.2 要把**登录会话 SID**当命名空间键（一个登录会话一个 Hub），现在拿不到。`Pipe::client_session_id()` 给的是**终端服务会话**，不是 logon SID。
+4. **D-49（新增）：`pime-ipc` 的 DACL 掩码含 `FILE_CREATE_PIPE_INSTANCE`** ⇒ 同一个登录会话里的别的进程可以往活着的管道上加实例。TASE 的管道继承了这个暴露面。
+5. **D-50（新增）：新 crate 没有进根 workspace**（沿用 `pime-agent` 的独立 workspace 惯例：自己的 `Cargo.lock`、不进主 workspace）。好处是**主 workspace 的 `cargo test --workspace` 不会把它们算进去**（claims 里的 `rust_core_tests` 因此不变），坏处是门禁要单独跑一步（已经加了 `--tase`）。
+6. **D-51（新增）：`tase-semantic` 要做真正的 AST/符号索引，就得引 `syn` / `tree-sitter`。** 本项目声明 AGPL-3.0-only，设计书 §1.2 明确要求「依赖与生成物许可审查」。本轮我一律**零第三方依赖**（沿用 `pime-core` 的规矩），符号抽取仍是正则级（与 `pime-core::symbols` 同级）。要不要立项引入 AST 依赖，请你定。
+7. **D-52（新增）：契约层与设计书有三处不一致**（已如实实现、未擅自改设计书）：§2.2 的 `digest` 示例是截断的而正文要求 64 位 hex（契约层当不透明字符串，格式校验留给注册表）；§2.3 的 `params` 示例里 `authorization` 是布尔而冻结类型是字符串键值对；§2.3 说插入点「另由 manifest 或 `insert_sibling` 指定」，但冻结的 `Target` 没有插入点字段（只能走 `OperationKind::InsertSibling` + `params`）。
+8. **D-27 / D-29 / D-30 仍未决**；**D-16 / D-17 / D-20 / D-22 ~ D-26 仍未决**；**D-31 ~ D-36 仍未决**；**D-37 ~ D-45 仍未决**（D-44、D-45 是本轮新增）。

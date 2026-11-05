@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.dfs",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "深度优先搜索",
+    "en-US": "Depth-First Search"
+  },
+  "aliases": [
+    "dfs",
+    "深度优先搜索",
+    "depth first search"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "沿一条路径深入直到走不通再回溯，用于连通分量、环检测、拓扑序与回溯搜索。",
+  "applicability": {
+    "constraints": {
+      "time": "O(V + E)",
+      "space": "O(V)",
+      "recursion": "stack_or_explicit",
+      "graph": "any",
+      "applications": "component_cycle_topology_backtracking"
+    },
+    "counterexamples": [
+      "需要无权图的最短路径时——DFS 不保证最短",
+      "图极深时——递归实现会栈溢出，应改显式栈"
+    ],
+    "alternatives": [
+      "algorithm.graph.bfs",
+      "algorithm.graph.topological_sort"
+    ]
+  },
+  "complexity": {
+    "time": "O(V + E)",
+    "extra_space": "O(V)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Depth-first_search"
+    ],
+    "license": "MIT"
+  }
+}

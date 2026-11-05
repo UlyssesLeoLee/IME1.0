@@ -1,7 +1,7 @@
 //! The visual language of the product: **laser rainbow**.
 //!
 //! One design language for everything the user sees: the install wizard, the candidate window, the floating
-//! window, the settings window, the new left-hand glow with its laser beam, and the logo in the corner. This module
+//! window, the settings window and the new left-hand glow with its laser beam. This module
 //! is the single source of that language, and it lives in the core for one reason: the installer (`pime-setup`) and
 //! the text service (`pime-tsf`) are two separate crates with two separate toolchains, and both of them depend on
 //! `pime-core`. A token or a curve that is defined here is literally the same code in both programs, so the wizard
@@ -45,6 +45,55 @@ impl Rgb {
     /// The `COLORREF` value of this colour (`0x00BBGGRR`).
     pub const fn to_bgr(self) -> u32 {
         (self.b as u32) << 16 | (self.g as u32) << 8 | (self.r as u32)
+    }
+
+    /// A colour from a hue, a saturation and a value (the way a colour is picked on a wheel).
+    ///
+    /// The hue is in degrees (`0` = red, `120` = green, `240` = blue); the saturation and the value are in `0..=1`.
+    /// The channels are written in the sRGB space, the way the screen shows them.
+    pub fn from_hsv(hue: f64, saturation: f64, value: f64) -> Rgb {
+        let hue = hue.rem_euclid(360.0);
+        let saturation = saturation.clamp(0.0, 1.0);
+        let value = value.clamp(0.0, 1.0);
+        let sector = hue / 60.0;
+        let chroma = value * saturation;
+        let second = chroma * (1.0 - ((sector % 2.0) - 1.0).abs());
+        let (r, g, b) = match sector as u32 {
+            0 => (chroma, second, 0.0),
+            1 => (second, chroma, 0.0),
+            2 => (0.0, chroma, second),
+            3 => (0.0, second, chroma),
+            4 => (second, 0.0, chroma),
+            _ => (chroma, 0.0, second),
+        };
+        let offset = value - chroma;
+        Rgb {
+            r: ((r + offset) * 255.0).round() as u8,
+            g: ((g + offset) * 255.0).round() as u8,
+            b: ((b + offset) * 255.0).round() as u8,
+        }
+    }
+
+    /// The hue of this colour in degrees (`0` = red, `120` = green, `240` = blue).
+    ///
+    /// A colour without any hue (white, black, any grey) has no hue of its own: `None` is returned for it, because
+    /// "the hue of grey" is not a thing.
+    pub fn hue(&self) -> Option<f64> {
+        let max = self.r.max(self.g).max(self.b);
+        let min = self.r.min(self.g).min(self.b);
+        let delta = max as f64 - min as f64;
+        if delta <= 0.0 {
+            return None;
+        }
+        let max = max as f64;
+        let hue = if max == self.r as f64 {
+            60.0 * (((self.g as f64 - self.b as f64) / delta) % 6.0)
+        } else if max == self.g as f64 {
+            60.0 * ((self.b as f64 - self.r as f64) / delta + 2.0)
+        } else {
+            60.0 * ((self.r as f64 - self.g as f64) / delta + 4.0)
+        };
+        Some(hue.rem_euclid(360.0))
     }
 
     /// The three channels as linear light (the way a light is added, not the way a number is added).
@@ -977,6 +1026,104 @@ impl<'a> Canvas<'a> {
             }
         }
     }
+    /// A soft light in a **given colour**: a circle whose brightness falls off with the distance.
+    ///
+    /// This is the halo of a laser that belongs to one speaker: every source of light has its own colour, so the
+    /// halo around it is drawn in that colour. The core is nearly white (light always washes out at its centre) and
+    /// the tail is the colour of the light itself.
+    pub fn fill_glow_coloured(
+        &mut self,
+        centre_x: f64,
+        centre_y: f64,
+        radius: f64,
+        strength: f64,
+        colour: Rgb,
+    ) {
+        let left = (centre_x - radius).floor() as i32;
+        let right = (centre_x + radius).ceil() as i32;
+        let top = (centre_y - radius).floor() as i32;
+        let bottom = (centre_y + radius).ceil() as i32;
+        for y in top.max(0)..bottom.min(self.height) {
+            for x in left.max(0)..right.min(self.width) {
+                let dx = x as f64 + 0.5 - centre_x;
+                let dy = y as f64 + 0.5 - centre_y;
+                let distance = (dx * dx + dy * dy).sqrt();
+                let profile = glow_profile(distance, radius);
+                if profile <= 0.0 {
+                    continue;
+                }
+                // the core is nearly white, the tail is the colour of the light
+                let t = (distance / radius).clamp(0.0, 1.0);
+                let shade = mix(colour, LaserTheme::GLOW_CORE, t);
+                self.blend(x, y, shade, profile * strength);
+            }
+        }
+    }
+
+    /// A laser beam from `(ax, ay)` to `(bx, by)` in a **given colour**.
+    ///
+    /// Every source of light has its own colour, so the beam that a source fires is drawn in the colour of that
+    /// source: the user sees at once which agent wrote the character. The geometry is the one of [`Canvas::fill_beam`]
+    /// (light in the air, not a rod of glass): a thin core and a soft halo that fades along the way.
+    ///
+    /// `progress` is how far the beam has travelled (0 = at the mouth, 1 = at the character) and `strength` how
+    /// bright it is overall.
+    pub fn fill_beam_coloured(
+        &mut self,
+        ax: f64,
+        ay: f64,
+        bx: f64,
+        by: f64,
+        progress: f64,
+        strength: f64,
+        colour: Rgb,
+    ) {
+        let progress = progress.clamp(0.0, 1.0);
+        let length = ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt();
+        if length <= 0.5 {
+            return;
+        }
+        let halo = 4.5;
+        let core = 0.9;
+        let left = (ax.min(bx) - halo - 1.0).floor() as i32;
+        let right = (ax.max(bx) + halo + 1.0).ceil() as i32;
+        let top = (ay.min(by) - halo - 1.0).floor() as i32;
+        let bottom = (ay.max(by) + halo + 1.0).ceil() as i32;
+        for y in top.max(0)..bottom.min(self.height) {
+            for x in left.max(0)..right.min(self.width) {
+                let px = x as f64 + 0.5;
+                let py = y as f64 + 0.5;
+                let distance = distance_to_segment(px, py, ax, ay, bx, by);
+                // how far along the beam this pixel is (0 at the mouth, 1 at the character)
+                let along = (((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / (length * length))
+                    .clamp(0.0, 1.0);
+                // the head of the beam only has reached `progress`
+                if along > progress {
+                    continue;
+                }
+                let profile = beam_profile(along);
+                let halo_cover = (halo - distance).clamp(0.0, 1.0);
+                if halo_cover <= 0.0 {
+                    continue;
+                }
+                // the halo: the colour of the speaker, brightening a little towards the character
+                let halo_alpha = halo_cover * halo_cover * profile * strength * 0.30;
+                let halo_colour = mix(colour, LaserTheme::BEAM_CORE, along * 0.45);
+                self.blend(x, y, halo_colour, halo_alpha);
+                // the core: thin, bright and still translucent
+                let core_cover = (core - distance).clamp(0.0, 1.0);
+                if core_cover > 0.0 {
+                    let core_colour = mix(colour, LaserTheme::BEAM_CORE, 0.72);
+                    self.blend(
+                        x,
+                        y,
+                        core_colour,
+                        core_cover * core_cover * profile * strength * 0.40,
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -990,6 +1137,67 @@ mod tests {
         assert!((back.r as i32 - colour.r as i32).abs() <= 1);
         assert!((back.g as i32 - colour.g as i32).abs() <= 1);
         assert!((back.b as i32 - colour.b as i32).abs() <= 1);
+    }
+
+    /// The colour of a source of light is picked on the wheel: the same hue always gives the same colour, and the
+    /// hue of a colour is the one it was made with.
+    #[test]
+    fn a_colour_made_of_a_hue_keeps_that_hue() {
+        for hue in [0.0, 45.0, 120.0, 200.0, 240.0, 300.0] {
+            let colour = Rgb::from_hsv(hue, 0.9, 1.0);
+            let back = colour.hue().expect("a saturated colour has a hue");
+            assert!(
+                (back - hue).abs() < 2.0 || (hue - back).abs() > 358.0,
+                "the hue of {hue} came back as {back}"
+            );
+        }
+    }
+
+    /// Grey has no hue of its own: "the hue of grey" is not a thing.
+    #[test]
+    fn a_grey_colour_has_no_hue() {
+        assert_eq!(Rgb::new(120, 120, 120).hue(), None);
+        assert_eq!(Rgb::new(0, 0, 0).hue(), None);
+    }
+
+    /// A beam that belongs to a source of light is drawn in the colour of that source: this is how the user sees
+    /// which agent wrote the character.
+    #[test]
+    fn a_coloured_beam_is_drawn_in_its_own_colour() {
+        let colour = Rgb::new(255, 40, 40);
+        let mut pixels = vec![0u8; (60 * 60 * 4) as usize];
+        {
+            let mut canvas = Canvas::new(60, 60, &mut pixels).expect("the picture fits");
+            canvas.fill_beam_coloured(10.0, 30.0, 50.0, 30.0, 1.0, 1.0, colour);
+        }
+        // the middle of the beam is lit, and it is red rather than blue
+        let middle = (30 * 60 + 30) as usize * 4;
+        assert!(pixels[middle + 3] > 20, "the beam must be lit: {}", pixels[middle + 3]);
+        assert!(
+            pixels[middle] > pixels[middle + 2],
+            "the beam must be in its own colour: r={} b={}",
+            pixels[middle],
+            pixels[middle + 2]
+        );
+    }
+
+    /// The halo of a source of light is drawn in the colour of that source.
+    #[test]
+    fn a_coloured_glow_is_drawn_in_its_own_colour() {
+        let colour = Rgb::new(40, 255, 40);
+        let mut pixels = vec![0u8; (60 * 60 * 4) as usize];
+        {
+            let mut canvas = Canvas::new(60, 60, &mut pixels).expect("the picture fits");
+            canvas.fill_glow_coloured(30.0, 30.0, 20.0, 1.0, colour);
+        }
+        let middle = (30 * 60 + 30) as usize * 4;
+        assert!(pixels[middle + 3] > 20, "the halo must be lit: {}", pixels[middle + 3]);
+        assert!(
+            pixels[middle + 1] > pixels[middle],
+            "the halo must be in its own colour: g={} r={}",
+            pixels[middle + 1],
+            pixels[middle]
+        );
     }
 
     #[test]

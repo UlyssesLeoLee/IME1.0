@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.mediator",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "中介者",
+    "en-US": "Mediator"
+  },
+  "aliases": [
+    "Mediator",
+    "中介者模式",
+    "mediator pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "用一个中介对象封装一组对象之间错综复杂的交互，使它们不再互相直接引用。",
+  "applicability": {
+    "constraints": {
+      "interaction_graph": "dense",
+      "decoupling": "colleagues_do_not_know_each_other",
+      "coordination_logic": "centralized",
+      "colleagues": "reusable_independent"
+    },
+    "counterexamples": [
+      "交互很简单（两两直连即可）时，中介者只是多余的一跳",
+      "交互规则本身就是要复用的算法时，用策略更合适"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.facade",
+      "pattern.gof.behavioral.observer"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Mediator_pattern"
+    ],
+    "license": "MIT"
+  }
+}

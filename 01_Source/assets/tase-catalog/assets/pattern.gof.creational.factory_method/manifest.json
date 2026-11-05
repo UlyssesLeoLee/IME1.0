@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.creational.factory_method",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "工厂方法",
+    "en-US": "Factory Method"
+  },
+  "aliases": [
+    "FactoryMethod",
+    "工厂方法模式",
+    "factory method"
+  ],
+  "category": "creational",
+  "status": "DOCUMENTED",
+  "intent": "把\"创建某个对象\"这一步封装成可被覆写的方法，让子类或实现决定具体类型。",
+  "applicability": {
+    "constraints": {
+      "creation_point": "single_type_in_single_place",
+      "extension": "subclass_or_impl_override",
+      "product_type": "one_product",
+      "caller_knowledge": "abstract_only"
+    },
+    "counterexamples": [
+      "创建逻辑只有一行且不会扩展时，直接 `Type::new()` 更好",
+      "需要在一个地方创建一族不同类型的产品时，单产品工厂方法不够用"
+    ],
+    "alternatives": [
+      "pattern.gof.creational.abstract_factory",
+      "pattern.gof.structural.facade"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Factory_method_pattern"
+    ],
+    "license": "MIT"
+  }
+}

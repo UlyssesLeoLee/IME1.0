@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.integration.publish_subscribe",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "发布–订阅",
+    "en-US": "Publish–Subscribe"
+  },
+  "aliases": [
+    "PublishSubscribe",
+    "发布订阅",
+    "pub/sub",
+    "publish subscribe"
+  ],
+  "category": "integration",
+  "status": "DOCUMENTED",
+  "intent": "让发布者与订阅者通过中介（broker）解耦，发布者不知道订阅者是谁、订阅者可以晚些时候再消费。",
+  "applicability": {
+    "constraints": {
+      "decoupling": "publisher_does_not_know_subscribers",
+      "delivery": "at_least_once_typical",
+      "durability": "broker_dependent",
+      "ordering": "per_partition_or_key"
+    },
+    "counterexamples": [
+      "发布者与订阅者在同一进程内、调用量很小时——直接函数调用更简单",
+      "需要强一致与同步返回时——消息中间件的最终一致语义不满足"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.observer",
+      "pattern.integration.transactional_outbox"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern"
+    ],
+    "license": "MIT"
+  }
+}

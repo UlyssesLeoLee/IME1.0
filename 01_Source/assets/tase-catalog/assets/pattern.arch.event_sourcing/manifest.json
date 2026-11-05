@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.arch.event_sourcing",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "事件溯源",
+    "en-US": "Event Sourcing"
+  },
+  "aliases": [
+    "EventSourcing",
+    "事件溯源",
+    "event sourcing"
+  ],
+  "category": "arch",
+  "status": "DOCUMENTED",
+  "intent": "以不可变的事件序列作为系统状态的唯一真相来源，当前状态由事件回放推导得出。",
+  "applicability": {
+    "constraints": {
+      "state_source": "append_only_event_log",
+      "immutability": "events_never_updated",
+      "state_derivation": "replay_or_projection",
+      "schema_evolution": "must_be_planned"
+    },
+    "counterexamples": [
+      "只有当前状态重要、不需要历史与回放时——普通数据库更简单",
+      "事件需要频繁修改或删除时——不可变假设直接被破坏"
+    ],
+    "alternatives": [
+      "pattern.arch.cqrs",
+      "pattern.integration.publish_subscribe"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Event_sourcing"
+    ],
+    "license": "MIT"
+  }
+}

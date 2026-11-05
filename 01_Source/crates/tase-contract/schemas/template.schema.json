@@ -1,0 +1,448 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tase.local/schemas/template.schema.json",
+  "title": "TASE template",
+  "description": "A template of the registry. Three shapes share this file: the answer of the search (`tase.template.search`, design §2.2), the manifest of an asset of the catalog (design §19.1) and the manifest of a template package (design §3.1).",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/template_search_result"
+    },
+    {
+      "$ref": "#/$defs/asset_manifest"
+    },
+    {
+      "$ref": "#/$defs/template_package_manifest"
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "description": "An identifier of the contract: not empty, at most 128 characters, `[A-Za-z0-9._:-]` only.",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "template_search_result": {
+      "type": "object",
+      "description": "The answer of a template search (design §2.2).",
+      "additionalProperties": false,
+      "required": ["templates"],
+      "properties": {
+        "templates": {
+          "type": "array",
+          "description": "The templates of this page.",
+          "items": {
+            "$ref": "#/$defs/template_summary"
+          }
+        },
+        "next_cursor": {
+          "type": ["string", "null"],
+          "description": "The cursor of the next page, when there is one."
+        }
+      }
+    },
+    "template_summary": {
+      "type": "object",
+      "description": "The summary of a template (design §2.2). The digest is the 64 hex digits of the SHA-256 of the package.",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "digest",
+        "language",
+        "tags",
+        "params_schema_ref",
+        "approval_status",
+        "license"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of the template, for example `rust.handler.create`."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the template."
+        },
+        "digest": {
+          "type": "string",
+          "description": "The digest of the package of the template."
+        },
+        "language": {
+          "type": "string",
+          "description": "The language of the template."
+        },
+        "tags": {
+          "type": "array",
+          "description": "The tags of the template.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "params_schema_ref": {
+          "type": "string",
+          "description": "Where the schema of the parameters of the template lives."
+        },
+        "approval_status": {
+          "type": "string",
+          "description": "The state of the approval of the template: `ACTIVE`, ..."
+        },
+        "license": {
+          "type": "string",
+          "description": "The license of the template."
+        }
+      }
+    },
+    "asset_manifest": {
+      "type": "object",
+      "description": "The manifest of an asset of the catalog (design §19.1).",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "asset_id",
+        "version",
+        "kind",
+        "name",
+        "status",
+        "implementations",
+        "provenance"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "description": "The version of the schema of the manifest: `tase.asset.v1`."
+        },
+        "asset_id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of the asset, for example `algorithm.graph.dijkstra`."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the asset."
+        },
+        "kind": {
+          "type": "string",
+          "description": "The kind of the asset: `algorithm`, `pattern`, ..."
+        },
+        "name": {
+          "$ref": "#/$defs/asset_name"
+        },
+        "aliases": {
+          "type": "array",
+          "description": "The other names of the asset.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the asset."
+        },
+        "status": {
+          "type": "string",
+          "description": "The state of the approval of the asset: `APPROVED_CARD`, ..."
+        },
+        "intent": {
+          "type": "string",
+          "description": "What the asset is for."
+        },
+        "applicability": {
+          "$ref": "#/$defs/asset_applicability"
+        },
+        "complexity": {
+          "$ref": "#/$defs/asset_complexity"
+        },
+        "implementations": {
+          "type": "array",
+          "description": "The implementations of the asset.",
+          "items": {
+            "$ref": "#/$defs/asset_implementation"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/asset_provenance"
+        }
+      }
+    },
+    "asset_name": {
+      "type": "object",
+      "description": "The name of an asset in the two languages of the catalog.",
+      "additionalProperties": false,
+      "required": ["zh-CN", "en-US"],
+      "properties": {
+        "zh-CN": {
+          "type": "string",
+          "description": "The name in Chinese."
+        },
+        "en-US": {
+          "type": "string",
+          "description": "The name in English."
+        }
+      }
+    },
+    "asset_applicability": {
+      "type": "object",
+      "description": "When an asset applies.",
+      "additionalProperties": false,
+      "required": ["constraints", "counterexamples", "alternatives"],
+      "properties": {
+        "constraints": {
+          "type": "object",
+          "description": "The conditions the asset needs. The order of the constraints is part of the digest of the manifest.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "counterexamples": {
+          "type": "array",
+          "description": "The cases the asset does not solve.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alternatives": {
+          "type": "array",
+          "description": "The assets that solve those cases instead.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "asset_complexity": {
+      "type": "object",
+      "description": "What an asset costs.",
+      "additionalProperties": false,
+      "required": ["time", "extra_space"],
+      "properties": {
+        "time": {
+          "type": "string",
+          "description": "The time it takes, for example `O((V + E) log V)`."
+        },
+        "extra_space": {
+          "type": "string",
+          "description": "The memory it needs on top of the input."
+        }
+      }
+    },
+    "asset_implementation": {
+      "type": "object",
+      "description": "One implementation of an asset.",
+      "additionalProperties": false,
+      "required": [
+        "implementation_id",
+        "language",
+        "version",
+        "status",
+        "engine",
+        "path",
+        "sha256",
+        "parameters_schema",
+        "tests_manifest"
+      ],
+      "properties": {
+        "implementation_id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of the implementation."
+        },
+        "language": {
+          "type": "string",
+          "description": "The language of the implementation."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the implementation."
+        },
+        "status": {
+          "type": "string",
+          "description": "The state of the approval of the implementation: `APPROVED`, ..."
+        },
+        "engine": {
+          "type": "string",
+          "description": "The engine that renders the implementation."
+        },
+        "path": {
+          "type": "string",
+          "description": "Where the implementation lives."
+        },
+        "sha256": {
+          "type": "string",
+          "description": "The digest of the package of the implementation. A placeholder digest is never published."
+        },
+        "parameters_schema": {
+          "type": "string",
+          "description": "Where the schema of the parameters of the implementation lives."
+        },
+        "tests_manifest": {
+          "type": "string",
+          "description": "Where the manifest of the tests of the implementation lives."
+        }
+      }
+    },
+    "asset_provenance": {
+      "type": "object",
+      "description": "Where an asset comes from.",
+      "additionalProperties": false,
+      "required": ["references", "license"],
+      "properties": {
+        "references": {
+          "type": "array",
+          "description": "The references of the asset.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "license": {
+          "type": "string",
+          "description": "The license of the asset. The license of a third-party source is checked on its own."
+        }
+      }
+    },
+    "template_package_manifest": {
+      "type": "object",
+      "description": "The manifest of a template package (design §3.1). The digest of the package is kept in the registry, not in the manifest, so that the digest does not hash itself.",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "id",
+        "version",
+        "language",
+        "engine",
+        "engine_version",
+        "license",
+        "provenance",
+        "status",
+        "permissions",
+        "parameters_schema",
+        "outputs",
+        "validation",
+        "fixtures"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "description": "The version of the schema of the manifest."
+        },
+        "id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of the template."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the template."
+        },
+        "language": {
+          "type": "string",
+          "description": "The language of the template."
+        },
+        "engine": {
+          "type": "string",
+          "description": "The engine that renders the template."
+        },
+        "engine_version": {
+          "type": "string",
+          "description": "The version of the engine."
+        },
+        "license": {
+          "type": "string",
+          "description": "The license of the template."
+        },
+        "provenance": {
+          "type": "string",
+          "description": "Where the template comes from: `internal-reviewed`, ..."
+        },
+        "status": {
+          "type": "string",
+          "description": "The state of the template: `ACTIVE`, ..."
+        },
+        "permissions": {
+          "$ref": "#/$defs/template_permission"
+        },
+        "parameters_schema": {
+          "type": "string",
+          "description": "Where the schema of the parameters of the template lives. The schema itself is a JSON Schema (draft 2020-12)."
+        },
+        "outputs": {
+          "type": "array",
+          "description": "The files the template produces.",
+          "items": {
+            "$ref": "#/$defs/template_output"
+          }
+        },
+        "validation": {
+          "type": "array",
+          "description": "The checks that run on the result of the template.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fixtures": {
+          "type": "array",
+          "description": "The golden fixtures of the template.",
+          "items": {
+            "$ref": "#/$defs/template_fixture"
+          }
+        }
+      }
+    },
+    "template_permission": {
+      "type": "object",
+      "description": "What a template package is allowed to do. The default of the sandbox is `deny`.",
+      "additionalProperties": false,
+      "required": ["filesystem", "network", "subprocess"],
+      "properties": {
+        "filesystem": {
+          "type": "array",
+          "description": "The file system scopes the template may write in.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "network": {
+          "type": "string",
+          "description": "Whether the template may reach the network: `deny`, `allowlist`."
+        },
+        "subprocess": {
+          "type": "string",
+          "description": "Whether the template may start a process: `deny`, `allowlist`."
+        }
+      }
+    },
+    "template_output": {
+      "type": "object",
+      "description": "One file a template produces.",
+      "additionalProperties": false,
+      "required": ["path_pattern", "content", "update_mode"],
+      "properties": {
+        "path_pattern": {
+          "type": "string",
+          "description": "The pattern of the path of the file, for example `src/api/{entity_snake}.rs`. The placeholders are derived by a trusted converter, never by the caller."
+        },
+        "content": {
+          "type": "string",
+          "description": "The fragment that fills the file."
+        },
+        "update_mode": {
+          "type": "string",
+          "description": "How the file is merged into the tree: `semantic_insert`, ..."
+        }
+      }
+    },
+    "template_fixture": {
+      "type": "object",
+      "description": "One golden fixture of a template.",
+      "additionalProperties": false,
+      "required": ["input", "expected"],
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Where the input of the fixture is."
+        },
+        "expected": {
+          "type": "string",
+          "description": "Where the expected output of the fixture is."
+        }
+      }
+    }
+  }
+}

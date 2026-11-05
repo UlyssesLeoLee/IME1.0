@@ -36,6 +36,7 @@ pub mod laser_candidates;
 pub mod laser_ui;
 pub mod layout;
 pub mod menus;
+pub mod mouths;
 pub mod paint;
 pub mod predictor;
 pub mod popup;

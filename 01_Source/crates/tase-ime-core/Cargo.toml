@@ -1,0 +1,34 @@
+# TASE-IME-CORE/1: the pure logic of the human side of TASE (candidate model, deterministic ranking, context
+# privacy filtering).
+# Deliberately NOT a member of the main workspace and deliberately free of any platform dependency: the crate must
+# compile on every target (DD-IME section 20.2 puts the COM/TSF adapter in a separate DLL crate), so it may not
+# depend on the `windows` crate and may not use `unsafe`. It has its own Cargo.lock and its own workspace.
+[package]
+name = "tase-ime-core"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE input method core: cross-platform candidate ranking and context privacy filtering (no COM, no Windows API)"
+
+# The unit tests live inside the modules of src/ (the crate is pure logic and needs no host); there is no tests/
+# directory, so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_ime_core"
+path = "src/lib.rs"
+
+[dependencies]
+# The strict JSON parser and the error codes come from the core; no other dependency is allowed.
+pime-core = { path = "../pime-core" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the host of the input method down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

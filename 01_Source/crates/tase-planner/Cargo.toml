@@ -1,0 +1,37 @@
+# TASE-PLANNER: the planner of TASE - the decision routing, the trimming of the context, the validation of a plan
+# and the canonical JSON of a plan with its SHA-256 digest.
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that the executor,
+# the worker and the catalog MCP can build it on their own.
+#
+# The planner NEVER writes a file: it only produces a plan and its digest (detailed design §2.3: "Planner 不执行文件写入").
+[package]
+name = "tase-planner"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE planner: the decision routing, the context trimming, the plan validation and the plan digest"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_planner"
+path = "src/lib.rs"
+
+[dependencies]
+# The strict JSON parser/serializer and the SHA-256 come from the core; the DTOs come from the contract layer.
+# No other dependency is allowed.
+pime-core = { path = "../pime-core" }
+tase-contract = { path = "../tase-contract" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take a worker down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

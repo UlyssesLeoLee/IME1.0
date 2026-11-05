@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.datastructure.lru_cache",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "LRU 缓存",
+    "en-US": "LRU Cache"
+  },
+  "aliases": [
+    "lru_cache",
+    "LRU",
+    "最近最少使用缓存",
+    "least recently used"
+  ],
+  "category": "datastructure",
+  "status": "DOCUMENTED",
+  "intent": "用哈希表加双向链表在 O(1) 内维护\"最近最少使用\"的淘汰顺序。",
+  "applicability": {
+    "constraints": {
+      "time": "O(1) get/put",
+      "space": "O(capacity)",
+      "eviction": "least_recently_used",
+      "capacity": "fixed_or_dynamic",
+      "ttl": "optional"
+    },
+    "counterexamples": [
+      "命中率无关紧要时——直接不缓存或用简单 FIFO",
+      "需要按\"最常用\"淘汰时——应换 LFU 或 ARC"
+    ],
+    "alternatives": [
+      "algorithm.datastructure.hash_table",
+      "pattern.integration.cache_aside"
+    ]
+  },
+  "complexity": {
+    "time": "O(1) 每次读写",
+    "extra_space": "O(容量)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Cache_replacement_policies",
+      "https://en.wikipedia.org/wiki/Page_replacement_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.chain_of_responsibility",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "责任链",
+    "en-US": "Chain of Responsibility"
+  },
+  "aliases": [
+    "ChainOfResponsibility",
+    "责任链模式",
+    "chain of responsibility"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "把一个请求沿一条处理者链传递，交给第一个（或若干个）能处理它的处理者。",
+  "applicability": {
+    "constraints": {
+      "handlers": "ordered_chain",
+      "routing": "first_matching_or_all_matching",
+      "coupling": "handlers_depend_on_abstract_next",
+      "chain_shape": "fixed_at_construction"
+    },
+    "counterexamples": [
+      "处理逻辑只有一两种且固定时，直接 `if`/`match` 分支更清晰",
+      "处理顺序会频繁变化时，静态链路需要频繁重建"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.interpreter",
+      "pattern.gof.structural.adapter"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Chain_of_responsibility_pattern"
+    ],
+    "license": "MIT"
+  }
+}

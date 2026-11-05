@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.structural.proxy",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "代理",
+    "en-US": "Proxy"
+  },
+  "aliases": [
+    "Proxy",
+    "代理模式",
+    "proxy pattern"
+  ],
+  "category": "structural",
+  "status": "DOCUMENTED",
+  "intent": "用一个与目标同接口的替身对象控制对真实对象的访问，实现惰性加载、访问控制、远程调用或缓存。",
+  "applicability": {
+    "constraints": {
+      "interface_equivalence": "true",
+      "target_lifetime": "may_be_remote_or_absent",
+      "access_control": "optional",
+      "lazy_loading": "optional",
+      "remote_call": "optional"
+    },
+    "counterexamples": [
+      "目标对象就在本地且创建便宜——代理只是多一层转发",
+      "代理开始承载业务逻辑时，它不再是代理而是服务层"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.decorator",
+      "pattern.gof.structural.adapter"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Proxy_pattern"
+    ],
+    "license": "MIT"
+  }
+}

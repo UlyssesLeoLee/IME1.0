@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.creational.singleton",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "单例",
+    "en-US": "Singleton"
+  },
+  "aliases": [
+    "Singleton",
+    "单例模式",
+    "单例"
+  ],
+  "category": "creational",
+  "status": "DOCUMENTED",
+  "intent": "保证一个类型在整个进程内只有一个实例，并提供全局访问点。",
+  "applicability": {
+    "constraints": {
+      "instance_count": "exactly_one_per_process",
+      "access": "global_entry_point",
+      "initialization": "thread_safe_lazy_or_eager",
+      "state": "mutable_global_requires_locks"
+    },
+    "counterexamples": [
+      "在现代 Rust/依赖注入体系里，全局单例让测试无法隔离，优先用显式依赖传递",
+      "实例的创建代价并不高且不需要共享时——每次新建更简单",
+      "需要多个进程/多租户各自一份状态时——进程级单例是错误的粒度"
+    ],
+    "alternatives": [
+      "pattern.arch.dependency_injection",
+      "pattern.gof.structural.proxy"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Singleton_pattern"
+    ],
+    "license": "MIT"
+  }
+}

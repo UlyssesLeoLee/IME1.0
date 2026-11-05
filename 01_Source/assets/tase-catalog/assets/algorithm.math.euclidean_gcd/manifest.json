@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.math.euclidean_gcd",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "欧几里得求最大公约数",
+    "en-US": "Euclidean GCD"
+  },
+  "aliases": [
+    "euclidean_gcd",
+    "gcd",
+    "最大公约数",
+    "辗转相除法"
+  ],
+  "category": "math",
+  "status": "DOCUMENTED",
+  "intent": "用取余的恒等式不断缩小规模，在 O(log min(a,b)) 步内求出两个整数的最大公约数。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log min(a, b))",
+      "space": "O(1)",
+      "input": "nonnegative_integers",
+      "operation": "gcd",
+      "overflow": "remainder_stays_bounded"
+    },
+    "counterexamples": [
+      "需要贝祖系数或模逆时——应使用扩展欧几里得算法",
+      "输入是浮点数时——本算法不适用"
+    ],
+    "alternatives": [
+      "algorithm.math.extended_euclidean",
+      "algorithm.math.modular_exponentiation"
+    ]
+  },
+  "complexity": {
+    "time": "O(log min(a, b))",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Euclidean_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

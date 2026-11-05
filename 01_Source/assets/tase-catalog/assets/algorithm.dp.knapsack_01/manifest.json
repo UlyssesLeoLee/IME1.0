@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.dp.knapsack_01",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "0-1 背包",
+    "en-US": "0/1 Knapsack"
+  },
+  "aliases": [
+    "knapsack_01",
+    "0-1背包",
+    "背包问题",
+    "knapsack"
+  ],
+  "category": "dp",
+  "status": "DOCUMENTED",
+  "intent": "在容量约束下选择若干物品，使总价值最大，每件物品最多选一次。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n * W)",
+      "space": "O(W)",
+      "items": "each_used_at_most_once",
+      "capacity": "integer",
+      "weights": "nonnegative"
+    },
+    "counterexamples": [
+      "每件物品可无限次使用时——应改用完全背包",
+      "容量不是整数或特别大时——伪多项式复杂度不可接受"
+    ],
+    "alternatives": [
+      "algorithm.dp.coin_change",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(n * W)",
+    "extra_space": "O(W)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Knapsack_problem"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.state",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "状态",
+    "en-US": "State"
+  },
+  "aliases": [
+    "State",
+    "状态模式",
+    "state pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "把对象的内部状态建模为独立对象，让状态转换的行为分散到各自状态实现中。",
+  "applicability": {
+    "constraints": {
+      "state_count": "multiple_and_distinguishable",
+      "transition_table": "explicit",
+      "invalid_transitions": "must_be_representable",
+      "object_identity": "stable_across_transitions"
+    },
+    "counterexamples": [
+      "只有两三个状态且转换简单时，一个 `enum` + `match` 更短更安全",
+      "状态数据没有差异、只是名称不同——用布尔标志即可"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.strategy",
+      "pattern.gof.behavioral.command"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/State_pattern"
+    ],
+    "license": "MIT"
+  }
+}

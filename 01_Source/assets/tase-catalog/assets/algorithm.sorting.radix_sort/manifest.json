@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.sorting.radix_sort",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "基数排序",
+    "en-US": "Radix Sort"
+  },
+  "aliases": [
+    "radix_sort",
+    "基数排序",
+    "LSD",
+    "MSD"
+  ],
+  "category": "sorting",
+  "status": "DOCUMENTED",
+  "intent": "按数字的每一位稳定地分桶，从低位到高位处理，得到 O(d(n + b)) 的线性时间排序。",
+  "applicability": {
+    "constraints": {
+      "time": "O(d * (n + b))",
+      "stability": "stable",
+      "space": "O(n + b)",
+      "key_type": "fixed_width_integer",
+      "digit_base": "b"
+    },
+    "counterexamples": [
+      "键是浮点数、变长字符串或对象时——需要额外映射且可能得不偿失",
+      "数据量小且比较成本低时——比较排序通常更快"
+    ],
+    "alternatives": [
+      "algorithm.sorting.counting_sort",
+      "algorithm.sorting.merge_sort"
+    ]
+  },
+  "complexity": {
+    "time": "O(d(n + b))",
+    "extra_space": "O(n + b)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Radix_sort"
+    ],
+    "license": "MIT"
+  }
+}

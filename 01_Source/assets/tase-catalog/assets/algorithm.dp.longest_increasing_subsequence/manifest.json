@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.dp.longest_increasing_subsequence",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "最长上升子序列",
+    "en-US": "Longest Increasing Subsequence"
+  },
+  "aliases": [
+    "longest_increasing_subsequence",
+    "LIS",
+    "最长上升子序列",
+    "最长递增子序列"
+  ],
+  "category": "dp",
+  "status": "DOCUMENTED",
+  "intent": "求序列中最长的严格递增（或非递减）子序列的长度。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n log n)",
+      "space": "O(n)",
+      "comparison": "strictly_increasing_by_default",
+      "subsequence": "not_necessarily_contiguous"
+    },
+    "counterexamples": [
+      "要求子数组必须连续时——应改用最长递增子数组的线性扫描解法",
+      "要求严格下降时——对输入取反即可，但要注意口径"
+    ],
+    "alternatives": [
+      "algorithm.dp.longest_common_subsequence",
+      "algorithm.datastructure.monotonic_stack"
+    ]
+  },
+  "complexity": {
+    "time": "O(n log n)",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Longest_increasing_subsequence"
+    ],
+    "license": "MIT"
+  }
+}

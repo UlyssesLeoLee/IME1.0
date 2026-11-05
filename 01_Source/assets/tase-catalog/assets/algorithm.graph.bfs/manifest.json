@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.bfs",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "广度优先搜索",
+    "en-US": "Breadth-First Search"
+  },
+  "aliases": [
+    "bfs",
+    "广度优先搜索",
+    "breadth first search"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "按层扩展无向带权图上的最短路径（无权情形），并给出最短路径树。",
+  "applicability": {
+    "constraints": {
+      "time": "O(V + E)",
+      "space": "O(V)",
+      "edge_weight": "unit_or_none",
+      "graph": "adjacency_list",
+      "shortest_path": "unweighted_only"
+    },
+    "counterexamples": [
+      "边有权重时——BFS 给出的不是最短路径，应改用 Dijkstra",
+      "图规模极大且只需连通性时——并查集更快"
+    ],
+    "alternatives": [
+      "algorithm.graph.dfs",
+      "algorithm.graph.dijkstra",
+      "algorithm.graph.union_find"
+    ]
+  },
+  "complexity": {
+    "time": "O(V + E)",
+    "extra_space": "O(V)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Breadth-first_search"
+    ],
+    "license": "MIT"
+  }
+}

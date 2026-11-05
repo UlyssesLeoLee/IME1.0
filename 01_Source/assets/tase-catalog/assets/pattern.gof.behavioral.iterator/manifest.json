@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.iterator",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "迭代器",
+    "en-US": "Iterator"
+  },
+  "aliases": [
+    "Iterator",
+    "迭代器模式",
+    "iterator pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "为聚合对象提供统一的顺序访问方式，隐藏内部表示并支持惰性求值。",
+  "applicability": {
+    "constraints": {
+      "traversal": "sequential",
+      "internal_representation": "hidden",
+      "laziness": "optional",
+      "mutability": "borrow_or_owned"
+    },
+    "counterexamples": [
+      "只需按下标随机访问时，索引接口比迭代器更直接",
+      "需要多次遍历且集合很小——直接复制成 `Vec` 更简单"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.composite",
+      "pattern.gof.behavioral.visitor"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Iterator_pattern"
+    ],
+    "license": "MIT"
+  }
+}

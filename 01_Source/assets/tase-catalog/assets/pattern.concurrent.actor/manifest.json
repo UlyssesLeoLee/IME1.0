@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.concurrent.actor",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "Actor",
+    "en-US": "Actor"
+  },
+  "aliases": [
+    "Actor",
+    "Actor模型",
+    "actor model"
+  ],
+  "category": "concurrent",
+  "status": "DOCUMENTED",
+  "intent": "把并发状态封装在独立执行的 actor 内部，actor 之间只通过消息通信，不共享可变状态。",
+  "applicability": {
+    "constraints": {
+      "state_encapsulation": "single_owner",
+      "communication": "messages_only",
+      "concurrency": "one_message_at_a_time_per_actor",
+      "blocking": "avoid_in_message_handler"
+    },
+    "counterexamples": [
+      "计算密集、无共享状态的场景——直接用线程池并行更简单",
+      "需要细粒度共享读写同一份数据时——actor 会带来消息往返开销"
+    ],
+    "alternatives": [
+      "pattern.concurrent.pipeline",
+      "pattern.gof.behavioral.mediator"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Actor_model"
+    ],
+    "license": "MIT"
+  }
+}

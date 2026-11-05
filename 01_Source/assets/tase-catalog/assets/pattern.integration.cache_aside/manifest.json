@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.integration.cache_aside",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "旁路缓存",
+    "en-US": "Cache-Aside"
+  },
+  "aliases": [
+    "CacheAside",
+    "旁路缓存",
+    "cache aside",
+    "缓存旁路"
+  ],
+  "category": "integration",
+  "status": "DOCUMENTED",
+  "intent": "由应用自己负责读写缓存：先查缓存，未命中则读源数据并回填缓存。",
+  "applicability": {
+    "constraints": {
+      "read_path": "cache_then_source",
+      "write_path": "source_then_invalidate",
+      "consistency": "eventual",
+      "ttl": "bounded_or_versioned"
+    },
+    "counterexamples": [
+      "数据源本身就是极快的内存读取且数据量小——加缓存只会增加复杂度与不一致",
+      "需要强一致的读（如余额、库存扣减结果）——缓存不适用"
+    ],
+    "alternatives": [
+      "pattern.integration.read_copy_update",
+      "pattern.arch.cqrs"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Cache_(computing)",
+      "https://en.wikipedia.org/wiki/Cache_replacement_policies"
+    ],
+    "license": "MIT"
+  }
+}

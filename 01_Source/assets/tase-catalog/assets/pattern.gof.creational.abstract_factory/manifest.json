@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.creational.abstract_factory",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "抽象工厂",
+    "en-US": "Abstract Factory"
+  },
+  "aliases": [
+    "AbstractFactory",
+    "抽象工厂模式",
+    "abstract factory"
+  ],
+  "category": "creational",
+  "status": "DOCUMENTED",
+  "intent": "为一批相互关联的产品提供统一创建入口，使产品族整体替换而不改动调用方。",
+  "applicability": {
+    "constraints": {
+      "product_family": "stable",
+      "creation_interface": "one_trait_per_product",
+      "product_variants": "multiple",
+      "caller_coupling": "abstract_types_only",
+      "ownership": "caller_owned_or_boxed"
+    },
+    "counterexamples": [
+      "只有单一产品时套抽象工厂，只是给一个构造函数加了一层无意义的间接",
+      "产品族之间只差一两个字段时，枚举 + match 通常比工厂更短也更易读"
+    ],
+    "alternatives": [
+      "pattern.gof.creational.factory_method",
+      "pattern.gof.creational.builder"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Abstract_factory_pattern"
+    ],
+    "license": "MIT"
+  }
+}

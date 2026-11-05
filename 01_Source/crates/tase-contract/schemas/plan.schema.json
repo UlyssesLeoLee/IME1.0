@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tase.local/schemas/plan.schema.json",
+  "title": "TASE plan request",
+  "description": "The request of `tase.code.plan` (design §2.3). The plan itself is not a file: it is the canonical JSON of this request, and its digest is the digest of that JSON.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "repository_id",
+    "target_ref",
+    "base_commit",
+    "strategy",
+    "operations",
+    "validation_profile",
+    "approval_policy"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "description": "The version of the contract the caller speaks (1.0 or 1.1)."
+    },
+    "repository_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "The repository the plan works in."
+    },
+    "target_ref": {
+      "type": "string",
+      "description": "The ref the plan is built on, for example `refs/heads/agent-feature`."
+    },
+    "base_commit": {
+      "type": "string",
+      "description": "The commit the plan starts from."
+    },
+    "strategy": {
+      "type": "string",
+      "description": "The strategy of the plan: `template`, `semantic` or `freeform`."
+    },
+    "operations": {
+      "type": "array",
+      "description": "The operations of the plan, in the order they are applied.",
+      "items": {
+        "$ref": "#/$defs/operation"
+      }
+    },
+    "validation_profile": {
+      "type": "string",
+      "description": "The profile the plan is validated with."
+    },
+    "approval_policy": {
+      "type": "string",
+      "description": "The policy the plan is approved with."
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "description": "An identifier of the contract: not empty, at most 128 characters, `[A-Za-z0-9._:-]` only.",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op_id", "kind", "target"],
+      "properties": {
+        "op_id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of the operation inside its plan."
+        },
+        "kind": {
+          "type": "string",
+          "description": "What the operation does.",
+          "enum": [
+            "instantiate_template",
+            "insert_sibling",
+            "replace_symbol_body",
+            "delete_symbol",
+            "update_imports",
+            "format"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "template": {
+          "$ref": "#/$defs/template_ref"
+        },
+        "params": {
+          "type": "object",
+          "description": "The parameters of the template. The order of the parameters is part of the digest of the plan.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "preconditions": {
+          "$ref": "#/$defs/preconditions"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "The path of the file, relative to the root of the repository, with `/` as the separator."
+        },
+        "symbol": {
+          "type": ["string", "null"],
+          "description": "The symbol the operation works on. For a new method it is the declaration that is written, not an anchor that exists."
+        },
+        "symbol_kind": {
+          "type": ["string", "null"],
+          "description": "The kind of the symbol: `function`, `struct`, ..."
+        }
+      }
+    },
+    "template_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of the template."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the template."
+        },
+        "digest": {
+          "type": "string",
+          "description": "The digest of the template package the operation is pinned to."
+        }
+      }
+    },
+    "preconditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file_blob_sha": {
+          "type": ["string", "null"],
+          "description": "The digest of the blob of the file. It is null for a file that does not exist yet."
+        },
+        "symbol_signature_hash": {
+          "type": ["string", "null"],
+          "description": "The digest of the signature of the symbol."
+        },
+        "expected_symbol_exists": {
+          "type": ["boolean", "null"],
+          "description": "Whether the symbol is expected to exist."
+        }
+      }
+    }
+  }
+}

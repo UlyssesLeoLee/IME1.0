@@ -1,8 +1,8 @@
 //! The Windows layer of the laser-rainbow style: a layered window that is painted pixel by pixel.
 //!
 //! GDI cannot draw a glow: a window that is painted with GDI has hard edges and no transparency, and a beam of light
-//! is nothing but transparency. So the windows of this style (the glow on the left, the beam, the laser panel, the
-//! logo in the corner) are **layered windows**: a 32-bit picture with an alpha channel per pixel is handed to
+//! is nothing but transparency. So the windows of this style (the glow on the left, the beam and the laser panel)
+//! are **layered windows**: a 32-bit picture with an alpha channel per pixel is handed to
 //! `UpdateLayeredWindow`, which puts it on the screen with that alpha.
 //!
 //! The picture itself is a [`pime_core::style::Canvas`] — the same canvas the installer draws the wizard with — so

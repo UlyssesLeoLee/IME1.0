@@ -1,12 +1,13 @@
-//! The plumbing of the windows that are painted pixel by pixel: the glow, the beam, the laser panel and the logo.
+//! The plumbing of the windows that are painted pixel by pixel: the glows (one per mouth of light), the beam and the
+//! laser panel.
 //!
-//! All four are **layered windows**: a 32-bit picture with an alpha channel per pixel is handed to
+//! All of them are **layered windows**: a 32-bit picture with an alpha channel per pixel is handed to
 //! `UpdateLayeredWindow`, which puts it on the screen with that alpha. That is the only way to draw light: GDI has
 //! no transparency and no soft edges.
 //!
 //! They share one window procedure and one picture buffer; what makes them different is their role and the painter
 //! that draws them. The windows never take the focus (`WM_MOUSEACTIVATE` answers "no"), so a click on the glow or
-//! on the logo never takes the caret away from the editor.
+//! on the panel never takes the caret away from the editor.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -22,9 +23,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{PCWSTR, w};
 
-use crate::laser::{Beam, Mouth, PanelLayout, PanelOrigin};
+use crate::laser::{Beam, Mouth, PanelLayout};
 use crate::layout::Rect;
 use crate::paint::LayeredSurface;
+use pime_core::style::Rgb;
 
 /// The class of the glow on the left of the screen.
 pub const GLOW_CLASS: PCWSTR = w!("ProgrammingIME.Glow");
@@ -32,8 +34,6 @@ pub const GLOW_CLASS: PCWSTR = w!("ProgrammingIME.Glow");
 pub const BEAM_CLASS: PCWSTR = w!("ProgrammingIME.Beam");
 /// The class of the panel that opens on the mouth of the glow.
 pub const PANEL_CLASS: PCWSTR = w!("ProgrammingIME.LaserPanel");
-/// The class of the logo in the corner.
-pub const LOGO_CLASS: PCWSTR = w!("ProgrammingIME.Logo");
 
 /// `WM_MOUSELEAVE` is not in the bindings of this version of the `windows` crate; the value is fixed by Windows.
 const WM_MOUSELEAVE: u32 = 0x02A3;
@@ -44,21 +44,24 @@ fn class_bit(role: Role) -> u8 {
         Role::Glow => 0,
         Role::Beam => 1,
         Role::Panel => 2,
-        Role::Logo => 3,
     }
 }
+
+/// The sink of a window: what the user did in it.
+///
+/// The key of the source is told with the event: every mouth of light has a window of its own, and the mouse that is
+/// on the mouth of an agent is not the mouse that is on the mouth of the human.
+pub type Sink = Rc<dyn Fn(Role, &str, GlassEvent)>;
 
 /// What a glass window is for.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Role {
-    /// The glow on the left of the screen.
+    /// A glow on the edge of the screen: there is one per mouth of light.
     Glow,
-    /// The beam that shoots out of the glow.
+    /// The beam that shoots out of a mouth.
     Beam,
     /// The panel with the settings.
     Panel,
-    /// The logo in the corner.
-    Logo,
 }
 
 /// What the user did in a glass window.
@@ -79,8 +82,6 @@ pub enum GlassEvent {
         screen_x: i32,
         screen_y: i32,
     },
-    /// The mouse clicked the logo.
-    LogoClick,
     /// The animation timer of the window ticked.
     Tick,
 }
@@ -90,8 +91,6 @@ pub enum GlassEvent {
 pub struct PanelState {
     /// Whether the panel is open.
     pub open: bool,
-    /// Where it was opened from.
-    pub origin: PanelOrigin,
     /// The rectangle of the panel on the screen.
     pub rect: Rect,
     /// The rows of the panel.
@@ -107,7 +106,6 @@ impl PanelState {
     pub fn closed() -> PanelState {
         PanelState {
             open: false,
-            origin: PanelOrigin::Glow,
             rect: Rect::new(0, 0, 0, 0),
             layout: PanelLayout::compute(&[], 30, 8, 260),
             hot: None,
@@ -116,34 +114,75 @@ impl PanelState {
     }
 }
 
-/// The state of the logo in the corner.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct LogoState {
-    /// The rectangle of the logo on the screen.
-    pub rect: Rect,
-    /// Whether the mouse is on the logo.
-    pub hover: bool,
-    /// The phase of the breathing light (0 = 1).
-    pub pulse: f64,
+/// What a window is: the class it is registered under, its role and the source it belongs to.
+pub struct WindowKind {
+    /// The class of the window.
+    pub class: PCWSTR,
+    /// What the window is for.
+    pub role: Role,
+    /// The key of the source the window belongs to (empty for the beam and the panel).
+    pub key: String,
+}
+
+impl WindowKind {
+    /// The window of the glow of a mouth of light.
+    pub fn glow(key: &str) -> WindowKind {
+        WindowKind {
+            class: GLOW_CLASS,
+            role: Role::Glow,
+            key: key.to_string(),
+        }
+    }
+
+    /// The window of the beam.
+    pub fn beam() -> WindowKind {
+        WindowKind {
+            class: BEAM_CLASS,
+            role: Role::Beam,
+            key: String::new(),
+        }
+    }
+
+    /// The window of the panel.
+    pub fn panel() -> WindowKind {
+        WindowKind {
+            class: PANEL_CLASS,
+            role: Role::Panel,
+            key: String::new(),
+        }
+    }
+}
+
+/// One mouth on the edge of the screen.
+///
+/// There is one of these for every source of light: the human at the keyboard and every agent that writes into the
+/// document. The colour of the mouth is the colour of its source, so that the user sees at once who is writing.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MouthState {
+    /// The key of the source (the identity of the speaker).
+    pub key: String,
+    /// The name of the source that is shown to the user.
+    pub label: String,
+    /// The colour of the slit of light.
+    pub colour: Rgb,
+    /// The colour of the halo around the slit.
+    pub halo: Rgb,
+    /// The mouth itself, in screen coordinates.
+    pub mouth: Mouth,
+    /// The rectangle of the window of the glow of this mouth, in screen coordinates.
+    pub window: Rect,
 }
 
 /// What the windows draw and what the mouse works on.
 pub struct Model {
-    /// The mouth of the glow, in screen coordinates.
-    pub mouth: Mouth,
+    /// The mouths of light, one per source (the human and every agent).
+    pub mouths: Vec<MouthState>,
     /// The beam that is alive, if any.
     pub beam: Option<Beam>,
-    /// The rectangle of the window of the glow, in screen coordinates (the mouth is drawn relative to it).
-    ///
-    /// The window of the glow is small and it follows the mouth: the painter needs to know where the window is on the
-    /// screen to put the mouth inside the picture.
-    pub glow_window: Rect,
     /// The rectangle of the window of the beam, in screen coordinates (the beam is drawn relative to it).
     pub beam_window: Rect,
     /// The panel.
     pub panel: PanelState,
-    /// The logo.
-    pub logo: LogoState,
     /// The clock of the animation, in milliseconds.
     pub now_ms: u64,
     /// The font the text is drawn with.
@@ -156,25 +195,19 @@ impl Model {
     /// A model with nothing shown.
     pub fn empty() -> Model {
         Model {
-            mouth: Mouth {
-                x: 0,
-                y: 0,
-                radius: 12,
-                edge: crate::laser::Edge::Left,
-            },
+            mouths: Vec::new(),
             beam: None,
-            glow_window: Rect::new(0, 0, 0, 0),
             beam_window: Rect::new(0, 0, 0, 0),
             panel: PanelState::closed(),
-            logo: LogoState {
-                rect: Rect::new(0, 0, 0, 0),
-                hover: false,
-                pulse: 0.0,
-            },
             now_ms: 0,
             font: None,
             mouse: None,
         }
+    }
+
+    /// The mouth of a source, if it has one.
+    pub fn mouth_of(&self, key: &str) -> Option<&MouthState> {
+        self.mouths.iter().find(|mouth| mouth.key == key)
     }
 }
 
@@ -183,15 +216,20 @@ impl Model {
 /// The painter gets the whole picture and not just its pixels, because the text of the panel is drawn with GDI
 /// (there is no other way to draw a glyph) and GDI does not write the alpha byte: the picture has to be told which
 /// pixels the text touched.
-pub type Painter = fn(&mut LayeredSurface, &Model);
+///
+/// The painter also gets the **key of the source** the window belongs to (the mouth of light it draws; the beam and
+/// the panel have none), so that the glow of one source is never drawn in the window of another one.
+pub type Painter = fn(&mut LayeredSurface, &Model, &str);
 
 /// The state a glass window shares with its window procedure.
 pub struct Shared {
     /// What the window is for.
     pub role: Role,
+    /// The key of the source the window belongs to (empty for the beam and the panel).
+    pub key: String,
     /// Whether the left button is down in this window right now.
     pub dragging: std::cell::Cell<bool>,
-    /// What it draws and what the mouse works on. **All four windows share one model**, so what the mouse does in
+    /// What it draws and what the mouse works on. **All the windows share one model**, so what the mouse does in
     /// the glow is seen by the painter of the panel in the very same frame.
     pub model: Rc<RefCell<Model>>,
     /// The picture that is put on the screen.
@@ -212,19 +250,28 @@ pub struct GlassWindow {
 
 impl GlassWindow {
     /// Create the window (nothing is shown yet).
+    ///
+    /// The **key** is the identity of the source the window belongs to: the mouth of light whose glow this window
+    /// draws. The beam and the panel have none (the key of theirs is empty).
     pub fn create(
-        class: PCWSTR,
-        role: Role,
+        kind: WindowKind,
         width: i32,
         height: i32,
         model: Rc<RefCell<Model>>,
         painter: Painter,
-        sink: Rc<dyn Fn(Role, GlassEvent)>,
+        sink: Sink,
     ) -> Option<GlassWindow> {
         let instance = crate::popup::module_instance()?;
-        register_class(class, class_bit(role), instance)?;
+        register_class(kind.class, class_bit(kind.role), instance)?;
+        // The window knows its source: the painter draws the mouth of that source, and the events of the mouse are
+        // told with the key of it.
+        let own_key = kind.key.clone();
+        let event_key = own_key.clone();
+        let sink: Rc<dyn Fn(Role, GlassEvent)> =
+            Rc::new(move |role, event| sink(role, &event_key, event));
         let shared = Rc::new(RefCell::new(Shared {
-            role,
+            role: kind.role,
+            key: own_key,
             dragging: std::cell::Cell::new(false),
             model,
             surface: RefCell::new(None),
@@ -235,7 +282,7 @@ impl GlassWindow {
         let hwnd = unsafe {
             CreateWindowExW(
                 WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-                class,
+                kind.class,
                 w!(""),
                 WS_POPUP,
                 0,
@@ -402,7 +449,7 @@ pub fn paint_window(hwnd: HWND) {
     surface.clear();
     {
         let model = shared.model.borrow();
-        (shared.painter)(&mut surface, &model);
+        (shared.painter)(&mut surface, &model, &shared.key);
     }
     let position = window_position(hwnd);
     surface.upload(hwnd, position.0, position.1);
@@ -441,8 +488,9 @@ pub fn window_position(hwnd: HWND) -> (i32, i32) {
 
 /// Register a window class (once per class).
 ///
-/// Every class has its own bit: the four windows of the laser interface are four different classes, and a class that
-/// was never registered makes `CreateWindowExW` fail with "class not found".
+/// Every class has its own bit: the windows of the laser interface are three different classes (the glow of the
+/// mouths, the beam and the panel), and a class that was never registered makes `CreateWindowExW` fail with "class
+/// not found". Every mouth of light has its own window but they all share the class of the glow.
 fn register_class(class: PCWSTR, bit: u8, instance: windows::Win32::Foundation::HINSTANCE) -> Option<()> {
     use std::sync::atomic::{AtomicU32, Ordering};
     static REGISTERED: AtomicU32 = AtomicU32::new(0);
@@ -518,7 +566,7 @@ fn window_message(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESU
         WM_MOUSEMOVE, WM_NCDESTROY, WM_NCHITTEST, WM_PAINT, WM_TIMER,
     };
     match msg {
-        // A click on the glow, on the logo or on the panel must not move the focus away from the host's editor.
+        // A click on the glow or on the panel must not move the focus away from the host's editor.
         WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
         WM_NCHITTEST => {
             // The windows of the light are only there where the light is: everywhere else the click belongs to the
@@ -618,16 +666,21 @@ fn hit_at(hwnd: HWND, x: i32, y: i32) -> bool {
     };
     let role = shared.borrow().role;
     match role {
-        // The glow is the mouth: the light around it is a picture, not a thing the mouse can touch.
+        // The glow is the mouth: the light around it is a picture, not a thing the mouse can touch. Every glow has
+        // the mouth of its own source, so the light of an agent is not a handle for the user.
         Role::Glow => {
             let shared = shared.borrow();
+            let key = shared.key.clone();
             let model = shared.model.borrow();
-            model.mouth.contains(x, y)
+            model
+                .mouth_of(&key)
+                .map(|mouth| mouth.mouth.contains(x, y))
+                .unwrap_or(false)
         }
         // The beam is light in the air: a click belongs to the program under it.
         Role::Beam => false,
-        // The panel and the logo are solid things.
-        Role::Panel | Role::Logo => true,
+        // The panel is a solid thing.
+        Role::Panel => true,
     }
 }
 

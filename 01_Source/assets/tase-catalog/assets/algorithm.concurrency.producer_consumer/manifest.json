@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.concurrency.producer_consumer",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "生产者–消费者",
+    "en-US": "Producer-Consumer Problem"
+  },
+  "aliases": [
+    "producer_consumer",
+    "生产者消费者",
+    "bounded buffer problem"
+  ],
+  "category": "concurrency",
+  "status": "DOCUMENTED",
+  "intent": "用共享缓冲区把数据生产与数据消费解耦，让两者以各自的速度独立运行。",
+  "applicability": {
+    "constraints": {
+      "buffer": "shared_and_bounded",
+      "sync": "condition_variables_or_channels",
+      "producers": "multiple",
+      "consumers": "multiple",
+      "throughput": "limited_by_slowest_stage"
+    },
+    "counterexamples": [
+      "生产与消费是一体的简单管道时——直接调用链即可",
+      "消费完全不需要解耦时——多一层线程只是增加开销"
+    ],
+    "alternatives": [
+      "algorithm.concurrency.bounded_queue",
+      "pattern.concurrent.pipeline"
+    ]
+  },
+  "complexity": {
+    "time": "O(1) 每次交接",
+    "extra_space": "O(缓冲区容量)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem"
+    ],
+    "license": "MIT"
+  }
+}

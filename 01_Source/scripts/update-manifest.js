@@ -28,8 +28,39 @@ const EXCLUDED = new Set([
   '02_Verification/installer-build.log',
 ]);
 
+// The directories whose files this round added to the repository.
+//
+// A directory is listed here instead of every file of it when the round brings a whole tree (the TASE design
+// documents, the catalogue of the standard assets, the new crates). The files of the tree are read from the disk, so
+// the list cannot rot.
+const ADDITION_DIRECTORIES = [
+  '00_Documents',
+  '01_Source/assets/tase-catalog',
+  '01_Source/crates/tase-contract',
+  '01_Source/crates/tase-registry',
+  '01_Source/crates/tase-planner',
+  '01_Source/crates/tase-metrics',
+  '01_Source/crates/tase-local-ipc',
+  '01_Source/crates/tase-ime-core',
+];
+
+// The files of a directory, in the order the walk finds them.
+function filesUnder(directory) {
+  const found = [];
+  const walk = (current) => {
+    for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else found.push(path.relative(root, full).split(path.sep).join('/'));
+    }
+  };
+  walk(path.join(root, directory));
+  return found.sort();
+}
+
 // The files that this round added to the repository.
 const ADDITIONS = [
+
   '01_Source/crates/pime-setup/assets/ime1.0.ico',
   '01_Source/crates/pime-setup/build.rs',
   '01_Source/crates/pime-setup/src/paint.rs',
@@ -45,6 +76,10 @@ const ADDITIONS = [
   '01_Source/crates/pime-tsf/examples/tsf_host.rs',
   // the gate that binds the UAT numbers in the documents to the Playwright report
   '01_Source/tests/smoke/uat-claims-check.js',
+  // the mouths of light (one per source of input) and the catalogue validator
+  '01_Source/scripts/validate-tase-catalog.js',
+  // the mouths of light (one per source of input) and the catalogue validator
+  '01_Source/crates/pime-tsf/src/mouths.rs',
   // the plugin language packs (shipped with the distribution) and their specification
   '01_Source/language-plugins/cypher.json',
   '01_Source/language-plugins/plsql.json',
@@ -183,6 +218,19 @@ for (const relative of ADDITIONS) {
   if (listed.has(relative)) continue;
   listed.set(relative, hashOf(file));
   console.log(`new    ${relative}`);
+}
+
+// the whole trees of this round
+for (const directory of ADDITION_DIRECTORIES) {
+  if (!fs.existsSync(path.join(root, directory))) {
+    console.log(`skip   ${directory}/ (not on disk)`);
+    continue;
+  }
+  for (const relative of filesUnder(directory)) {
+    if (listed.has(relative)) continue;
+    listed.set(relative, hashOf(path.join(root, relative)));
+    console.log(`new    ${relative}`);
+  }
 }
 
 if (check) {

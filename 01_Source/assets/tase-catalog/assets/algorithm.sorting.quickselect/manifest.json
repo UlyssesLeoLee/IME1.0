@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.sorting.quickselect",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "快速选择",
+    "en-US": "Quickselect"
+  },
+  "aliases": [
+    "quickselect",
+    "快速选择",
+    "nth_element",
+    "第 k 大"
+  ],
+  "category": "sorting",
+  "status": "DOCUMENTED",
+  "intent": "只求第 k 小（或第 k 大）的元素，平均 O(n) 而不是完整排序的 O(n log n)。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n) 平均 / O(n²) 最坏",
+      "stability": "not_applicable",
+      "space": "O(1) 原地",
+      "output": "single_element_or_partial_order",
+      "pivot": "random_or_median"
+    },
+    "counterexamples": [
+      "需要完整有序结果时——直接排序更快",
+      "k 接近两端（最小/最大）时——单遍扫描求 min/max 即可"
+    ],
+    "alternatives": [
+      "algorithm.sorting.top_k_heap",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(n) 平均 / O(n²) 最坏",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Quickselect"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tase.local/schemas/job.schema.json",
+  "title": "TASE job status",
+  "description": "The state of a job (design §2.6). A counter that the supplier did not report is null, never 0: the difference between `null` and `0` is the difference between an unknown bill and a free operation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "state", "attempt", "base_commit", "new_commit", "checks", "metrics"],
+  "properties": {
+    "job_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "The id of the job."
+    },
+    "state": {
+      "type": "string",
+      "description": "The state the job is in.",
+      "enum": [
+        "QUEUED",
+        "RUNNING",
+        "VALIDATING",
+        "COMMITTING",
+        "COMMITTED",
+        "FAILED",
+        "CANCELLED",
+        "REBASED"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "description": "How many times the job ran.",
+      "minimum": 0
+    },
+    "base_commit": {
+      "type": "string",
+      "description": "The commit the job started from."
+    },
+    "new_commit": {
+      "type": ["string", "null"],
+      "description": "The commit the job produced, when it produced one."
+    },
+    "checks": {
+      "type": "array",
+      "description": "The checks that ran on the job.",
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "metrics": {
+      "type": ["object", "null"],
+      "description": "The counters of the job, when the job reports them.",
+      "properties": {
+        "input_tokens": {
+          "type": "integer",
+          "description": "The tokens that were read.",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "description": "The tokens that were written.",
+          "minimum": 0
+        },
+        "cached_input_tokens": {
+          "type": "integer",
+          "description": "The tokens that were read from the cache of the supplier.",
+          "minimum": 0
+        },
+        "reasoning_tokens": {
+          "type": ["integer", "null"],
+          "description": "The tokens of the reasoning, when the supplier reports them apart.",
+          "minimum": 0
+        },
+        "llm_cost_usd": {
+          "type": ["number", "null"],
+          "description": "What the model cost, in dollars.",
+          "minimum": 0
+        },
+        "worker_cost_usd": {
+          "type": ["number", "null"],
+          "description": "What the worker cost, in dollars.",
+          "minimum": 0
+        },
+        "elapsed_ms": {
+          "type": ["integer", "null"],
+          "description": "How long the job took, in milliseconds.",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": ["input_tokens", "output_tokens", "cached_input_tokens"]
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "description": "An identifier of the contract: not empty, at most 128 characters, `[A-Za-z0-9._:-]` only.",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "status"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the check: `format`, `parse`, `cargo-check`, ..."
+        },
+        "status": {
+          "type": "string",
+          "description": "The state of the check.",
+          "enum": ["PASS", "FAIL", "SKIPPED", "NOT_RUN"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.math.reservoir_sampling",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "蓄水池抽样",
+    "en-US": "Reservoir Sampling"
+  },
+  "aliases": [
+    "reservoir_sampling",
+    "蓄水池抽样",
+    "水塘抽样",
+    "reservoir"
+  ],
+  "category": "math",
+  "status": "DOCUMENTED",
+  "intent": "在只知数据流长度的情况下，用固定大小的内存均匀抽取 k 个样本。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n) 总摊还 / O(k log k) 若用最小堆",
+      "space": "O(k)",
+      "stream_length": "unknown_in_advance",
+      "uniformity": "exact",
+      "passes": "1"
+    },
+    "counterexamples": [
+      "已知总条数或能接受两遍扫描时——直接随机抽样更简单",
+      "需要按权重抽样时——本算法只做等概率抽样"
+    ],
+    "alternatives": [
+      "algorithm.sorting.top_k_heap",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(n) 总摊还",
+    "extra_space": "O(k)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Reservoir_sampling"
+    ],
+    "license": "MIT"
+  }
+}

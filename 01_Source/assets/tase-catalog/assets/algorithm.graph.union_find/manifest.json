@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.union_find",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "并查集",
+    "en-US": "Disjoint Set Union (Union-Find)"
+  },
+  "aliases": [
+    "union_find",
+    "disjoint_set_union",
+    "并查集",
+    "不相交集合",
+    "DSU"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "用近乎常数的摊还时间维护\"哪些元素属于同一集合\"，并支持合并与查询。",
+  "applicability": {
+    "constraints": {
+      "time": "O(α(n)) 摊还",
+      "space": "O(n)",
+      "operations": "find_union",
+      "elements": "must_be_indexable",
+      "path_compression": "recommended"
+    },
+    "counterexamples": [
+      "需要删除元素或拆分集合时——并查集只支持合并，不支持拆分",
+      "元素不是可索引的整数时——需要先做映射"
+    ],
+    "alternatives": [
+      "algorithm.graph.kruskal",
+      "algorithm.graph.bfs"
+    ]
+  },
+  "complexity": {
+    "time": "O(α(n)) 摊还",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Disjoint-set_data_structure"
+    ],
+    "license": "MIT"
+  }
+}

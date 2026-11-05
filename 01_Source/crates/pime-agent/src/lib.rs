@@ -21,9 +21,11 @@ pub mod core;
 pub mod mcp;
 pub mod serve;
 
-use pime_core::agent_proto::{Error, Op as BridgeOp, Reply, Request};
+use pime_core::agent_proto::{Error, Op as BridgeOp, Reply, Request, SourceIdentity};
 use pime_core::json::Json;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// The version of the agent API.
 pub const VERSION: &str = "0.1.0";
@@ -123,6 +125,118 @@ impl std::str::FromStr for Op {
     }
 }
 
+/// The environment variable that names the provider of the client ("openai", "anthropic", ...).
+pub const PROVIDER_ENV: &str = "PIME_AGENT_PROVIDER";
+
+/// The environment variable that names the agent of the client ("claude-code", "cursor", ...).
+pub const NAME_ENV: &str = "PIME_AGENT_NAME";
+
+/// The environment variable that names the instance of the client.
+///
+/// The instance is what tells two clients of the same agent apart, so that the input method can give each of them a
+/// mouth of light of its own.
+pub const INSTANCE_ENV: &str = "PIME_AGENT_INSTANCE";
+
+/// The identity of a client: who speaks, and which instance of it.
+///
+/// Two sub-agents of the **same** provider are two different sources: the identity carries the name of the agent and
+/// the instance of the client, so the key of the source tells them apart. The input method draws a mouth of light
+/// for every source and fires the beam of a write in the colour of that mouth.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Identity {
+    /// The provider of the client ("openai", "anthropic", ...).
+    pub provider: String,
+    /// The name of the agent ("claude-code", "cursor", ...).
+    pub agent: String,
+    /// The instance of the client: a value that is unique per client process.
+    pub instance: String,
+}
+
+impl Identity {
+    /// The identity of this process: the environment first, then the defaults.
+    pub fn detect() -> Identity {
+        Identity::default().resolve()
+    }
+
+    /// The identity with the empty parts filled from the environment and then from the defaults.
+    ///
+    /// What is given wins over the environment (the command line names the client), and the environment wins over
+    /// the defaults (the user of the machine names the client).
+    pub fn resolve(&self) -> Identity {
+        Identity {
+            provider: first_of(&self.provider, env(PROVIDER_ENV), default_provider()),
+            agent: first_of(&self.agent, env(NAME_ENV), default_agent()),
+            instance: first_of(&self.instance, env(INSTANCE_ENV), instance_id()),
+        }
+    }
+
+    /// The source of the requests of this client.
+    pub fn source(&self) -> SourceIdentity {
+        SourceIdentity::agent(&self.provider, &self.agent, &self.instance)
+    }
+
+    /// The source of the requests, with the name of the agent replaced.
+    ///
+    /// The MCP tool may name the sub-agent that writes (the parameter `agent`): two sub-agents of the same provider
+    /// in the same process are then two different sources, and therefore two different mouths of light.
+    pub fn source_with_agent(&self, agent: Option<&str>) -> SourceIdentity {
+        let mut source = self.source();
+        if let Some(agent) = agent.filter(|name| !name.is_empty()) {
+            source.agent = agent.to_string();
+        }
+        source
+    }
+}
+
+/// The value of an environment variable, when it is set and not empty.
+fn env(name: &str) -> Option<String> {
+    std::env::var(name).ok().filter(|value| !value.is_empty())
+}
+
+/// The first of the values that is not empty.
+fn first_of(chosen: &str, from_env: Option<String>, default: String) -> String {
+    if !chosen.is_empty() {
+        return chosen.to_string();
+    }
+    from_env.unwrap_or(default)
+}
+
+/// The provider of a client that does not say one: the product itself.
+fn default_provider() -> String {
+    "pime".to_string()
+}
+
+/// The name of the agent of a client that does not say one: the name of the program.
+fn default_agent() -> String {
+    std::env::current_exe()
+        .ok()
+        .and_then(|path| {
+            path.file_stem()
+                .map(|stem| stem.to_string_lossy().to_string())
+        })
+        .unwrap_or_else(|| "pime-agent".to_string())
+}
+
+/// The instance of this client process: sixteen hex digits.
+///
+/// It is **not a secret**: it only tells the clients apart, so that the input method gives each of them a mouth of
+/// light of its own. Two processes never have the same one (the clock, the process and a counter are in it).
+pub fn instance_id() -> String {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|since| since.as_nanos())
+        .unwrap_or(0);
+    instance_id_of(now, std::process::id(), count)
+}
+
+/// The instance of a client, out of the three numbers that make it.
+pub fn instance_id_of(nanos: u128, pid: u32, count: u64) -> String {
+    let digest = pime_core::sha256::sha256(format!("{nanos:x}:{pid:x}:{count:x}").as_bytes());
+    pime_core::sha256::to_hex(&digest[..8])
+}
+
 /// Why an operation did not do what it was asked to do.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AgentError {
@@ -204,20 +318,79 @@ pub trait CoreEngine: Send + Sync {
 pub struct Backend {
     bridge: Arc<dyn ImeBridge>,
     core: Arc<dyn CoreEngine>,
+    /// Who this client is (the provider, the agent and the instance of it).
+    identity: Identity,
+    /// The name the MCP client gave in `initialize`: it is the name of the agent that writes.
+    client_name: Arc<Mutex<Option<String>>>,
 }
 
 impl Backend {
     /// The backends of this machine: the bridge of the focused process and `pime-core.exe`.
     pub fn system() -> Backend {
+        Backend::system_with(Identity::detect())
+    }
+
+    /// The backends of this machine, with the identity of the client.
+    pub fn system_with(identity: Identity) -> Backend {
         Backend {
             bridge: Arc::new(bridge::BridgeClient::new()),
             core: Arc::new(core::CoreClient::new()),
+            identity: identity.resolve(),
+            client_name: Arc::new(Mutex::new(None)),
         }
     }
 
     /// The backends of a test (or of a host that has its own).
     pub fn new(bridge: Arc<dyn ImeBridge>, core: Arc<dyn CoreEngine>) -> Backend {
-        Backend { bridge, core }
+        Backend {
+            bridge,
+            core,
+            identity: Identity::detect(),
+            client_name: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    /// The same backends with another identity (the command line names the client).
+    pub fn with_identity(&self, identity: Identity) -> Backend {
+        Backend {
+            bridge: Arc::clone(&self.bridge),
+            core: Arc::clone(&self.core),
+            identity: identity.resolve(),
+            client_name: Arc::clone(&self.client_name),
+        }
+    }
+
+    /// The identity of this client.
+    pub fn identity(&self) -> &Identity {
+        &self.identity
+    }
+
+    /// The name the MCP client gave in `initialize` (it is the name of the agent that writes).
+    pub fn set_client_name(&self, name: &str) {
+        if let Ok(mut slot) = self.client_name.lock() {
+            *slot = Some(name.to_string());
+        }
+    }
+
+    /// The source of the requests: who is writing.
+    ///
+    /// The parameter `agent` of the operation names the sub-agent that writes: it replaces the name of the agent of
+    /// the process, so that two sub-agents of the same provider are two different sources (and therefore two
+    /// different mouths of light on the screen of the user).
+    pub fn source_for(&self, params: &Json) -> SourceIdentity {
+        let named = params
+            .get("agent")
+            .and_then(Json::as_str)
+            .filter(|name| !name.is_empty())
+            .map(|name| name.to_string());
+        let named = named.or_else(|| {
+            self.client_name
+                .lock()
+                .ok()
+                .and_then(|slot| slot.clone())
+                .filter(|name| !name.is_empty())
+        });
+        self.identity.source_with_agent(named.as_deref())
     }
 
     /// The bridge.
@@ -267,9 +440,9 @@ pub fn dispatch(op: &str, params: &Json, backend: &Backend) -> Json {
 /// The answer of an operation. Every operation answers with one JSON object.
 pub fn dispatch_op(op: Op, params: &Json, backend: &Backend) -> Json {
     let answer = match op {
-        Op::Status => status(backend),
+        Op::Status => status(params, backend),
         Op::Insert => insert(params, backend),
-        Op::Read => read(backend),
+        Op::Read => read(params, backend),
         Op::Language => language(params, backend),
         Op::Candidates => candidates(params),
         Op::Predict => predict(params, backend),
@@ -286,8 +459,11 @@ pub fn dispatch_op(op: Op, params: &Json, backend: &Backend) -> Json {
 }
 
 /// `status`: is the input method running in the focused window, which language, is the core there.
-fn status(backend: &Backend) -> Result<Json, AgentError> {
-    let ime = match backend.bridge().send(&Request::new(BridgeOp::Status)) {
+fn status(params: &Json, backend: &Backend) -> Result<Json, AgentError> {
+    let ime = match backend
+        .bridge()
+        .send(&Request::with_source(BridgeOp::Status, backend.source_for(params)))
+    {
         Ok(reply) if reply.ok => Json::obj(vec![
             ("available", Json::Bool(true)),
             (
@@ -344,7 +520,7 @@ fn insert(params: &Json, backend: &Backend) -> Result<Json, AgentError> {
     let text = required_text(params, "text")?;
     let language = optional_text(params, "language")?;
     let replace = optional_bool(params, "replace")?;
-    let mut request = Request::new(BridgeOp::Insert);
+    let mut request = Request::with_source(BridgeOp::Insert, backend.source_for(params));
     request.text = text;
     request.language = language.clone();
     request.replace = replace;
@@ -363,8 +539,10 @@ fn insert(params: &Json, backend: &Backend) -> Result<Json, AgentError> {
 }
 
 /// `read`: the text that is selected in the focused document.
-fn read(backend: &Backend) -> Result<Json, AgentError> {
-    let reply = backend.bridge().send(&Request::new(BridgeOp::Read))?;
+fn read(params: &Json, backend: &Backend) -> Result<Json, AgentError> {
+    let reply = backend
+        .bridge()
+        .send(&Request::with_source(BridgeOp::Read, backend.source_for(params)))?;
     Ok(bridge_answer(
         &reply,
         vec![("text", Json::str(&reply.text))],
@@ -383,7 +561,7 @@ fn language(params: &Json, backend: &Backend) -> Result<Json, AgentError> {
             ),
         ));
     }
-    let mut request = Request::new(BridgeOp::Language);
+    let mut request = Request::with_source(BridgeOp::Language, backend.source_for(params));
     request.language = Some(language.clone());
     let reply = backend.bridge().send(&request)?;
     let language = reply.language.clone().unwrap_or(language);
@@ -619,6 +797,39 @@ mod tests {
     use super::*;
     use pime_core::json;
 
+    /// A bridge that keeps the request it was given, so that the test can see who is writing.
+    struct RecordingBridge {
+        reply: Reply,
+        seen: Arc<Mutex<Option<Request>>>,
+    }
+
+    impl ImeBridge for RecordingBridge {
+        fn send(&self, request: &Request) -> Result<Reply, AgentError> {
+            if let Ok(mut slot) = self.seen.lock() {
+                *slot = Some(request.clone());
+            }
+            Ok(self.reply.clone())
+        }
+    }
+
+    /// A backend that keeps the request it was given.
+    fn recording_backend(seen: &Arc<Mutex<Option<Request>>>) -> Backend {
+        Backend::new(
+            Arc::new(RecordingBridge {
+                reply: Reply::ok(),
+                seen: Arc::clone(seen),
+            }),
+            Arc::new(FakeCore {
+                answer: Json::Null,
+            }),
+        )
+        .with_identity(Identity {
+            provider: "anthropic".to_string(),
+            agent: "claude-code".to_string(),
+            instance: "0123456789abcdef".to_string(),
+        })
+    }
+
     /// A bridge that answers what the test says.
     struct FakeBridge {
         reply: Reply,
@@ -650,6 +861,116 @@ mod tests {
             Arc::new(FakeBridge { reply }),
             Arc::new(FakeCore { answer: core }),
         )
+    }
+
+    /// The instance of a client is sixteen hex digits, and two clients of the same machine never have the same one.
+    ///
+    /// It is not a secret: it only tells the clients apart, so that the input method can give each of them a mouth of
+    /// light of its own.
+    #[test]
+    fn the_instance_of_a_client_is_sixteen_hex_digits_and_two_clients_differ() {
+        let first = instance_id();
+        let second = instance_id();
+        assert_eq!(first.len(), 16, "the instance is sixteen hex digits: {first}");
+        assert!(
+            first.chars().all(|digit| digit.is_ascii_hexdigit()),
+            "the instance is hex: {first}"
+        );
+        assert_ne!(
+            first, second,
+            "two clients of the same machine must not have the same instance"
+        );
+        // two processes: the number of the process is in the instance
+        assert_ne!(
+            instance_id_of(1_700_000_000_000_000_000, 1234, 0),
+            instance_id_of(1_700_000_000_000_000_000, 5678, 0),
+            "two processes are two clients"
+        );
+        // and the same numbers give the same instance
+        assert_eq!(
+            instance_id_of(1_700_000_000_000_000_000, 1234, 0),
+            instance_id_of(1_700_000_000_000_000_000, 1234, 0)
+        );
+    }
+
+    /// Two clients of the same provider are two different sources: the key of the source tells them apart.
+    #[test]
+    fn two_clients_of_the_same_provider_are_two_different_sources() {
+        let one = Identity {
+            provider: "anthropic".to_string(),
+            agent: "claude-code".to_string(),
+            instance: "aaaaaaaa".to_string(),
+        };
+        let other = Identity {
+            provider: "anthropic".to_string(),
+            agent: "claude-code".to_string(),
+            instance: "bbbbbbbb".to_string(),
+        };
+        assert_eq!(one.source().key(), "agent:anthropic:claude-code:aaaaaaaa");
+        assert_ne!(
+            one.source().key(),
+            other.source().key(),
+            "two instances of the same agent are two different speakers"
+        );
+    }
+
+    /// The name of the sub-agent replaces the name of the agent of the process: two sub-agents of the same provider
+    /// in the same process are two different sources, and therefore two different mouths of light.
+    #[test]
+    fn the_name_of_the_sub_agent_makes_a_second_source() {
+        let identity = Identity {
+            provider: "anthropic".to_string(),
+            agent: "claude-code".to_string(),
+            instance: "aaaaaaaa".to_string(),
+        };
+        let planner = identity.source_with_agent(Some("planner"));
+        let coder = identity.source_with_agent(Some("coder"));
+        assert_eq!(planner.agent, "planner");
+        assert_eq!(coder.agent, "coder");
+        assert_ne!(
+            planner.key(),
+            coder.key(),
+            "two sub-agents of the same provider are two different speakers"
+        );
+        // without a name the agent of the process speaks
+        assert_eq!(identity.source_with_agent(None).key(), identity.source().key());
+    }
+
+    /// Every request says who is writing: the input method fires the beam of that source in its own colour.
+    #[test]
+    fn every_request_carries_the_source_of_the_client() {
+        let seen = Arc::new(Mutex::new(None));
+        let backend = recording_backend(&seen);
+        dispatch_op(Op::Insert, &params(r#"{"text":"hello"}"#), &backend);
+        let request = seen
+            .lock()
+            .expect("the lock")
+            .clone()
+            .expect("the bridge was asked");
+        assert_eq!(
+            request.source.key(),
+            "agent:anthropic:claude-code:0123456789abcdef"
+        );
+        assert_eq!(request.source.provider, "anthropic");
+        assert!(!request.source.instance.is_empty(), "the client has an instance");
+    }
+
+    /// The parameter `agent` names the sub-agent that writes: it replaces the name of the agent of the process.
+    #[test]
+    fn the_parameter_agent_names_the_sub_agent_that_writes() {
+        let seen = Arc::new(Mutex::new(None));
+        let backend = recording_backend(&seen);
+        dispatch_op(
+            Op::Insert,
+            &params(r#"{"text":"hello","agent":"planner"}"#),
+            &backend,
+        );
+        let request = seen
+            .lock()
+            .expect("the lock")
+            .clone()
+            .expect("the bridge was asked");
+        assert_eq!(request.source.key(), "agent:anthropic:planner:0123456789abcdef");
     }
 
     #[test]
@@ -795,16 +1116,21 @@ pub mod testsupport {
     use super::{AgentError, Backend, CoreEngine, ImeBridge};
     use pime_core::agent_proto::{Reply, Request};
     use pime_core::json::Json;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
 
-    /// A bridge that always answers the same thing.
+    /// A bridge that always answers the same thing, and that keeps the request it was given.
     pub struct FakeBridge {
         /// The answer of the bridge.
         pub reply: Reply,
+        /// The request the bridge was given last.
+        pub seen: Arc<Mutex<Option<Request>>>,
     }
 
     impl ImeBridge for FakeBridge {
-        fn send(&self, _request: &Request) -> Result<Reply, AgentError> {
+        fn send(&self, request: &Request) -> Result<Reply, AgentError> {
+            if let Ok(mut slot) = self.seen.lock() {
+                *slot = Some(request.clone());
+            }
             Ok(self.reply.clone())
         }
     }
@@ -824,6 +1150,8 @@ pub mod testsupport {
     /// The backend of the tests.
     pub struct FakeBackend {
         inner: Backend,
+        /// The request the bridge was given last.
+        seen: Arc<Mutex<Option<Request>>>,
     }
 
     impl Default for FakeBackend {
@@ -845,12 +1173,22 @@ pub mod testsupport {
                 ("version", Json::str("0.2.0")),
                 ("protocol", Json::str("0.3")),
             ]);
+            let seen = Arc::new(Mutex::new(None));
             FakeBackend {
                 inner: Backend::new(
-                    Arc::new(FakeBridge { reply }),
+                    Arc::new(FakeBridge {
+                        reply,
+                        seen: Arc::clone(&seen),
+                    }),
                     Arc::new(FakeCore { answer: core }),
                 ),
+                seen,
             }
+        }
+
+        /// The request the bridge was given last (the tests look at the source of it).
+        pub fn last_request(&self) -> Option<Request> {
+            self.seen.lock().ok().and_then(|slot| slot.clone())
         }
 
         /// The backend itself.

@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.floyd_warshall",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "Floyd-Warshall 全源最短路",
+    "en-US": "Floyd-Warshall Algorithm"
+  },
+  "aliases": [
+    "floyd_warshall",
+    "FloydWarshall",
+    "弗洛伊德-沃肖尔",
+    "全源最短路"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "用动态规划一次性求出所有点对之间的最短距离。",
+  "applicability": {
+    "constraints": {
+      "time": "O(V^3)",
+      "space": "O(V^2)",
+      "graph": "small_dense",
+      "negative_edges": "allowed_without_negative_cycle",
+      "output": "all_pairs_distances"
+    },
+    "counterexamples": [
+      "V 很大时——O(V³) 完全不可行，应改用单源算法重复执行",
+      "只需要部分点对时——按需跑 Dijkstra 更省"
+    ],
+    "alternatives": [
+      "algorithm.graph.dijkstra",
+      "algorithm.graph.bellman_ford"
+    ]
+  },
+  "complexity": {
+    "time": "O(V^3)",
+    "extra_space": "O(V^2)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

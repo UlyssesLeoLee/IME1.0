@@ -160,7 +160,7 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
     },
     ImeFunction {
         id: "F-FLOATING",
-        name: "The floating interface of the product is the laser interface (the blue glow, the beam, the panel and the logo)",
+        name: "The floating interface of the product is the laser interface (the blue glow, the beam and the panel)",
         module: "laser_ui",
         scenarios: &[],
         unit_test: "the_mouth_is_a_thin_pale_line_inside_the_window_of_the_glow",

@@ -166,6 +166,139 @@ impl Error {
     }
 }
 
+/// Who is typing: the human at the keyboard, or an agent.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceKind {
+    /// The human at the keyboard.
+    User,
+    /// An agent that drives the input method from the outside.
+    Agent,
+}
+
+impl SourceKind {
+    /// The name of the kind on the wire.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SourceKind::User => "user",
+            SourceKind::Agent => "agent",
+        }
+    }
+
+    /// The kind out of its name. `None` when the name is not one of ours.
+    pub fn from_str(name: &str) -> Option<SourceKind> {
+        match name {
+            "user" => Some(SourceKind::User),
+            "agent" => Some(SourceKind::Agent),
+            _ => None,
+        }
+    }
+}
+
+/// Who is speaking: the identity of the source of an operation.
+///
+/// The input method draws a laser mouth in the colour of whoever is typing, so that the user can see at once
+/// which agent wrote a character. Two sub-agents of the **same** provider are two different sources, so the
+/// identity carries an `instance` that is unique per client process and may be overridden per request.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceIdentity {
+    /// Whether the source is the human or an agent.
+    pub kind: SourceKind,
+    /// The provider of the agent ("openai", "anthropic", ...). Empty for the human.
+    pub provider: String,
+    /// The name of the agent ("claude-code", "cursor", ...). Empty for the human.
+    pub agent: String,
+    /// A value that is unique per client process: two sub-agents of the same provider are different sources.
+    pub instance: String,
+    /// A label for the interface (the name of the client).
+    pub label: String,
+}
+
+impl SourceIdentity {
+    /// The human at the keyboard: no provider, no agent, no instance.
+    pub fn user() -> SourceIdentity {
+        SourceIdentity {
+            kind: SourceKind::User,
+            provider: String::new(),
+            agent: String::new(),
+            instance: String::new(),
+            label: String::new(),
+        }
+    }
+
+    /// An agent that speaks for itself.
+    pub fn agent(provider: &str, agent: &str, instance: &str) -> SourceIdentity {
+        SourceIdentity {
+            kind: SourceKind::Agent,
+            provider: provider.to_string(),
+            agent: agent.to_string(),
+            instance: instance.to_string(),
+            label: String::new(),
+        }
+    }
+
+    /// The name of the source on the screen (the label, or the agent, or the provider).
+    pub fn display_name(&self) -> &str {
+        if !self.label.is_empty() {
+            &self.label
+        } else if !self.agent.is_empty() {
+            &self.agent
+        } else if !self.provider.is_empty() {
+            &self.provider
+        } else {
+            "user"
+        }
+    }
+
+    /// Whether the source is the human at the keyboard.
+    pub fn is_user(&self) -> bool {
+        self.kind == SourceKind::User
+    }
+
+    /// The key that tells the sources apart: two requests with the same key are the same speaker.
+    ///
+    /// The instance is part of it, so that two sub-agents of the same provider are two sources.
+    pub fn key(&self) -> String {
+        if self.is_user() {
+            return "user".to_string();
+        }
+        format!("agent:{}:{}:{}", self.provider, self.agent, self.instance)
+    }
+
+    /// The identity as the JSON that is sent.
+    pub fn to_json(&self) -> Json {
+        Json::obj(vec![
+            ("kind", Json::str(self.kind.as_str())),
+            ("provider", Json::str(&self.provider)),
+            ("agent", Json::str(&self.agent)),
+            ("instance", Json::str(&self.instance)),
+            ("label", Json::str(&self.label)),
+        ])
+    }
+
+    /// The identity out of a JSON payload. A missing source is the human.
+    pub fn from_json(value: &Json) -> Result<SourceIdentity, Error> {
+        let kind = match value.get("kind") {
+            None | Some(Json::Null) => SourceKind::User,
+            Some(Json::Str(s)) => SourceKind::from_str(s).ok_or(Error::Malformed)?,
+            Some(_) => return Err(Error::Malformed),
+        };
+        let text = |key: &str| -> Result<String, Error> {
+            match value.get(key) {
+                None | Some(Json::Null) => Ok(String::new()),
+                Some(Json::Str(s)) => Ok(s.clone()),
+                Some(_) => Err(Error::Malformed),
+            }
+        };
+        Ok(SourceIdentity {
+            kind,
+            provider: text("provider")?,
+            agent: text("agent")?,
+            instance: text("instance")?,
+            label: text("label")?,
+        })
+    }
+}
+
 /// A request of the agent.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Request {
@@ -179,6 +312,8 @@ pub struct Request {
     pub replace: bool,
     /// The window that gets the answer (0 when the caller does not want one).
     pub reply: u64,
+    /// Who is asking (the human at the keyboard, or an agent).
+    pub source: SourceIdentity,
 }
 
 impl Request {
@@ -190,6 +325,15 @@ impl Request {
             language: None,
             replace: false,
             reply: 0,
+            source: SourceIdentity::user(),
+        }
+    }
+
+    /// A request that comes from a named source.
+    pub fn with_source(op: Op, source: SourceIdentity) -> Request {
+        Request {
+            source,
+            ..Request::new(op)
         }
     }
 
@@ -210,6 +354,10 @@ impl Request {
         }
         if self.reply != 0 {
             pairs.push(("reply", Json::int(self.reply as i64)));
+        }
+        // The human needs no identity: a request without a source is an old client.
+        if !self.source.is_user() {
+            pairs.push(("source", self.source.to_json()));
         }
         Json::obj(pairs)
     }
@@ -249,12 +397,17 @@ impl Request {
             Some(Json::Num(n)) if *n >= 0.0 && n.fract() == 0.0 => *n as u64,
             Some(_) => return Err(Error::Malformed),
         };
+        let source = match value.get("source") {
+            None | Some(Json::Null) => SourceIdentity::user(),
+            Some(inner) => SourceIdentity::from_json(inner)?,
+        };
         Ok(Request {
             op,
             text,
             language,
             replace,
             reply,
+            source,
         })
     }
 
@@ -288,6 +441,8 @@ pub struct Reply {
     pub words: Vec<String>,
     /// How many words were written into the word bank.
     pub written: usize,
+    /// Who the answer is for (the source of the request).
+    pub source: SourceIdentity,
 }
 
 impl Reply {
@@ -302,6 +457,7 @@ impl Reply {
             text: String::new(),
             words: Vec::new(),
             written: 0,
+            source: SourceIdentity::user(),
         }
     }
 
@@ -344,6 +500,9 @@ impl Reply {
         }
         if self.written > 0 {
             pairs.push(("written", Json::int(self.written as i64)));
+        }
+        if !self.source.is_user() {
+            pairs.push(("source", self.source.to_json()));
         }
         Json::obj(pairs)
     }
@@ -398,6 +557,10 @@ impl Reply {
             Some(_) => return Err(Error::Malformed),
         };
         let written = number(value, "written")?;
+        let source = match value.get("source") {
+            None | Some(Json::Null) => SourceIdentity::user(),
+            Some(inner) => SourceIdentity::from_json(inner)?,
+        };
         Ok(Reply {
             ok,
             error,
@@ -407,6 +570,7 @@ impl Reply {
             text,
             words,
             written,
+            source,
         })
     }
 
@@ -532,10 +696,47 @@ mod tests {
             language: Some("zh-CN".to_string()),
             replace: true,
             reply: 4242,
+            source: SourceIdentity::user(),
         };
         let bytes = request.to_json().to_json_string();
         let back = Request::from_bytes(bytes.as_bytes()).expect("the request is read");
         assert_eq!(back, request);
+    }
+
+    /// The identity of the source travels with the request: the input method needs it to give every agent a
+    /// laser mouth in its own colour.
+    #[test]
+    fn the_identity_of_the_source_survives_the_round_trip() {
+        let mut source = SourceIdentity::agent("anthropic", "claude-code", "a1b2c3");
+        source.label = "Claude Code".to_string();
+        let request = Request::with_source(Op::Insert, source.clone());
+        let bytes = request.to_json().to_json_string();
+        let back = Request::from_bytes(bytes.as_bytes()).expect("the request is read");
+        assert_eq!(back.source, source);
+        assert_eq!(back.source.key(), "agent:anthropic:claude-code:a1b2c3");
+        assert!(!back.source.is_user());
+        assert_eq!(back.source.display_name(), "Claude Code");
+    }
+
+    /// Two sub-agents of the same provider are two sources: the instance is part of the key.
+    #[test]
+    fn two_sub_agents_of_one_provider_are_two_sources() {
+        let first = SourceIdentity::agent("anthropic", "claude-code", "instance-1");
+        let second = SourceIdentity::agent("anthropic", "claude-code", "instance-2");
+        assert_ne!(first.key(), second.key());
+        assert_eq!(first.key(), SourceIdentity::agent("anthropic", "claude-code", "instance-1").key());
+    }
+
+    /// A request of an old client has no source: it is the human, and the wire format does not change.
+    #[test]
+    fn a_request_without_a_source_is_the_human() {
+        let back = Request::from_bytes(br#"{"v":1,"op":"status"}"#).expect("read");
+        assert!(back.source.is_user());
+        assert_eq!(back.source.key(), "user");
+        // and the human needs no identity on the wire
+        let request = Request::new(Op::Status);
+        let text = request.to_json().to_json_string();
+        assert!(!text.contains("source"), "{text}");
     }
 
     #[test]
@@ -559,6 +760,7 @@ mod tests {
             text: "選択".to_string(),
             words: vec!["你好".to_string()],
             written: 3,
+            source: SourceIdentity::user(),
         };
         let bytes = reply.to_json().to_json_string();
         assert_eq!(Reply::from_bytes(bytes.as_bytes()).expect("read"), reply);

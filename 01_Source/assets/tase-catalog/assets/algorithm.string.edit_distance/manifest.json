@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.string.edit_distance",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "编辑距离",
+    "en-US": "Edit Distance (Levenshtein)"
+  },
+  "aliases": [
+    "edit_distance",
+    "编辑距离",
+    "Levenshtein",
+    "levenshtein distance"
+  ],
+  "category": "string",
+  "status": "DOCUMENTED",
+  "intent": "求把一个字符串改成另一个所需的最少插入、删除、替换次数。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n * m)",
+      "space": "O(min(n, m)) 滚动数组",
+      "operations": "insert_delete_substitute",
+      "cost": "uniform_by_default",
+      "unicode": "grapheme_aware_preferred"
+    },
+    "counterexamples": [
+      "字符串很长且需要多次比较时——O(n·m) 可能不可接受，应考虑位并行或其它度量",
+      "只需要判断\"是否相同\"时——直接比较即可"
+    ],
+    "alternatives": [
+      "algorithm.string.kmp",
+      "algorithm.dp.longest_common_subsequence"
+    ]
+  },
+  "complexity": {
+    "time": "O(n * m)",
+    "extra_space": "O(min(n, m))"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Levenshtein_distance"
+    ],
+    "license": "MIT"
+  }
+}

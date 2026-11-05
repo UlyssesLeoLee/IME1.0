@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.concurrency.token_bucket",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "令牌桶",
+    "en-US": "Token Bucket"
+  },
+  "aliases": [
+    "token_bucket",
+    "令牌桶",
+    "token bucket",
+    "令牌算法"
+  ],
+  "category": "concurrency",
+  "status": "DOCUMENTED",
+  "intent": "按固定速率生成令牌并放入桶中，请求取到令牌才被放行，从而限制平均速率并允许突发。",
+  "applicability": {
+    "constraints": {
+      "rate": "tokens_per_second",
+      "capacity": "burst_allowance",
+      "time_source": "monotonic_clock",
+      "decision": "consume_token_or_reject",
+      "distributed": "shared_or_per_node"
+    },
+    "counterexamples": [
+      "需要严格平滑输出、不允许任何突发时——应使用漏桶（leaky bucket）",
+      "只想限制并发数时——信号量或隔离舱更直接"
+    ],
+    "alternatives": [
+      "pattern.resilience.rate_limiter",
+      "algorithm.concurrency.bounded_queue"
+    ]
+  },
+  "complexity": {
+    "time": "O(1) 每次判定",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Token_bucket"
+    ],
+    "license": "MIT"
+  }
+}

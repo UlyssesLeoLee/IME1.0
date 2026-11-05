@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.arch.cqrs",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "命令查询职责分离",
+    "en-US": "CQRS"
+  },
+  "aliases": [
+    "CQRS",
+    "命令查询职责分离",
+    "command query responsibility segregation"
+  ],
+  "category": "arch",
+  "status": "DOCUMENTED",
+  "intent": "把修改状态的命令与读取数据的查询分开建模与部署，使两侧可以独立优化。",
+  "applicability": {
+    "constraints": {
+      "write_model": "normalized_and_consistent",
+      "read_model": "denormalized_for_queries",
+      "consistency": "eventual_by_default",
+      "complexity_cost": "high"
+    },
+    "counterexamples": [
+      "读写都简单、同步且数据量小——单模型更简单，CQRS 只增加同步链路",
+      "业务要求读后立即写（read-your-writes）——需要额外的同步等待机制"
+    ],
+    "alternatives": [
+      "pattern.arch.event_sourcing",
+      "pattern.integration.read_copy_update"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Command_query_responsibility_segregation"
+    ],
+    "license": "MIT"
+  }
+}

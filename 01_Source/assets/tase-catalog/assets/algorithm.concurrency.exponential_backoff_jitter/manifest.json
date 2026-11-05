@@ -1,0 +1,48 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.concurrency.exponential_backoff_jitter",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "指数退避与抖动",
+    "en-US": "Exponential Backoff with Jitter"
+  },
+  "aliases": [
+    "exponential_backoff_jitter",
+    "指数退避抖动",
+    "backoff jitter",
+    "退避算法"
+  ],
+  "category": "concurrency",
+  "status": "DOCUMENTED",
+  "intent": "在重试之间按指数增长的间隔等待，并加入随机抖动以分散重试压力。",
+  "applicability": {
+    "constraints": {
+      "time": "O(total wait) 摊还随尝试次数指数增长",
+      "space": "O(1)",
+      "cap": "required",
+      "jitter": "required",
+      "attempts": "bounded"
+    },
+    "counterexamples": [
+      "错误是确定性的（参数非法）时——退避没有意义",
+      "调用在交互式路径上时——长退避会拖垮响应时间"
+    ],
+    "alternatives": [
+      "pattern.resilience.retry_with_exponential_backoff_and_jitter",
+      "algorithm.concurrency.token_bucket"
+    ]
+  },
+  "complexity": {
+    "time": "O(尝试次数 × 平均退避时长)",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Exponential_backoff",
+      "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+    ],
+    "license": "MIT"
+  }
+}

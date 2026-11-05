@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.string.trie",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "字典树",
+    "en-US": "Trie (Prefix Tree)"
+  },
+  "aliases": [
+    "trie",
+    "字典树",
+    "前缀树",
+    "prefix tree"
+  ],
+  "category": "string",
+  "status": "DOCUMENTED",
+  "intent": "把字符串按公共前缀组织起来，用 O(len) 完成前缀查找与自动补全。",
+  "applicability": {
+    "constraints": {
+      "time": "O(len) 查找",
+      "space": "O(total_chars * alphabet)",
+      "keys": "strings",
+      "operations": "prefix_search_autocomplete",
+      "alphabet": "fixed_small_preferred"
+    },
+    "counterexamples": [
+      "键的数量很少且需要范围查询时——有序表或哈希表更省内存",
+      "键很长且共享前缀很少时——字典树的每字符一节点会造成内存浪费"
+    ],
+    "alternatives": [
+      "algorithm.string.aho_corasick",
+      "algorithm.datastructure.hash_table"
+    ]
+  },
+  "complexity": {
+    "time": "O(len) 每键",
+    "extra_space": "O(总字符数)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Trie"
+    ],
+    "license": "MIT"
+  }
+}

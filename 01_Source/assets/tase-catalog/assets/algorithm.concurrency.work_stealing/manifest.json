@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.concurrency.work_stealing",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "工作窃取",
+    "en-US": "Work Stealing"
+  },
+  "aliases": [
+    "work_stealing",
+    "工作窃取",
+    "work stealing scheduler",
+    "窃取调度"
+  ],
+  "category": "concurrency",
+  "status": "DOCUMENTED",
+  "intent": "让每个工作线程有自己的任务队列，空闲时从别人的队列尾部窃取任务，从而自动均衡负载。",
+  "applicability": {
+    "constraints": {
+      "per_worker_queue": "deque",
+      "steal_direction": "opposite_end",
+      "load_balance": "self_balancing",
+      "sync_cost": "low_contention",
+      "task_granularity": "not_too_fine"
+    },
+    "counterexamples": [
+      "任务粒度很粗且数量很少时——共享一个队列更简单",
+      "任务执行时间高度不均时——窃取只能缓解，不能根治"
+    ],
+    "alternatives": [
+      "algorithm.concurrency.bounded_queue",
+      "pattern.concurrent.actor"
+    ]
+  },
+  "complexity": {
+    "time": "O(1) 摊还 入队/出队/窃取",
+    "extra_space": "O(任务队列总容量)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Work_stealing"
+    ],
+    "license": "MIT"
+  }
+}

@@ -96,6 +96,12 @@ pub const TOOLS: [Tool; 7] = [
                 required: false,
                 description: "Replace the current selection instead of writing at the caret.",
             },
+            Param {
+                name: "agent",
+                kind: "string",
+                required: false,
+                description: "The name of the sub-agent that writes. Two sub-agents of the same provider are two different speakers: each of them gets a laser mouth of its own colour on the screen of the user.",
+            },
         ],
     },
     Tool {
@@ -290,7 +296,7 @@ pub fn handle_request(value: &Json, backend: &Backend) -> Option<String> {
     }
     let params = value.get("params").cloned().unwrap_or(Json::Null);
     let answer = match method {
-        "initialize" => response(id, initialize_result(&params)),
+        "initialize" => response(id, initialize_result(&params, backend)),
         "tools/list" => response(id, tool_list_json()),
         "tools/call" => response(id, tools_call(&params, backend)),
         "resources/list" => response(
@@ -309,7 +315,18 @@ pub fn handle_request(value: &Json, backend: &Backend) -> Option<String> {
 }
 
 /// The answer of `initialize`.
-fn initialize_result(params: &Json) -> Json {
+///
+/// The name the client gives in `clientInfo` is the name of the agent that writes: the input method gives that
+/// agent a mouth of light of its own, and the user sees who is writing.
+fn initialize_result(params: &Json, backend: &Backend) -> Json {
+    if let Some(name) = params
+        .get("clientInfo")
+        .and_then(|info| info.get("name"))
+        .and_then(Json::as_str)
+        .filter(|name| !name.is_empty())
+    {
+        backend.set_client_name(name);
+    }
     let asked = params.get("protocolVersion").and_then(Json::as_str).unwrap_or("");
     let version = if SUPPORTED_PROTOCOLS.contains(&asked) {
         asked
@@ -557,6 +574,49 @@ mod tests {
     }
 
     /// The drift test: the list the server publishes is the list of the one declaration, and the names are unique.
+    /// The name the client gives in `initialize` is the name of the agent that writes.
+    #[test]
+    fn the_name_of_the_client_becomes_the_name_of_the_agent() {
+        let backend = backend();
+        let _ = call(
+            r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"claude-code"}}}"#,
+            &backend,
+        );
+        let _ = call(
+            r#"{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"ime_insert_text","arguments":{"text":"hello"}}}"#,
+            &backend,
+        );
+        let request = backend.last_request().expect("the bridge was asked");
+        assert_eq!(request.source.agent, "claude-code");
+        assert!(
+            !request.source.instance.is_empty(),
+            "the client has an instance of its own"
+        );
+    }
+
+    /// The parameter `agent` names the sub-agent that writes: two sub-agents of the same provider are two different
+    /// sources, and therefore two different mouths of light.
+    #[test]
+    fn the_parameter_agent_names_the_sub_agent_that_writes() {
+        let backend = backend();
+        let _ = call(
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"ime_insert_text","arguments":{"text":"hello","agent":"planner"}}}"#,
+            &backend,
+        );
+        let with_name = backend.last_request().expect("the bridge was asked");
+        assert_eq!(with_name.source.agent, "planner");
+        let _ = call(
+            r#"{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"ime_insert_text","arguments":{"text":"hello"}}}"#,
+            &backend,
+        );
+        let without_name = backend.last_request().expect("the bridge was asked");
+        assert_ne!(
+            with_name.source.key(),
+            without_name.source.key(),
+            "the sub-agent and the process are two different speakers"
+        );
+    }
+
     #[test]
     fn the_published_tool_list_is_the_declared_one_and_the_names_are_unique() {
         let published = tool_list_json();

@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.searching.sliding_window",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "滑动窗口",
+    "en-US": "Sliding Window"
+  },
+  "aliases": [
+    "sliding_window",
+    "滑动窗口",
+    "滑窗"
+  ],
+  "category": "searching",
+  "status": "DOCUMENTED",
+  "intent": "在数组上维护一个连续窗口并随右端推进增量更新状态，把区间类问题降到 O(n)。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n) 均摊",
+      "space": "O(k) 或 O(1) 取决于状态维护方式",
+      "precondition": "contiguous_interval",
+      "window_size": "fixed_or_variable"
+    },
+    "counterexamples": [
+      "区间不连续（需要任意子集）时——窗口模型不适用",
+      "窗口状态无法增量维护时——每次重算会退化到 O(n·k)"
+    ],
+    "alternatives": [
+      "algorithm.searching.two_pointers",
+      "algorithm.datastructure.monotonic_stack"
+    ]
+  },
+  "complexity": {
+    "time": "O(n) 均摊",
+    "extra_space": "O(k) 取决于状态维护方式"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://doc.rust-lang.org/std/slice/index.html"
+    ],
+    "license": "MIT"
+  }
+}

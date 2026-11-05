@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.math.sieve_of_eratosthenes",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "埃氏筛",
+    "en-US": "Sieve of Eratosthenes"
+  },
+  "aliases": [
+    "sieve_of_eratosthenes",
+    "埃氏筛",
+    "筛法",
+    "prime sieve"
+  ],
+  "category": "math",
+  "status": "DOCUMENTED",
+  "intent": "在 O(n log log n) 时间内筛出 n 以内的全部素数。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n log log n)",
+      "space": "O(n)",
+      "output": "all_primes_up_to_n",
+      "marking": "from_p_squared",
+      "bound": "n_in_memory"
+    },
+    "counterexamples": [
+      "只需要判断单个大数是否为素数时——用确定性 Miller-Rabin 更省",
+      "n 极大（如 10^12）时——O(n) 空间不可接受，需用分段筛或其它方法"
+    ],
+    "alternatives": [
+      "algorithm.math.modular_exponentiation",
+      "algorithm.datastructure.segment_tree"
+    ]
+  },
+  "complexity": {
+    "time": "O(n log log n)",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes"
+    ],
+    "license": "MIT"
+  }
+}

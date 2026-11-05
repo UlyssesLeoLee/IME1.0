@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.structural.flyweight",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "享元",
+    "en-US": "Flyweight"
+  },
+  "aliases": [
+    "Flyweight",
+    "享元模式",
+    "flyweight pattern"
+  ],
+  "category": "structural",
+  "status": "DOCUMENTED",
+  "intent": "通过共享大量细小对象的内部状态来削减内存占用，把可变部分留给调用方。",
+  "applicability": {
+    "constraints": {
+      "object_count": "very_large",
+      "intrinsic_state": "shareable_and_immutable",
+      "extrinsic_state": "passed_from_caller",
+      "pooling": "bounded_and_controlled"
+    },
+    "counterexamples": [
+      "对象数量不大时，共享带来的复杂度不值得",
+      "对象内部状态必须可变且与对象身份绑定时，共享会导致状态串扰"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.adapter",
+      "pattern.concurrent.object_pool"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Flyweight_pattern"
+    ],
+    "license": "MIT"
+  }
+}

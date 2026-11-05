@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.concurrent.object_pool",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "对象池",
+    "en-US": "Object Pool"
+  },
+  "aliases": [
+    "ObjectPool",
+    "对象池",
+    "object pool",
+    "连接池"
+  ],
+  "category": "concurrent",
+  "status": "DOCUMENTED",
+  "intent": "预先创建并复用一批对象，避免重复构造的高昂开销，并把可用对象数限制在上限内。",
+  "applicability": {
+    "constraints": {
+      "reuse": "bounded_number_of_instances",
+      "acquisition": "borrow_or_take",
+      "return": "guaranteed_on_drop_or_explicit",
+      "pool_size": "bounded_by_resource_limits"
+    },
+    "counterexamples": [
+      "对象构造很便宜（如简单的 `Vec`）时——池的借用开销反而更大",
+      "对象不可复用（每次都持有新的资源）时——池化会造成资源泄漏或状态串扰"
+    ],
+    "alternatives": [
+      "pattern.gof.structural.flyweight",
+      "pattern.resilience.bulkhead"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Object_pool_pattern"
+    ],
+    "license": "MIT"
+  }
+}

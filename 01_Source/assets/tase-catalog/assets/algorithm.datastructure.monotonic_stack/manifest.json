@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.datastructure.monotonic_stack",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "单调栈",
+    "en-US": "Monotonic Stack"
+  },
+  "aliases": [
+    "monotonic_stack",
+    "单调栈",
+    "monotonic deque",
+    "单调队列"
+  ],
+  "category": "datastructure",
+  "status": "DOCUMENTED",
+  "intent": "用保持单调的栈或队列，在一次扫描中求出\"下一个更大/更小元素\"这类问题。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n) 总摊还",
+      "space": "O(n)",
+      "monotonicity": "strict_or_non_strict",
+      "queries": "nearest_greater_smaller"
+    },
+    "counterexamples": [
+      "只需要全局最值时——一次扫描即可，无需维护单调结构",
+      "需要支持删除或修改历史元素时——单调结构的失效规则会复杂化"
+    ],
+    "alternatives": [
+      "algorithm.searching.sliding_window",
+      "algorithm.datastructure.binary_heap"
+    ]
+  },
+  "complexity": {
+    "time": "O(n) 总摊还",
+    "extra_space": "O(n)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Monotonic_queue",
+      "https://doc.rust-lang.org/std/collections/index.html"
+    ],
+    "license": "MIT"
+  }
+}

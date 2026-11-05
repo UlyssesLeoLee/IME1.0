@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.arch.clean_architecture",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "整洁架构",
+    "en-US": "Clean Architecture"
+  },
+  "aliases": [
+    "CleanArchitecture",
+    "整洁架构",
+    "clean architecture"
+  ],
+  "category": "arch",
+  "status": "DOCUMENTED",
+  "intent": "把系统分为依赖只朝内的层次（实体、用例、适配器），使业务规则不依赖框架与数据库。",
+  "applicability": {
+    "constraints": {
+      "dependency_rule": "inward_only",
+      "layers": "entities_use_cases_interfaces_adapters",
+      "framework_independence": "true",
+      "testability": "domain_untouched_by_io"
+    },
+    "counterexamples": [
+      "简单脚本或一次性工具——分层会带来不必要的结构开销",
+      "领域模型很薄（基本是数据搬运）时，分层的收益主要体现在测试速度上"
+    ],
+    "alternatives": [
+      "pattern.arch.hexagonal_architecture",
+      "pattern.arch.dependency_injection"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Clean_architecture"
+    ],
+    "license": "MIT"
+  }
+}

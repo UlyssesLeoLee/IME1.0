@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.math.extended_euclidean",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "扩展欧几里得算法",
+    "en-US": "Extended Euclidean Algorithm"
+  },
+  "aliases": [
+    "extended_euclidean",
+    "扩展欧几里得",
+    "exgcd",
+    "贝祖系数"
+  ],
+  "category": "math",
+  "status": "DOCUMENTED",
+  "intent": "在求最大公约数的同时，求出使 s·a + t·b = gcd(a, b) 的整数系数 s 与 t。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log min(a, b))",
+      "space": "O(1)",
+      "output": "gcd_and_coefficients",
+      "input": "integers_any_sign"
+    },
+    "counterexamples": [
+      "只需要最大公约数时——普通欧几里得算法更简单",
+      "模数为质数时——费马小定理给逆元更快，但要求互质"
+    ],
+    "alternatives": [
+      "algorithm.math.euclidean_gcd",
+      "algorithm.math.modular_exponentiation"
+    ]
+  },
+  "complexity": {
+    "time": "O(log min(a, b))",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

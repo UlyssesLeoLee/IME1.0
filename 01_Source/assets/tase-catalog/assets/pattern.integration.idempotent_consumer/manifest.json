@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.integration.idempotent_consumer",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "幂等消费者",
+    "en-US": "Idempotent Consumer"
+  },
+  "aliases": [
+    "IdempotentConsumer",
+    "幂等消费者",
+    "idempotent consumer",
+    "幂等消费"
+  ],
+  "category": "integration",
+  "status": "DOCUMENTED",
+  "intent": "让消息处理在重复投递时产生与处理一次相同的结果，从而安全承受至少一次投递。",
+  "applicability": {
+    "constraints": {
+      "delivery": "at_least_once",
+      "effect": "idempotent_by_design",
+      "dedup_key": "stable_business_identifier",
+      "transaction": "effect_and_dedup_record_same_tx"
+    },
+    "counterexamples": [
+      "消息天然只会投递一次且链路可靠时——幂等处理是多余的复杂度",
+      "副作用不可逆（已付款、已发货）且无法记录去重状态时——应改为\"查询式确认\"而非幂等写入"
+    ],
+    "alternatives": [
+      "pattern.integration.transactional_outbox",
+      "pattern.integration.publish_subscribe"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Idempotence",
+      "https://en.wikipedia.org/wiki/Exactly_once_semantics"
+    ],
+    "license": "MIT"
+  }
+}

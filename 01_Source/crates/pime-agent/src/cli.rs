@@ -8,7 +8,7 @@
 //! command line itself is wrong.
 
 use crate::serve;
-use crate::{dispatch_op, Backend, Op};
+use crate::{dispatch_op, Backend, Identity, Op};
 use pime_core::json::{self, Json, Limits};
 use std::path::PathBuf;
 
@@ -98,6 +98,8 @@ pub struct Invocation {
     pub command: Command,
     /// Whether the raw JSON answer is printed instead of the short line.
     pub json: bool,
+    /// Who this client says it is (the provider, the agent and the instance of it).
+    pub identity: Identity,
 }
 
 /// Parses the arguments of the command line (without the name of the program).
@@ -109,6 +111,7 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
         return Ok(Invocation {
             command: Command::Help,
             json: false,
+            identity: Identity::default(),
         });
     }
     let op = first.clone();
@@ -123,6 +126,9 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
     let mut pipe = false;
     let mut http: Option<String> = None;
     let mut token: Option<String> = None;
+    let mut provider: Option<String> = None;
+    let mut agent: Option<String> = None;
+    let mut instance: Option<String> = None;
     let mut positional: Vec<String> = Vec::new();
 
     let mut index = 1;
@@ -155,6 +161,9 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
             }
             "--http" => http = Some(value_of(args, &mut index, arg)?),
             "--token" => token = Some(value_of(args, &mut index, arg)?),
+            "--provider" => provider = Some(value_of(args, &mut index, arg)?),
+            "--agent" => agent = Some(value_of(args, &mut index, arg)?),
+            "--instance" => instance = Some(value_of(args, &mut index, arg)?),
             other if other.starts_with('-') && other != "-" => {
                 return Err(format!("there is no option named {other}"));
             }
@@ -167,6 +176,7 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
         return Ok(Invocation {
             command: Command::Help,
             json,
+            identity: Identity::default(),
         });
     }
 
@@ -212,7 +222,15 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
         },
         other => return Err(format!("there is no operation named {other}")),
     };
-    Ok(Invocation { command, json })
+    Ok(Invocation {
+        command,
+        json,
+        identity: Identity {
+            provider: provider.unwrap_or_default(),
+            agent: agent.unwrap_or_default(),
+            instance: instance.unwrap_or_default(),
+        },
+    })
 }
 
 /// Whether the argument asks for the help.
@@ -267,6 +285,9 @@ pub fn usage() -> String {
     out.push_str("  serve                   the local server (--pipe, --http <addr>, --token <token>)\n\n");
     out.push_str("options:\n");
     out.push_str("  --json                  print the raw JSON answer\n");
+    out.push_str("  --provider <name>       the provider of this client (openai, anthropic, ...)\n");
+    out.push_str("  --agent <name>          the name of the agent that writes (claude-code, cursor, ...)\n");
+    out.push_str("  --instance <id>         the instance of this client (it keeps the same mouth of light)\n");
     out.push_str("  --help                  this text\n\n");
     out.push_str("exit codes: 0 = the operation worked, 1 = the operation failed, 2 = the command line is wrong\n");
     out
@@ -286,13 +307,15 @@ pub fn run(args: &[String], backend: &Backend) -> i32 {
         print!("{}", usage());
         return 0;
     }
+    // The client says who it is: the input method gives it a mouth of light of its own.
+    let backend = backend.with_identity(invocation.identity.clone());
     if let Command::Serve {
         pipe,
         http,
         token,
     } = &invocation.command
     {
-        return serve::serve(*pipe, http.as_deref(), token.as_deref(), backend);
+        return serve::serve(*pipe, http.as_deref(), token.as_deref(), &backend);
     }
     let (op, params) = match build(&invocation.command) {
         Ok(pair) => pair,
@@ -301,7 +324,7 @@ pub fn run(args: &[String], backend: &Backend) -> i32 {
             return 1;
         }
     };
-    let answer = dispatch_op(op, &params, backend);
+    let answer = dispatch_op(op, &params, &backend);
     let worked = answer.get("ok").and_then(Json::as_bool) == Some(true);
     if invocation.json {
         println!("{}", answer.to_json_string());
@@ -675,6 +698,36 @@ mod tests {
         for op in Op::all() {
             assert!(text.contains(op.as_str()), "{} is not in the help", op.as_str());
         }
+    }
+
+    /// The client names itself on the command line: the input method gives it a mouth of light of its own.
+    #[test]
+    fn the_client_names_itself_on_the_command_line() {
+        let parsed = parse_args(&args(&[
+            "insert",
+            "hello",
+            "--provider",
+            "anthropic",
+            "--agent",
+            "claude-code",
+            "--instance",
+            "0123456789abcdef",
+        ]))
+        .expect("insert");
+        assert_eq!(parsed.identity.provider, "anthropic");
+        assert_eq!(parsed.identity.agent, "claude-code");
+        assert_eq!(parsed.identity.instance, "0123456789abcdef");
+    }
+
+    /// The instance of the client is the one that is given: the same client keeps the same mouth of light.
+    #[test]
+    fn the_instance_of_the_client_can_be_given() {
+        let parsed = parse_args(&args(&["insert", "hello", "--instance", "keep-me"])).expect("insert");
+        assert_eq!(parsed.identity.instance, "keep-me");
+        let resolved = parsed.identity.resolve();
+        assert_eq!(resolved.instance, "keep-me", "the name of the client is kept");
+        assert!(!resolved.provider.is_empty(), "the provider has a default");
+        assert!(!resolved.agent.is_empty(), "the agent has a default");
     }
 
     #[test]

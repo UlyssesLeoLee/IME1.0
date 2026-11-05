@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.arch.dependency_injection",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "依赖注入",
+    "en-US": "Dependency Injection"
+  },
+  "aliases": [
+    "DependencyInjection",
+    "依赖注入",
+    "DI",
+    "dependency injection"
+  ],
+  "category": "arch",
+  "status": "DOCUMENTED",
+  "intent": "把对象所需的依赖从外部传入，而不是由对象自己在内部构造，从而解耦实现与获取方式。",
+  "applicability": {
+    "constraints": {
+      "injection_style": "constructor_or_parameter",
+      "container": "optional_manual_wiring",
+      "lifetime": "caller_or_container_managed",
+      "scope": "explicit_per_use_case",
+      "testability": "substitutable_fakes"
+    },
+    "counterexamples": [
+      "只有一个无状态依赖时，直接构造并不会带来实质耦合",
+      "依赖数量极多且都是进程级基础设施时，硬编码构造反而更清晰"
+    ],
+    "alternatives": [
+      "pattern.gof.creational.singleton",
+      "pattern.arch.hexagonal_architecture"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Dependency_injection"
+    ],
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.graph.bellman_ford",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "Bellman-Ford 最短路径",
+    "en-US": "Bellman-Ford Algorithm"
+  },
+  "aliases": [
+    "bellman_ford",
+    "BellmanFord",
+    "贝尔曼-福特",
+    "负权最短路"
+  ],
+  "category": "graph",
+  "status": "DOCUMENTED",
+  "intent": "在允许负权边的单源图中求最短路，并检测负权环。",
+  "applicability": {
+    "constraints": {
+      "time": "O(V * E)",
+      "space": "O(V)",
+      "edge_weight": "may_be_negative",
+      "negative_cycle": "must_be_detected",
+      "output": "distances_and_predecessors"
+    },
+    "counterexamples": [
+      "边权全部非负时——Dijkstra 更快且更简单",
+      "图很大时——O(V·E) 的代价通常不可接受"
+    ],
+    "alternatives": [
+      "algorithm.graph.dijkstra",
+      "algorithm.graph.floyd_warshall"
+    ]
+  },
+  "complexity": {
+    "time": "O(V * E)",
+    "extra_space": "O(V)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm"
+    ],
+    "license": "MIT"
+  }
+}

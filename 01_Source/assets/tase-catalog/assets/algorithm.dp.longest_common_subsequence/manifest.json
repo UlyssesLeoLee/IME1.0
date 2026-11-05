@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.dp.longest_common_subsequence",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "最长公共子序列",
+    "en-US": "Longest Common Subsequence"
+  },
+  "aliases": [
+    "longest_common_subsequence",
+    "LCS",
+    "最长公共子序列"
+  ],
+  "category": "dp",
+  "status": "DOCUMENTED",
+  "intent": "求两个序列的最长公共子序列长度。",
+  "applicability": {
+    "constraints": {
+      "time": "O(n * m)",
+      "space": "O(min(n, m)) 滚动数组",
+      "subsequence": "not_necessarily_contiguous",
+      "alphabet": "any"
+    },
+    "counterexamples": [
+      "只需要判断一个序列是否是另一个的子序列时——双指针 O(n+m) 即可",
+      "需要处理大量序列对时——O(n·m) 的总代价可能过高"
+    ],
+    "alternatives": [
+      "algorithm.dp.longest_increasing_subsequence",
+      "algorithm.string.edit_distance"
+    ]
+  },
+  "complexity": {
+    "time": "O(n * m)",
+    "extra_space": "O(min(n, m))"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Longest_common_subsequence"
+    ],
+    "license": "MIT"
+  }
+}

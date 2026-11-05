@@ -1,0 +1,45 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.observer",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "观察者",
+    "en-US": "Observer"
+  },
+  "aliases": [
+    "Observer",
+    "观察者模式",
+    "observer pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "定义一对多的依赖：主题状态变化时自动通知所有已注册的观察者。",
+  "applicability": {
+    "constraints": {
+      "relation": "one_to_many",
+      "notification": "push_or_pull",
+      "subscription": "explicit_register_and_unregister",
+      "lifetime": "observer_must_not_outlive_subject"
+    },
+    "counterexamples": [
+      "订阅关系固定且只有一两个时，直接调用更清晰",
+      "观察者需要在没有主题时独立工作（事件溯源）时，观察者语义不够"
+    ],
+    "alternatives": [
+      "pattern.integration.publish_subscribe",
+      "pattern.gof.behavioral.mediator"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Observer_pattern"
+    ],
+    "license": "MIT"
+  }
+}

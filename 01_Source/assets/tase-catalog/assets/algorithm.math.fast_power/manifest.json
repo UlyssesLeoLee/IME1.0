@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "algorithm.math.fast_power",
+  "version": "1.0.0",
+  "kind": "algorithm",
+  "name": {
+    "zh-CN": "快速幂（平方求幂）",
+    "en-US": "Exponentiation by Squaring"
+  },
+  "aliases": [
+    "fast_power",
+    "binary_exponentiation",
+    "快速幂",
+    "平方求幂"
+  ],
+  "category": "math",
+  "status": "DOCUMENTED",
+  "intent": "用平方与乘法把指数按二进制展开，把幂运算从 O(n) 次乘法降到 O(log n) 次。",
+  "applicability": {
+    "constraints": {
+      "time": "O(log exponent)",
+      "space": "O(1)",
+      "operation": "base^exponent",
+      "modulus": "optional",
+      "overflow": "must_be_checked"
+    },
+    "counterexamples": [
+      "指数很小时——朴素连乘的常数更小",
+      "需要模幂时——应使用模幂算法以避免中间值溢出"
+    ],
+    "alternatives": [
+      "algorithm.math.modular_exponentiation",
+      "algorithm.math.euclidean_gcd"
+    ]
+  },
+  "complexity": {
+    "time": "O(log 指数)",
+    "extra_space": "O(1)"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Exponentiation_by_squaring"
+    ],
+    "license": "MIT"
+  }
+}

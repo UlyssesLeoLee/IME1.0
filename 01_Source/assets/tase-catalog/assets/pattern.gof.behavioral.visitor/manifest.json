@@ -1,0 +1,46 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.gof.behavioral.visitor",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "访问者",
+    "en-US": "Visitor"
+  },
+  "aliases": [
+    "Visitor",
+    "访问者模式",
+    "visitor pattern"
+  ],
+  "category": "behavioral",
+  "status": "DOCUMENTED",
+  "intent": "在不修改元素类的前提下，为一族元素类型定义新的操作。",
+  "applicability": {
+    "constraints": {
+      "element_types": "stable_and_few",
+      "operations": "many_and_varying",
+      "double_dispatch": "required",
+      "new_element_type": "requires_visitor_change"
+    },
+    "counterexamples": [
+      "元素类型只有一个时，访问者没有意义",
+      "元素类型经常增加时，每次都要改所有访问者",
+      "操作只有一个时，直接在元素类里加方法更简单"
+    ],
+    "alternatives": [
+      "pattern.gof.behavioral.strategy",
+      "pattern.gof.behavioral.iterator"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Visitor_pattern"
+    ],
+    "license": "MIT"
+  }
+}

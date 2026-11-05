@@ -8,7 +8,6 @@
 //!
 //! Nothing is registered, no profile is activated, no text is inserted anywhere.
 
-use pime_tsf::laser::PanelOrigin;
 use pime_tsf::laser_ui::{LaserEvent, LaserUi};
 use pime_tsf::ui::Anchor;
 use std::cell::RefCell;
@@ -47,7 +46,7 @@ fn main() -> std::process::ExitCode {
         };
         laser.show(pime_tsf::layout::Rect::new(0, 0, screen_w, screen_h));
         // The panel is open, so that the mouth of the glow is on the screen.
-        laser.open_panel(PanelOrigin::Glow);
+        laser.open_panel();
     }
 
     println!("screen: {screen_w}x{screen_h}");

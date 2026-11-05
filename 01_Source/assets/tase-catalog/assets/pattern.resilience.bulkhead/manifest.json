@@ -1,0 +1,47 @@
+{
+  "schema_version": "tase.asset.v1",
+  "asset_id": "pattern.resilience.bulkhead",
+  "version": "1.0.0",
+  "kind": "pattern",
+  "name": {
+    "zh-CN": "隔离舱",
+    "en-US": "Bulkhead"
+  },
+  "aliases": [
+    "Bulkhead",
+    "隔离舱",
+    "bulkhead pattern",
+    "舱壁隔离"
+  ],
+  "category": "resilience",
+  "status": "DOCUMENTED",
+  "intent": "把资源按用途分区隔离，使一个分区的耗尽不会拖垮其它分区。",
+  "applicability": {
+    "constraints": {
+      "partitioning": "per_dependency_or_tenant",
+      "resource_limit": "explicit_bounded_pool",
+      "isolation_type": "thread_connection_memory_credit",
+      "fairness": "partition_local"
+    },
+    "counterexamples": [
+      "资源充足且各调用方负载均衡时——隔离只是增加了配置复杂度",
+      "隔离粒度过细导致每个分区都太小、效率低下时——应合并分区"
+    ],
+    "alternatives": [
+      "pattern.resilience.circuit_breaker",
+      "pattern.resilience.rate_limiter"
+    ]
+  },
+  "complexity": {
+    "time": "n/a",
+    "extra_space": "n/a"
+  },
+  "implementations": [],
+  "provenance": {
+    "references": [
+      "https://en.wikipedia.org/wiki/Graceful_degradation",
+      "https://en.wikipedia.org/wiki/Circuit_breaker_design_pattern"
+    ],
+    "license": "MIT"
+  }
+}
