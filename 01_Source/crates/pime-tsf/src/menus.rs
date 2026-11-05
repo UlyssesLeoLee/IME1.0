@@ -59,6 +59,8 @@ pub enum MenuAction {
     SetSkin(String),
     /// A programming convenience switch: the name of the setting and whether it is on.
     SetOption(String, bool),
+    /// The scheme of the keys (the programmer habit, Microsoft, Sogou, ATOK).
+    SetKeymapPreset(crate::imesettings::KeymapPreset),
     /// Switch the input language to this profile ("zh-CN", "en-US", "ja-JP").
     SwitchLanguage(String),
     /// Open the settings window.

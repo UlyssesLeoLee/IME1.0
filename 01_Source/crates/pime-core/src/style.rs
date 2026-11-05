@@ -342,6 +342,14 @@ impl LaserTheme {
     pub const GLOW_EDGE: Rgb = Rgb::new(0x7A, 0x4F, 0xE8);
     /// The core of the beam: a pale blue, never white — a laser is **light**, not a solid wire.
     pub const BEAM_CORE: Rgb = Rgb::new(0xD4, 0xF0, 0xFF);
+    /// The pale blue of the slit at the edge of the screen (the mouth of the light).
+    ///
+    /// The user asked for "a small piece of pale blue, half transparent, there but not loud"
+    /// ("若隐若现有一小截淡蓝色半透明激光"), so this is a pale blue and not the white of the core of the
+    /// beam: a laser that glows white is a lamp, not a laser.
+    pub const MOUTH_SLIT: Rgb = Rgb::new(0x9E, 0xD8, 0xFF);
+    /// The soft blue around the slit: the light that leaks into the air.
+    pub const MOUTH_HALO: Rgb = Rgb::new(0x3C, 0x8C, 0xFF);
     /// The middle of the beam: cyan.
     pub const BEAM_MID: Rgb = Rgb::new(0x59, 0xE8, 0xFF);
     /// The edge of the beam: magenta.
@@ -926,9 +934,11 @@ impl<'a> Canvas<'a> {
             return;
         }
         // The halo is soft and the core is thin: light in the air, not a rod. The user asked for a thinner beam
-        // ("激光太粗了"), so the halo is half as wide as it was and the core is a hairline.
-        let halo = 7.0;
-        let core = 1.4;
+        // ("激光太粗了"), so the halo is half as wide as it was and the core is a hairline; then they asked for a
+        // thinner beam again ("激光再细一些"), so both went down once more: the beam is now a line of light with a
+        // narrow halo, which is what makes it read as a laser and not as a rod of glass.
+        let halo = 4.5;
+        let core = 0.9;
         let left = (ax.min(bx) - halo - 1.0).floor() as i32;
         let right = (ax.max(bx) + halo + 1.0).ceil() as i32;
         let top = (ay.min(by) - halo - 1.0).floor() as i32;

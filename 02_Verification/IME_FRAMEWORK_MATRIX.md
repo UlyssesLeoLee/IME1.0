@@ -1,15 +1,17 @@
 # 输入法框架完整性矩阵（Programming IME v0.2.0）
 
-- 生成日期：2026-11-03（**插件语言 + 输入法本体测试层**；安装包与 §5 全部数字已整体刷新到本轮）
-- 代码基线：`1c10b23` + 本轮改动（工作区未提交）
+- 生成日期：2026-11-05（**第十六轮：设置窗六页页签 + 候选列表归位左侧激光面板 + 自带中日英词库 + 分层窗口原子移动**；安装包与 §5 全部数字已整体刷新到本轮）
+- 代码基线：`fa17ddd` + 本轮改动（工作区未提交）
 - 构建环境：Windows 11 x64、Rust 1.99.1（`x86_64-pc-windows-gnu`，链接器 `C:\msys64\mingw64`）、Node v24.19.0、npm 12.2.1、VS Code 1.144.0
 
 本文件回答一个问题：**这个安装包装到 Windows 上之后，它到底是不是一个"框架齐全的输入法"？**
 结论先说：**代码层面的框架是齐的；真实系统层面的框架一次都没跑过。** 下文把这两件事分开写，不混。
 
-> **本轮（2026-11-03）做了什么**：两条线并行。①**插件语言**：允许以插件形式导入语言包，随发行版交付 **Cypher / PL\/SQL / T-SQL** 三个包（默认 **T-SQL 关闭、PL\/SQL 打开**，用户可随时切换），两引擎（VS Code 桥接侧的 JavaScript 引擎、Windows 输入法侧的 Rust 核心）都实现了插件感知注册表、启停闸门、扩展名多归属解析与 **SQL 族验证器**；通用规范写在 `01_Source/docs/LANGUAGE_PLUGIN_SPEC.md`（含已知限制：Rust 核心**没有运行时包加载器**，插件语言在 Windows 输入法里当前不可用）。②**输入法本体测试层**：此前自动化验证全压在 VS Code 桥接侧，输入法本体（TSF 文本服务）没有自己的自动化测试；本轮新建 `01_Source/tests/tsf/`（**21 个行为场景** + **23 项功能覆盖账本** + **宿主级 COM 测试**）与原生窗口取证链路（探针开真窗口 → .NET 抓屏 → Node 解析 PNG 断言非纯色），功能对照表见 `01_Source/docs/IME_TEST_MATRIX.md`。本轮抓到的缺陷、待裁定项全部登记在缺口台账 `02_Verification/FRAMEWORK_GAPS.md` §5.8。
+> **本轮（2026-11-05，第十六轮）做了什么**：九件你点名的事。①**激光口**：左侧发光口里现在有一小截淡蓝色半透明激光（`SLIT_LENGTH=26`／`SLIT_WIDTH=1`／`SLIT_HALO=5`），整束光更细、更有科技感。②**设置按钮能打开设置**——真因找到了：`WM_CREATE` 的 lparam **不带** lpParam，窗口句柄建好后拿不到设置对象，所以 `open()` 一直失败；改到 `WM_NCCREATE` 里用 `CreateStruct` 读 `lp_create_params` 才修好。③**设置内容对标搜狗**：真实 `SysTabControl32` 的**六页页签**（常规/按键/外观/**插件**/AI/关于），页签必须**按索引插入**（`wParam=-1` 的追加惯用法在本机被控件拒绝），设置项比原来多得多。④**Tab 按程序员习惯**作为选取使用（默认 Tab 移动高亮即选取，Enter/空格/数字上屏），按键方案可切**微软/搜狗/ATOK/程序员**预设。⑤**打字时不再显示搜狗式悬浮窗**——候选列表搬进左侧激光面板（新增 `laser_candidates.rs`），`popup.rs` 的 `PopupWindow` 生产路径不再使用。⑥**PL/SQL 作为「打开」的插件、T-SQL 作为「关闭」的插件**加入，设置菜单有**插件选项卡**可开关。⑦**Ctrl+F12 切中文/日文能正常打字**——按「输入法自带词库」的方向落地（`pime-core/src/cjk.rs` + 5 个数据文件），并用**真实词库端到端测试**证明（中文档打「ni」出「你」、日文档「nihon」出假名）。⑧**透明图层边缘残留**——分层窗口移动改为**由图片原子移动**（`glass.rs`）。⑨**预留 API**：`services.rs` 里定义 **AI 整理词库 / 远程更新 / 用户登录**（搜狗式管理）三个接口（当前是桩实现，不联网）。本轮**实拍取证抓到并修掉两个真缺陷**：设置窗的页签条一直是空的、设置窗永远开在 (0,0) 且不在顶层；另修了长说明文字被裁切。缺陷、待裁定项全部登记在缺口台账 `02_Verification/FRAMEWORK_GAPS.md` §5.14。
 
-> **上一轮（2026-11-02）做了什么**：按你的裁定补了 4 个框架项（COM 对象计数、文档/上下文生命周期回调、候选窗归属宿主窗口、DPI 基准）、2 个安装器项（安装结束指引、ARP 日期与图标）、1 个发布流程项（一键签名脚本与证书放置位）。同日第三轮又补了**悬浮窗（搜狗拼音式工具条）、设置界面（按语言分组）、可搜索的语言切换菜单、AI effort 与外观皮肤**，并修了候选列表 UI element 协议与宿主选词回传。同日第四轮补了**安装向导**（自绘窗口 + 右下角 IME1.0 logo）。同日第六轮把**安装位置做成可以直接输入**（真实 EDIT 子控件）、**logo 改成原样 1:1 直绘**（不再缩放发白）、**左上角也放 logo**、**整体彩虹配色**，并把右下角图标 / 窗口图标 / EXE 资源 / 载荷 `pime.ico` 统一成同一个 logo。**同日第七轮**：向导的整套绘制换成**自绘像素面**（线性光混色、解析式抗锯齿、柔影，§5.3 甲），并按你的要求把**「选目标文字 → 按 Tab → 上屏」**这条链路做通（§5.3 乙，键位口径与两份需求文档有冲突，已登记在缺口提交单 §5.5 待你裁定）。
+> **上一轮（2026-11-03）做了什么**：两条线并行。①**插件语言**：允许以插件形式导入语言包，随发行版交付 **Cypher / PL\/SQL / T-SQL** 三个包（默认 **T-SQL 关闭、PL\/SQL 打开**，用户可随时切换），两引擎（VS Code 桥接侧的 JavaScript 引擎、Windows 输入法侧的 Rust 核心）都实现了插件感知注册表、启停闸门、扩展名多归属解析与 **SQL 族验证器**；通用规范写在 `01_Source/docs/LANGUAGE_PLUGIN_SPEC.md`（含已知限制：Rust 核心**没有运行时包加载器**，插件语言在 Windows 输入法里当前不可用）。②**输入法本体测试层**：此前自动化验证全压在 VS Code 桥接侧，输入法本体（TSF 文本服务）没有自己的自动化测试；本轮新建 `01_Source/tests/tsf/`（**21 个行为场景** + **23 项功能覆盖账本** + **宿主级 COM 测试**）与原生窗口取证链路（探针开真窗口 → .NET 抓屏 → Node 解析 PNG 断言非纯色），功能对照表见 `01_Source/docs/IME_TEST_MATRIX.md`。本轮抓到的缺陷、待裁定项全部登记在缺口台账 `02_Verification/FRAMEWORK_GAPS.md` §5.8。
+
+> **更早的一轮（2026-11-02）做了什么**：按你的裁定补了 4 个框架项（COM 对象计数、文档/上下文生命周期回调、候选窗归属宿主窗口、DPI 基准）、2 个安装器项（安装结束指引、ARP 日期与图标）、1 个发布流程项（一键签名脚本与证书放置位）。同日第三轮又补了**悬浮窗（搜狗拼音式工具条）、设置界面（按语言分组）、可搜索的语言切换菜单、AI effort 与外观皮肤**，并修了候选列表 UI element 协议与宿主选词回传。同日第四轮补了**安装向导**（自绘窗口 + 右下角 IME1.0 logo）。同日第六轮把**安装位置做成可以直接输入**（真实 EDIT 子控件）、**logo 改成原样 1:1 直绘**（不再缩放发白）、**左上角也放 logo**、**整体彩虹配色**，并把右下角图标 / 窗口图标 / EXE 资源 / 载荷 `pime.ico` 统一成同一个 logo。**同日第七轮**：向导的整套绘制换成**自绘像素面**（线性光混色、解析式抗锯齿、柔影，§5.3 甲），并按你的要求把**「选目标文字 → 按 Tab → 上屏」**这条链路做通（§5.3 乙，键位口径与两份需求文档有冲突，已登记在缺口提交单 §5.5 待你裁定）。
 
 ## 0. 三层口径（本文全篇使用）
 
@@ -27,11 +29,11 @@
 | 项 | 值 |
 |---|---|
 | 文件 | `01_Source/dist/ProgrammingIME-0.2.0-win-x64-setup.exe` |
-| 大小 | 7,703,669 字节 |
-| SHA-256 | `4698beea1062caa5e48962f768e447926f69a981c5bf3482f8d4571c8d293416` |
+| 大小 | 8,314,936 字节 |
+| SHA-256 | `7cc4d5ce6142ed0c6080e64cc17a2cb5401e19d3ca40a12e8c339f87a4bb709d` |
 | 形态 | x64 控制台子系统 EXE；载荷以 PE overlay 附在桩程序之后 |
 | 桩程序 | `pime-setup.exe`，787,968 字节（含安装向导与内嵌 logo） |
-| 载荷（8 条） | `pime_tsf.dll` 2,372,096 B ／ `pime-core.exe` 2,985,613 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,136 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 877,568 B ／ `pime-ai-worker.exe` 400,896 B ／ `meta.json` 87 B |
+| 载荷（8 条） | `pime_tsf.dll` 2,591,744 B ／ `pime-core.exe` 3,180,624 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,136 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 1,074,176 B ／ `pime-ai-worker.exe` 400,896 B ／ `meta.json` 87 B |
 | 导入表 | 只导入 Windows 系统 DLL。**桩程序**：advapi32 / bcryptprimitives / kernel32 / msvcrt / ntdll / ole32 / oleaut32 / shell32 / user32；**载荷里的每个程序**（DLL、core、托盘、worker）也逐个核过（托盘另需 `winmm`，worker 另需 `crypt32`/`winhttp`，都是 Windows 自带） |
 | 签名 | **无**。SmartScreen 会报"未知发布者"。签名流程已备好（`01_Source/scripts/sign-installer.ps1`），等证书 |
 
@@ -43,9 +45,9 @@ node scripts/build-installer.js          # 产出 dist/*.exe 与 *.sha256
 node scripts/build-installer.js --dry-run # 只打印安装计划，不改任何东西
 ```
 
-安装包自带的 `--dry-run` 已实跑通过：能找到并逐个校验自己的载荷（6 个条目 SHA-256 全对），打印 10 步安装计划，**没有创建任何文件**。
+安装包自带的 `--dry-run` 已实跑通过：能找到并逐个校验自己的载荷（8 个条目 SHA-256 全对），打印 10 步安装计划，**没有创建任何文件**。
 
-> **构建不是字节可复现的**：同一份源码、同一套工具链重跑 `build-installer.js`，文件大小不变（6,288,872 字节）但 **SHA-256 会变**（GNU 链接产物里带了每次构建都会变的内容）。所以上表的哈希**只对当前这一个 `dist/` 里的文件成立**；重装前请以 `dist/*.exe.sha256` 为准。这条事实正是 `installer-claims-check.js` 存在的原因——文档里的数字必须与产物一致，一致性靠机器比对，不靠人记。
+> **构建不是字节可复现的**：同一份源码、同一套工具链重跑 `build-installer.js`，文件大小不变（8,314,936 字节）但 **SHA-256 会变**（GNU 链接产物里带了每次构建都会变的内容）。所以上表的哈希**只对当前这一个 `dist/` 里的文件成立**；重装前请以 `dist/*.exe.sha256` 为准。这条事实正是 `installer-claims-check.js` 存在的原因——文档里的数字必须与产物一致，一致性靠机器比对，不靠人记。
 
 ## 2. 框架功能矩阵
 
@@ -117,11 +119,17 @@ node scripts/build-installer.js --dry-run # 只打印安装计划，不改任何
 | 输入状态机（Direct/Observing/Candidates/Composing/Suspended/FaultFallback） | `pime-core/src/input.rs:27-34`、`controller.rs:202-225` | 已实现 | `controller.rs` 约 60 项 | 否 |
 | 安全字段（密码框）静默 | `tip.rs:242-278`、`controller.rs` | 已实现 | 有 | 否 |
 | 组合串文本写入（读回校验，不盲写） | `tip.rs:196-236,420-440` | 已实现 | `controller.rs:1626,1658` | 否 |
-| **悬浮窗（搜狗拼音式工具条）**：光标旁常驻，中/英、AI effort、外观皮肤、编程便捷开关、语言（可搜索下拉）、设置 | `floating.rs`（工具条）、`menus.rs`（下拉/可搜索菜单） | **已实现**（2026-11-02） | 纯几何与过滤逻辑的单测（布局、命中、过滤、上下翻转） | 否（窗口从未在真实宿主里显示过） |
-| **设置界面**：按语言分组（候选页大小、Tab 行为、**Tab 是否交给宿主**、空格上屏、自动开组合、默认输入模式、显示悬浮窗）+ 原子写盘 | `settings_window.rs`、`imesettings.rs` | **已实现**（2026-11-02） | `imesettings.rs` 的读写/容错/原子写单测 | 否 |
+| **悬浮窗（搜狗拼音式工具条）**：**已于第十五轮整块删除**（`floating.rs` 与 `bar_skin.rs` 两个文件连同 21 项单测一起删掉，登记在缺口台账 §5.13.2 第 2 条待你追认）；**打字时不再显示任何搜狗式悬浮窗**——悬浮界面统一到左侧蓝色微光激光口区域，候选列表也搬进那块面板（见下行） | `menus.rs`（下拉/可搜索菜单，仍在用）；`floating.rs`（**已删除**） | **已删除**（2026-11-04 第十五轮） | 过滤/翻转的单测仍在 `menus.rs` | 否（窗口从未在真实宿主里显示过） |
+| **候选列表归位左侧激光面板**（打字时**不出现**搜狗式悬浮窗；候选行由激光面板承载，`LaserCandidates` 实现 `CandidateUi`；`popup.rs` 的 `PopupWindow` 生产路径不再使用，模块与代码保留） | `laser_candidates.rs`（新）、`laser.rs`（`PanelCandidate`／`PanelItem::Candidate`／`set_candidates`／`place_panel`）、`laser_ui.rs` | **已实现**（2026-11-05 第十六轮） | `pime-tsf` 端到端测试断言候选行真的出现在面板里；探针实拍可见 5 行候选 | 否（**未在真实宿主里跑过**：新 DLL 还没换上） |
+| **设置界面**：**六页真实页签**（常规 / 按键 / 外观 / **插件** / AI / 关于）+ 按语言分组（候选页大小、Tab 行为、**Tab 是否交给宿主**、空格上屏、自动开组合、默认输入模式、显示激光界面）+ **插件开关**（Cypher / PL\/SQL / T-SQL）+ 按键方案预设（程序员 / 微软 / 搜狗 / ATOK / 自定义）+ 原子写盘 | `settings_window.rs`、`imesettings.rs` | **已实现**（2026-11-05 第十六轮重做为六页页签） | `imesettings.rs` 的读写/容错/原子写单测 + 设置窗布局单测（`every_text_of_the_settings_window_has_a_box_that_is_big_enough` 等）+ 实拍页签 6 个 | 否（窗口从未在真实宿主里显示过；**本轮修掉了「页签条一直是空的」与「窗口永远开在 (0,0)」两个真缺陷**） |
 | **候选窗显示时 Tab 确认上屏**（选目标文字 → 按 Tab → 文字写进宿主文档） | `pime-core/src/input.rs` 的 `tab_is_ours()` 与 `reserved_key()`、`pime-tsf/src/controller.rs` | **已实现**（2026-11-02 第七轮，按你的要求改的键位口径） | `pime-core` 的「直接模式下 Tab 确认」单测 + `pime-tsf` 控制器的端到端断言（文档里真的出现候选文字） | 否（**判据层仍为空**：需你在真实宿主实测，见 §5.3） |
 | **Tab 可以完全交还给宿主**（回到需求文档描述的「预览内导航、非自动应用」） | `pime-core/src/input.rs` 的 `KeyMap::tab_to_host`、`imesettings.rs` 的 `tabToHost` | **已实现**（2026-11-02 第七轮） | `pime-core` 与 `pime-tsf` 各一项（直接模式与组合态都放行） | 否 |
 | **语言切换菜单**：搜索框过滤，菜单可向上弹出，调用 TSF `ActivateLanguageProfile` 切换 profile | `menus.rs`、`tip.rs` 的 `switch_language` | **已实现**（2026-11-02） | 过滤/翻转的单测；TSF 调用只能真机验 | 否 |
+| **自带中日英词库**（拼音→中文、罗马音→假名/日文汉字、英文词表；**不调用任何其他输入法**；档案随语言切换：zh-CN→拼音、ja-JP→假名、en-US→代码引擎优先、无代码候选时补英文词） | `pime-core/src/cjk.rs`（新）、`pime-core/src/cjk/*.txt`（5 个数据文件）、`predict.rs`、`imeswitch.rs` 的 `profile_of()`、`controller.rs` 的 `set_profile()` | **已实现**（2026-11-05 第十六轮） | `pime-core` 三档预测单测 + `pime-tsf` **真实词库端到端测试**（中文档「ni」→「你」上屏；日文档「nihon」→假名；英文档仍是代码） | 否（**真实键盘下的中文/日文输入还没试过**） |
+| **Tab 语义可配置**（默认 **Tab = 移动高亮并选取**（程序员习惯），Enter/空格/数字上屏；可改为「上屏候选」（微软/搜狗/ATOK 口径）或「交给宿主」） | `pime-core/src/input.rs`、`controller.rs`、`imesettings.rs`、`settings_window.rs` | **已实现**（2026-11-05 第十六轮） | `pime-core` 与 `pime-tsf` 各自的键位单测 | 否（真实键盘手感要你自己试） |
+| **按键方案预设**（程序员 / 微软 / 搜狗 / ATOK / 自定义；**仅为近似**，不是原版逐键复刻） | `imesettings.rs`、`settings_window.rs` 的按键页 | **已实现**（2026-11-05 第十六轮） | 设置读写单测 | 否 |
+| **分层窗口边缘残留**（分层窗口移动改为**由图片原子移动**：`UpdateLayeredWindow` 带新目标点重新上传图层，surface 与窗口一起走，旧位置不留像素） | `glass.rs` 的 `move_to()` 与纯函数 `move_way()` | **已实现**（2026-11-05 第十六轮） | 单测 `a_window_with_a_picture_is_moved_by_its_picture` + 账本 `F-LAYERED-WINDOW` | 否 |
+| **预留的词库管理 API**（**AI 整理词库** / **远程更新** / **用户登录**（搜狗式管理）三个接口已定义，**当前是桩实现**，不联网、不收集任何数据） | `pime-core/src/services.rs`（新）：`DictionaryCurator` / `DictionaryUpdater` / `AccountService` | **接口已定义**（2026-11-05 第十六轮） | 编译 + 单测 | 否（**这三个接口没有接后端**，是给后续接服务用的契约） |
 
 **候选窗的归属与 DPI**（本轮补上）：
 - **owner**：候选窗原本是没有任何归属的置顶顶层窗口，宿主窗口关掉后它会留在屏幕上。现在它把**本进程的前台窗口**当作 owner（`GWLP_HWNDPARENT`），别的进程的窗口一律不认——否则它会浮在别人的窗口上方，或在别的应用关闭时一起消失。每次列表出现都会刷新 owner。
@@ -154,7 +162,7 @@ node scripts/build-installer.js --dry-run # 只打印安装计划，不改任何
 ## 3. 结论：按口径分三档
 
 **A. 代码层齐备 + 行为层有自动化证据（可以在可丢弃机器上试）**
-DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服务激活、吞键判定、**文档/上下文生命周期回调**、编辑会话与文本写入、候选窗与 DPI 算术、**候选窗归属宿主窗口**、键位映射、输入状态机、安全字段、三语言 profile 注册、三个 category 注册、卸载/升级的精确撤销、安装器事务与回滚、载荷格式与校验、真实文件系统与链接的集成检查、**安装结束时的三语言指引**、**ARP 安装日期与图标**、**签名流程脚本**、**安装向导（自绘 + logo + 安装位置可选且可直接输入）**。
+DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服务激活、吞键判定、**文档/上下文生命周期回调**、编辑会话与文本写入、候选窗与 DPI 算术、**候选窗归属宿主窗口**、键位映射、输入状态机、安全字段、三语言 profile 注册、三个 category 注册、卸载/升级的精确撤销、安装器事务与回滚、载荷格式与校验、真实文件系统与链接的集成检查、**安装结束时的三语言指引**、**ARP 安装日期与图标**、**签名流程脚本**、**安装向导（自绘 + logo + 安装位置可选且可直接输入）**、**设置窗六页真实页签（含插件开关与按键方案预设）**、**候选列表归位左侧激光面板（打字时没有搜狗式悬浮窗）**、**自带中日英词库（不调用其他输入法）**、**分层窗口由图片原子移动（无边缘残留）**、**词库管理的三个预留接口（AI 整理 / 远程更新 / 用户登录，桩实现）**。
 
 **B. 代码层存在，但只在假后端 / 单元层验证过**
 `StartComposition` 与组合结束的真实 COM 时序、编辑会话在真实宿主下的同步/异步行为、`ITfUIElementMgr` 与真实宿主的对话、候选窗在真实应用中的定位与 DPI、真实注册表写入、真实 `regsvr32`、真实 UAC 提权、真实重启删除、真实安装/卸载全流程、**真实签名（假 signtool 只复现了布局，不是真 PKCS#7）**。
@@ -180,16 +188,16 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | `Get-VM`（Hyper-V） | 「你没有完成此任务所需的权限」——当前用户不在 Hyper-V Administrators 组 |
 | `multipass list` | `cannot connect to the multipass socket`（守护进程未运行；这台机器上 360 安全卫士会删 Multipass 服务，见记忆库） |
 | 磁盘上的 Windows ISO | 无 |
-| 注册表写入 / `regsvr32` / UAC 提权 | 本机规则禁止在这台生产机上做 |
+| 注册表写入 / `regsvr32` / UAC 提权 | **2026-11-04 已在本机做过一次提权安装**（真实 HKLM 的 COM 键、三个语言 profile、三个 category、ARP 条目、`regsvr32` 不再报 `E_FAIL`；退出码 3010 = 旧 DLL 被占用，注销或重启才换新）。**本轮规则仍然是不在这台生产机上继续做** |
 
 结论：**第三层（判据层）必须换一台可丢弃的 Windows 11 机器做**，运行手册是 `01_Source/docs/TSF_VM_TEST_PLAN.md`，安装器章节的待确认清单是 `01_Source/docs/INSTALLER.md` 第 14.1 节（14 条）。
 
-## 5. 本次验证记录（2026-11-03）
+## 5. 本次验证记录（2026-11-05，第十六轮）
 
 | 检查 | 结果 | 证据 |
 |---|---|---|
-| Rust 核心 `cargo test --workspace` | **411 / 411 通过**（本轮修了"发光口看不见"的真因：镜头用的是屏幕坐标，而画布是 64×64 的窗口局部坐标，镜头被画到了画布外面；新增一条回归测试把它钉住） | `run-all-2026-11-04.log` |
-| Rust TSF `cargo test` | **253 / 253 通过**（本轮把发光口改成看得见的镜头（彩虹环 + 白核）、加上拖动与贴边（左/上/右，拖不出屏幕）、悬浮窗拖动贴边、位置写进设置文件；另修了拖动后面板不跟随的问题） | `run-all-2026-11-04.log` |
+| Rust 核心 `cargo test --workspace` | **424 / 424 通过**（本轮新增**自带中日英词库** `pime-core/src/cjk.rs` + 5 个数据文件（拼音音节表、拼音词组表、罗马音假名表、日文词表、英文词表）、**三个预留服务接口** `pime-core/src/services.rs`（AI 整理词库／远程更新／用户登录）、Tab 三种口径与按键方案预设；中文/日文/英文三档各自的预测单测） | `run-all-2026-11-04.log` |
+| Rust TSF `cargo test` | **276 / 276 通过**（本轮把**候选列表搬进左侧激光面板**（新增 `laser_candidates.rs`，替换搜狗式悬浮窗）、设置窗改**六页真实页签**（常规/按键/外观/**插件**/AI/关于）、修掉**空页签条**与**窗口开在 (0,0)** 两个真缺陷、**分层窗口改为由图片原子移动**（消除边缘残留）、新增**真实词库端到端测试**（中文档打「ni」出「你」、日文档「nihon」出假名）） | `run-all-2026-11-04.log` |
 | 安装器 `cargo test`（单元 105 + 真实文件系统 13 + 真实链接 5） | **123 / 123 通过**（本轮新增既有安装检测（manifest → ARP → COM 三级）与"已安装 → 修复/重新安装/卸载"向导页） | `setup-tests-2026-11-04.log` |
 | JavaScript 单元 / 集成 + 引擎差分 | **345 / 345 通过**（0 失败 0 跳过） | `run-all-2026-11-04.log` |
 | **输入法场景套件**（21 个 TSF 行为场景：直打/组字/候选/翻页/取消/提交/语言切换…） | **21 / 21 通过** | `01_Source/tests/tsf/ime_scenarios.rs`、`01_Source/docs/IME_TEST_MATRIX.md` |
@@ -201,13 +209,19 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | **悬浮栏换激光彩虹**（新增第 4 套皮肤「激光彩虹」，出厂默认；模式按钮下是**彩虹渐变胶囊**，顶边是**渐变彩虹带**） | **代码层全绿**（`bar_skin.rs`、`imesettings.rs` 的默认值与 `skin_label`）；**取证**：同一张截图，放大图 `ime-ui/floating-bar-zoom.png`；**菜单仍未换肤**（登记为 D-22 的后半段） | `crates/pime-tsf/src/bar_skin.rs`、`crates/pime-tsf/src/floating.rs` |
 | **托盘与 AI worker 随安装包分发**（载荷 6 → 8 项；托盘「开机自动启动」开关写当前用户的 Run 项；托盘「设置…」接通） | **代码层全绿**（`pime-setup` 116 项、托盘 9 项、clippy 干净；构建时逐个核对载荷程序的导入表）；**未在真机验证**（托盘图标、录音、开机自启的实际写入都没跑过） | `crates/pime-setup/src/payload.rs`、`scripts/build-installer.js`、`crates/pime-tray/src/autostart.rs` |
 | **光束改半透明蓝激光**（去纯白实心芯，核心与光晕的 alpha 都压低，整束光在蓝色系里渐变）+ **彩虹渐变收进内核**（横向 / 纵向 / 面板顶边三个通用绘图函数） | **代码层全绿**（`pime-core` 410 项，含 4 项新单测；`pime-tsf` / `pime-tray` / `pime-setup` 的 clippy 干净）；**取证**：光束探针 `crates/pime-tsf/examples/laser_beam_probe.rs`，放大图 `ime-ui/laser-beam-zoom.png`、`ime-ui/settings-panel-zoom.png`；**未在真实宿主里跑过** | `crates/pime-core/src/style.rs`、`crates/pime-tsf/src/candidate_skin.rs`、`crates/pime-tsf/src/bar_skin.rs`、`crates/pime-tsf/src/laser_ui.rs` |
+| **设置窗六页真实页签**（常规/按键/外观/**插件**/AI/关于；插件页可勾选 **Cypher / PL\/SQL / T-SQL**，默认 PL/SQL 开、T-SQL 关） | **代码层全绿**（`settings_window.rs` 的 `PAGES`、`SettingsPage::Plugins`、`ControlKind::PluginCheck`；`imesettings.rs` 的 `ImeSettings.plugins`；`tip.rs` 的 `apply_plugins()`）；**取证**：探针把设置窗切到插件页后实拍，页签 6 个、插件勾选三行可见（`02_Verification/ime-ui/ime-windows.png`）；**未在真实宿主里跑过** | `crates/pime-tsf/src/settings_window.rs`、`crates/pime-tsf/src/imesettings.rs` |
+| **打字时不再显示搜狗式悬浮窗**（候选列表改由左侧激光面板承载，`LaserCandidates` 实现 `CandidateUi`；`popup.rs` 的 `PopupWindow` 生产路径不再使用，模块与代码保留） | **代码层全绿**（`laser_candidates.rs`、`laser.rs` 的 `PanelCandidate`／`PanelItem::Candidate`／`set_candidates`／`place_panel`；`pime-tsf` 端到端测试断言候选行真的出现在面板里）；**取证**：同一张实拍图里左侧面板内可见 5 行候选；**未在真实宿主里跑过** | `crates/pime-tsf/src/laser_candidates.rs`、`crates/pime-tsf/src/laser.rs` |
+| **输入法自带中日英词库**（拼音→中文、罗马音→假名/日文汉字、英文词表；**不调用任何其他输入法**） | **代码层全绿**（`pime-core/src/cjk.rs` + `cjk/pinyin-syllables.txt`、`cjk/pinyin-phrases.txt`、`cjk/romaji-kana.txt`、`cjk/japanese-words.txt`、`cjk/english-words.txt`）；**行为层已实证**：中文档输入「ni」→候选含「你」→上屏后文档里是一个汉字；日文档「nihon」→假名；英文档仍是代码优先 | `crates/pime-core/src/cjk.rs`、`crates/pime-tsf/src/controller.rs` 的真实词库端到端测试 |
+| **Tab 语义与按键方案预设**（默认 **Tab = 移动高亮并选取**（程序员习惯），Enter/空格/数字上屏；设置里可改成「上屏候选」（微软/搜狗/ATOK 口径）或「交给宿主」；按键方案预设：程序员/微软/搜狗/ATOK/自定义） | **代码层全绿**（`pime-core/src/input.rs` 的 `tab_cycles`；`imesettings.rs` 的 `ImeSettings`；`settings_window.rs` 的按键页控件）；**未在真实宿主里跑过**（真实键盘下的 Tab 手感要你自己试） | `crates/pime-core/src/input.rs`、`crates/pime-tsf/src/settings_window.rs` |
+| **分层窗口边缘残留**（分层窗口移动改为**由图片原子移动**：`UpdateLayeredWindow` 带新目标点重新上传图层，surface 与窗口一起走，旧位置不留像素） | **代码层全绿**（`glass.rs` 的 `move_to()` 与纯函数 `move_way()`；单测 `a_window_with_a_picture_is_moved_by_its_picture`）；**账本新增 F-LAYERED-WINDOW 条目**；**未在真实宿主里跑过** | `crates/pime-tsf/src/glass.rs`、`01_Source/tests/tsf/common/scenarios.rs` |
+| **本轮取证探针 + 门禁断言**（探针写 `probe-report.json`：设置窗是否打开、页签数、当前页标题、候选行数、窗口矩形、屏幕尺寸；`ime-ui-check.js` 断言页签 **6** 页、当前页是「插件」、面板里有候选行、**设置窗在屏幕中间**） | **通过**（截图无法证明「页签存在」与「窗口居中」，所以改成机器可读的报告 + 断言；页数≠6 或列表为空时退出码非 0） | `01_Source/crates/pime-tsf/examples/ime_ui_probe.rs`、`01_Source/tests/smoke/ime-ui-check.js`、`02_Verification/ime-ui/probe-report.json` |
 | TSF DLL PE 检查（x64、四个导出、只导入系统 DLL） | 通过 | `run-all-2026-11-04.log` |
 | `.vsix` 打包与包内自检（49 个文件、7 个内置规则包 + 3 个插件包、反向对照） | 通过 | `run-all-2026-11-04.log` |
 | 安装包构建 + `--dry-run` 自校验（8 个载荷条目） | 通过（未安装、未注册） | `installer-build.log` |
 | 文档数字 ↔ 产物一致性（含反向对照：篡改任一数字必变红） | 通过 | `01_Source/tests/smoke/installer-claims-check.js` |
 | 证据集交叉核对（**构建日志 ↔ dist 产物 ↔ `.sha256` sidecar ↔ 文档正文 ↔ 两份测试日志**） | 通过（第六轮新增；18 项断言） | `01_Source/tests/smoke/evidence-cross-check.js` |
 | 签名脚本自检（`-Help` / 无证书 / 解析 / ASCII / 假 signtool 端到端） | 通过 | `01_Source/scripts/sign-installer.ps1`、`01_Source/docs/SIGNING.md` |
-| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **381 / 381 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`））；**第十五轮再刷 19 条 + 补登记 2 个新文件**（`skin.rs`、`docs/HOTKEYS.md`）**并移除 2 个已删文件**（`floating.rs`、`bar_skin.rs`），并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
+| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **391 / 391 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`））；**第十五轮再刷 19 条 + 补登记 2 个新文件**（`skin.rs`、`docs/HOTKEYS.md`）**并移除 2 个已删文件**（`floating.rs`、`bar_skin.rs`）；**本轮（第十六轮）再刷 22 条 + 补登记 10 个新文件**——`cjk.rs` 与 5 个词库数据文件、`services.rs`、`laser_candidates.rs`、`predictor.rs`、`probe-report.json`，并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
 
 **注意口径**：上一行 9 项全部是**代码层与行为层**的证据。它们**不**构成"这是一个能用的 Windows 输入法"的证明——那一层是空的（见第 4 节）。
 
@@ -347,20 +361,20 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 <!-- installer-claims:begin -->
 # machine-readable claims (checked by 01_Source/tests/smoke/installer-claims-check.js)
 installer_file = ProgrammingIME-0.2.0-win-x64-setup.exe
-installer_bytes = 7703669
-installer_sha256 = 4698beea1062caa5e48962f768e447926f69a981c5bf3482f8d4571c8d293416
+installer_bytes = 8314936
+installer_sha256 = 7cc4d5ce6142ed0c6080e64cc17a2cb5401e19d3ca40a12e8c339f87a4bb709d
 stub_bytes = 787968
 payload_entry_count = 8
-payload_pime_tsf_dll_bytes = 2372096
-payload_pime_core_exe_bytes = 2985613
+payload_pime_tsf_dll_bytes = 2591744
+payload_pime_core_exe_bytes = 3180624
 payload_license_bytes = 1085
 payload_programming_ime_vsix_bytes = 211136
 payload_pime_ico_bytes = 66724
-payload_pime_tray_exe_bytes = 877568
+payload_pime_tray_exe_bytes = 1074176
 payload_pime_ai_worker_exe_bytes = 400896
 payload_meta_json_bytes = 87
-rust_core_tests = 411
-rust_tsf_tests = 253
+rust_core_tests = 424
+rust_tsf_tests = 276
 js_tests = 345
 evidence_run_all_log = run-all-2026-11-04.log
 evidence_setup_log = setup-tests-2026-11-04.log

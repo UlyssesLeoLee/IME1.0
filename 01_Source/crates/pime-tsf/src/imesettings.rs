@@ -29,6 +29,20 @@ pub const VERSION: i64 = 1;
 /// The list itself is the one of the core: the switch key walks through the same three languages.
 pub const LANGUAGES: [&str; 3] = pime_core::imeswitch::LANGUAGES;
 
+/// The plugin languages the product knows, with the name the settings window shows.
+///
+/// A plugin adds a whole language: its own rules, its own dialects and its own validator. The ids are the
+/// ones of the core (`pime_core::pack::PLUGIN_LANGUAGES`); a unit test pins that the two lists agree, so a
+/// plugin that the core knows cannot be forgotten here.
+///
+/// The product ships with Cypher and PL/SQL on and T-SQL off: the two SQL plugins share the `.sql` extension,
+/// so only one of the two may own it at a time.
+pub const PLUGINS: [(&str, &str); 3] = [
+    ("cypher", "Cypher"),
+    ("plsql", "PL/SQL"),
+    ("tsql", "T-SQL"),
+];
+
 /// The name of the settings file inside the local application data folder.
 pub const FILE_NAME: &str = "settings.json";
 
@@ -68,20 +82,25 @@ pub fn language_for_id(langid: u16) -> Option<&'static str> {
 /// The settings of one language profile.
 ///
 /// The defaults are the ones the product ships with: the input method starts in direct mode (it eats no code
-/// character), the candidate page holds five rows, the Tab key confirms the highlighted candidate (the mainstream
-/// behaviour) and the space key is a space (in code it usually is).
+/// character), the candidate page holds five rows, the Tab key moves the highlight of the list (the programmer
+/// habit: Tab selects, Enter/Space/digit take the candidate) and the space key is a space (in code it usually is).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LanguageSettings {
     /// Candidates per page (1..=9). The digits 1..=page_size pick within the page.
     pub page_size: usize,
     /// Space confirms the highlighted candidate. Off by default: in code a space is a space.
     pub space_confirms: bool,
-    /// Tab walks the candidate list instead of taking the highlighted candidate. Off by default: Tab confirms the
-    /// highlighted candidate, like the mainstream input methods.
+    /// Tab walks the candidate list instead of taking the highlighted candidate. **On** by default: the programmer
+    /// habit is that Tab moves the highlight (it selects) and that Enter, Space or a digit take the candidate.
     pub tab_cycles: bool,
     /// The Tab key belongs to the host even while the candidate list is on screen (the IDE keeps its Tab, the list
-    /// is a preview only). Off by default: Tab confirms the highlighted candidate.
+    /// is a preview only). Off by default: Tab belongs to the candidate list.
     pub tab_to_host: bool,
+    /// `=`, `.` and `]` page the list forward, `-`, `,` and `[` page it back (only with more than one page). Off by
+    /// default: they are code characters.
+    pub punct_paging: bool,
+    /// The scheme of the keys the user picked.
+    pub keymap_preset: KeymapPreset,
     /// A composition is opened as soon as candidates appear (the Sogou behaviour).
     pub auto_compose: bool,
     /// The input method starts in input mode (typing opens a composition) instead of direct mode.
@@ -98,8 +117,12 @@ impl Default for LanguageSettings {
             // The mainstream behaviour: while the candidate list is on screen, Space takes the highlighted
             // candidate. Direct mode (Alt+F1) still lets every character through to the host.
             space_confirms: true,
-            tab_cycles: false,
+            // The programmer habit the user asked for: Tab selects (it moves the highlight), Enter/Space/digit
+            // take the candidate.
+            tab_cycles: true,
             tab_to_host: false,
+            punct_paging: false,
+            keymap_preset: KeymapPreset::Programmer,
             auto_compose: false,
             // The input method starts in input mode (the mainstream behaviour), not in direct mode.
             input_mode: true,
@@ -108,10 +131,135 @@ impl Default for LanguageSettings {
     }
 }
 
+/// The schemes of the keys the settings window offers.
+///
+/// The user asked for the settings to offer the ways of other input methods ("包括不限于微软，日语的Atok等"), so the
+/// schemes are named after them. They are **approximations** of the habits those input methods are known for: they
+/// describe what this input method does, not a measurement of the other ones.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KeymapPreset {
+    /// The programmer habit: Tab moves the highlight of the list (it selects), Enter/Space/digit take the candidate.
+    Programmer,
+    /// The way of Microsoft Pinyin: Tab takes the highlighted candidate.
+    Microsoft,
+    /// The way of Sogou: the composition opens by itself and the punctuation pages the list.
+    Sogou,
+    /// The way of ATOK (the Japanese one): the candidate is taken with the key, the punctuation pages the list.
+    Atok,
+    /// The switches are the ones of the user.
+    Custom,
+}
+
+impl KeymapPreset {
+    /// Every scheme, in the order the settings window lists them.
+    pub const ALL: [KeymapPreset; 5] = [
+        KeymapPreset::Programmer,
+        KeymapPreset::Microsoft,
+        KeymapPreset::Sogou,
+        KeymapPreset::Atok,
+        KeymapPreset::Custom,
+    ];
+
+    /// The name of the scheme in the settings file.
+    pub fn id(self) -> &'static str {
+        match self {
+            KeymapPreset::Programmer => "programmer",
+            KeymapPreset::Microsoft => "microsoft",
+            KeymapPreset::Sogou => "sogou",
+            KeymapPreset::Atok => "atok",
+            KeymapPreset::Custom => "custom",
+        }
+    }
+
+    /// The scheme of a name in the settings file. `None` for a name the product does not know.
+    pub fn from_id(id: &str) -> Option<KeymapPreset> {
+        KeymapPreset::ALL.into_iter().find(|preset| preset.id() == id)
+    }
+
+    /// The name of the scheme in the language of the user.
+    pub fn label(self) -> &'static str {
+        match self {
+            KeymapPreset::Programmer => "程序员（默认）",
+            KeymapPreset::Microsoft => "微软拼音",
+            KeymapPreset::Sogou => "搜狗拼音",
+            KeymapPreset::Atok => "ATOK（日文）",
+            KeymapPreset::Custom => "自定义",
+        }
+    }
+
+    /// What the scheme means. `None` for the custom one: the switches are the ones of the user then.
+    pub fn behaviour(self) -> Option<KeyBehaviour> {
+        match self {
+            // the programmer habit: Tab moves the highlight (it selects), Enter/Space/digit take the candidate
+            KeymapPreset::Programmer => Some(KeyBehaviour {
+                tab_cycles: true,
+                tab_to_host: false,
+                space_confirms: true,
+                punct_paging: false,
+                auto_compose: false,
+            }),
+            // Microsoft Pinyin: the Tab key takes the highlighted candidate
+            KeymapPreset::Microsoft => Some(KeyBehaviour {
+                tab_cycles: false,
+                tab_to_host: false,
+                space_confirms: true,
+                punct_paging: false,
+                auto_compose: false,
+            }),
+            // Sogou: the composition opens by itself and the punctuation pages the list
+            KeymapPreset::Sogou => Some(KeyBehaviour {
+                tab_cycles: false,
+                tab_to_host: false,
+                space_confirms: true,
+                punct_paging: true,
+                auto_compose: true,
+            }),
+            // ATOK (the Japanese one): the candidate is taken with the key, the punctuation pages the list
+            KeymapPreset::Atok => Some(KeyBehaviour {
+                tab_cycles: false,
+                tab_to_host: false,
+                space_confirms: true,
+                punct_paging: true,
+                auto_compose: false,
+            }),
+            KeymapPreset::Custom => None,
+        }
+    }
+}
+
+/// What a scheme of the keys means.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct KeyBehaviour {
+    /// Tab moves the highlight of the candidate list.
+    pub tab_cycles: bool,
+    /// The Tab key belongs to the host.
+    pub tab_to_host: bool,
+    /// The space key takes the highlighted candidate.
+    pub space_confirms: bool,
+    /// The punctuation pages the list.
+    pub punct_paging: bool,
+    /// A composition opens as soon as candidates appear.
+    pub auto_compose: bool,
+}
+
 impl LanguageSettings {
     /// The page size, clamped into the range the digits can address.
     pub fn page_size(&self) -> usize {
         self.page_size.clamp(1, 9)
+    }
+
+    /// Put the switches of a scheme into place. `false` for the custom one: the switches stay as they are.
+    pub fn apply_preset(&mut self, preset: KeymapPreset) -> bool {
+        self.keymap_preset = preset;
+        let Some(behaviour) = preset.behaviour() else {
+            return false;
+        };
+        self.tab_cycles = behaviour.tab_cycles;
+        self.tab_to_host = behaviour.tab_to_host;
+        self.space_confirms = behaviour.space_confirms;
+        self.punct_paging = behaviour.punct_paging;
+        self.auto_compose = behaviour.auto_compose;
+        true
     }
 }
 
@@ -156,6 +304,10 @@ pub struct ImeSettings {
     /// Where the mouth of the light is on the screen (a global setting): "left:520", "top:700" or "right:480".
     /// Empty is the default place: the left edge, in the middle of the screen.
     pub mouth_place: String,
+    /// The plugin languages that are on (a global setting: a plugin is a language, not a way of typing).
+    ///
+    /// The product ships with Cypher and PL/SQL on and T-SQL off.
+    pub plugins: Vec<String>,
 }
 
 impl Default for ImeSettings {
@@ -168,6 +320,8 @@ impl Default for ImeSettings {
             effort: "auto".to_string(),
             skin: "laser".to_string(),
             mouth_place: String::new(),
+            // Cypher and PL/SQL are on, T-SQL is off: the two SQL plugins share the `.sql` extension.
+            plugins: pime_core::pack::default_plugin_ids(),
         }
     }
 }
@@ -180,6 +334,24 @@ impl ImeSettings {
             .find(|(key, _)| key == language)
             .map(|(_, value)| *value)
             .unwrap_or_default()
+    }
+
+    /// Whether the plugin language is on.
+    pub fn plugin_is_on(&self, id: &str) -> bool {
+        self.plugins.iter().any(|plugin| plugin == id)
+    }
+
+    /// Turn a plugin language on or off.
+    ///
+    /// A plugin the product does not know is ignored: the list of the plugins is the one of the core.
+    pub fn set_plugin(&mut self, id: &str, on: bool) {
+        if !PLUGINS.iter().any(|(plugin, _)| *plugin == id) {
+            return;
+        }
+        self.plugins.retain(|plugin| plugin != id);
+        if on {
+            self.plugins.push(id.to_string());
+        }
     }
 
     /// Set the settings of one language (an unknown language is added, so that a future profile is not lost).
@@ -206,6 +378,11 @@ impl ImeSettings {
                         ),
                         ("tabCycles".to_string(), Json::Bool(value.tab_cycles)),
                         ("tabToHost".to_string(), Json::Bool(value.tab_to_host)),
+                        ("punctPaging".to_string(), Json::Bool(value.punct_paging)),
+                        (
+                            "keymapPreset".to_string(),
+                            Json::Str(value.keymap_preset.id().to_string()),
+                        ),
                         ("autoCompose".to_string(), Json::Bool(value.auto_compose)),
                         ("inputMode".to_string(), Json::Bool(value.input_mode)),
                         ("laserUi".to_string(), Json::Bool(value.laser_ui)),
@@ -218,6 +395,7 @@ impl ImeSettings {
             ("effort".to_string(), Json::Str(self.effort.clone())),
             ("skin".to_string(), Json::Str(self.skin.clone())),
             ("mouthPlace".to_string(), Json::Str(self.mouth_place.clone())),
+            ("plugins".to_string(), Json::strs(&self.plugins)),
             ("languages".to_string(), Json::Obj(languages)),
         ])
     }
@@ -266,6 +444,24 @@ impl ImeSettings {
         {
             settings.mouth_place = place.trim().to_string();
         }
+        // The plugins that are on: a plugin the product does not know is ignored, and the ones that are not
+        // written in the file keep the default (on for Cypher and PL/SQL, off for T-SQL).
+        if let Some(Json::Arr(list)) = value.get("plugins") {
+            let mut plugins: Vec<String> = Vec::new();
+            for item in list {
+                let Some(id) = item.as_str() else {
+                    continue;
+                };
+                let id = id.trim();
+                if !PLUGINS.iter().any(|(plugin, _)| *plugin == id) {
+                    continue;
+                }
+                if !plugins.iter().any(|plugin| plugin == id) {
+                    plugins.push(id.to_string());
+                }
+            }
+            settings.plugins = plugins;
+        }
         Ok(settings)
     }
 
@@ -308,36 +504,50 @@ fn language_settings_of(value: &Json) -> LanguageSettings {
         .and_then(Json::as_f64)
         .map(|n| n.clamp(1.0, 9.0) as usize)
         .unwrap_or(default.page_size);
-    LanguageSettings {
+    let mut settings = LanguageSettings {
         page_size,
-        space_confirms: value
-            .get("spaceConfirms")
-            .and_then(Json::as_bool)
-            .unwrap_or(default.space_confirms),
-        tab_cycles: value
-            .get("tabCycles")
-            .and_then(Json::as_bool)
-            .unwrap_or(default.tab_cycles),
-        tab_to_host: value
-            .get("tabToHost")
-            .and_then(Json::as_bool)
-            .unwrap_or(default.tab_to_host),
-        auto_compose: value
-            .get("autoCompose")
-            .and_then(Json::as_bool)
-            .unwrap_or(default.auto_compose),
-        input_mode: value
-            .get("inputMode")
-            .and_then(Json::as_bool)
-            .unwrap_or(default.input_mode),
-        // The old name of the setting (it showed the floating bar) is read as well: the file of the user may still
-        // have it, and the meaning is the same one - the floating interface of the product is shown.
-        laser_ui: value
-            .get("laserUi")
-            .or_else(|| value.get("floatingBar"))
-            .and_then(Json::as_bool)
-            .unwrap_or(default.laser_ui),
+        space_confirms: default.space_confirms,
+        tab_cycles: default.tab_cycles,
+        tab_to_host: default.tab_to_host,
+        punct_paging: default.punct_paging,
+        keymap_preset: default.keymap_preset,
+        auto_compose: default.auto_compose,
+        input_mode: default.input_mode,
+        laser_ui: default.laser_ui,
+    };
+    // The scheme of the keys comes first: a file that only carries the scheme gets the switches of the scheme, and
+    // the switches that are written in the file win over it (a file may have been edited by hand).
+    if let Some(preset) = value.get("keymapPreset").and_then(Json::as_str)
+        && let Some(preset) = KeymapPreset::from_id(preset)
+    {
+        settings.apply_preset(preset);
     }
+    if let Some(flag) = value.get("spaceConfirms").and_then(Json::as_bool) {
+        settings.space_confirms = flag;
+    }
+    if let Some(flag) = value.get("tabCycles").and_then(Json::as_bool) {
+        settings.tab_cycles = flag;
+    }
+    if let Some(flag) = value.get("tabToHost").and_then(Json::as_bool) {
+        settings.tab_to_host = flag;
+    }
+    if let Some(flag) = value.get("punctPaging").and_then(Json::as_bool) {
+        settings.punct_paging = flag;
+    }
+    if let Some(flag) = value.get("autoCompose").and_then(Json::as_bool) {
+        settings.auto_compose = flag;
+    }
+    if let Some(flag) = value.get("inputMode").and_then(Json::as_bool) {
+        settings.input_mode = flag;
+    }
+    // The old name of the setting (it showed the floating bar) is read as well: the file of the user may still
+    // have it, and the meaning is the same one - the floating interface of the product is shown.
+    settings.laser_ui = value
+        .get("laserUi")
+        .or_else(|| value.get("floatingBar"))
+        .and_then(Json::as_bool)
+        .unwrap_or(default.laser_ui);
+    settings
 }
 
 /// The file the settings live in, inside the user's local application data. `None` when the environment has no
@@ -388,13 +598,15 @@ mod tests {
                 "Space takes the highlighted candidate while the list is on screen"
             );
             assert!(
-                !value.tab_cycles,
-                "Tab confirms the highlighted candidate (the mainstream behaviour)"
+                value.tab_cycles,
+                "Tab moves the highlight of the list (the programmer habit the user asked for)"
             );
             assert!(
                 !value.tab_to_host,
                 "the Tab key belongs to the candidate list, not to the IDE"
             );
+            assert!(!value.punct_paging, "the punctuation is code, not a pager");
+            assert_eq!(value.keymap_preset, KeymapPreset::Programmer);
             assert!(!value.auto_compose);
             assert!(
                 value.input_mode,
@@ -402,6 +614,58 @@ mod tests {
             );
             assert!(value.laser_ui);
         }
+    }
+
+    #[test]
+    fn the_schemes_of_the_keys_are_the_ones_the_user_asked_for() {
+        // the user asked for the settings to offer the ways of other input methods ("包括不限于微软，日语的Atok等")
+        for preset in [
+            KeymapPreset::Microsoft,
+            KeymapPreset::Sogou,
+            KeymapPreset::Atok,
+            KeymapPreset::Programmer,
+            KeymapPreset::Custom,
+        ] {
+            assert!(KeymapPreset::ALL.contains(&preset), "{preset:?}");
+            assert!(!preset.label().is_empty(), "{preset:?}");
+            assert_eq!(KeymapPreset::from_id(preset.id()), Some(preset));
+        }
+        assert_eq!(KeymapPreset::from_id("nonsense"), None);
+        let mut settings = LanguageSettings::default();
+        // the programmer habit: Tab selects (it moves the highlight)
+        assert!(settings.apply_preset(KeymapPreset::Programmer));
+        assert!(settings.tab_cycles && !settings.tab_to_host);
+        // the Microsoft way: Tab takes the highlighted candidate
+        assert!(settings.apply_preset(KeymapPreset::Microsoft));
+        assert!(!settings.tab_cycles && !settings.tab_to_host);
+        // the Sogou way: the composition opens by itself and the punctuation pages the list
+        assert!(settings.apply_preset(KeymapPreset::Sogou));
+        assert!(settings.auto_compose && settings.punct_paging);
+        // ATOK: the punctuation pages the list, the composition does not open by itself
+        assert!(settings.apply_preset(KeymapPreset::Atok));
+        assert!(settings.punct_paging && !settings.auto_compose);
+        // "custom" keeps the switches of the user and only renames the scheme
+        let before = settings;
+        assert!(!settings.apply_preset(KeymapPreset::Custom));
+        assert_eq!(settings.tab_cycles, before.tab_cycles);
+        assert_eq!(settings.tab_to_host, before.tab_to_host);
+        assert_eq!(settings.keymap_preset, KeymapPreset::Custom);
+    }
+
+    #[test]
+    fn a_file_with_only_a_scheme_gets_the_switches_of_the_scheme() {
+        let text = r#"{"languages":{"zh-CN":{"keymapPreset":"microsoft"}}}"#;
+        let read = ImeSettings::from_text(text).expect("the file reads");
+        let value = read.get("zh-CN");
+        assert_eq!(value.keymap_preset, KeymapPreset::Microsoft);
+        assert!(
+            !value.tab_cycles,
+            "the Microsoft way: Tab takes the highlighted candidate"
+        );
+        // a file that writes the switches itself is the last word
+        let text = r#"{"languages":{"zh-CN":{"keymapPreset":"microsoft","tabCycles":true}}}"#;
+        let read = ImeSettings::from_text(text).expect("the file reads");
+        assert!(read.get("zh-CN").tab_cycles, "the file wins over the scheme");
     }
 
     #[test]
@@ -430,6 +694,8 @@ mod tests {
             space_confirms: true,
             tab_cycles: false,
             tab_to_host: true,
+            punct_paging: true,
+            keymap_preset: KeymapPreset::Microsoft,
             auto_compose: true,
             input_mode: true,
             laser_ui: false,
@@ -471,8 +737,8 @@ mod tests {
         let read = ImeSettings::from_text(text).expect("a newer file still loads");
         assert_eq!(read.get("zh-CN").page_size, 8);
         assert!(
-            !read.get("zh-CN").tab_cycles,
-            "a missing field is the default"
+            read.get("zh-CN").tab_cycles,
+            "a missing field is the default (Tab selects)"
         );
         assert_eq!(read.get("en-US"), LanguageSettings::default());
     }
@@ -483,8 +749,8 @@ mod tests {
         let read = ImeSettings::from_text(text).expect("a bad value does not break the file");
         assert_eq!(read.get("zh-CN").page_size, 9, "clamped into the range");
         assert!(
-            !read.get("zh-CN").tab_cycles,
-            "a value of the wrong type is the default"
+            read.get("zh-CN").tab_cycles,
+            "a value of the wrong type is the default (Tab selects)"
         );
         let text = r#"{"languages":{"zh-CN":{"pageSize":0}}}"#;
         let read = ImeSettings::from_text(text).unwrap();
@@ -538,4 +804,45 @@ mod tests {
         );
         assert!(path.to_string_lossy().contains(FILE_NAME));
     }
+
+    #[test]
+    fn the_product_ships_with_plsql_on_and_tsql_off() {
+        let settings = ImeSettings::default();
+        assert!(settings.plugin_is_on("plsql"), "PL/SQL is on out of the box");
+        assert!(settings.plugin_is_on("cypher"), "Cypher is on out of the box");
+        assert!(
+            !settings.plugin_is_on("tsql"),
+            "T-SQL is off out of the box: it shares the .sql extension with PL/SQL"
+        );
+    }
+
+    #[test]
+    fn the_plugins_survive_the_round_trip_through_the_file() {
+        let mut settings = ImeSettings::default();
+        settings.set_plugin("tsql", true);
+        settings.set_plugin("plsql", false);
+        let text = settings.to_text();
+        let read = ImeSettings::from_text(&text).expect("the file is readable");
+        assert!(read.plugin_is_on("tsql"), "T-SQL was turned on");
+        assert!(!read.plugin_is_on("plsql"), "PL/SQL was turned off");
+        assert!(read.plugin_is_on("cypher"), "the plugins that were not touched stay");
+    }
+
+    #[test]
+    fn a_plugin_the_product_does_not_know_is_ignored() {
+        let mut settings = ImeSettings::default();
+        settings.set_plugin("cobol", true);
+        assert!(!settings.plugin_is_on("cobol"));
+    }
+
+    #[test]
+    fn the_list_of_the_plugins_is_the_one_of_the_core() {
+        let core: Vec<&str> = pime_core::pack::PLUGIN_LANGUAGES.to_vec();
+        let ours: Vec<&str> = PLUGINS.iter().map(|(id, _)| *id).collect();
+        assert_eq!(
+            ours, core,
+            "the settings window has to know every plugin the core has"
+        );
+    }
+
 }

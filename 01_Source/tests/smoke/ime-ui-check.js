@@ -6,12 +6,19 @@
 //   node tests/smoke/ime-ui-check.js [file.png]
 //
 // The picture is taken by tests/smoke/ime-ui-capture.ps1 while crates/pime-tsf/examples/ime_ui_probe.rs holds the
-// candidate window, the floating bar and the settings window open.
+// settings window and the laser interface (the glow, the beam, the panel with the list and the logo) open.
+//
+// The picture alone cannot say whether the windows are the ones the product wants: the strip of the pages of the
+// settings window is a few pixels tall, and a window without pages still makes a fine picture. The probe therefore
+// writes what it found next to the picture (`probe-report.json`), and this script reads it: the strip must have the
+// six pages of the product, the page of the plugins must be the one that is shown, and the list of the candidates must
+// be in the panel of the light.
 const fs = require('node:fs');
 const path = require('node:path');
 const zlib = require('node:zlib');
 
 const file = process.argv[2] || path.join(__dirname, '..', '..', '..', '02_Verification', 'ime-ui', 'ime-windows.png');
+const reportFile = path.join(path.dirname(file), 'probe-report.json');
 
 function fail(message) {
   console.error(`FAIL: ${message}`);
@@ -75,5 +82,54 @@ for (let i = 0; i < pixels.length; i += channels * 7) {
   if (colours.size > 20000) break;
 }
 if (colours.size < 50) fail(`the picture looks flat (${colours.size} colours): the windows probably painted nothing`);
+
+// ---- what the probe found while the picture was taken ---------------------------------------------------------------------------------
+// The strip of the pages is what makes the settings window usable, and the list of the candidates belongs to the
+// panel of the light. Neither of them can be seen in a picture of a whole screen, so the probe says what it found.
+if (!fs.existsSync(reportFile)) {
+  fail(`the report of the probe is missing: ${reportFile} (the picture was taken without the probe?)`);
+} else {
+  let report = null;
+  try {
+    report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+  } catch (e) {
+    fail(`the report of the probe is not readable: ${e.message}`);
+  }
+  if (report) {
+    if (report.settingsWindow !== true) fail('the settings window was not opened');
+    if (report.settingsPages !== 6) {
+      fail(`the strip of the pages has ${report.settingsPages} pages, not the six of the product`);
+    }
+    if (report.selectedPageTitle !== '插件') {
+      fail(`the page that is shown is "${report.selectedPageTitle}", not the page of the plugins`);
+    }
+    if (!(report.candidateRows > 0)) {
+      fail('the list of the candidates is not in the panel of the light');
+    }
+    // The settings window has to be where the user can see it: in the middle of the screen. A window that opens in
+    // the corner (or behind the other windows) is a window the user does not see at all.
+    const [left, top, right, bottom] = report.settingsRect || [];
+    const [screenW, screenH] = report.screen || [];
+    if (!(left > 0 && top > 0 && right > left && bottom > top)) {
+      fail(`the settings window is not on the screen: ${JSON.stringify(report.settingsRect)}`);
+    } else {
+      const cx = (left + right) / 2;
+      const cy = (top + bottom) / 2;
+      const inMiddle = (value, size) => Math.abs(value - size / 2) < size * 0.3;
+      if (!inMiddle(cx, screenW) || !inMiddle(cy, screenH)) {
+        fail(
+          `the settings window is not in the middle of the screen (${left},${top})-(${right},${bottom}) ` +
+          `on a ${screenW}x${screenH} screen: it opens in the corner, where the user does not see it`
+        );
+      } else {
+        console.log(`ok   the settings window is in the middle of the screen (${left},${top})`);
+      }
+    }
+    console.log(
+      `ok   the probe found ${report.settingsPages} pages of the settings (${report.selectedPageTitle} shown) ` +
+      `and ${report.candidateRows} rows of the list in the panel of the light`
+    );
+  }
+}
 
 console.log(`OK: ${file} - ${header.width}x${header.height}, ${colours.size} colours, ${bytes.length} bytes`);

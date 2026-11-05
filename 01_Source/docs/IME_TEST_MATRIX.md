@@ -14,7 +14,7 @@
 | **L1 单元** | `crates/pime-tsf/src/*.rs` 的 `#[cfg(test)]` | 每个模块自己的逻辑（键位翻译、布局算法、菜单、注册计划……） | 否 | `cargo test` |
 | **L2 场景** | `01_Source/tests/tsf/ime_scenarios.rs` | 把文本服务当整体驱动：**打字 → 候选窗 → 组合串 → 提交 → 失败降级** | 否 | `cargo test --test ime_scenarios` |
 | **L3 宿主** | `01_Source/tests/tsf/ime_host.rs` | 真 COM 类对象、真 msctf、真文档上下文、真按键链 | 是（**要开窗**） | `PIME_IME_LIVE=1 cargo test --test ime_host` |
-| **L4 真机 UI** | `crates/pime-tsf/examples/ime_ui_probe.rs` + `tests/smoke/ime-ui-capture.ps1` + `tests/smoke/ime-ui-check.js` | 候选窗 / 悬浮栏 / 设置窗的**真实画面**：探针真开窗 → .NET 抓屏 → Node 解析 PNG | 是（要开窗，**opt-in**） | `node tests/run-all.js --tsf-ui` |
+| **L4 真机 UI** | `crates/pime-tsf/examples/ime_ui_probe.rs` + `tests/smoke/ime-ui-capture.ps1` + `tests/smoke/ime-ui-check.js` | 激光面板 / 设置窗的**真实画面**：探针真开窗 → .NET 抓屏 → Node 解析 PNG **+ 读探针写的 `probe-report.json`**（页签数、当前页、候选行数、窗口位置） | 是（要开窗，**opt-in**） | `node tests/run-all.js --tsf-ui` |
 
 L1 已经在门禁链里（`node tests/run-all.js --tsf`）。本轮补上的是 **L2 / L3 / L4 的取证链路**，并给 L1+L2 建了一份**不会烂掉的账本**。
 
@@ -55,8 +55,12 @@ L1 已经在门禁链里（`node tests/run-all.js --tsf`）。本轮补上的是
 | F-RESOLVE | 文件语言解析（扩展名 / 编辑器 id / 手动锁） | resolve | `IME-S19` | L2 |
 | F-ENGINE | 候选生成、校验、排序 | predict | `IME-S20` | L2 |
 | F-PLUGIN-LANGUAGE | 插件语言（可开可关） | languages | `IME-S21` | L2 |
+| F-DICTIONARY | 输入法自带中日英词库（拼音→中文、罗马音→假名/日文汉字、英文词表；不调用其他输入法） | cjk | `the_chinese_profile_types_chinese_with_the_dictionary_of_the_product` + `the_japanese_profile_types_japanese_with_the_dictionary_of_the_product` + `the_english_profile_is_the_code_and_not_a_dictionary` | L1+L2 |
+| F-LASER-CANDIDATES | 候选列表在左侧激光面板里（打字时没有搜狗式悬浮窗） | laser_candidates | `the_rows_of_the_list_become_the_rows_of_the_panel` + `the_list_ends_with_the_panel` | L1 |
+| F-SETTINGS-PLUGINS | 设置窗的插件页（每个插件语言一个勾选框） | settings_window | `the_plugins_page_has_one_check_box_for_every_plugin` + `every_plugin_has_a_name_to_show` | L1 |
+| F-DICTIONARY-SERVICES | 词库管理的三个预留接口（AI 整理 / 远程更新 / 用户登录） | services | `the_services_can_be_used_as_objects` + `the_three_dictionaries_are_the_three_of_the_product` | L1 |
 
-**27 个功能，全部有测试。** 账本文件：`01_Source/tests/tsf/common/scenarios.rs` 的 `IME_FUNCTIONS`。
+**35 个功能，全部有测试。** 账本文件：`01_Source/tests/tsf/common/scenarios.rs` 的 `IME_FUNCTIONS`。
 
 ---
 
@@ -106,27 +110,30 @@ $env:PIME_IME_LIVE="1"; cargo test --test ime_host -- --nocapture    # L3：真 
 
 证据（每个场景一个 JSON）落在 `PIME_IME_EVIDENCE_DIR`；门禁链**不**设置该变量，所以普通跑不写文件。
 
-L4（会开窗，会在桌面上短暂出现候选窗 / 悬浮栏）：
+L4（会开窗，会在桌面上短暂出现激光面板与设置窗）：
 
 ```powershell
 cd E:\IME1.0
 node 01_Source\tests\run-all.js --tsf-ui
-# 产出 02_Verification/ime-ui/ime-windows.png，并由 ime-ui-check.js 断言
-# 尺寸 1920x1080、颜色数 ≥ 50（拒绝纯色图）
+# 产出 02_Verification/ime-ui/ime-windows.png 与 02_Verification/ime-ui/probe-report.json，并由 ime-ui-check.js 断言
+# 尺寸 1920x1080、颜色数 ≥ 50（拒绝纯色图）；页签 6 页、当前页是「插件」、面板里有候选行、设置窗在屏幕中间
 ```
 
-> **L4 的判据只到「不是一张纯色图」这一层**：它证明「探针真的把窗口画出来了、桌面被采到了」，
-> **不**证明画面里的每个像素都对。像素级/文案级断言要等有人看图或做模板匹配，见 §5。
+> **L4 的判据有两层**：① 截图不是一张纯色图（证明「探针真的把窗口画出来了、桌面被采到了」）；
+> ② `probe-report.json` 里的**页签数 / 当前页 / 候选行数 / 窗口中心偏差**（证明「设置窗真的有六个页签、停在插件页、
+> 候选列表真的在面板里、窗口真的在屏幕中间」）。**这两层都不证明**画面里的每个像素都对，也不证明它在真实宿主里是什么观感。
+> 像素级/文案级断言要等有人看图或做模板匹配，见 §5。
 ---
 
 ## 5. 还没做的（诚实登记）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| **L4 原生窗口 UI 测试** | **部分** | 已建：探针真开候选窗 / 悬浮栏 / 设置窗 → .NET 抓屏 → Node 解析 PNG（1920×1080、颜色数 ≥ 50，拒绝纯色图），证据 `02_Verification/ime-ui/ime-windows.png`。**但判据只到「不是纯色图」**：没有像素/文案级断言，**设置窗本次没有进入取景画面**，也没有人点过这些窗。下一层要靠模板匹配或人工目视（`docs/MANUAL_E2E.md`）。 |
+| **L4 原生窗口 UI 测试** | **部分** | 已建：探针真开候选窗 / 激光面板 / 设置窗 → .NET 抓屏 → Node 解析 PNG（1920×1080、颜色数 ≥ 50，拒绝纯色图），证据 `02_Verification/ime-ui/ime-windows.png`。**第十六轮把判据往上提了一层**：截图证明不了「页签存在」和「窗口居中」，所以探针另外写一份机器可读的 `probe-report.json`（设置窗是否打开、**页签数**、**当前页标题**、**候选行数**、窗口矩形、屏幕尺寸），`ime-ui-check.js` 断言**页签 6 页**、当前页是「插件」、**面板里有候选行**、**设置窗中心与屏幕中心的偏差 < 30%**；页数≠6 或列表为空时探针退出码非 0。**仍未做**：像素/文案级模板匹配，也没有人点过这些窗。 |
 | **L3 真机注册态** | **未做** | `examples/tsf_host.rs --profile` 能证明 msctf 加载了已安装 DLL，但**按键不路由**（控制台宿主没有带焦点的窗口，TSF 只把文本服务挂到**有焦点**的上下文上）。要在记事本/VS Code 里实测，需要注册态 + 一个真窗口宿主。 |
 | **L3 未注册态全链** | **部分** | `ime_host.rs` 已能创建真 COM 对象、走真 msctf、真文档上下文（`PIME_IME_LIVE=1`），但**按键是否真路由到文本服务**要看该环境下的实测结果，不能预先断言。 |
-| **TSF 侧插件语言开关** | **未做** | Rust 核心已有启用集合与协议 op，但**输入法产品侧**还没有把「插件语言开关」接到设置窗口（现在只有 VS Code 桥接侧有）。 |
+| **TSF 侧插件语言开关** | **已做**（第十六轮） | 设置窗的**插件页**可以勾选 Cypher / PL\/SQL / T-SQL（默认 PL/SQL 开、T-SQL 关），写回设置即刻生效（`tip.rs` 的 `apply_plugins()`）。**未在真实宿主里验证过**（新 DLL 还没换上）。 |
+| **真实键盘下的中文/日文输入** | **未做** | 自带词库有**端到端测试**（中文档「ni」→「你」上屏；日文档「nihon」→假名），但那是**驱动控制器**、不是**真键盘 + 真宿主**。真实手感要等新 DLL 换上之后在记事本 / VS Code 里试。 |
 
 ---
 

@@ -88,9 +88,9 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
     },
     ImeFunction {
         id: "F-SELECT",
-        name: "A candidate is taken with a digit, Enter, Space or Tab",
+        name: "A candidate is taken with a digit, Enter or Space; Tab selects in the list",
         module: "controller",
-        scenarios: &["IME-S03", "IME-S04", "IME-S06", "IME-S07"],
+        scenarios: &["IME-S03", "IME-S04", "IME-S06", "IME-S06B", "IME-S07"],
         unit_test: "ut_009_a_digit_commits_the_page_relative_candidate_exactly_once",
         unit_file: "controller.rs",
     },
@@ -163,7 +163,7 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
         name: "The floating interface of the product is the laser interface (the blue glow, the beam, the panel and the logo)",
         module: "laser_ui",
         scenarios: &[],
-        unit_test: "the_lens_of_the_mouth_is_drawn_inside_the_window_of_the_glow",
+        unit_test: "the_mouth_is_a_thin_pale_line_inside_the_window_of_the_glow",
         unit_file: "laser_ui.rs",
     },
     ImeFunction {
@@ -173,6 +173,22 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
         scenarios: &[],
         unit_test: "alt_f2_is_the_language_shortcut_and_nothing_else_is",
         unit_file: "keymap.rs",
+    },
+    ImeFunction {
+        id: "F-KEYMAP",
+        name: "The schemes of the keys (the programmer habit, Microsoft, Sogou, ATOK) and the three ways of the Tab key",
+        module: "imesettings",
+        scenarios: &[],
+        unit_test: "the_schemes_of_the_keys_are_the_ones_the_user_asked_for",
+        unit_file: "imesettings.rs",
+    },
+    ImeFunction {
+        id: "F-TAB",
+        name: "The Tab key is the selection key of the candidate list (the programmer habit)",
+        module: "settings_window",
+        scenarios: &[],
+        unit_test: "the_three_ways_of_the_tab_key_are_the_ones_the_user_asked_for",
+        unit_file: "settings_window.rs",
     },
     ImeFunction {
         id: "F-SKIN",
@@ -192,10 +208,10 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
     },
     ImeFunction {
         id: "F-SETTINGS-WINDOW",
-        name: "The settings window lays out its controls without overlaps",
+        name: "The settings window has the pages of the settings (the way Sogou splits them) and lays out its controls without overlaps",
         module: "settings_window",
         scenarios: &[],
-        unit_test: "the_controls_do_not_overlap_each_other",
+        unit_test: "the_controls_of_a_page_do_not_overlap_each_other",
         unit_file: "settings_window.rs",
     },
     ImeFunction {
@@ -262,6 +278,46 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
         unit_test: "a_click_on_a_switch_turns_it_around",
         unit_file: "laser.rs",
     },
+    ImeFunction {
+        id: "F-LAYERED-WINDOW",
+        name: "The windows of the light are layered windows that are moved by their picture (no residue at the edges)",
+        module: "glass",
+        scenarios: &[],
+        unit_test: "a_window_with_a_picture_is_moved_by_its_picture",
+        unit_file: "glass.rs",
+    },
+    ImeFunction {
+        id: "F-DICTIONARY",
+        name: "The input method carries its own Chinese, Japanese and English dictionaries (it calls no other IME)",
+        module: "cjk",
+        scenarios: &[],
+        unit_test: "the_chinese_profile_types_chinese_with_the_dictionary_of_the_product",
+        unit_file: "controller.rs",
+    },
+    ImeFunction {
+        id: "F-LASER-CANDIDATES",
+        name: "The candidate list lives in the laser panel (no Sogou-style floating window while typing)",
+        module: "laser_candidates",
+        scenarios: &[],
+        unit_test: "the_rows_of_the_list_become_the_rows_of_the_panel",
+        unit_file: "laser_candidates.rs",
+    },
+    ImeFunction {
+        id: "F-SETTINGS-PLUGINS",
+        name: "The settings window has a plugin page with a check box for every plugin language",
+        module: "settings_window",
+        scenarios: &[],
+        unit_test: "the_plugins_page_has_one_check_box_for_every_plugin",
+        unit_file: "settings_window.rs",
+    },
+    ImeFunction {
+        id: "F-DICTIONARY-SERVICES",
+        name: "The reserved interfaces of the dictionary management (AI curation, remote update, sign in)",
+        module: "services",
+        scenarios: &[],
+        unit_test: "the_services_can_be_used_as_objects",
+        unit_file: "services.rs",
+    },
 ];
 
 /// The sources of the crate, so the ledger can check that the named unit tests really exist.
@@ -309,6 +365,18 @@ pub const CRATE_SOURCES: &[(&str, &str)] = &[
     (
         "laser_ui.rs",
         include_str!("../../../crates/pime-tsf/src/laser_ui.rs"),
+    ),
+    (
+        "laser_candidates.rs",
+        include_str!("../../../crates/pime-tsf/src/laser_candidates.rs"),
+    ),
+    (
+        "services.rs",
+        include_str!("../../../crates/pime-core/src/services.rs"),
+    ),
+    (
+        "glass.rs",
+        include_str!("../../../crates/pime-tsf/src/glass.rs"),
     ),
     (
         "tip.rs",
@@ -509,17 +577,40 @@ pub static SCENARIOS: &[Scenario] = &[
     Scenario {
         id: "IME-S06",
         function: "F-SELECT",
-        title: "Tab takes the highlighted candidate (the default: Tab confirms)",
+        title: "Tab selects in the candidate list (the default: Tab moves the highlight, Enter takes the candidate)",
         body: |h| {
             h.type_text("fn");
             h.tab();
         },
         expect: |t| {
-            assert_eq!(t.commits, ["c0:fn"], "{t:?}");
+            assert!(
+                t.commits.is_empty(),
+                "Tab writes nothing, it selects: {:?}",
+                t.commits
+            );
+            assert_eq!(t.selected, 1, "Tab moved the highlight");
             assert_eq!(
                 t.eaten,
                 ["Tab"],
                 "the Tab key belonged to the candidate window"
+            );
+        },
+    },
+    Scenario {
+        id: "IME-S06B",
+        function: "F-SELECT",
+        title: "Enter takes the candidate that Tab highlighted",
+        body: |h| {
+            h.type_text("fn");
+            h.tab();
+            h.enter();
+        },
+        expect: |t| {
+            assert_eq!(t.commits, ["c1:fn"], "{t:?}");
+            assert_eq!(
+                t.eaten,
+                ["Tab", "Enter"],
+                "both keys belonged to the candidate window"
             );
         },
     },

@@ -384,6 +384,17 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         });
     }
 
+    /// The profile of the prediction engine (the language of the code, or the dictionary of the language).
+    ///
+    /// The profile follows the language that is active: the Chinese and the Japanese profiles are answered by
+    /// the dictionaries of the core, the English one by the engine of the code.
+    pub fn set_profile(&mut self, profile: &str) {
+        self.guarded((), |c| {
+            c.config.language = profile.to_string();
+            c.machine.set_language(profile);
+        });
+    }
+
     /// Apply the settings of the language profile (the settings window writes them; the text service applies them).
     ///
     /// The settings change the key map (the page size, the Tab behaviour, whether the space key takes a candidate),
@@ -396,6 +407,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             c.config.keymap.tab_cycles = settings.tab_cycles;
             c.config.keymap.tab_to_host = settings.tab_to_host;
             c.config.keymap.space_confirms = settings.space_confirms;
+            c.config.keymap.punct_paging = settings.punct_paging;
             c.config.auto_compose = settings.auto_compose;
             c.config.input_mode = settings.input_mode;
             c.machine.set_keymap(c.config.keymap);
@@ -1045,6 +1057,148 @@ mod tests {
         }
     }
 
+    /// The text service with the **real** predictor of the product: the dictionaries of the core (the pinyin, the
+    /// kana, the English words) and the engine of the code - not the scripted one.
+    ///
+    /// The language is the one of the product (the way the text service names it); the profile of the engine is
+    /// derived from it exactly as the text service does it.
+    fn real_controller(
+        language: &str,
+    ) -> TipController<RecordingUi, FakeHost, crate::predictor::PluginPredictor> {
+        let host = FakeHost {
+            anchor: Some(ANCHOR),
+            ..FakeHost::default()
+        };
+        let config = TipConfig {
+            language: pime_core::imeswitch::profile_of(language).to_string(),
+            ..TipConfig::default()
+        };
+        let mut ctl = TipController::new(
+            RecordingUi::default(),
+            host,
+            crate::predictor::PluginPredictor::new(),
+            config,
+        );
+        ctl.activate(false);
+        ctl
+    }
+
+    /// Type a text into a text service with the real predictor; the host inserts what it received.
+    fn type_into(
+        ctl: &mut TipController<RecordingUi, FakeHost, crate::predictor::PluginPredictor>,
+        text: &str,
+        clock: &mut u64,
+    ) {
+        for c in text.chars() {
+            *clock += 1;
+            let down = input(code_of(c), Some(c), NONE, *clock);
+            let eaten = ctl.on_test_key_down(down) && ctl.on_key_down(down);
+            assert!(!eaten, "typing {c:?} reaches the host");
+            ctl.host_mut().doc.push(c);
+        }
+    }
+
+    /// One key press, the way the host drives the text service. Returns whether the key was eaten.
+    fn press_into(
+        ctl: &mut TipController<RecordingUi, FakeHost, crate::predictor::PluginPredictor>,
+        code: u32,
+        ch: Option<char>,
+        clock: &mut u64,
+    ) -> bool {
+        *clock += 1;
+        let down = input(code, ch, NONE, *clock);
+        ctl.on_test_key_down(down) && ctl.on_key_down(down)
+    }
+
+    /// The text of the rows of the list that is on screen.
+    fn rows_on_screen(
+        ctl: &TipController<RecordingUi, FakeHost, crate::predictor::PluginPredictor>,
+    ) -> Vec<String> {
+        ctl.ui()
+            .last
+            .as_ref()
+            .expect("the list is on screen")
+            .0
+            .rows
+            .iter()
+            .map(|r| r.text.clone())
+            .collect()
+    }
+
+    /// The Chinese profile of the product types Chinese: the user types the pinyin, the dictionary of the product
+    /// answers and the character goes into the document (the user asked for this on 2026-11-04).
+    #[test]
+    fn the_chinese_profile_types_chinese_with_the_dictionary_of_the_product() {
+        let _guard = crate::predictor::engine_lock();
+        let mut ctl = real_controller("zh-CN");
+        let mut clock = 0;
+        type_into(&mut ctl, "ni", &mut clock);
+        let rows = rows_on_screen(&ctl);
+        assert!(
+            rows.contains(&"你".to_string()),
+            "the pinyin gives the Chinese of the dictionary: {rows:?}"
+        );
+        assert!(
+            rows.iter().all(|t| t.chars().any(|c| c as u32 > 0x2E80)),
+            "every candidate of the Chinese profile is Chinese: {rows:?}"
+        );
+        // Enter takes the highlighted candidate and it goes into the document
+        assert!(
+            press_into(&mut ctl, vk::RETURN, None, &mut clock),
+            "Enter belongs to the list"
+        );
+        let doc = ctl.host().doc.clone();
+        assert_eq!(
+            doc.chars().count(),
+            1,
+            "one character is in the document: {doc:?}"
+        );
+        assert!(
+            doc.chars().all(|c| c as u32 > 0x2E80),
+            "the document holds Chinese, not the pinyin: {doc:?}"
+        );
+    }
+
+    /// The Japanese profile of the product types Japanese: the user types the romaji, the dictionary of the product
+    /// answers with the kana and the kanji.
+    #[test]
+    fn the_japanese_profile_types_japanese_with_the_dictionary_of_the_product() {
+        let _guard = crate::predictor::engine_lock();
+        let mut ctl = real_controller("ja-JP");
+        let mut clock = 0;
+        type_into(&mut ctl, "nihon", &mut clock);
+        let rows = rows_on_screen(&ctl);
+        assert!(
+            rows.iter().any(|t| t.contains('に')),
+            "the romaji gives the kana of the dictionary: {rows:?}"
+        );
+        assert!(
+            press_into(&mut ctl, vk::RETURN, None, &mut clock),
+            "Enter belongs to the list"
+        );
+        let doc = ctl.host().doc.clone();
+        assert!(!doc.is_empty(), "something is in the document");
+        assert!(
+            doc.chars().all(|c| c as u32 > 0x2E80),
+            "the document holds Japanese, not the romaji: {doc:?}"
+        );
+    }
+
+    /// The English profile of the product is the code: the engine of the code answers, and the English words are the
+    /// last resort when the code has nothing to say.
+    #[test]
+    fn the_english_profile_is_the_code_and_not_a_dictionary() {
+        let _guard = crate::predictor::engine_lock();
+        let mut ctl = real_controller("en-US");
+        let mut clock = 0;
+        type_into(&mut ctl, "fnm", &mut clock);
+        let rows = rows_on_screen(&ctl);
+        assert!(
+            rows.iter().any(|t| t.contains("fn")),
+            "the code is still the code: {rows:?}"
+        );
+    }
+
     #[test]
     fn typing_shows_a_window_of_labelled_rows_without_eating_anything() {
         let mut rig = Rig::new();
@@ -1247,26 +1401,38 @@ mod tests {
     }
 
     #[test]
-    fn tab_takes_the_candidate_that_is_highlighted() {
-        // the mainstream behaviour: Tab confirms the highlighted candidate and puts it into the document
+    fn tab_selects_the_candidate_that_is_highlighted() {
+        // the shipped default: Tab is the selection key of the list (the programmer habit the user asked for):
+        // it moves the highlight and writes nothing; Enter (or Space, or a digit) takes the candidate
         let mut rig = Rig::new();
         rig.type_text("fn", Host::Contract);
         assert!(
             rig.press(vk::TAB, None, NONE, Host::Contract),
             "Tab is ours"
         );
+        assert_eq!(rig.view().selected_in_page, 1, "Tab moved the highlight");
+        assert!(
+            rig.ctl.host().commits.is_empty(),
+            "Tab writes nothing: {:?}",
+            rig.ctl.host().commits
+        );
+        assert!(
+            rig.press(vk::RETURN, None, NONE, Host::Contract),
+            "Enter is ours"
+        );
         assert_eq!(
             rig.ctl.host().commits,
-            vec![("fn".to_string(), "T0:fn".to_string())]
+            vec![("fn".to_string(), "T1:fn".to_string())],
+            "Enter takes the candidate that Tab highlighted"
         );
-        assert_eq!(rig.ctl.host().doc, "T0:fn", "the text is in the document");
+        assert_eq!(rig.ctl.host().doc, "T1:fn", "the text is in the document");
         assert!(!rig.ctl.host().composing, "the composition ended");
     }
 
     #[test]
-    fn tab_takes_the_candidate_in_the_direct_mode_too() {
+    fn tab_selects_in_the_direct_mode_too() {
         // the shipped defaults: nothing is eaten while typing, but the candidate window is on screen, so the
-        // Tab key belongs to that window and writes the highlighted candidate into the document
+        // Tab key belongs to that window: it moves the highlight of the list and writes nothing
         let mut rig = Rig::direct();
         rig.type_text("fn", Host::Contract);
         assert!(rig.ctl.ui().visible, "the candidate window shows");
@@ -1274,12 +1440,13 @@ mod tests {
             rig.press(vk::TAB, None, NONE, Host::Contract),
             "Tab is ours"
         );
-        assert_eq!(
-            rig.ctl.host().commits,
-            vec![("fn".to_string(), "T0:fn".to_string())]
+        assert_eq!(rig.view().selected_in_page, 1, "Tab moved the highlight");
+        assert!(
+            rig.ctl.host().commits.is_empty(),
+            "Tab writes nothing: {:?}",
+            rig.ctl.host().commits
         );
-        assert_eq!(rig.ctl.host().doc, "T0:fn", "the text is in the document");
-        assert!(!rig.ctl.ui().visible, "the window goes away");
+        assert!(rig.ctl.ui().visible, "the window stays");
     }
 
     #[test]
@@ -1374,9 +1541,10 @@ mod tests {
         }
         assert!(!rig.digit('1'));
         assert!(rig.ctl.host().commits.is_empty());
-        // the Tab key is the exception: the window on screen owns it
+        // the Tab key is the exception: the window on screen owns it (it selects, it writes nothing)
         assert!(rig.plain(vk::TAB));
-        assert_eq!(rig.ctl.host().commits.len(), 1);
+        assert!(rig.ctl.host().commits.is_empty());
+        assert_eq!(rig.view().selected_in_page, 1, "Tab moved the highlight");
     }
 
     #[test]
@@ -1595,7 +1763,7 @@ mod tests {
         assert_eq!(rig.view().selected_in_page, 0, "Shift+Tab goes back");
         assert!(rig.plain(vk::UP));
         assert!(rig.ctl.host().commits.is_empty() && rig.ctl.host().composing);
-        // Enter and Space confirm the highlighted candidate; Tab does the same (the default)
+        // Enter and Space confirm the highlighted candidate
         for (code, name) in [(vk::RETURN, "Enter"), (vk::SPACE, "Space")] {
             let mut rig = enter();
             assert!(rig.press(code, Some(' '), NONE, Host::Contract), "{name}");
@@ -1603,12 +1771,12 @@ mod tests {
             assert_eq!(rig.ctl.host().commits.len(), 1, "{name}");
             assert!(!rig.ctl.host().composing, "{name}: the composition ended");
         }
-        // Tab confirms the highlighted candidate too
+        // Tab selects instead (the programmer habit): it moves the highlight and writes nothing
         let mut rig = enter();
         assert!(rig.press(vk::TAB, None, NONE, Host::Contract));
-        assert_eq!(rig.ctl.host().doc, "T0:fn");
-        assert_eq!(rig.ctl.host().commits.len(), 1);
-        assert!(!rig.ctl.host().composing, "Tab: the composition ended");
+        assert_eq!(rig.view().selected_in_page, 1, "Tab moved the highlight");
+        assert!(rig.ctl.host().commits.is_empty(), "Tab writes nothing");
+        assert!(rig.ctl.host().composing, "the composition is still open");
         // Esc cancels and writes nothing
         let mut rig = enter();
         assert!(rig.plain(vk::ESCAPE));
@@ -2394,15 +2562,12 @@ mod tests {
         assert!(!c.candidate_capture && !c.auto_compose && !c.input_mode);
     }
 
-    /// The shipped default is the input mode: while the list is on screen, the arrows walk it and Tab, Space and
-    /// Enter take the highlighted candidate. This is the behaviour the user asked for (2026-11-04).
+    /// The shipped default is the input mode: while the list is on screen, the arrows and Tab walk it, and
+    /// Space and Enter take the highlighted candidate. This is the behaviour the user asked for (2026-11-04: Tab
+    /// is the selection key, the programmer habit).
     #[test]
     fn the_shipped_default_takes_a_candidate_with_the_mainstream_keys() {
-        for (name, code, ch) in [
-            ("Tab", vk::TAB, None),
-            ("Space", vk::SPACE, Some(' ')),
-            ("Enter", vk::RETURN, None),
-        ] {
+        for (name, code, ch) in [("Space", vk::SPACE, Some(' ')), ("Enter", vk::RETURN, None)] {
             let mut rig = Rig::shipped();
             rig.type_text("fn", Host::Contract);
             assert!(rig.ctl.ui().visible, "{name}: the list is on screen");
@@ -2414,6 +2579,17 @@ mod tests {
                 "{name}: one candidate was written"
             );
         }
+        // Tab is the selection key: it walks the list and writes nothing
+        let mut rig = Rig::shipped();
+        rig.type_text("fn", Host::Contract);
+        assert!(rig.ctl.ui().visible, "the list is on screen");
+        assert!(rig.press(vk::TAB, None, NONE, Host::Contract));
+        assert_eq!(rig.view().selected_in_page, 1, "Tab moved the highlight");
+        assert!(
+            rig.ctl.host().commits.is_empty(),
+            "Tab writes nothing: {:?}",
+            rig.ctl.host().commits
+        );
     }
 
     /// The arrows walk the list in the shipped default too.

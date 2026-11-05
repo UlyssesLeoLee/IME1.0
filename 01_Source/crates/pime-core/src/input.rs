@@ -7,7 +7,8 @@
 //!   candidate-capture mode, and only for the reserved keymap (Enter, Esc, digits, Up, Down, Shift+Tab,
 //!   PageUp/PageDown when there is more than one page, Space in COMPOSING, optional punctuation paging);
 //! * the Tab key is the one exception: while the candidate list is on screen it belongs to the list, so Tab
-//!   confirms the highlighted candidate even in the direct mode (Shift+Tab walks the list back);
+//!   moves the highlight of the list (it selects; Enter/Space/digit take the candidate) even in the direct mode
+//!   (Shift+Tab walks the list back);
 //! * a lone Shift tap toggles the user's pause (like the Chinese/English switch of mainstream IMEs); Shift is never consumed;
 //! * secure input / disabled policy clears the context, refuses prediction and AI, and passes every key through;
 //! * a core/IPC failure (error, timeout, panic) ends in pass-through within the 2 s design budget;
@@ -122,12 +123,13 @@ pub struct KeyMap {
     /// they are code characters (`a.b`, `x - 1`).
     pub punct_paging: bool,
     /// Tab walks the candidate list instead of taking the highlighted candidate (the programmer habit: Tab moves
-    /// the highlight, Enter/Space/digit take it), Shift+Tab walks back. Off by default: Tab confirms the
-    /// highlighted candidate, like the mainstream input methods.
+    /// the highlight, Enter/Space/digit take it), Shift+Tab walks back. **On** by default: the user asked for the
+    /// Tab key to be the selection key of the list ("TAB键应该符合程序员习惯作为选取使用"), and the other
+    /// ways (the Microsoft, Sogou and ATOK ones) are one click away in the settings.
     pub tab_cycles: bool,
     /// The Tab key belongs to the host even while the candidate list is on screen: the IDE keeps its Tab, and the
-    /// list is a preview only (the behaviour the basic design asks for). Off by default: Tab confirms the
-    /// highlighted candidate.
+    /// list is a preview only (the behaviour the basic design asks for). Off by default: the Tab key belongs to
+    /// the candidate list.
     pub tab_to_host: bool,
 }
 
@@ -137,7 +139,8 @@ impl Default for KeyMap {
             page_size: 5,
             space_confirms: true,
             punct_paging: false,
-            tab_cycles: false,
+            // the programmer habit: Tab selects (it moves the highlight), Enter/Space/digit take the candidate
+            tab_cycles: true,
             tab_to_host: false,
         }
     }
@@ -1080,12 +1083,17 @@ mod tests {
             "the candidate list on screen owns the Tab key"
         );
         assert!(
-            shown_tab.effects.iter().any(
-                |e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.fn")
-            ),
-            "Tab takes the highlighted candidate"
+            shown_tab.effects.iter().any(|e| matches!(e, Effect::SelectionMoved(_))),
+            "Tab moves the highlight of the list (the programmer habit: Tab selects)"
         );
-        assert_eq!(shown.stats.commits, 1);
+        assert!(
+            !shown_tab
+                .effects
+                .iter()
+                .any(|e| matches!(e, Effect::Commit { .. })),
+            "Tab does not write anything"
+        );
+        assert_eq!(shown.stats.commits, 0);
         let mut shown = machine();
         shown.grant_observation(true);
         type_text(&mut shown, "fn", 0);
@@ -1115,13 +1123,17 @@ mod tests {
         let tab = cap.on_key(KeyEvent::plain(Key::Tab), 0);
         assert_eq!(tab.outcome, KeyOutcome::Consumed);
         assert!(
-            tab.effects.iter().any(
-                |e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.fn")
-            ),
-            "Tab takes the highlighted candidate (the default)"
+            tab.effects.iter().any(|e| matches!(e, Effect::SelectionMoved(_))),
+            "Tab moves the highlight of the list (the default: the programmer habit)"
         );
-        assert_eq!(cap.stats.commits, 1);
-        // with `tab_cycles` on Tab walks the candidate list instead (the programmer habit)
+        assert!(
+            !tab.effects
+                .iter()
+                .any(|e| matches!(e, Effect::Commit { .. })),
+            "Tab does not write anything"
+        );
+        assert_eq!(cap.stats.commits, 0);
+        // the same with `tab_cycles` written down explicitly
         let mut cycler = machine();
         cycler.grant_observation(true);
         cycler.set_candidate_capture(true);
@@ -1189,9 +1201,9 @@ mod tests {
     }
 
     #[test]
-    fn tab_takes_the_candidate_while_the_list_is_on_screen_even_in_direct_mode() {
-        // the basic flow: the candidate list is on screen, Tab confirms the highlighted candidate and it is
-        // written out. No mode switch, no chord, no extra key.
+    fn tab_selects_in_the_list_while_it_is_on_screen_even_in_direct_mode() {
+        // the basic flow: the candidate list is on screen, Tab moves the highlight of the list (it selects, the
+        // programmer habit) and Enter takes the candidate that is highlighted. No mode switch, no chord.
         let mut m = machine();
         m.grant_observation(true);
         type_text(&mut m, "fn", 0);
@@ -1203,10 +1215,20 @@ mod tests {
         let step = m.on_key(KeyEvent::plain(Key::Tab), 1);
         assert_eq!(step.outcome, KeyOutcome::Consumed);
         assert!(
-            step.effects.iter().any(
-                |e| matches!(e, Effect::Commit { candidate_id, text, .. } if candidate_id == "t.fn" && text == "fn!")
+            step.effects.iter().any(|e| matches!(e, Effect::SelectionMoved(_))),
+            "Tab moves the highlight of the list"
+        );
+        assert_eq!(m.selected(), 1, "the highlight is on the second candidate");
+        assert_eq!(m.stats.commits, 0, "Tab writes nothing");
+        // with the capture on (the input mode) Enter takes the candidate that is highlighted
+        m.set_candidate_capture(true);
+        let enter = m.on_key(KeyEvent::plain(Key::Enter), 1);
+        assert_eq!(enter.outcome, KeyOutcome::Consumed);
+        assert!(
+            enter.effects.iter().any(
+                |e| matches!(e, Effect::Commit { candidate_id, .. } if candidate_id == "t.second")
             ),
-            "the highlighted candidate is committed with its text"
+            "the highlighted candidate is committed"
         );
         assert_eq!(m.stats.commits, 1);
         assert!(m.candidates().is_empty(), "the list is gone");

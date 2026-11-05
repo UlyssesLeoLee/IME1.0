@@ -37,13 +37,14 @@ use crate::skin::skin_colors;
 use crate::imesettings::{self, ImeSettings, LanguageSettings};
 use crate::keymap::{Modifiers, vk};
 use crate::laser::PanelItem;
+use crate::laser_candidates::LaserCandidates;
 use crate::laser_ui::{LaserEvent, LaserUi};
 use crate::layout::Rect;
 use crate::menus::{MenuAction, MenuItem, MenuSink, MenuWindow};
-use crate::popup::{PopupWindow, work_area_of};
+use crate::popup::work_area_of;
 use crate::register::debug_line;
 use crate::settings_window::{SettingsEvent, SettingsSink, SettingsWindow};
-use crate::ui::{Anchor, CandidateUi, CandidateView};
+use crate::ui::{Anchor, CandidateUi, CandidateView, ListAction};
 use crate::uielement_com::candidate_ui;
 
 /// Whether two COM interface pointers point at the same object.
@@ -80,7 +81,7 @@ fn refused<E>(_: E) -> HostError {
     HostError::Refused
 }
 
-/// The candidate window is injected as a trait object (the production window is `popup::PopupWindow`).
+/// The candidate window is injected as a trait object (the production list is `laser_candidates::LaserCandidates`).
 struct BoxedUi(Box<dyn CandidateUi>);
 
 impl CandidateUi for BoxedUi {
@@ -504,6 +505,8 @@ enum MenuKind {
     Effort,
     /// The skin of the product.
     Skin,
+    /// The scheme of the keys (the programmer habit, Microsoft, Sogou, ATOK).
+    Keymap,
 }
 
 /// Everything that exists between `Activate` and `Deactivate`.
@@ -513,7 +516,7 @@ struct Inner {
     thread_sink_cookie: u32,
     /// The cookie of the sink that hears about the active language profile.
     language_sink_cookie: u32,
-    controller: TipController<BoxedUi, TsfHost>,
+    controller: TipController<BoxedUi, TsfHost, crate::predictor::PluginPredictor>,
     started: Instant,
     /// Actions the user or the host asked for while the text service was busy: they are applied now. A host that
     /// answers an update by calling back into the element produces one more action, so the rounds are bounded.
@@ -557,6 +560,61 @@ enum Pending {
     Laser(LaserEvent),
     /// The user pressed Alt+F2: walk to the next language of the product.
     SwitchLanguage,
+}
+
+/// The rows of the laser panel: the settings that are used most often, in the order they are drawn.
+///
+/// The panel is the quick way into the settings (the Sogou way): the switches that are turned on and off while
+/// typing, the scheme of the keys, the language, the effort of the AI and the way the input method looks. The last
+/// row opens the settings window itself.
+///
+/// The function is free of the state of the text service, so that "which rows are there" can be tested without a
+/// host: the window of the panel is sized for [`crate::laser_ui::PANEL_ROWS`] rows.
+fn laser_items(
+    language: &str,
+    settings: &LanguageSettings,
+    effort: &str,
+    skin: &str,
+    input_mode: bool,
+) -> Vec<PanelItem> {
+    vec![
+        PanelItem::Toggle {
+            key: "input_mode",
+            label: "输入模式",
+            on: input_mode,
+        },
+        PanelItem::Toggle {
+            key: "space_confirms",
+            label: "空格上屏",
+            on: settings.space_confirms,
+        },
+        PanelItem::Toggle {
+            key: "auto_compose",
+            label: "自动开组合",
+            on: settings.auto_compose,
+        },
+        PanelItem::Menu {
+            key: "keymap",
+            label: "按键方案",
+            value: settings.keymap_preset.label().to_string(),
+        },
+        PanelItem::Menu {
+            key: "language",
+            label: "语言",
+            value: imesettings::display_name(language).to_string(),
+        },
+        PanelItem::Menu {
+            key: "effort",
+            label: "AI 力度",
+            value: imesettings::effort_label(effort).to_string(),
+        },
+        PanelItem::Menu {
+            key: "skin",
+            label: "外观",
+            value: imesettings::skin_label(skin).to_string(),
+        },
+        PanelItem::Settings,
+    ]
 }
 
 impl Inner {
@@ -627,6 +685,16 @@ impl Inner {
                     )
                 })
                 .collect(),
+            MenuKind::Keymap => imesettings::KeymapPreset::ALL
+                .iter()
+                .map(|preset| {
+                    MenuItem::checked(
+                        preset.label(),
+                        MenuAction::SetKeymapPreset(*preset),
+                        self.settings.keymap_preset == *preset,
+                    )
+                })
+                .collect(),
         }
     }
 
@@ -653,6 +721,16 @@ impl Inner {
             MenuAction::SwitchLanguage(language) => {
                 self.switch_language(&language);
             }
+            MenuAction::SetKeymapPreset(preset) => {
+                // The scheme changes the keys at once: that is the point of the schemes.
+                let mut value = self.settings;
+                if value.apply_preset(preset) {
+                    self.settings = value;
+                    self.controller.apply_settings(&value);
+                    self.save_settings();
+                    self.sync_laser();
+                }
+            }
             MenuAction::OpenSettings => self.open_settings(),
         }
     }
@@ -667,6 +745,7 @@ impl Inner {
             "tab_to_host" => value.tab_to_host = on,
             "space_confirms" => value.space_confirms = on,
             "auto_compose" => value.auto_compose = on,
+            "punct_paging" => value.punct_paging = on,
             "laser_ui" => value.laser_ui = on,
             "input_mode" => {
                 // The input mode is a state of the controller, not a file: it is the same thing Alt+F1 does.
@@ -676,6 +755,10 @@ impl Inner {
                 return;
             }
             _ => return,
+        }
+        // A key that the user turns by hand is no longer the one of the scheme: the scheme becomes "custom".
+        if !matches!(name, "laser_ui") {
+            value.keymap_preset = imesettings::KeymapPreset::Custom;
         }
         self.settings = value;
         self.controller.apply_settings(&value);
@@ -688,6 +771,11 @@ impl Inner {
         match event {
             LaserEvent::Toggle { key, on } => self.set_option(key, on),
             LaserEvent::Menu { key } => self.open_laser_menu(key),
+            LaserEvent::Candidate { index } => {
+                // A candidate of the list was clicked in the panel: it is taken as if the user had pressed
+                // the key of it.
+                self.controller.apply_list_action(ListAction::Take(index));
+            }
             LaserEvent::Settings => self.open_settings(),
             LaserEvent::Switch => {
                 // The mouth of the light is the switch between the input methods.
@@ -711,6 +799,7 @@ impl Inner {
             "language" => MenuKind::Language,
             "effort" => MenuKind::Effort,
             "skin" => MenuKind::Skin,
+            "keymap" => MenuKind::Keymap,
             _ => return,
         };
         let anchor = self
@@ -766,6 +855,9 @@ impl Inner {
         let value = settings.get(language);
         self.settings = value;
         self.controller.apply_settings(&value);
+        // The engine follows the language: the dictionaries of the core take over.
+        self.controller
+            .set_profile(pime_core::imeswitch::profile_of(language));
     }
 
     /// Write the settings back to the file of the user.
@@ -788,49 +880,13 @@ impl Inner {
     /// The panel is the quick way into the settings (the Sogou way): the switches that are turned on and off while
     /// typing, the language, the effort of the AI and the way the input method looks.
     fn laser_items(&self) -> Vec<PanelItem> {
-        vec![
-            PanelItem::Toggle {
-                key: "input_mode",
-                label: "输入模式",
-                on: self.controller.input_mode(),
-            },
-            PanelItem::Toggle {
-                key: "space_confirms",
-                label: "空格上屏",
-                on: self.settings.space_confirms,
-            },
-            PanelItem::Toggle {
-                key: "auto_compose",
-                label: "自动开组合",
-                on: self.settings.auto_compose,
-            },
-            PanelItem::Toggle {
-                key: "tab_cycles",
-                label: "Tab 确认候选",
-                on: self.settings.tab_cycles,
-            },
-            PanelItem::Toggle {
-                key: "tab_to_host",
-                label: "Tab 归宿主",
-                on: self.settings.tab_to_host,
-            },
-            PanelItem::Menu {
-                key: "language",
-                label: "语言",
-                value: imesettings::display_name(&self.language).to_string(),
-            },
-            PanelItem::Menu {
-                key: "effort",
-                label: "AI 力度",
-                value: imesettings::effort_label(&self.effort).to_string(),
-            },
-            PanelItem::Menu {
-                key: "skin",
-                label: "外观",
-                value: imesettings::skin_label(&self.skin).to_string(),
-            },
-            PanelItem::Settings,
-        ]
+        laser_items(
+            &self.language,
+            &self.settings,
+            &self.effort,
+            &self.skin,
+            self.controller.input_mode(),
+        )
     }
 
     /// Put the laser interface on the screen and give it the rows it shows.
@@ -862,6 +918,7 @@ impl Inner {
     /// Read the settings file again and apply what it says.
     fn reload_settings(&mut self) {
         let settings = load_settings();
+        apply_plugins(&settings.plugins);
         let language = self.language.clone();
         let value = settings.get(&language);
         self.settings = value;
@@ -944,6 +1001,14 @@ fn activate_profile(langid: u16, profile: &GUID) -> bool {
 }
 
 /// The settings of every language, from the file of the user (the defaults when there is none).
+/// Tell the core which plugin languages are on.
+///
+/// The set belongs to the engine: it is the place that decides whether a plugin profile has candidates at all,
+/// and the settings window is the place that changes it.
+fn apply_plugins(plugins: &[String]) {
+    pime_core::predict::engine().set_plugin_languages(plugins);
+}
+
 fn load_settings() -> ImeSettings {
     match imesettings::settings_path() {
         Some(path) => ImeSettings::load(&path),
@@ -1296,16 +1361,10 @@ impl Tip {
                     settle(&inner, &flags);
                 })
             };
-            // The native popup, announced to the host as a candidate-list UI element when the thread manager offers
-            // `ITfUIElementMgr`; a host that answers "I draw" keeps the popup hidden (see `uielement`).
-            let ui = candidate_ui(
-                &thread_mgr,
-                Box::new(PopupWindow::with_sink(sink.clone())),
-                sink,
-            );
             // The language of the active profile and the settings of that language.
             let language = active_language().unwrap_or(DEFAULT_LANGUAGE).to_string();
             let settings = load_settings();
+            apply_plugins(&settings.plugins);
             let values = settings.get(&language);
             let mut config = TipConfig::default();
             config.keymap.page_size = values.page_size().clamp(1, 9);
@@ -1314,6 +1373,9 @@ impl Tip {
             config.keymap.space_confirms = values.space_confirms;
             config.auto_compose = values.auto_compose;
             config.input_mode = values.input_mode;
+            // The profile of the engine follows the language: the Chinese and the Japanese are answered by the
+            // dictionaries of the core, the English one by the engine of the code.
+            config.language = pime_core::imeswitch::profile_of(&language).to_string();
             // The laser interface: the glow on the left of the screen, the beam, the panel and the logo in the
             // corner. What the user does in the panel travels the same way as the actions of the bar.
             let laser: Rc<RefCell<LaserUi>> = {
@@ -1339,11 +1401,20 @@ impl Tip {
                 });
                 LaserUi::create(sink)
             };
+            // The list of the candidates is drawn in the panel of the laser interface, on the left of the screen.
+            // There is no floating window next to the caret any more (the Sogou-style window was in the way of
+            // the code the user writes). The list is still announced to the host as a candidate-list UI element
+            // when the thread manager offers `ITfUIElementMgr`.
+            let ui = candidate_ui(
+                &thread_mgr,
+                Box::new(LaserCandidates::new(Rc::clone(&laser))),
+                sink,
+            );
             let laser_hide = laser.borrow().hide_flag();
             let mut controller = TipController::new(
                 BoxedUi(Box::new(ui)),
                 TsfHost::new(client_id, composition_sink),
-                pime_core::input::LocalPredictor,
+                crate::predictor::PluginPredictor::new(),
                 config,
             );
             // The light of the input method shines on the character that was written.
@@ -1802,9 +1873,32 @@ mod tests {
     use super::*;
     use windows::Win32::UI::TextServices::ITfTextInputProcessor;
 
+    /// The panel of the laser interface must have exactly the number of rows its window is tall enough for.
     #[test]
-    fn guard_passes_a_value_through_and_turns_a_panic_into_the_fallback() {
-        assert_eq!(guard(7, || 42), 42);
+    fn the_panel_has_the_number_of_rows_its_window_expects() {
+        let items = laser_items(
+            "zh-CN",
+            &LanguageSettings::default(),
+            "auto",
+            "laser",
+            true,
+        );
+        assert_eq!(
+            items.len(),
+            crate::laser_ui::PANEL_ROWS,
+            "the panel shows {items:?}"
+        );
+        // the last row is the one that opens the settings window
+        assert_eq!(items.last(), Some(&PanelItem::Settings));
+        // and the scheme of the keys is one of the rows (the user asked for it to be reachable from the panel)
+        assert!(
+            items.iter().any(|item| item.label() == "按键方案"),
+            "{items:?}"
+        );
+    }
+
+    #[test]
+    fn guard_passes_a_value_through_and_turns_a_panic_into_the_fallback() {        assert_eq!(guard(7, || 42), 42);
         assert!(!guard(false, || panic!("host callback panicked (test)")));
         let got: Result<BOOL> = guard(Ok(BOOL(0)), || -> Result<BOOL> { panic!("again (test)") });
         assert_eq!(

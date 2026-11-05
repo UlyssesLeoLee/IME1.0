@@ -268,7 +268,24 @@ impl Engine {
         let reg = self.registry();
         let profile = opts.profile.as_str();
         let key = js_trim(&opts.prefix).to_lowercase();
-        if key.is_empty() || utf16_len(&key) > MAX_PREFIX || !reg.has_profile(profile) {
+        if key.is_empty() || utf16_len(&key) > MAX_PREFIX {
+            return Ok(Vec::new());
+        }
+        // The Chinese and the Japanese are not programming languages: they are answered by the dictionaries of
+        // the core (the pinyin and the kana), not by a pack of code.
+        if profile == crate::cjk::PROFILE_ZH {
+            return Ok(dictionary_candidates(
+                crate::cjk::pinyin_candidates(&key),
+                profile,
+            ));
+        }
+        if profile == crate::cjk::PROFILE_JA {
+            return Ok(dictionary_candidates(
+                crate::cjk::japanese_candidates(&key),
+                profile,
+            ));
+        }
+        if !reg.has_profile(profile) {
             return Ok(Vec::new());
         }
         let (dialect, unsupported) = reg.resolve_dialect(profile, &opts.dialect);
@@ -398,8 +415,32 @@ impl Engine {
         out.retain(|c| c.validation != Validation::Invalid);
         let mut list = dedupe(rank_candidates(&out, &rank), profile);
         list.truncate(opts.limit);
+        // The English words are the third dictionary of the input method: they are offered when the code has
+        // nothing to say, so that a word of a comment can still be finished without another input method.
+        if list.is_empty() && profile == crate::cjk::PROFILE_CODE {
+            list = dictionary_candidates(crate::cjk::english_candidates(&key), profile);
+        }
         Ok(list)
     }
+}
+
+/// The candidates of a dictionary of the input method (the Chinese, the Japanese, the English).
+fn dictionary_candidates(texts: Vec<String>, profile: &str) -> Vec<Candidate> {
+    texts
+        .into_iter()
+        .enumerate()
+        .map(|(index, text)| {
+            let mut c = Candidate::new(&format!("{profile}.dict.{index}"));
+            c.kind = CandidateKind::Keyword;
+            c.label = text.clone();
+            c.text = Some(text);
+            c.profile_id = profile.to_string();
+            c.match_kind = Some(MatchKind::Prefix);
+            c.weight = 60 - index as i64;
+            c.validation = Validation::Valid;
+            c
+        })
+        .collect()
 }
 
 /// `/^(?:[0-9a-f]{2}\s*)+$/i`
@@ -483,6 +524,60 @@ mod tests {
         assert!(
             r.iter()
                 .any(|c| c.id == "rust.id.counter" && c.source == CandidateSource::Context)
+        );
+    }
+
+    /// The texts of the candidates of a profile.
+    fn texts(profile: &str, prefix: &str) -> Vec<String> {
+        engine()
+            .predict(&PredictOptions::new(profile, prefix))
+            .unwrap()
+            .into_iter()
+            .filter_map(|c| c.text)
+            .collect()
+    }
+
+    /// The Chinese profile is answered by the dictionary of the product: the pinyin becomes Chinese.
+    #[test]
+    fn the_chinese_profile_answers_with_chinese() {
+        let r = texts(crate::cjk::PROFILE_ZH, "ni");
+        assert!(
+            r.contains(&"你".to_string()),
+            "the pinyin of the product gives Chinese: {r:?}"
+        );
+        assert!(
+            !r.is_empty() && r.iter().all(|t| t.chars().any(|c| c as u32 > 0x2E80)),
+            "every candidate of the Chinese profile is Chinese: {r:?}"
+        );
+    }
+
+    /// The Japanese profile is answered by the dictionary of the product: the romaji becomes kana.
+    #[test]
+    fn the_japanese_profile_answers_with_japanese() {
+        let r = texts(crate::cjk::PROFILE_JA, "nihon");
+        assert!(
+            r.contains(&"日本".to_string()),
+            "the romaji of the product gives the Japanese word: {r:?}"
+        );
+        assert!(
+            r.iter().any(|t| t.contains('に')),
+            "the kana is among the candidates: {r:?}"
+        );
+    }
+
+    /// The English profile is the code: the engine of the code answers, and the English words are the last resort.
+    #[test]
+    fn the_english_profile_is_the_code_and_the_english_words() {
+        let r = texts(crate::cjk::PROFILE_CODE, "fnm");
+        assert!(
+            r.iter().any(|t| t.contains("fn")),
+            "the code is still the code: {r:?}"
+        );
+        // a word of a comment that the engine of the code knows nothing about
+        let words = texts(crate::cjk::PROFILE_CODE, "comp");
+        assert!(
+            words.iter().any(|w| w == "computer"),
+            "the English words are the last resort: {words:?}"
         );
     }
 }

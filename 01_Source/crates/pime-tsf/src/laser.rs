@@ -28,6 +28,8 @@ pub struct Mouth {
     pub y: i32,
     /// How big the opening is (the radius of the lens).
     pub radius: i32,
+    /// The edge of the screen the mouth sits on: the slit of light follows it.
+    pub edge: Edge,
 }
 
 impl MouthPlace {
@@ -70,6 +72,7 @@ impl Mouth {
             x: work.left + radius,
             y: centre_y.clamp(work.top + radius, (work.bottom - radius).max(work.top + radius)),
             radius: radius.max(1),
+            edge: Edge::Left,
         }
     }
 
@@ -116,17 +119,66 @@ pub fn mouth_at(work: Rect, place: MouthPlace, radius: i32) -> Mouth {
             x: work.left + radius,
             y: place.offset.clamp(work.top + radius, (work.bottom - radius).max(work.top + radius)),
             radius,
+            edge: Edge::Left,
         },
         Edge::Right => Mouth {
             x: work.right - radius,
             y: place.offset.clamp(work.top + radius, (work.bottom - radius).max(work.top + radius)),
             radius,
+            edge: Edge::Right,
         },
         Edge::Top => Mouth {
             x: place.offset.clamp(work.left + radius, (work.right - radius).max(work.left + radius)),
             y: work.top + radius,
             radius,
+            edge: Edge::Top,
         },
+    }
+}
+
+/// How long the slit of light at the mouth is (in pixels).
+///
+/// The user asked for "a small piece of it" ("一小截淡蓝色半透明激光"): long enough to be found at a glance, short
+/// enough to be a detail of the screen and not a decoration of it.
+pub const SLIT_LENGTH: i32 = 26;
+
+/// How wide the bright core of the slit is (in pixels): a hairline, not a bar.
+pub const SLIT_WIDTH: i32 = 1;
+
+/// How far the soft light around the slit reaches (in pixels).
+pub const SLIT_HALO: i32 = 5;
+
+/// The visible part of the mouth: a thin slit of light along the edge of the screen.
+///
+/// The geometry is pure, so that "what the mouth looks like" can be tested without a screen: the painter only has
+/// to draw the line this describes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MouthSlit {
+    /// The centre of the slit (the same point as the mouth).
+    pub x: i32,
+    pub y: i32,
+    /// How long the slit is, along the edge of the screen.
+    pub length: i32,
+    /// How wide the bright core of it is.
+    pub width: i32,
+    /// How far the soft light around it reaches.
+    pub halo: i32,
+    /// Whether the slit runs from top to bottom (the mouth is on the left or the right edge) or from left to right
+    /// (the mouth is on the top edge).
+    pub vertical: bool,
+}
+
+/// The slit of light of a mouth.
+///
+/// It follows the edge the mouth sits on: a vertical slit on the left and the right edge, a horizontal one on the top.
+pub fn mouth_slit(mouth: &Mouth) -> MouthSlit {
+    MouthSlit {
+        x: mouth.x,
+        y: mouth.y,
+        length: SLIT_LENGTH,
+        width: SLIT_WIDTH,
+        halo: SLIT_HALO,
+        vertical: !matches!(mouth.edge, Edge::Top),
     }
 }
 
@@ -268,6 +320,22 @@ impl Beam {
     }
 }
 
+/// One candidate of the list, as the panel shows it.
+///
+/// A candidate is a row of the panel like the settings are: the number that takes it, the text of it and
+/// where it comes from.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PanelCandidate {
+    /// The number of the candidate (the key that takes it).
+    pub label: String,
+    /// The text of the candidate.
+    pub text: String,
+    /// Where the candidate comes from (the rule, the context, the validation).
+    pub detail: String,
+    /// Whether this one is the highlighted one.
+    pub selected: bool,
+}
+
 /// One row of the panel.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PanelItem {
@@ -291,6 +359,8 @@ pub enum PanelItem {
     },
     /// The row that opens the settings window.
     Settings,
+    /// One candidate of the list.
+    Candidate(PanelCandidate),
 }
 
 impl PanelItem {
@@ -300,6 +370,7 @@ impl PanelItem {
             PanelItem::Toggle { label, .. } => label,
             PanelItem::Menu { label, .. } => label,
             PanelItem::Settings => "设置",
+            PanelItem::Candidate(candidate) => &candidate.text,
         }
     }
 
@@ -312,6 +383,7 @@ impl PanelItem {
             .to_string(),
             PanelItem::Menu { value, .. } => value.clone(),
             PanelItem::Settings => "…".to_string(),
+            PanelItem::Candidate(candidate) => candidate.detail.clone(),
         }
     }
 
@@ -330,6 +402,8 @@ pub enum PanelAction {
     Menu { key: &'static str },
     /// Open the settings window.
     Settings,
+    /// Take the candidate of the row (the index is the one of the row in the panel).
+    Candidate { index: usize },
 }
 
 /// The rows of the panel and where they are.
@@ -369,13 +443,19 @@ impl PanelLayout {
 
     /// The action of a click on the point `(x, y)`.
     pub fn action_at(&self, x: i32, y: i32) -> Option<PanelAction> {
-        match self.hit(x, y)? {
+        let (index, (item, _)) = self
+            .rows
+            .iter()
+            .enumerate()
+            .find(|(_, (_, rect))| rect.contains(x, y))?;
+        match item {
             PanelItem::Toggle { key, on, .. } => Some(PanelAction::Toggle {
                 key,
                 on: !*on,
             }),
             PanelItem::Menu { key, .. } => Some(PanelAction::Menu { key }),
             PanelItem::Settings => Some(PanelAction::Settings),
+            PanelItem::Candidate(_) => Some(PanelAction::Candidate { index }),
         }
     }
 }
@@ -416,10 +496,50 @@ mod tests {
             x: 20,
             y: 100,
             radius: 12,
+            edge: Edge::Left,
         };
         assert!(mouth.contains(20, 100));
         assert!(!mouth.contains(20, 400), "far away is not the mouth");
         assert!(!mouth.contains(400, 100), "far to the right is not the mouth");
+    }
+
+    /// The visible part of the mouth is a thin slit that follows the edge it sits on.
+    #[test]
+    fn the_slit_of_light_follows_the_edge_of_the_mouth() {
+        let left = mouth_at(
+            Rect::new(0, 0, 1920, 1040),
+            MouthPlace {
+                edge: Edge::Left,
+                offset: 500,
+            },
+            12,
+        );
+        let slit = mouth_slit(&left);
+        assert!(slit.vertical, "the mouth is on the left edge: the slit runs from top to bottom");
+        assert_eq!((slit.x, slit.y), (left.x, left.y));
+        assert_eq!(slit.width, SLIT_WIDTH, "a hairline, not a bar");
+        assert_eq!(slit.length, SLIT_LENGTH, "a small piece of light");
+        let right = mouth_at(
+            Rect::new(0, 0, 1920, 1040),
+            MouthPlace {
+                edge: Edge::Right,
+                offset: 500,
+            },
+            12,
+        );
+        assert!(mouth_slit(&right).vertical, "the right edge is vertical too");
+        let top = mouth_at(
+            Rect::new(0, 0, 1920, 1040),
+            MouthPlace {
+                edge: Edge::Top,
+                offset: 700,
+            },
+            12,
+        );
+        assert!(
+            !mouth_slit(&top).vertical,
+            "the top edge: the slit runs from left to right"
+        );
     }
 
     #[test]

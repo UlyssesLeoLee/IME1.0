@@ -10,6 +10,18 @@
 /// The three languages of the product, in the order the switch key walks through them.
 pub const LANGUAGES: [&str; 3] = ["zh-CN", "en-US", "ja-JP"];
 
+/// The profile of the prediction engine for an input language of the product.
+///
+/// The Chinese and the Japanese profiles are answered by the dictionaries of the core (the pinyin and the
+/// kana); the English one is the engine of the code, with the English words behind it.
+pub fn profile_of(language: &str) -> &'static str {
+    match language {
+        "zh-CN" => crate::cjk::PROFILE_ZH,
+        "ja-JP" => crate::cjk::PROFILE_JA,
+        _ => crate::cjk::PROFILE_CODE,
+    }
+}
+
 /// The language that follows the one that is active.
 ///
 /// The switch key walks through the three languages of the product: zh-CN, en-US, ja-JP and around. A language that
@@ -176,6 +188,20 @@ mod tests {
             next_language("de-DE"),
             LANGUAGES[0],
             "a language that is not ours is followed by the first one"
+        );
+    }
+
+    /// Every language of the product has a profile of the engine: the Chinese and the Japanese are answered by the
+    /// dictionaries of the core, the English one by the engine of the code.
+    #[test]
+    fn every_language_has_a_profile_of_the_engine() {
+        assert_eq!(profile_of("zh-CN"), crate::cjk::PROFILE_ZH);
+        assert_eq!(profile_of("ja-JP"), crate::cjk::PROFILE_JA);
+        assert_eq!(profile_of("en-US"), crate::cjk::PROFILE_CODE);
+        assert_eq!(
+            profile_of("de-DE"),
+            crate::cjk::PROFILE_CODE,
+            "a language that is not ours is the code"
         );
     }
 

@@ -100,6 +100,20 @@ const ADDITIONS = [
   // the probe that drags the mouth of the glow to the top edge, and the picture that shows it there
   '01_Source/crates/pime-tsf/examples/laser_mouth_probe.rs',
   '02_Verification/ime-ui/laser-mouth-top.png',
+  // the dictionary the IME carries itself (no other IME is called) and the data it is built from
+  '01_Source/crates/pime-core/src/cjk.rs',
+  '01_Source/crates/pime-core/src/cjk/english-words.txt',
+  '01_Source/crates/pime-core/src/cjk/japanese-words.txt',
+  '01_Source/crates/pime-core/src/cjk/pinyin-phrases.txt',
+  '01_Source/crates/pime-core/src/cjk/pinyin-syllables.txt',
+  '01_Source/crates/pime-core/src/cjk/romaji-kana.txt',
+  // the reserved interfaces for the word bank management (AI curation, remote update, sign in)
+  '01_Source/crates/pime-core/src/services.rs',
+  // the candidate list lives in the laser panel now, and the plugin predictor bridges the plugin languages
+  '01_Source/crates/pime-tsf/src/laser_candidates.rs',
+  '01_Source/crates/pime-tsf/src/predictor.rs',
+  // the machine readable report of the settings window probe (the picture alone cannot prove the tabs)
+  '02_Verification/ime-ui/probe-report.json',
 ];
 
 const isBinary = bytes => bytes.includes(0);

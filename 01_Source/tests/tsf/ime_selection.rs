@@ -47,11 +47,10 @@ fn the_shipped_default_walks_the_list_with_the_arrows() {
 }
 
 #[test]
-fn the_shipped_default_takes_a_candidate_with_tab_space_and_enter() {
-    for name in ["Tab", "Space", "Enter"] {
+fn the_shipped_default_takes_a_candidate_with_space_and_enter() {
+    for name in ["Space", "Enter"] {
         let mut h = typed_candidates(TipConfig::default());
         let eaten = match name {
-            "Tab" => h.tab(),
             "Space" => h.space(),
             _ => h.enter(),
         };
@@ -62,6 +61,22 @@ fn the_shipped_default_takes_a_candidate_with_tab_space_and_enter() {
         assert_eq!(t.doc, FIRST, "{name}: the candidate is in the document");
         assert!(!t.visible, "{name}: the list is gone after the take");
     }
+}
+
+/// The Tab key is the selection key of the list (the programmer habit): it moves the highlight and writes nothing.
+#[test]
+fn the_shipped_default_selects_with_tab_and_takes_with_enter() {
+    let mut h = typed_candidates(TipConfig::default());
+    assert!(h.tab(), "the Tab key belongs to the candidate list");
+    let t = h.transcript();
+    assert!(t.commits.is_empty(), "Tab writes nothing: {:?}", t.commits);
+    assert_eq!(t.selected, 1, "Tab moved the highlight");
+    assert!(t.visible, "the list is still on screen");
+    // Enter takes the candidate that Tab highlighted
+    assert!(h.enter(), "Enter belongs to the candidate list");
+    let t = h.transcript();
+    assert_eq!(t.commits.len(), 1, "one candidate was written");
+    assert_eq!(t.commits[0], "c1:fn", "the highlighted candidate");
 }
 
 #[test]

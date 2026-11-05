@@ -160,6 +160,7 @@ impl Model {
                 x: 0,
                 y: 0,
                 radius: 12,
+                edge: crate::laser::Edge::Left,
             },
             beam: None,
             glow_window: Rect::new(0, 0, 0, 0),
@@ -280,7 +281,27 @@ impl GlassWindow {
     }
 
     /// Move the window (without activating it).
+    ///
+    /// A layered window is a **surface of its own**: the system does not carry that surface along when the window is
+    /// moved with `SetWindowPos`, so the picture stays where it was while the window has already moved. What the user
+    /// sees then is the picture of the old place at the old place and an empty window at the new one - the residue at
+    /// the edges of the light.
+    ///
+    /// The picture is therefore uploaded again at the new place: `UpdateLayeredWindow` hands the new picture to the
+    /// compositor **and** moves the window in the same call, so the old picture is gone before the new one appears and
+    /// nothing can stay behind.
     pub fn move_to(&self, x: i32, y: i32) {
+        // The rule of the layered windows: a window that has a picture is moved by that picture.
+        match move_way(self.has_picture()) {
+            Move::ByPicture => {
+                if self.move_by_picture(x, y) {
+                    return;
+                }
+            }
+            Move::ByWindow => {}
+        }
+        // There is no picture yet (the window was only created), or the compositor refused it: the window is placed,
+        // and the picture comes with the next paint.
         // SAFETY: plain call on our own window; SWP_NOACTIVATE keeps the focus in the editor.
         unsafe {
             let _ = SetWindowPos(
@@ -293,6 +314,36 @@ impl GlassWindow {
                 SWP_NOACTIVATE | SWP_NOOWNERZORDER,
             );
         }
+    }
+
+    /// Whether the window has a picture at the moment.
+    fn has_picture(&self) -> bool {
+        let Ok(shared) = self.shared.try_borrow() else {
+            return false;
+        };
+        let Ok(surface) = shared.surface.try_borrow() else {
+            return false;
+        };
+        surface.is_some()
+    }
+
+    /// Move the window by handing its picture to the compositor at the new place.
+    ///
+    /// Returns whether the picture could be moved. False when the window is busy painting itself (the next paint
+    /// puts the picture where it belongs).
+    fn move_by_picture(&self, x: i32, y: i32) -> bool {
+        let Ok(shared) = self.shared.try_borrow() else {
+            return false;
+        };
+        let Ok(surface) = shared.surface.try_borrow() else {
+            return false;
+        };
+        let Some(surface) = surface.as_ref() else {
+            return false;
+        };
+        // SAFETY: the surface is the picture of this window; the call moves the window and the surface together,
+        // so the old place cannot keep a ghost of the light.
+        surface.upload(self.hwnd, x, y)
     }
 
     /// Give the window a new size (the picture is made again on the next paint).
@@ -620,6 +671,29 @@ fn _font_is_a_gdi_object(font: HFONT) -> HGDIOBJ {
     HGDIOBJ(font.0)
 }
 
+/// How a layered window is moved.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Move {
+    /// The picture is handed to the compositor at the new place: the window and the surface move in the same call,
+    /// so nothing of the old place can stay behind.
+    ByPicture,
+    /// The window is only placed: there is no picture yet, so there is nothing that could stay behind either.
+    ByWindow,
+}
+
+/// The way a layered window is moved.
+///
+/// The rule is a function of one thing, so it can be stated in a test without a screen: **a window that has a picture
+/// is moved by that picture**. Moving such a window with `SetWindowPos` alone would leave the picture behind - the
+/// residue at the edges of the light.
+pub fn move_way(has_picture: bool) -> Move {
+    if has_picture {
+        Move::ByPicture
+    } else {
+        Move::ByWindow
+    }
+}
+
 /// The point of a click, in client coordinates.
 pub fn click_point(lparam: LPARAM) -> (i32, i32) {
     (
@@ -639,4 +713,27 @@ pub fn cursor_position() -> (i32, i32) {
     // SAFETY: a plain read of the cursor position.
     unsafe { windows::Win32::UI::WindowsAndMessaging::GetCursorPos(&mut point) }.ok();
     (point.x, point.y)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A window that has a picture is moved by that picture: the surface and the window move in the same call, so the
+    /// old place cannot keep a ghost of the light (the residue at the edges the user asked for).
+    ///
+    /// A window that has no picture yet is only placed: there is nothing on the screen that could stay behind.
+    #[test]
+    fn a_window_with_a_picture_is_moved_by_its_picture() {
+        assert_eq!(
+            move_way(true),
+            Move::ByPicture,
+            "the picture moves the window: the surface and the window go together"
+        );
+        assert_eq!(
+            move_way(false),
+            Move::ByWindow,
+            "no picture, nothing to leave behind: the window is only placed"
+        );
+    }
 }
