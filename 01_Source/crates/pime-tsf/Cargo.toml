@@ -5,7 +5,7 @@
 # libraries, so no MSVC, Windows SDK or binutils is needed. See docs/VERSIONS.md.
 [package]
 name = "pime-tsf"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 license = "MIT"
 publish = false

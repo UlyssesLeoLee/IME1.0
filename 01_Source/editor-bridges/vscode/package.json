@@ -2,7 +2,7 @@
   "name": "programming-ime-vscode-bridge",
   "displayName": "Programming IME (VS Code Bridge)",
   "description": "Seven-language local suggestions, per-hunk reviewed F1 AI edits and BYOK AI for Programming IME. The editor-side bridge of the system IME design; not a TSF input method.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "pime-local-prototype",
   "license": "MIT",
   "engines": {"vscode": "^1.94.0"},

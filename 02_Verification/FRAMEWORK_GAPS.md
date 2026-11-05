@@ -951,3 +951,19 @@ DD 5.3 / UT-009 原本写的是「默认不吃任何代码字符」。这一轮�
 6. **D-51（新增）：`tase-semantic` 要做真正的 AST/符号索引，就得引 `syn` / `tree-sitter`。** 本项目声明 AGPL-3.0-only，设计书 §1.2 明确要求「依赖与生成物许可审查」。本轮我一律**零第三方依赖**（沿用 `pime-core` 的规矩），符号抽取仍是正则级（与 `pime-core::symbols` 同级）。要不要立项引入 AST 依赖，请你定。
 7. **D-52（新增）：契约层与设计书有三处不一致**（已如实实现、未擅自改设计书）：§2.2 的 `digest` 示例是截断的而正文要求 64 位 hex（契约层当不透明字符串，格式校验留给注册表）；§2.3 的 `params` 示例里 `authorization` 是布尔而冻结类型是字符串键值对；§2.3 说插入点「另由 manifest 或 `insert_sibling` 指定」，但冻结的 `Target` 没有插入点字段（只能走 `OperationKind::InsertSibling` + `params`）。
 8. **D-27 / D-29 / D-30 仍未决**；**D-16 / D-17 / D-20 / D-22 ~ D-26 仍未决**；**D-31 ~ D-36 仍未决**；**D-37 ~ D-45 仍未决**（D-44、D-45 是本轮新增）。
+
+### 5.19 发布（2026-11-05）：GitHub Release `v0.2.1`（未签名）
+
+这一轮把第十八到二十轮的成果**发布出去**：版本从 0.2.0 升到 **0.2.1**，重新出包，并在 GitHub 上建了**本仓库第一个公开 Release**（标签 `v0.2.1`）。
+
+| 项 | 值 |
+|---|---|
+| 安装包 | `ProgrammingIME-0.2.1-win-x64-setup.exe`，9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9` |
+| VS Code 扩展 | `programming-ime-vscode-bridge-0.2.1.vsix`，211,138 字节，sha256 `86b05341bb4d4a2e8c81b9fa57b6092fccf2586364546b6fcadef6b98211d9fd` |
+| 签名 | **无**（本机没有证书；`scripts/sign-installer.ps1` 已备好，证书放进 `scripts/certs/` 即可签） |
+
+**升版改了哪些地方**（版本号是产品的，不是随便的字符串）：扩展的 `package.json`（**安装包名字的唯一真源**，构建脚本读它）、各 crate 的 `Cargo.toml`、`pime-core::VERSION`、AI worker 的版本与 User-Agent、设置窗「关于」页、**协议 0.3 的 JSON Schema（它钉着核心的版本）**、以及各处文档。**历史记录一律不动**：旧协议 0.2 的 Schema、测试里当输入用的版本字符串、`FRAMEWORK_GAPS` / `STATUS.md` 里那些带日期的实测记录——它们描述的是当时的事实。
+
+**发布前跑过什么**：两轮门禁全绿（第一轮不带 installer，第二轮带 installer 与三个 claims 校验），清单 651 条对得上，正文里重复的数字（大小、哈希、测试数、载荷条数）全部与产物对齐。
+
+**发布出去的这一版有什么没验证**：安装包**未签名**（SmartScreen 会报未知发布者），**系统输入法没有在真实宿主里跑过**（新 DLL 要注销或重启才换上）。这两条都写进了 Release 说明的第一段，不是藏在末尾。

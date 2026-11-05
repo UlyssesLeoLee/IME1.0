@@ -98,10 +98,10 @@ pime-setup.exe / ProgrammingIME-<版本>-win-x64-setup.exe [选项]
 `--dry-run` 实例（节选，本机实测，什么都没有改变）：
 
 ```
-IME1.0 0.2.0 - install plan (dry run: nothing is changed)
+IME1.0 0.2.1 - install plan (dry run: nothing is changed)
   folder: C:\Program Files\IME1.0
   administrator rights needed: yes (the setup restarts itself elevated)
-  payload: 7 files, version 0.2.0, SHA-256 of every file verified
+  payload: 7 files, version 0.2.1, SHA-256 of every file verified
   VS Code: `code` found at D:\Microsoft VS Code\bin\code.cmd
   steps:
      1. create folder C:\Program Files\IME1.0
@@ -119,7 +119,7 @@ IME1.0 0.2.0 - install plan (dry run: nothing is changed)
     13. install the VS Code extension if `code` is found (non-fatal): code --install-extension "C:\Program Files\IME1.0\programming-ime.vsix" --force
 ```
 
-（上面是 2026-11-04 那次实测的输出，命令是 `ProgrammingIME-0.2.0-win-x64-setup.exe --dry-run`，什么都没有改变。载荷里现在有 10 个文件：多了图标 `pime.ico`、**常驻托盘 `pime-tray.exe`**、**语音服务客户端 `pime-ai-worker.exe`**，以及**给 AI 客户端调用的 `pime-mcp.exe`（MCP 服务端）与 `pime-ime.exe`（命令行与本地服务）**；托盘与 worker 装进同一个目录，worker 就在托盘旁边，所以托盘能直接找到它。）
+（上面是 2026-11-04 那次实测的输出，命令是 `ProgrammingIME-0.2.1-win-x64-setup.exe --dry-run`，什么都没有改变。载荷里现在有 10 个文件：多了图标 `pime.ico`、**常驻托盘 `pime-tray.exe`**、**语音服务客户端 `pime-ai-worker.exe`**，以及**给 AI 客户端调用的 `pime-mcp.exe`（MCP 服务端）与 `pime-ime.exe`（命令行与本地服务）**；托盘与 worker 装进同一个目录，worker 就在托盘旁边，所以托盘能直接找到它。）
 
 ## 4. 提权与 VS Code 步骤的用户上下文
 
@@ -232,7 +232,7 @@ footer := "PIME-PAYLOAD-V1\0"[16] | u64 blob 长 | sha256(blob)[32]            �
 
 条目名只允许普通文件名（`pime_tsf.dll`、`pime-core.exe`、`LICENSE`、`programming-ime.vsix`、`pime.ico`、`pime-tray.exe`、`pime-ai-worker.exe`、`pime-mcp.exe`、`pime-ime.exe`、`meta.json`），其它一律拒绝。`meta.json` 带版本和扩展 id。
 **哈希只能发现损坏和截断，不能证明来源**：能改安装包的人也能改哈希。来源证明需要代码签名（未做）。下载后请用同目录的 `.sha256` 文件核对整个安装包：
-`Get-FileHash .\ProgrammingIME-0.2.0-win-x64-setup.exe -Algorithm SHA256`。被截断的安装包会报「carries no payload」。
+`Get-FileHash .\ProgrammingIME-0.2.1-win-x64-setup.exe -Algorithm SHA256`。被截断的安装包会报「carries no payload」。
 
 ## 9. VS Code 扩展包（.vsix）
 

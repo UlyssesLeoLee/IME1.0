@@ -58,7 +58,7 @@ pub mod settings_io;
 pub mod settings_migrate;
 pub mod uimodel;
 
-pub const VERSION: &str = "0.2.0";
+pub const VERSION: &str = "0.2.1";
 /// Protocol 0.3 is a superset of 0.2: every 0.2 operation is unchanged, the session operations are added.
 pub const PROTOCOL: &str = "0.3";
 /// Maximum accepted size of one JSON Lines request of a stateless 0.2 operation (and of every 0.3 operation that

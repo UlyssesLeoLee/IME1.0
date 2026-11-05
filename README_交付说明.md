@@ -1,8 +1,9 @@
-# IME1.0（编程输入法）— 设计文档与源码合集（v0.2.0）
+# IME1.0（编程输入法）— 设计文档与源码合集（v0.2.1）
 
-- 交付版本：**Code v0.2.0**（2026-10-30）；**安装包与框架矩阵 v0.2.0（2026-11-03）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
+- 交付版本：**Code v0.2.1**（2026-11-05）；**安装包与框架矩阵 v0.2.1（2026-11-05）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
 - 产品名称：**IME1.0**，描述：**编程输入法**。语言栏里三个语言 profile 显示为「IME1.0 中文」「IME1.0 English」「IME1.0 日本語」，「添加/删除程序」里的名称是 IME1.0、说明（Comments）是「编程输入法」。**安装目录改为 `C:\Program Files\IME1.0`**：**程序永远在自己名为 `IME1.0` 的文件夹里**，向导与 `--prefix` 给的都是它的**上级**（默认 → `C:\Program Files\IME1.0`；选 `D:\` → `D:\IME1.0`；选 `D:\Tools` → `D:\Tools\IME1.0`），**磁盘根目录永远不会成为安装目录**。机器上已装的旧版（`C:\Program Files\Programming IME`）**不会原地升级**：改名会让旧副本变成孤儿目录（旧的 CLSID 注册仍指向旧 DLL），所以向导会提示旧版残留并要求**先卸载旧版再装新版**（详见 `02_Verification/FRAMEWORK_GAPS.md` 的待裁定项）。
-- 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；Windows 系统输入法已在真实系统上完成一次提权安装（2026-11-04）**。系统输入法（`01_Source/crates/pime-tsf`，纯 Rust）已能构建 x64 DLL 并通过产物检查；按键处理（TIP）、候选窗和注册代码都已写成并通过单元测试。**2026-11-04 13:52 在本机做了一次提权安装**（`--silent --prefix D:\`，12 步全过，regsvr32 不再报 `E_FAIL`），注册表里三个语言 profile（中文 / English / 日本語）都指向 `D:\IME1.0\pime.ico`；**但真实宿主里的打字、候选选择、Ctrl+F12 切换、语音识别仍然没有验证过**。安装包已产出（`01_Source/dist/ProgrammingIME-0.2.0-win-x64-setup.exe`，未签名），正式发布仍暂停。**2026-11-04 第十五轮**：切输入法 / 切语言后悬浮窗不再残留（新增活动语言档通知 + 重入延迟收工），**悬浮界面统一到左侧蓝色微光激光口区域（悬浮栏整块删除，右下角只留品牌 logo）**，**快捷键设计归档成 `01_Source/docs/HOTKEYS.md`，并补上了唯一没做的 Alt+F2（切换语言）**。
+- **已发布：GitHub Release `v0.2.1`（2026-11-05，未签名）**——本仓库第一个公开版本：`ProgrammingIME-0.2.1-win-x64-setup.exe`（9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9`）与 VS Code 扩展 `programming-ime-vscode-bridge-0.2.1.vsix`。**没有代码签名**（SmartScreen 会报未知发布者），**系统输入法尚未在真实宿主里验证过**。
+- 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；Windows 系统输入法已在真实系统上完成一次提权安装（2026-11-04）**。系统输入法（`01_Source/crates/pime-tsf`，纯 Rust）已能构建 x64 DLL 并通过产物检查；按键处理（TIP）、候选窗和注册代码都已写成并通过单元测试。**2026-11-04 13:52 在本机做了一次提权安装**（`--silent --prefix D:\`，12 步全过，regsvr32 不再报 `E_FAIL`），注册表里三个语言 profile（中文 / English / 日本語）都指向 `D:\IME1.0\pime.ico`；**但真实宿主里的打字、候选选择、Ctrl+F12 切换、语音识别仍然没有验证过**。安装包已产出（`01_Source/dist/ProgrammingIME-0.2.1-win-x64-setup.exe`，未签名），正式发布仍暂停。**2026-11-04 第十五轮**：切输入法 / 切语言后悬浮窗不再残留（新增活动语言档通知 + 重入延迟收工），**悬浮界面统一到左侧蓝色微光激光口区域（悬浮栏整块删除，右下角只留品牌 logo）**，**快捷键设计归档成 `01_Source/docs/HOTKEYS.md`，并补上了唯一没做的 Alt+F2（切换语言）**。
 - 框架完整性：见 `02_Verification/IME_FRAMEWORK_MATRIX.md`（逐项矩阵，含代码位置与测试证据）；未实现项与待裁定事项见 `02_Verification/FRAMEWORK_GAPS.md`。
 
 ## 目录
@@ -140,7 +141,7 @@ AI 默认关闭；开启后按每次 F1 / 每个工作区授权，会把整文�
 
 1. **根因①：预检把「装到别的目录」当成了错**。你截图里的 `step 0 (pre-flight check) failed: IME1.0 is already installed in D:\IME1.0` 就是它：ARP 里的 `InstallLocation` 和目标目录不一样就拒绝。现在**向导先检测既有安装**，给你一页 **[取消] [卸载] [重新安装] [修复]**：修复＝在原目录覆盖写文件并重新注册；重新安装＝先完整卸载再全新安装。
 2. **根因②：msctf 对已注册的 profile 回 `E_FAIL`**。注册改成**先注销再注册**（注销不到也容忍），回滚时把原 profile 补注册回去。
-3. **真机实测（2026-11-04 13:52，你点了一次 UAC）**：`ProgrammingIME-0.2.0-win-x64-setup.exe --silent --prefix D:\` → 12 步全过，`DONE: IME1.0 0.2.0 installed (D:\IME1.0)`，**regsvr32 没有再报 E_FAIL**。退出码 3010 的意思是「旧 DLL 正被系统占用，重启或注销后换新」。
+3. **真机实测（2026-11-04 13:52，你点了一次 UAC）**：`ProgrammingIME-0.2.1-win-x64-setup.exe --silent --prefix D:\` → 12 步全过，`DONE: IME1.0 0.2.0 installed (D:\IME1.0)`，**regsvr32 没有再报 E_FAIL**。退出码 3010 的意思是「旧 DLL 正被系统占用，重启或注销后换新」。
 
 ### 二、材质与外观
 

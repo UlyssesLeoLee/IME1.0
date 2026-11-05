@@ -340,7 +340,7 @@ P1 期间 JS 仍从 SecretStorage 读取密钥并交给 Rust 的 `ai.prepare`，
 
 ### 13.1 1.0 交付：协议 0.3 骨架与引擎开关
 
-- `pime-core` 协议升为 **0.3（0.2 的超集）**：7 个 0.2 操作行为不变（仍受 64 KiB 行限制）；`health` 现报告 `"protocol":"0.3"`（`version` 仍是 `0.2.0`）。
+- `pime-core` 协议升为 **0.3（0.2 的超集）**：7 个 0.2 操作行为不变（仍受 64 KiB 行限制）；`health` 现报告 `"protocol":"0.3"`（`version` 仍是 `0.2.1`）。
   唯一的 0.2 操作变化是 `predict` 新增**可选**字段 `pins`、`usage`（JS 桥此前没有把它们传给核心，Rust 引擎下排序会丢失置顶/使用频率）。
 - 新增有状态会话：`session.open {locale, entropy, settings}`、`settings.apply {values, locale?}`、`settings.resolve {scenario}`、`session.close`；
   除 `health` 与 `session.open` 外，所有 0.3 操作都必须带 `session`，缺失/未知/淘汰/过期（空闲 24 h；最多 16 个会话，LRU 淘汰）→ `{"ok":false,"error":"NO_SESSION"}`。

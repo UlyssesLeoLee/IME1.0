@@ -34,7 +34,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 pub const NAME: &str = "pime-ai-worker";
-pub const VERSION: &str = "0.2.0";
+pub const VERSION: &str = "0.2.1";
 /// The framing and conventions are those of pime-core's protocol 0.3.
 pub const PROTOCOL: &str = "0.3";
 pub const OPS: [&str; 6] = [

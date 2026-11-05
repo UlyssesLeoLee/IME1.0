@@ -1,4 +1,4 @@
-# 输入法框架完整性矩阵（Programming IME v0.2.0）
+# 输入法框架完整性矩阵（Programming IME v0.2.1）
 
 - 生成日期：2026-11-05（**第十六轮：设置窗六页页签 + 候选列表归位左侧激光面板 + 自带中日英词库 + 分层窗口原子移动**；安装包与 §5 全部数字已整体刷新到本轮）
 - 代码基线：`fa17ddd` + 本轮改动（工作区未提交）
@@ -28,12 +28,12 @@
 
 | 项 | 值 |
 |---|---|
-| 文件 | `01_Source/dist/ProgrammingIME-0.2.0-win-x64-setup.exe` |
-| 大小 | 9,888,197 字节 |
-| SHA-256 | `8eb68b047a0a02fbd080e38cf100a4364ce2c16dfaa7414ec7ef49b7f8c07d9c` |
+| 文件 | `01_Source/dist/ProgrammingIME-0.2.1-win-x64-setup.exe` |
+| 大小 | 9,890,254 字节 |
+| SHA-256 | `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9` |
 | 形态 | x64 控制台子系统 EXE；载荷以 PE overlay 附在桩程序之后 |
-| 桩程序 | `pime-setup.exe`，787,968 字节（含安装向导与内嵌 logo） |
-| 载荷（10 条） | `pime_tsf.dll` 2,632,704 B ／ `pime-core.exe` 3,214,705 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,136 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 1,104,384 B ／ `pime-ai-worker.exe` 400,896 B ／ `pime-mcp.exe` 706,048 B ／ `pime-ime.exe` 761,856 B ／ `meta.json` 87 B |
+| 桩程序 | `pime-setup.exe`，788,480 字节（含安装向导与内嵌 logo） |
+| 载荷（`pime_tsf.dll` 2,632,704 B ／ `pime-core.exe` 3,214,200 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,138 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 1,104,896 B ／ `pime-ai-worker.exe` 400,896 B ／ `pime-mcp.exe` 706,560 B ／ `pime-ime.exe` 762,880 B ／ `meta.json` 87 B 条） |  |
 | 导入表 | 只导入 Windows 系统 DLL。**桩程序**：advapi32 / bcryptprimitives / kernel32 / msvcrt / ntdll / ole32 / oleaut32 / shell32 / user32；**载荷里的每个程序**（DLL、core、托盘、worker、MCP 服务端、命令行）也逐个核过（托盘另需 `winmm`，worker 另需 `crypt32`/`winhttp`，都是 Windows 自带） |
 | 签名 | **无**。SmartScreen 会报"未知发布者"。签名流程已备好（`01_Source/scripts/sign-installer.ps1`），等证书 |
 
@@ -319,7 +319,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 
 **判据层仍然是空的**：本轮补的是代码层与行为层（`pime-core` 244 项、`pime-tsf` 219 项单测全绿，含「直接模式下按 Tab，文档里真的出现候选文字」的端到端断言），**在真实记事本里按 Tab 能不能上屏，本机没法验**。请你按下面这四步实测：
 
-1. 关闭当前那个安装向导窗口（它是 19:29 的构建），双击 `01_Source/dist/ProgrammingIME-0.2.0-win-x64-setup.exe` 装这一版。
+1. 关闭当前那个安装向导窗口（它是 19:29 的构建），双击 `01_Source/dist/ProgrammingIME-0.2.1-win-x64-setup.exe` 装这一版。
 2. 记事本里切到 IME1.0（Win+Space 或「键盘 → 语言」），打一个会出候选的前缀，例如 `fn`。
 3. **按 Tab**：期望候选窗消失，**高亮候选的文字被写进记事本**（不是插一个制表符）。
 4. 如果你不想要 Tab 被拿走：悬浮窗 → 设置 → 勾「候选窗显示时 Tab 交给宿主（IDE 保留缩进）」，保存后立即生效。
@@ -398,20 +398,20 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 
 <!-- installer-claims:begin -->
 # machine-readable claims (checked by 01_Source/tests/smoke/installer-claims-check.js)
-installer_file = ProgrammingIME-0.2.0-win-x64-setup.exe
-installer_bytes = 9888197
-installer_sha256 = 8eb68b047a0a02fbd080e38cf100a4364ce2c16dfaa7414ec7ef49b7f8c07d9c
-stub_bytes = 787968
+installer_file = ProgrammingIME-0.2.1-win-x64-setup.exe
+installer_bytes = 9890254
+installer_sha256 = 9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9
+stub_bytes = 788480
 payload_entry_count = 10
 payload_pime_tsf_dll_bytes = 2632704
-payload_pime_core_exe_bytes = 3214705
+payload_pime_core_exe_bytes = 3214200
 payload_license_bytes = 1085
-payload_programming_ime_vsix_bytes = 211136
+payload_programming_ime_vsix_bytes = 211138
 payload_pime_ico_bytes = 66724
-payload_pime_tray_exe_bytes = 1104384
+payload_pime_tray_exe_bytes = 1104896
 payload_pime_ai_worker_exe_bytes = 400896
-payload_pime_mcp_exe_bytes = 706048
-payload_pime_ime_exe_bytes = 761856
+payload_pime_mcp_exe_bytes = 706560
+payload_pime_ime_exe_bytes = 762880
 payload_meta_json_bytes = 87
 rust_core_tests = 441
 rust_tsf_tests = 298

@@ -129,7 +129,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File 01_Source\scripts\sign-i
 
 # sign a specific file with a specific signtool.exe
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File 01_Source\scripts\sign-installer.ps1 `
-    -Installer "01_Source\dist\ProgrammingIME-0.2.0-win-x64-setup.exe" `
+    -Installer "01_Source\dist\ProgrammingIME-0.2.1-win-x64-setup.exe" `
     -SignTool "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
 
 # sign without a timestamp (the signature then dies with the certificate; for offline tests)
@@ -265,8 +265,8 @@ not match the file, and a mismatch is a visible sign that something went wrong.
 Check the sidecar by hand at any time:
 
 ```powershell
-Get-FileHash .\dist\ProgrammingIME-0.2.0-win-x64-setup.exe -Algorithm SHA256
-Get-Content    .\dist\ProgrammingIME-0.2.0-win-x64-setup.exe.sha256
+Get-FileHash .\dist\ProgrammingIME-0.2.1-win-x64-setup.exe -Algorithm SHA256
+Get-Content    .\dist\ProgrammingIME-0.2.1-win-x64-setup.exe.sha256
 ```
 
 ## 10. What was verified on the development machine, and what was not
