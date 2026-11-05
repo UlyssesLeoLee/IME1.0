@@ -778,3 +778,46 @@ DD 5.3 / UT-009 原本写的是「默认不吃任何代码字符」。这一轮�
 * **三个预留 API 没有后端**：不联网、不收集数据、没有账号体系，也没有远程更新的实际通道。
 * 取证实拍图右侧约 1/3 被你正在用的 Chrome 窗口盖住——取证时你在工作造成的遮挡，不是产品缺陷。
 * **第十五轮的「切输入法/语言后不留悬浮窗」本身也没在真机验证过**（同一原因：新 DLL 还没换上）。本轮没有改它的机制，只把候选列表加了进去。
+
+### 5.15 第十七轮（2026-11-05）：给主流 AI 开放输入法的接口（MCP + CLI + 本地管道/HTTP + DLL 侧写入通道）
+
+这一轮接的是你点名的要求：**「你要开放足够的接口给各种主流 ai，让它们可以调用输入法书写代码，节省 token」**。
+
+你的三个决定（本轮问卷）：① 写入目标是**当前焦点窗口的光标处**（真 TSF 上下文，不是只回一段文本）；② 形态是 **MCP(stdio) + CLI + 本地命名管道/HTTP** 三件套全要；③ 接入对象是**独立客户端通用接入 + 文档**（VS Code 扩展侧本轮不做）。
+
+#### 5.15.1 这一轮做完的事
+
+| # | 项目 | 证据 |
+|---|---|---|
+| 1 | **一份线上契约**（两侧共用，避免协议漂移）：请求 / 回答 / 6 个操作 / 8 个错误码 / 载荷上限 1 MiB / 消息码 / 窗口类名与标题前缀 | `crates/pime-core/src/agent_proto.rs`（新）；10 项往返单测 |
+| 2 | **DLL 侧的桥接窗口**：输入法激活时开一个隐藏顶层窗（类 `PIME1AgentBridge`、标题 `PIME1.<nonce>`），用 `WM_COPYDATA` 收请求、用 `SendMessageW` 回答案；`CopyDataStruct` **本地声明**（24 字节，偏移 0/8/16，有单测钉住），**没有**给 `windows` crate 加 `Win32_System_DataExchange` feature（会整包重编并 OOM） | `crates/pime-tsf/src/agent_bridge.rs`（新） |
+| 3 | **写入真的落在焦点文档里**：桥接请求走的是**真的 TSF 编辑会话**——`commit("", text)` 在光标处插入，`replace_selection()` 替换选区；**密码框永不写**（`may_write`）；写之前先核对当前不是选区（有选区就拒绝，避免顶掉用户选中的内容） | `crates/pime-tsf/src/tip.rs` 的 `answer_agent` / `selection_text` / `replace_selection` |
+| 4 | **客户端 crate `pime-agent`**（独立 workspace，自己的 `Cargo.lock`，`windows` 钉在 0.58）：**MCP 服务端（7 个工具）**、**CLI（12 个操作）**、**本地服务（命名管道 `\\.\pipe\pime-agent-v1` + HTTP 127.0.0.1 + 令牌）**；三条通道是**同一套 dispatch**，行为一致 | `crates/pime-agent/`（`mcp.rs` / `cli.rs` / `serve.rs` / `bridge.rs` / `core.rs`）；51 项单测 |
+| 5 | **通道本身有真机证据**（本轮最重要的补测）：① **DLL 侧跨进程往返**——宿主进程里是真的桥接窗口与真的 `WM_COPYDATA`，**另一个进程**按协议发请求并等回包；② **客户端侧真机往返**——假桥接窗 + 真客户端，外加「桥接不回答时按时放弃、返回 BUSY」的保护 | `agent_bridge.rs` 的 `channel_tests`（3 项）、`pime-agent/src/bridge.rs` 的 `channel_tests`（2 项） |
+| 6 | **安装包带上两个程序**：载荷 8 → **10** 条（`pime-mcp.exe` / `pime-ime.exe`），安装计划、清单、步骤数、期望值、夹具全部同步 | `crates/pime-setup/src/payload.rs`（`MCP`/`CLI`、必需 8、允许 10）、`plan.rs`、`exec.rs`、`tests/setup/common.rs`、`real_fs.rs` |
+| 7 | **门禁把新 crate 纳进来**：`run-all.js` 增加 `--agent`（并进 FAST 集合），claims 校验增加 `rust_agent_tests` | `tests/run-all.js`、`tests/smoke/installer-claims-check.js`、`tests/smoke/evidence-cross-check.js` |
+| 8 | **接入文档**：七家客户端（MCode / Claude Code / Claude Desktop / Codex / Cursor / Gemini CLI / VS Code+Cline）的**现成配置**，CLI 用法、信任模型、错误码、三十秒自检、代码位置 | `01_Source/docs/AI_AGENT_API.md`（新） |
+| 9 | **账本与矩阵跟上**：功能账本新增 `F-AGENT-BRIDGE`（36 条），并把它的「覆盖它的测试」指向那条**跨进程**的真机测试 | `tests/tsf/common/scenarios.rs`、`docs/IME_TEST_MATRIX.md` |
+
+#### 5.15.2 这一轮请你裁定的事项
+
+1. **（已修，请你追认或让我回退）桥接窗口只能开一次：切走再切回来，AI 就再也叫不动输入法了。** 真因：`register_class()` 用**局部变量**记住「类注册成功没有」，而 `Once` 的闭包**只在第一次执行** ⇒ 第二次调用永远拿到 `false` ⇒ `Bridge::create` 返回 `None` ⇒ 桥接窗口不再存在（agent 只会看到 `NO_IME`）。TSF 每次切输入法都会「停用→激活」，所以**第二次切换之后这条功能就废了**。已改成 `OnceLock<bool>` 并补了一条回归测试（连着注册两次都必须成功）。回退方式：把 `agent_bridge.rs` 的 `register_class()` 改回 `Once` + 局部变量。
+2. **D-37（新增）：AI 写入通道的信任级别 = 剪贴板级别（同用户同会话即可调用）。** 这不是 bug，是我定的口径：能模拟按键（`SendInput`）的程序本来就能往焦点窗口里打字，所以同用户同会话的进程能请输入法写字，**并没有多给它任何权限**。真正被挡住的是**密码框**（一个字都不写）与**更高完整性级别的窗口**（UIPI 挡低权限进程 → 管理员窗口收不到请求）。如果你要更严（例如只允许签名的客户端、或加一个令牌文件），说一声我再加。
+3. **D-38（新增）：这一版没有「写完再读回来核对」。** 写入走的是**真的 TSF 编辑会话**，宿主拒写就返回 `REFUSED`、**不在背后重试**；但**没有**再读一遍确认文字真的落在文档里。要不要加这一层（写完读回、读不到就报错），请你定——它会让每次写入多一次编辑会话。
+4. **D-39（新增）：`curate`（整理词库）与 `misses`（没找到的词）这一版是诚实的空实现。** 客户端与 DLL 两侧都返回 `UNSUPPORTED`（「这个版本还没有这个能力」），**不会假装成功**。真正的用户词库落盘要等词库存储那一层做出来（第十六轮的 `DictionaryCurator` 还是桩）。
+5. **D-40（新增）：AI 只能写，不能读整个文档。** `read` 读的是**当前选区**（上限 1 MiB，超了拒绝）。读全文、读光标位置、读上下文都不在这一版里——这是有意的：AI 能读到整个文档就意味着它能把你打开的任何东西（密码框除外）送走。
+6. **VS Code 扩展侧本轮没做**（按你的决定）。扩展里目前**没有**「让 AI 调用输入法」这一条通路；不过因为接口是独立的，Claude Code / Cursor / Cline 这类**自带 MCP 的客户端**在 VS Code 里已经能直接用。
+7. **D-27 仍未决**（激光界面开着时一个 CPU 核跑满）；**D-29 / D-30 仍未决**；**D-16 / D-17 / D-20 / D-22 ~ D-26 仍未决**；**D-31 ~ D-36**（第十六轮登记的）**仍未决**。
+8. **D-41（新增）：`pime-tsf` 的 clippy 不是干净的（两条，都不是本轮引入的）。** 本轮跑 `cargo clippy --all-targets -- -D warnings` 时报出：
+   * `predictor.rs:21` —— `PluginPredictor` 没有 `Default` 实现（`clippy::new_without_default`）；
+   * `tip.rs:1669` —— `fn key()` 里 `let eaten = match kind { … }; eaten` 可以直接返回（`clippy::let_and_return`）。
+
+   **两条都在上一轮的代码里**（我用 `git show HEAD:` 核对过，HEAD 版本就有），**不是本轮引入的**，所以**我没有动手改**——按规矩交给你裁定。建议处置：两条都是纯风格改写，各改 1~3 行，不改行为；如果你要「clippy 全绿」当门禁（`run-all.js` 里加一步 `clippy -- -D warnings`），我建议一起改掉，否则门禁会长期红着。
+
+#### 5.15.3 这一轮**没有**在真机上验证的地方（不虚报）
+
+* **「AI 把一段中文 / 日文 / 代码写进记事本 / VS Code」这条，一次都没在真实宿主里跑过。** 新 DLL 还没换上（上次安装退出码 3010＝旧 DLL 正被系统占用，要注销或重启）。
+* **通道本身是验证过的，但验证的是「消息能过去、答案能回来」，不是「字落在文档里」**：跨进程往返测试里的应答函数是**测试用的替身**，不是真的 TSF 写入路径。
+* **CLI / MCP / 本地服务这三条通道**：MCP 的 `initialize` / `tools/list` / `tools/call`、CLI 的各操作、HTTP 的健康检查 / 令牌 / 拒绝、命名管道的四个请求，**都在本机跑过**（用本机构建的 `pime-core.exe`）；**没有**在装好的正式安装目录里跑过（那要等新安装包装上）。
+* **写入之后的真实观感**（光标位置、选区折叠、输入法自身的候选窗会不会跟着冒出来）没看过——这一版写入走的是 `commit("", text)`，它**不经过候选流程**，所以不会弹候选窗，但这一点也没有真机截图。
+* 文档里写的是「安装到 `C:\Program Files\IME1.0`」这个默认路径；**本轮没有**在真实安装目录里验证过 MCP 的 `command` 路径能不能被各家客户端正常拉起。

@@ -39,6 +39,8 @@ pub fn entries(version: &str) -> Vec<(&'static str, Vec<u8>)> {
         (payload::VSIX, format!("vsix-{version}").into_bytes()),
         (payload::TRAY, format!("tray-{version}").into_bytes()),
         (payload::WORKER, format!("worker-{version}").into_bytes()),
+        (payload::MCP, format!("mcp-{version}").into_bytes()),
+        (payload::CLI, format!("cli-{version}").into_bytes()),
     ]
 }
 

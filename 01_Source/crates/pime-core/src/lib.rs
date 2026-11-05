@@ -6,6 +6,7 @@
 //! `tests/fixtures` (generated from it) are checked by `tests/parity.rs`.
 #![forbid(unsafe_code)]
 
+pub mod agent_proto;
 pub mod analysis;
 pub mod base64;
 pub mod budget;

@@ -69,7 +69,7 @@ fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() 
         &prefix,
     )
     .unwrap();
-    assert_eq!(manifest.files.len(), 8);
+    assert_eq!(manifest.files.len(), 10);
     assert!(
         manifest.files.iter().all(|f| f.is_file()),
         "the manifest lists exactly files that exist"
@@ -97,7 +97,7 @@ fn st_035_real_folder_install_upgrade_and_uninstall_with_spaces_and_non_ascii() 
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
     assert!(!names.iter().any(|n| n.contains(".pime-")), "{names:?}");
-    assert_eq!(names.len(), 8, "{names:?}");
+    assert_eq!(names.len(), 10, "{names:?}");
 
     // a file the user put there survives the uninstall; the manifest's files do not
     std::fs::write(prefix.join("my notes.txt"), "keep me").unwrap();
@@ -202,7 +202,7 @@ fn st_035_dry_run_prints_the_plan_and_changes_nothing() {
         "{text}"
     );
     assert!(
-        text.contains("payload: 6 files, version 0.3.0, SHA-256 of every file verified"),
+        text.contains("payload: 8 files, version 0.3.0, SHA-256 of every file verified"),
         "{text}"
     );
     assert!(

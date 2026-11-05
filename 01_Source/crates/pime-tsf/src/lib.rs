@@ -24,6 +24,7 @@ use windows::Win32::Foundation::{
 use windows::Win32::System::Com::{IClassFactory, IClassFactory_Impl};
 use windows::core::{GUID, HRESULT, IUnknown, Interface, Result, implement};
 
+pub mod agent_bridge;
 pub mod candidate_skin;
 pub mod controller;
 pub mod glass;

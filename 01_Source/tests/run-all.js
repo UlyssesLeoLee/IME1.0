@@ -5,6 +5,7 @@
 //   node tests/run-all.js                 fast, no GUI: --syntax --fixtures --golden --js --rust --smoke --tsf --installer
 //   node tests/run-all.js --all           the above + --uat + --uat-rust
 //   node tests/run-all.js --tsf           crates/pime-tsf: its unit tests, then build the DLL (GNU target) and inspect it (x64, exports, imports); never registers it
+//   node tests/run-all.js --agent         crates/pime-agent: the front-ends the AI clients call (the MCP server, the CLI, the local server)
 //   node tests/run-all.js --tsf-live      crates/pime-tsf: the live host test (the real msctf, a real context; it opens the candidate window on the desktop)
 //   node tests/run-all.js --tsf-ui         crates/pime-tsf: the native windows (the probe opens the candidate window, the floating bar and the settings window; a picture of the desktop is taken and checked)
 //   node tests/run-all.js --worker        crates/pime-ai-worker: unit tests + the smoke test against the HTTPS mock (needs OpenSSL; writes PIME-TEST session credentials and removes them)
@@ -27,9 +28,9 @@ const tests = __dirname, src = path.resolve(tests, '..'), root = path.resolve(sr
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|installer|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'installer'];
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -110,6 +111,11 @@ if (has('--tsf-ui')) {
     } finally { probe.kill(); }
     return sh(process.execPath, [path.join(tests, 'smoke', 'ime-ui-check.js'), picture]);
   });
+}
+// The front-ends the AI clients call (the MCP server, the command line and the local server). They live in a
+// workspace of their own, and their tests include the real WM_COPYDATA round trip against the bridge.
+if (want('agent')) {
+  step('AI agent front-ends (crates/pime-agent): cargo test (the MCP server, the CLI and the local server)', () => cargoRetry('pime-agent', ['test']));
 }
 if (want('worker')) {
   step('AI worker (crates/pime-ai-worker): cargo test', () => cargoRetry('pime-ai-worker', ['test']));

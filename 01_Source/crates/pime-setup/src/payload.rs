@@ -34,13 +34,20 @@ pub const ICON: &str = "pime.ico";
 pub const TRAY: &str = "pime-tray.exe";
 /// The AI worker: it sends the audio to the speech service and keeps the API key in the Credential Manager.
 pub const WORKER: &str = "pime-ai-worker.exe";
+/// The MCP server: the interface the AI clients call (the model sees its tools).
+pub const MCP: &str = "pime-mcp.exe";
+/// The command line front-end of the same interface, for the clients that do not speak MCP.
+pub const CLI: &str = "pime-ime.exe";
 pub const META: &str = "meta.json";
 /// Entries that must be present, and every entry that is allowed at all.
 ///
 /// The tray and the worker are required: the product ships them, and an installation without them would have the
-/// buttons of the tray (the one-key switch, the voice input) pointing at nothing.
-const REQUIRED: [&str; 6] = [DLL, CORE, LICENSE, META, TRAY, WORKER];
-const ALLOWED: [&str; 8] = [DLL, CORE, LICENSE, META, VSIX, ICON, TRAY, WORKER];
+/// buttons of the tray (the one-key switch, the voice input) pointing at nothing. The MCP server and the command line
+/// are required for the same reason: without them an AI client has nothing to call.
+const REQUIRED: [&str; 8] = [DLL, CORE, LICENSE, META, TRAY, WORKER, MCP, CLI];
+const ALLOWED: [&str; 10] = [
+    DLL, CORE, LICENSE, META, VSIX, ICON, TRAY, WORKER, MCP, CLI,
+];
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PayloadError {
@@ -296,6 +303,8 @@ mod tests {
             (VSIX, b"VSIX"),
             (TRAY, b"TRAY"),
             (WORKER, b"WORKER"),
+            (MCP, b"MCP"),
+            (CLI, b"CLI"),
         ]
     }
 
@@ -329,13 +338,13 @@ mod tests {
         let mut exe = stub();
         exe.extend(pack(&full_entries(&m)));
         let payload = Payload::from_exe(&exe).unwrap().expect("payload");
-        assert_eq!(payload.entries.len(), 7);
+        assert_eq!(payload.entries.len(), 9);
         assert_eq!(payload.get(DLL).unwrap().data, b"DLL");
         let release = payload.release().unwrap();
         assert_eq!(release.version, "0.2.0");
         assert_eq!(release.extension_id.as_deref(), Some("pub.name"));
         let names: Vec<_> = release.files.iter().map(|f| f.name.as_str()).collect();
-        assert_eq!(names, [DLL, CORE, LICENSE, VSIX, TRAY, WORKER]);
+        assert_eq!(names, [DLL, CORE, LICENSE, VSIX, TRAY, WORKER, MCP, CLI]);
         assert_eq!(release.files[0].sha256, sha256(b"DLL"));
         assert_eq!(release.files[0].size, 3);
     }
@@ -417,11 +426,13 @@ mod tests {
             (ICON, b"ICO"),
             (TRAY, b"TRAY"),
             (WORKER, b"WORKER"),
+            (MCP, b"MCP"),
+            (CLI, b"CLI"),
         ]));
         let payload = Payload::from_exe(&exe).unwrap().expect("payload");
         let release = payload.release().unwrap();
         let names: Vec<_> = release.files.iter().map(|f| f.name.as_str()).collect();
-        assert_eq!(names, [DLL, CORE, LICENSE, ICON, TRAY, WORKER]);
+        assert_eq!(names, [DLL, CORE, LICENSE, ICON, TRAY, WORKER, MCP, CLI]);
         // an entry that is not on the list is refused, whatever it is called
         for stranger in ["pime.png", "icon.ico", "PIME.ICO"] {
             let mut exe = stub();

@@ -318,6 +318,14 @@ pub const IME_FUNCTIONS: &[ImeFunction] = &[
         unit_test: "the_services_can_be_used_as_objects",
         unit_file: "services.rs",
     },
+    ImeFunction {
+        id: "F-AGENT-BRIDGE",
+        name: "The bridge window: an AI agent asks the input method to write into the document that has the focus",
+        module: "agent_bridge",
+        scenarios: &[],
+        unit_test: "the_bridge_answers_an_agent_of_another_process",
+        unit_file: "agent_bridge.rs",
+    },
 ];
 
 /// The sources of the crate, so the ledger can check that the named unit tests really exist.
@@ -369,6 +377,10 @@ pub const CRATE_SOURCES: &[(&str, &str)] = &[
     (
         "laser_candidates.rs",
         include_str!("../../../crates/pime-tsf/src/laser_candidates.rs"),
+    ),
+    (
+        "agent_bridge.rs",
+        include_str!("../../../crates/pime-tsf/src/agent_bridge.rs"),
     ),
     (
         "services.rs",

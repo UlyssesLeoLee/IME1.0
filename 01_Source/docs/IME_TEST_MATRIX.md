@@ -59,8 +59,15 @@ L1 已经在门禁链里（`node tests/run-all.js --tsf`）。本轮补上的是
 | F-LASER-CANDIDATES | 候选列表在左侧激光面板里（打字时没有搜狗式悬浮窗） | laser_candidates | `the_rows_of_the_list_become_the_rows_of_the_panel` + `the_list_ends_with_the_panel` | L1 |
 | F-SETTINGS-PLUGINS | 设置窗的插件页（每个插件语言一个勾选框） | settings_window | `the_plugins_page_has_one_check_box_for_every_plugin` + `every_plugin_has_a_name_to_show` | L1 |
 | F-DICTIONARY-SERVICES | 词库管理的三个预留接口（AI 整理 / 远程更新 / 用户登录） | services | `the_services_can_be_used_as_objects` + `the_three_dictionaries_are_the_three_of_the_product` | L1 |
+| F-AGENT-BRIDGE | **AI 代理通道**：AI 客户端（MCP / CLI / 本地服务）请输入法把文字写进焦点窗口的光标处 | agent_bridge | `the_bridge_answers_an_agent_of_another_process` + `a_request_reaches_the_handler_and_the_answer_comes_back` + `the_class_is_still_there_when_the_bridge_is_opened_again` + `a_password_field_is_never_written_into` | L1（**真机跨进程往返**） |
 
-**35 个功能，全部有测试。** 账本文件：`01_Source/tests/tsf/common/scenarios.rs` 的 `IME_FUNCTIONS`。
+**36 个功能，全部有测试。** 账本文件：`01_Source/tests/tsf/common/scenarios.rs` 的 `IME_FUNCTIONS`。
+
+> **F-AGENT-BRIDGE 这一条特别说明**：它不是「模拟一下」——那条测试**真的开了两个进程**：宿主进程里是**真的**桥接窗口
+> （真的窗口类、真的窗口过程、真的 `WM_COPYDATA`），另一个进程是**真的** agent（它按协议发请求、等回包）。
+> 通道本身（跨进程的消息投递、请求的解析、回包的原路返回）因此是**在真实 Windows 上跑通**的。
+> 客户端那一侧（`crates/pime-agent`）另有一条同样的真机往返测试（假桥接窗 + 真客户端）。
+> **没有**被证明的是最后一米：**文字真的落进记事本 / VS Code 的文档**——新 DLL 还没换上。
 
 ---
 
@@ -134,6 +141,7 @@ node 01_Source\tests\run-all.js --tsf-ui
 | **L3 未注册态全链** | **部分** | `ime_host.rs` 已能创建真 COM 对象、走真 msctf、真文档上下文（`PIME_IME_LIVE=1`），但**按键是否真路由到文本服务**要看该环境下的实测结果，不能预先断言。 |
 | **TSF 侧插件语言开关** | **已做**（第十六轮） | 设置窗的**插件页**可以勾选 Cypher / PL\/SQL / T-SQL（默认 PL/SQL 开、T-SQL 关），写回设置即刻生效（`tip.rs` 的 `apply_plugins()`）。**未在真实宿主里验证过**（新 DLL 还没换上）。 |
 | **真实键盘下的中文/日文输入** | **未做** | 自带词库有**端到端测试**（中文档「ni」→「你」上屏；日文档「nihon」→假名），但那是**驱动控制器**、不是**真键盘 + 真宿主**。真实手感要等新 DLL 换上之后在记事本 / VS Code 里试。 |
+| **AI 代理写进真实宿主** | **部分** | **通道**已经在真实 Windows 上跑通：① DLL 侧一条**跨进程真机往返**（宿主进程里是真的桥接窗口与真的 `WM_COPYDATA`，另一个进程按协议发请求并等回包）；② 客户端侧一条**真机往返**（假桥接窗 + 真客户端，含「桥接不回答时按时放弃」的保护）。**没做**：**文字真的落进记事本 / VS Code 的文档**——新 DLL 还没换上（要注销或重启），所以「AI 写一段中文 / 日文 / 代码到编辑器里」这条**一次都没在真实宿主里跑过**。 |
 
 ---
 

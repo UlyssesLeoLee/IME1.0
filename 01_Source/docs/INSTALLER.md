@@ -119,7 +119,7 @@ IME1.0 0.2.0 - install plan (dry run: nothing is changed)
     13. install the VS Code extension if `code` is found (non-fatal): code --install-extension "C:\Program Files\IME1.0\programming-ime.vsix" --force
 ```
 
-（上面是 2026-11-04 那次实测的输出，命令是 `ProgrammingIME-0.2.0-win-x64-setup.exe --dry-run`，什么都没有改变。载荷里现在有 8 个文件：多了图标 `pime.ico`、**常驻托盘 `pime-tray.exe`** 和**语音服务客户端 `pime-ai-worker.exe`**；托盘与 worker 装进同一个目录，worker 就在托盘旁边，所以托盘能直接找到它。）
+（上面是 2026-11-04 那次实测的输出，命令是 `ProgrammingIME-0.2.0-win-x64-setup.exe --dry-run`，什么都没有改变。载荷里现在有 10 个文件：多了图标 `pime.ico`、**常驻托盘 `pime-tray.exe`**、**语音服务客户端 `pime-ai-worker.exe`**，以及**给 AI 客户端调用的 `pime-mcp.exe`（MCP 服务端）与 `pime-ime.exe`（命令行与本地服务）**；托盘与 worker 装进同一个目录，worker 就在托盘旁边，所以托盘能直接找到它。）
 
 ## 4. 提权与 VS Code 步骤的用户上下文
 
@@ -230,7 +230,7 @@ footer := "PIME-PAYLOAD-V1\0"[16] | u64 blob 长 | sha256(blob)[32]            �
 文件   := PE 桩 | blob | footer [| 填充 | Authenticode 证书表]
 ```
 
-条目名只允许普通文件名（`pime_tsf.dll`、`pime-core.exe`、`LICENSE`、`programming-ime.vsix`、`pime.ico`、`pime-tray.exe`、`pime-ai-worker.exe`、`meta.json`），其它一律拒绝。`meta.json` 带版本和扩展 id。
+条目名只允许普通文件名（`pime_tsf.dll`、`pime-core.exe`、`LICENSE`、`programming-ime.vsix`、`pime.ico`、`pime-tray.exe`、`pime-ai-worker.exe`、`pime-mcp.exe`、`pime-ime.exe`、`meta.json`），其它一律拒绝。`meta.json` 带版本和扩展 id。
 **哈希只能发现损坏和截断，不能证明来源**：能改安装包的人也能改哈希。来源证明需要代码签名（未做）。下载后请用同目录的 `.sha256` 文件核对整个安装包：
 `Get-FileHash .\ProgrammingIME-0.2.0-win-x64-setup.exe -Algorithm SHA256`。被截断的安装包会报「carries no payload」。
 
@@ -263,8 +263,8 @@ node scripts/build-installer.js              # 全部：pime-core + pime-tsf + .
 node scripts/build-installer.js 0.3.0-pre1   # 指定安装器版本（默认取 editor-bridges/vscode/package.json 的版本）
 ```
 
-`build-installer.js` 依次：`cargo build --release --target x86_64-pc-windows-gnu`（`pime-core`、`crates/pime-tsf`、`crates/pime-setup`）、`package-vsix.js`、追加载荷
-（8 个文件：DLL、core、LICENSE、`.vsix`、`pime.ico`、**`pime-tray.exe`（常驻托盘）**、**`pime-ai-worker.exe`（语音服务客户端）**，再加 `meta.json`；图标会先检查是不是真的 `.ico`）。托盘与 worker 是**各自独立的 workspace**（有自己的 `Cargo.lock`），构建到**独立的 target 目录**里，免得它们作为依赖编译出来的 TSF DLL 覆盖掉主 workspace 的那一份。，
+`build-installer.js` 依次：`cargo build --release --target x86_64-pc-windows-gnu`（`pime-core`、`crates/pime-tsf`、`crates/pime-agent`、`crates/pime-setup`）、`package-vsix.js`、追加载荷
+（10 个文件：DLL、core、LICENSE、`.vsix`、`pime.ico`、**`pime-tray.exe`（常驻托盘）**、**`pime-ai-worker.exe`（语音服务客户端）**、**`pime-mcp.exe`（MCP 服务端）**、**`pime-ime.exe`（命令行与本地服务）**，再加 `meta.json`；图标会先检查是不是真的 `.ico`）。托盘与 worker 是**各自独立的 workspace**（有自己的 `Cargo.lock`），构建到**独立的 target 目录**里，免得它们作为依赖编译出来的 TSF DLL 覆盖掉主 workspace 的那一份。，
 然后检查结果：x64 PE、控制台子系统、只导入系统 DLL（`scripts/pe-info.js`）、用独立的读取器校验载荷、运行 `--dry-run`（只打印计划，不创建任何东西）证明安装包能找到并校验自己的载荷。
 **从不运行安装器本体**。构建输出 `dist/` 已在 `.gitignore`。
 

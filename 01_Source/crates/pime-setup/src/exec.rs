@@ -1048,6 +1048,8 @@ mod tests {
             dir("programming-ime.vsix"),
             dir("pime-tray.exe"),
             dir("pime-ai-worker.exe"),
+            dir("pime-mcp.exe"),
+            dir("pime-ime.exe"),
             dir("uninstall.exe"),
         ];
         expected.sort();
@@ -1178,7 +1180,7 @@ mod tests {
         let mut clean = machine();
         install(&mut clean, "0.2.0").unwrap();
         let total = clean.ops;
-        assert_eq!(total, 12, "1 folder + 8 files + regsvr32 + registry + code");
+        assert_eq!(total, 14, "1 folder + 10 files + regsvr32 + registry + code");
         let mut failed = 0;
         for n in 1..=total {
             let mut b = machine();
@@ -1339,7 +1341,7 @@ mod tests {
         let mut b = machine();
         b.register_exit = 5;
         let e = install(&mut b, "0.2.0").unwrap_err();
-        assert_eq!(e.step, 10);
+        assert_eq!(e.step, 12);
         assert!(
             e.cause.contains("code 5") && e.cause.contains("DllRegisterServer"),
             "{e}"
@@ -1449,7 +1451,7 @@ mod tests {
         assert!(
             b.commands.is_empty() && b.state.registry.is_empty() && b.state.registered.is_empty()
         );
-        assert_eq!(b.state.files.len(), 8);
+        assert_eq!(b.state.files.len(), 10);
     }
 
     #[test]
@@ -1616,7 +1618,7 @@ mod tests {
             b.file(&format!(r"{PREFIX}\install-manifest.json"))
                 .is_some()
         );
-        assert_eq!(b.state.files.len(), 8, "{:?}", file_names(&b));
+        assert_eq!(b.state.files.len(), 10, "{:?}", file_names(&b));
         assert!(
             b.state.dirs.contains(&k(PREFIX)),
             "the queued removal of the folder fails while it is not empty"

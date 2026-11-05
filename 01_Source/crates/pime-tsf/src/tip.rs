@@ -32,6 +32,9 @@ use windows::Win32::UI::TextServices::{
 };
 use windows::core::{GUID, IUnknown, IUnknownImpl, Interface, Result, implement};
 
+use pime_core::agent_proto::{Error as BridgeError, Op as BridgeOp, Reply as BridgeReply, Request as BridgeRequest};
+
+use crate::agent_bridge::Bridge;
 use crate::controller::{HostError, HostText, KeyInput, TipConfig, TipController};
 use crate::skin::skin_colors;
 use crate::imesettings::{self, ImeSettings, LanguageSettings};
@@ -76,6 +79,10 @@ fn is_secure_mode(flags: u32) -> bool {
 
 /// The language whose settings are used when the active profile cannot be told apart.
 const DEFAULT_LANGUAGE: &str = "zh-CN";
+
+/// The largest selection that is read for an AI agent (in UTF-16 units). A selection of a megabyte is not something to
+/// hand to an agent: it is far more likely a mistake than an intention.
+const MAX_SELECTION_CHARS: usize = 1 << 20;
 
 fn refused<E>(_: E) -> HostError {
     HostError::Refused
@@ -496,6 +503,148 @@ impl HostText for TsfHost {
     }
 }
 
+/// What an AI agent asks the input method to do, answered on the thread of the host.
+///
+/// The agent does not touch the document itself: it sends a request to the bridge window of this process, and the
+/// window procedure runs here, on the UI thread of the application that has the focus, where the text service and the
+/// TSF context live.
+impl TsfHost {
+    /// The text that is selected in the document (empty when nothing is selected).
+    pub fn selection_text(&mut self) -> Option<String> {
+        let ctx = self.context.clone()?;
+        let ctx2 = ctx.clone();
+        run_session(&ctx, self.client_id, SYNC_READ, move |ec| {
+            // SAFETY: `ec` belongs to the running session on `ctx2`.
+            unsafe {
+                let range = caret_range(&ctx2, ec).map_err(refused)?;
+                if range.IsEmpty(ec).map_err(refused)?.as_bool() {
+                    return Ok(String::new());
+                }
+                // The interface does not say how long the text is: the buffer grows until everything fits.
+                let mut buffer = vec![0u16; 1024];
+                let got;
+                loop {
+                    let mut copied = 0u32;
+                    range.GetText(ec, 0, &mut buffer, &mut copied).map_err(refused)?;
+                    let count = (copied as usize).min(buffer.len());
+                    if count < buffer.len() || buffer.len() >= MAX_SELECTION_CHARS {
+                        got = count;
+                        break;
+                    }
+                    buffer.resize(buffer.len() * 2, 0);
+                }
+                if got >= MAX_SELECTION_CHARS {
+                    return Err(HostError::Refused); // a selection of a megabyte is not something to hand to an agent
+                }
+                buffer.truncate(got);
+                Ok(String::from_utf16_lossy(&buffer))
+            }
+        })
+        .ok()
+    }
+
+    /// Replace what is selected with the text. An empty selection means "insert at the caret".
+    pub fn replace_selection(&mut self, text: &str) -> std::result::Result<(), HostError> {
+        let ctx = self.context.clone().ok_or(HostError::Refused)?;
+        let (ctx2, wide) = (ctx.clone(), text.encode_utf16().collect::<Vec<u16>>());
+        run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
+            // SAFETY: `ec` belongs to the running session on `ctx2`.
+            unsafe {
+                let range = caret_range(&ctx2, ec).map_err(refused)?;
+                range.SetText(ec, 0, &wide).map_err(refused)?;
+                range.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
+                let selection = selection_of(range);
+                let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
+                drop(ManuallyDrop::into_inner(selection.range));
+                set.map_err(refused)
+            }
+        })
+    }
+}
+
+/// Answer a request of an AI agent that came through the bridge window.
+///
+/// The rules are the ones of the product: nothing is ever written into a password field, and a write that the host
+/// refuses is reported as refused instead of being retried behind the user's back.
+fn answer_agent(inner: &mut Inner, request: BridgeRequest) -> BridgeReply {
+    match request.op {
+        BridgeOp::Insert => {
+            if request.text.is_empty() {
+                return BridgeReply::failed(BridgeError::Malformed, "there is no text to write");
+            }
+            if let Err(error) = crate::agent_bridge::may_write(inner.controller.host_mut().is_secure_field()) {
+                return BridgeReply::failed(
+                    error,
+                    "the field is a password field: nothing is written into it",
+                );
+            }
+            let text = request.text.clone();
+            let written = if request.replace {
+                inner.controller.host_mut().replace_selection(&text)
+            } else {
+                inner.controller.host_mut().commit("", &text)
+            };
+            match written {
+                Ok(()) => {
+                    let mut reply = BridgeReply::ok();
+                    reply.inserted = text.chars().count();
+                    reply.language = Some(inner.language.clone());
+                    reply
+                }
+                Err(HostError::Mismatch) => BridgeReply::failed(
+                    BridgeError::Refused,
+                    "there is a selection: the text would have replaced it",
+                ),
+                Err(HostError::Refused) => {
+                    BridgeReply::failed(BridgeError::Refused, "the host refused the write")
+                }
+            }
+        }
+        BridgeOp::Read => match inner.controller.host_mut().selection_text() {
+            Some(text) => {
+                let mut reply = BridgeReply::ok();
+                reply.text = text;
+                reply
+            }
+            None => BridgeReply::failed(BridgeError::NoContext, "there is no document to read"),
+        },
+        BridgeOp::Language => {
+            let Some(language) = request.language.clone() else {
+                return BridgeReply::failed(BridgeError::Malformed, "no language was named");
+            };
+            if !matches!(language.as_str(), "zh-CN" | "en-US" | "ja-JP") {
+                return BridgeReply::failed(
+                    BridgeError::Malformed,
+                    "the language is not one of the three of the product",
+                );
+            }
+            inner.switch_language(&language);
+            let mut reply = BridgeReply::ok();
+            reply.language = Some(inner.language.clone());
+            reply
+        }
+        BridgeOp::Status => {
+            let mut reply = BridgeReply::ok();
+            reply.language = Some(inner.language.clone());
+            reply.message = if inner.controller.input_mode() {
+                "the input mode is on".to_string()
+            } else {
+                "the direct mode is on".to_string()
+            };
+            reply
+        }
+        // The two operations of the word bank need the storage of the word bank, which is not written yet.
+        BridgeOp::Misses => BridgeReply::failed(
+            BridgeError::Unsupported,
+            "the words the user did not find are not collected in this build",
+        ),
+        BridgeOp::Curate => BridgeReply::failed(
+            BridgeError::Unsupported,
+            "the word bank of the user is not written in this build",
+        ),
+    }
+}
+
 /// The menus of the product: the ones the panel of the laser interface opens.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum MenuKind {
@@ -546,6 +695,9 @@ struct Inner {
     /// The interface cannot be asked to hide itself while one of its own windows is calling back, and that is
     /// exactly what happens when the user switches the input method from the mouth of the light.
     laser_hide: Rc<Cell<bool>>,
+    /// The window an AI agent sends its requests to. It exists exactly while the text service of this process is
+    /// active, so an agent that finds it finds a running input method.
+    bridge: Option<Bridge>,
 }
 
 /// An action that arrived while the text service was busy.
@@ -960,6 +1112,9 @@ impl Inner {
     fn shutdown(&mut self) {
         self.controller.deactivate();
         self.hide_floating();
+        // The bridge window of the AI agents goes with the text service: an agent that looks for it finds nothing and
+        // says so. The window is destroyed here, on the thread that created it.
+        self.bridge = None;
         // SAFETY: the advises made in `activate`; failures here cannot be acted on (the thread is going away).
         unsafe {
             if let Ok(keystrokes) = self.thread_mgr.cast::<ITfKeystrokeMgr>() {
@@ -1439,6 +1594,28 @@ impl Tip {
                 }));
             }
             controller.activate(is_secure_mode(flags));
+            // The bridge window: how an AI agent asks this input method to write into the document of the host. It is
+            // created with the text service and dies with it, so an agent that finds it finds a running input method.
+            let bridge = {
+                let weak = Rc::downgrade(&self.inner);
+                Bridge::create(Box::new(move |request| {
+                    let Some(inner) = weak.upgrade() else {
+                        return BridgeReply::failed(BridgeError::NoIme, "the input method is not active");
+                    };
+                    match inner.try_borrow_mut() {
+                        Ok(mut slot) => match slot.as_mut() {
+                            Some(state) => answer_agent(state, request),
+                            None => {
+                                BridgeReply::failed(BridgeError::NoIme, "the input method is not active")
+                            }
+                        },
+                        Err(_) => BridgeReply::failed(
+                            BridgeError::Busy,
+                            "the input method is busy: try again in a moment",
+                        ),
+                    }
+                }))
+            };
             *self.inner.borrow_mut() = Some(Inner {
                 thread_mgr: thread_mgr.clone(),
                 client_id,
@@ -1458,6 +1635,7 @@ impl Tip {
                 mouth_place: settings.mouth_place.clone(),
                 laser,
                 laser_hide,
+                bridge,
             });
             // The laser interface comes on the screen with the text service.
             if let Ok(mut slot) = self.inner.try_borrow_mut()

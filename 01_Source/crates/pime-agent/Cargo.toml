@@ -1,0 +1,61 @@
+# PIME-AGENT/1: the front-ends an AI agent uses to drive the input method (MCP server, CLI, local server).
+# Deliberately NOT a member of the main workspace: it needs `unsafe` (the Win32 bridge and the named pipe), it has its
+# own Cargo.lock, and the `windows` crate is pinned to 0.58 because 0.60+ import Windows functions with raw-dylib, which
+# needs a real binutils `dlltool`/`as` on the x86_64-pc-windows-gnu toolchain (see docs/VERSIONS.md).
+[package]
+name = "pime-agent"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "PIME agent front-ends: one operation set for the MCP server, the CLI and the local named-pipe/HTTP server"
+
+# The unit tests live inside the modules of src/ (the pure parts are tested without a desktop); there is no tests/
+# directory, so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "pime_agent"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pime-mcp"
+path = "src/bin/pime-mcp.rs"
+
+[[bin]]
+name = "pime-ime"
+path = "src/bin/pime-ime.rs"
+
+[dependencies]
+# The wire format of the bridge and the strict JSON parser come from the core; no other dependency is allowed.
+pime-core = { path = "../pime-core" }
+
+[dependencies.windows]
+version = "=0.58.0"
+features = [
+  "Win32_Foundation",
+  # WNDCLASSW (the class of the reply window) is declared with the GDI types
+  "Win32_Graphics_Gdi",
+  # the security descriptor of the named pipe (the SID of the current user, the SDDL string)
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_Storage_FileSystem",
+  # COPYDATASTRUCT: the payload of WM_COPYDATA
+  "Win32_System_DataExchange",
+  "Win32_System_IO",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Pipes",
+  "Win32_System_Threading",
+  # the bridge window of the text service, the reply window, the message pump
+  "Win32_UI_WindowsAndMessaging",
+]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the host of the MCP client down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

@@ -105,6 +105,7 @@ function main() {
   const auxTarget = path.join(targetDir, 'aux');
   cargo(path.join(ROOT, 'crates', 'pime-tray'), ['build', '--release', '--target', TARGET], 'pime-tray (resident tray)', auxTarget);
   cargo(path.join(ROOT, 'crates', 'pime-ai-worker'), ['build', '--release', '--target', TARGET], 'pime-ai-worker (speech service client)', auxTarget);
+  cargo(path.join(ROOT, 'crates', 'pime-agent'), ['build', '--release', '--target', TARGET], 'pime-agent (the interface for the AI clients)', auxTarget);
   console.log('\n== VS Code extension');
   let vsix;
   try { vsix = packageVsix({outDir: DIST, log: m => console.log(`  ${m}`)}); } catch (e) { fail(e.message); }
@@ -116,6 +117,8 @@ function main() {
     icon: path.join(ROOT, 'assets', 'pime.ico'),
     tray: path.join(auxRelease, 'pime-tray.exe'),
     worker: path.join(auxRelease, 'pime-ai-worker.exe'),
+    mcp: path.join(auxRelease, 'pime-mcp.exe'),
+    cli: path.join(auxRelease, 'pime-ime.exe'),
   };
   for (const [k, p] of Object.entries(parts)) if (!fs.existsSync(p)) fail(`missing ${k}: ${p}`);
   const icon = fs.readFileSync(parts.icon);
@@ -131,6 +134,8 @@ function main() {
     ['pime.ico', icon],
     ['pime-tray.exe', fs.readFileSync(parts.tray)],
     ['pime-ai-worker.exe', fs.readFileSync(parts.worker)],
+    ['pime-mcp.exe', fs.readFileSync(parts.mcp)],
+    ['pime-ime.exe', fs.readFileSync(parts.cli)],
     ['meta.json', Buffer.from(JSON.stringify({version, extension_id: vsix.id}), 'utf8')],
   ];
   // Wait for a file that an antivirus scanner holds: writing it can fail with EBUSY for a moment.

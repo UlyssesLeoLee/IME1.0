@@ -9,7 +9,7 @@
 //!   itself through its own `DllRegisterServer`, the installer only calls `regsvr32 /s <our dll>` (UT-002, UT-061).
 
 use crate::backend::RegValue;
-use crate::payload::{CORE, DLL, ICON, LICENSE, TRAY, WORKER};
+use crate::payload::{CLI, CORE, DLL, ICON, LICENSE, MCP, TRAY, WORKER};
 use pime_core::json::{self, Json};
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -709,7 +709,7 @@ pub fn install_plan(prefix: &Path, options: &InstallOptions) -> Result<Plan, Pla
     let prefix = resolve_install_dir(prefix, &options.system)?;
     let prefix = validate_prefix(&prefix, &options.system)?;
     let release = &options.release;
-    for needed in [DLL, CORE, LICENSE, TRAY, WORKER] {
+    for needed in [DLL, CORE, LICENSE, TRAY, WORKER, MCP, CLI] {
         if !release.files.iter().any(|f| f.name == needed) {
             return Err(PlanError::Release(format!("the payload has no {needed}")));
         }
@@ -924,6 +924,8 @@ pub mod tests {
                 file(crate::payload::VSIX, 5000),
                 file(TRAY, 3072),
                 file(WORKER, 6144),
+                file(MCP, 2048),
+                file(CLI, 1536),
             ],
         }
     }
@@ -978,6 +980,8 @@ pub mod tests {
             place(crate::payload::VSIX, payload(crate::payload::VSIX)),
             place(TRAY, payload(TRAY)),
             place(WORKER, payload(WORKER)),
+            place(MCP, payload(MCP)),
+            place(CLI, payload(CLI)),
             place(UNINSTALLER_NAME, FileSource::SelfExe),
             Step::RegisterTextService {
                 dll: p(&format!(r"{PREFIX}\pime_tsf.dll")),
@@ -995,7 +999,7 @@ pub mod tests {
         assert!(plan.requires_admin && plan.warnings.is_empty());
         assert_eq!(plan.regsvr32, p(r"C:\Windows\System32\regsvr32.exe"));
         let m = &plan.manifest;
-        assert_eq!(m.files.len(), 8);
+        assert_eq!(m.files.len(), 10);
         assert_eq!(
             m.registry_keys,
             [r"HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\ProgrammingIME"]
@@ -1038,7 +1042,7 @@ pub mod tests {
                 r#""{PREFIX}\uninstall.exe" --uninstall --silent"#
             )))
         );
-        assert_eq!(get("EstimatedSize"), Some(RegValue::Dword(21))); // 21460 bytes -> 21 KiB
+        assert_eq!(get("EstimatedSize"), Some(RegValue::Dword(25))); // 25044 bytes -> 25 KiB
         assert_eq!(get("NoModify"), Some(RegValue::Dword(1)));
     }
 
@@ -1448,6 +1452,8 @@ pub mod tests {
             file("programming-ime.vsix"),
             file(TRAY),
             file(WORKER),
+            file(MCP),
+            file(CLI),
             file(UNINSTALLER_NAME),
             file(MANIFEST_NAME),
             Step::RemoveDir(p(PREFIX)),

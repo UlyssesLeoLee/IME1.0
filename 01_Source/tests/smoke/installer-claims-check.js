@@ -137,6 +137,7 @@ if (runAll !== null) {
   const pairs = [
     ['rust_core_tests', /Rust: cargo test --workspace.*?(\d+) tests/gm],
     ['rust_tsf_tests', /TSF crate \(crates\/pime-tsf\): cargo test.*?(\d+) tests/gm],
+    ['rust_agent_tests', /AI agent front-ends \(crates\/pime-agent\): cargo test.*?(\d+) tests/gm],
     ['js_tests', /^\S+ tests (\d+)\s*$/gm],
   ];
   for (const [key, re] of pairs) {

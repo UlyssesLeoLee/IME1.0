@@ -114,6 +114,23 @@ const ADDITIONS = [
   '01_Source/crates/pime-tsf/src/predictor.rs',
   // the machine readable report of the settings window probe (the picture alone cannot prove the tabs)
   '02_Verification/ime-ui/probe-report.json',
+  // the wire format the AI clients and the text service share (one contract, two sides)
+  '01_Source/crates/pime-core/src/agent_proto.rs',
+  // the bridge window of the text service: it receives the requests of the AI clients
+  '01_Source/crates/pime-tsf/src/agent_bridge.rs',
+  // the front-ends an AI agent calls: the MCP server, the command line and the local server
+  '01_Source/crates/pime-agent/Cargo.toml',
+  '01_Source/crates/pime-agent/Cargo.lock',
+  '01_Source/crates/pime-agent/src/lib.rs',
+  '01_Source/crates/pime-agent/src/bridge.rs',
+  '01_Source/crates/pime-agent/src/core.rs',
+  '01_Source/crates/pime-agent/src/mcp.rs',
+  '01_Source/crates/pime-agent/src/cli.rs',
+  '01_Source/crates/pime-agent/src/serve.rs',
+  '01_Source/crates/pime-agent/src/bin/pime-mcp.rs',
+  '01_Source/crates/pime-agent/src/bin/pime-ime.rs',
+  // how the mainstream AI clients call the input method
+  '01_Source/docs/AI_AGENT_API.md',
 ];
 
 const isBinary = bytes => bytes.includes(0);

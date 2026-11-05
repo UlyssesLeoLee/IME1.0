@@ -85,6 +85,7 @@ const setup = read(`02_Verification/${claims.evidence_setup_log}`);
 const last = (text, re) => { const found = [...text.matchAll(re)]; return found.length ? found[found.length - 1][1] : null; };
 eq('the run-all log core tests vs the claims block', last(runAll, /Rust: cargo test --workspace.*?(\d+) tests/gm), claims.rust_core_tests);
 eq('the run-all log tsf tests vs the claims block', last(runAll, /TSF crate \(crates\/pime-tsf\): cargo test.*?(\d+) tests/gm), claims.rust_tsf_tests);
+eq('the run-all log agent tests vs the claims block', last(runAll, /AI agent front-ends \(crates\/pime-agent\): cargo test.*?(\d+) tests/gm), claims.rust_agent_tests);
 eq('the run-all log js tests vs the claims block', last(runAll, /^\S+ tests (\d+)\s*$/gm), claims.js_tests);
 eq('the run-all log has no failing step', (runAll.match(/^FAIL\s/gm) || []).length, 0);
 const setupCounts = [...setup.matchAll(/test result: ok\. (\d+) passed/g)].map(m => Number(m[1])).filter(n => n > 0).sort((a, b) => a - b);
@@ -110,8 +111,10 @@ eq('the matrix §5 installer test count vs the claims block', doc.match(/\| 安�
   prose('js_tests', readme, /JavaScript \*\*(\d+) \/ \d+\*\*/);
   prose('rust_core_tests', readme, /Rust 核心 \*\*(\d+) \/ \d+\*\*/);
   prose('rust_tsf_tests', readme, /Rust TSF crate \*\*(\d+) \/ \d+\*\*/);
+  prose('rust_agent_tests', readme, /Rust agent crate \*\*(\d+) \/ \d+\*\*/);
   prose('rust_core_tests', doc, /\| Rust 核心 `cargo test --workspace`.*?\*\*(\d+) \/ \d+ 通过\*\*/);
   prose('rust_tsf_tests', doc, /\| Rust TSF `cargo test`.*?\*\*(\d+) \/ \d+ 通过\*\*/);
+  prose('rust_agent_tests', doc, /\| Rust agent `cargo test`.*?\*\*(\d+) \/ \d+ 通过\*\*/);
   prose('js_tests', doc, /\| JavaScript 单元 \/ 集成 \+ 引擎差分.*?\*\*(\d+) \/ \d+ 通过\*\*/);
 }
 
