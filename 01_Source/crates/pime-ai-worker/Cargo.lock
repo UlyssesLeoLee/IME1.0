@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "pime-ai-worker"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "pime-core",
  "windows",
@@ -12,7 +12,7 @@ dependencies = [
 
 [[package]]
 name = "pime-core"
-version = "0.2.1"
+version = "0.2.2"
 
 [[package]]
 name = "proc-macro2"

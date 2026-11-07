@@ -45,6 +45,8 @@ pub mod vk {
     pub const PACKET: u32 = 0xE7;
     /// The F1 key.
     pub const F1: u32 = 0x70;
+    /// The V key.
+    pub const V: u32 = 0x56;
     /// The F2 key.
     pub const F2: u32 = 0x71;
 }
@@ -128,6 +130,13 @@ pub fn is_compose_chord(code: u32, mods: Modifiers) -> bool {
 /// button.
 pub fn is_input_mode_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::F1 && mods.alt && !mods.ctrl && !mods.shift && !mods.win
+}
+
+/// Alt+F2: walk through the three languages of the product (zh-CN, en-US, ja-JP). The panel of the laser interface
+/// offers the same as a row.
+/// Ctrl+Alt+V: switch the vertical writing mode (the text that is written stands as a column).
+pub fn is_vertical_chord(code: u32, mods: Modifiers) -> bool {
+    code == vk::V && mods.alt && mods.ctrl && !mods.shift && !mods.win
 }
 
 /// Alt+F2: walk through the three languages of the product (zh-CN, en-US, ja-JP). The panel of the laser interface

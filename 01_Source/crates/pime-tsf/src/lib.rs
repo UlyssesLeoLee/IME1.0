@@ -47,6 +47,7 @@ pub mod tip;
 pub mod ui;
 pub mod uielement;
 pub mod uielement_com;
+pub mod vertical;
 
 /// Prototype GUIDs (the same values as the C++ skeleton in `windows/tsf`); to be replaced by governed product ids.
 pub const CLSID_PIME: GUID = GUID::from_u128(0x43f95ed1_95b4_421d_8f5a_837128c2d854);

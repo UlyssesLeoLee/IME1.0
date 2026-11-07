@@ -239,7 +239,7 @@ pub fn tool_schema(tool: &Tool) -> Json {
 
 /// The list of the tools, as `tools/list` answers it.
 pub fn tool_list_json() -> Json {
-    let tools: Vec<Json> = TOOLS
+    let mut tools: Vec<Json> = TOOLS
         .iter()
         .map(|tool| {
             Json::obj(vec![
@@ -249,6 +249,9 @@ pub fn tool_list_json() -> Json {
             ])
         })
         .collect();
+    // the tools of the catalogue of the standard assets (they read the files on the disk, they do not touch the
+    // focused window)
+    tools.extend(crate::catalog::tool_list());
     Json::obj(vec![("tools", Json::Arr(tools))])
 }
 
@@ -333,6 +336,13 @@ fn initialize_result(params: &Json, backend: &Backend) -> Json {
     } else {
         DEFAULT_PROTOCOL
     };
+    // The instructions of the catalogue are added to the ones of the input method: the model has to know that the
+    // catalogue of the standard assets is there and what it is good for.
+    let mut instructions = INSTRUCTIONS.to_string();
+    if let Some(extra) = crate::catalog::instructions() {
+        instructions.push_str("\n\n");
+        instructions.push_str(&extra);
+    }
     Json::obj(vec![
         ("protocolVersion", Json::str(version)),
         (
@@ -349,13 +359,21 @@ fn initialize_result(params: &Json, backend: &Backend) -> Json {
                 ("version", Json::str(VERSION)),
             ]),
         ),
-        ("instructions", Json::str(INSTRUCTIONS)),
+        ("instructions", Json::str(&instructions)),
     ])
 }
 
 /// The answer of `tools/call`: the tool runs and its answer is the content.
 fn tools_call(params: &Json, backend: &Backend) -> Json {
     let name = params.get("name").and_then(Json::as_str).unwrap_or("");
+    let arguments = match params.get("arguments") {
+        None | Some(Json::Null) => Json::Obj(Vec::new()),
+        Some(value) => value.clone(),
+    };
+    // the tools of the catalogue do not go through the text service: they read the files on the disk
+    if let Some(answer) = crate::catalog::call(name, &arguments) {
+        return answer;
+    }
     let Some(tool) = TOOLS.iter().find(|tool| tool.name == name) else {
         let answer = Json::obj(vec![
             ("ok", Json::Bool(false)),
@@ -363,10 +381,6 @@ fn tools_call(params: &Json, backend: &Backend) -> Json {
             ("message", Json::str(&format!("there is no tool named {name}"))),
         ]);
         return tool_result(&answer, true);
-    };
-    let arguments = match params.get("arguments") {
-        None | Some(Json::Null) => Json::Obj(Vec::new()),
-        Some(value) => value.clone(),
     };
     let answer = dispatch_op(tool.op, &arguments, backend);
     let failed = answer.get("ok").and_then(Json::as_bool) == Some(false);
@@ -629,8 +643,27 @@ mod tests {
             .filter_map(|tool| tool.get("name").and_then(Json::as_str))
             .collect();
         let declared: Vec<&str> = tool_names();
-        assert_eq!(names, declared, "the published list drifted from the declaration");
-        assert_eq!(names.len(), TOOLS.len());
+        // the list of the tools of the input method comes first, then the ones of the catalogue (they read the files
+        // on the disk, they do not touch the focused window)
+        let catalogue: Vec<&str> = names
+            .iter()
+            .filter(|name| name.starts_with(crate::catalog::TOOL_PREFIX))
+            .copied()
+            .collect();
+        let own: Vec<&str> = names
+            .iter()
+            .filter(|name| !name.starts_with(crate::catalog::TOOL_PREFIX))
+            .copied()
+            .collect();
+        assert_eq!(own, declared, "the published list drifted from the declaration");
+        assert_eq!(own.len(), TOOLS.len());
+        if crate::catalog::available() {
+            assert_eq!(
+                catalogue.len(),
+                4,
+                "the catalogue publishes four tools: {catalogue:?}"
+            );
+        }
         let mut unique = names.clone();
         unique.sort_unstable();
         unique.dedup();
@@ -644,7 +677,7 @@ mod tests {
             .get("tools")
             .and_then(Json::as_array)
             .expect("the list of the tools");
-        assert_eq!(list.len(), 7);
+        assert!(list.len() >= TOOLS.len());
         for tool in list {
             let name = tool.get("name").and_then(Json::as_str).expect("the name");
             let description = tool
@@ -657,10 +690,20 @@ mod tests {
             assert_eq!(schema.get("type").and_then(Json::as_str), Some("object"));
             let properties = schema.get("properties").expect("the properties");
             let required = schema.get("required").and_then(Json::as_array).expect("the required");
-            let declaration = TOOLS
-                .iter()
-                .find(|candidate| candidate.name == name)
-                .expect("the tool is declared");
+            let Some(declaration) = TOOLS.iter().find(|candidate| candidate.name == name) else {
+                // the tools of the catalogue bring their own schema (they are not declared in TOOLS)
+                assert!(
+                    name.starts_with(crate::catalog::TOOL_PREFIX),
+                    "{name} is neither a tool of the input method nor one of the catalogue"
+                );
+                match properties {
+                    Json::Obj(map) => {
+                        assert!(!map.is_empty(), "{name} declares no parameter at all")
+                    }
+                    _ => panic!("the properties of {name} are not an object"),
+                }
+                continue;
+            };
             for param in declaration.params {
                 assert!(
                     properties.get(param.name).is_some(),

@@ -497,7 +497,7 @@ mod tests {
         assert_eq!(r.get("ok"), Some(&Json::Bool(true)));
         assert_eq!(r.get("id").and_then(Json::as_i64), Some(7));
         assert_eq!(r.get("name").and_then(Json::as_str), Some("pime-core"));
-        assert_eq!(r.get("version").and_then(Json::as_str), Some("0.2.1"));
+        assert_eq!(r.get("version").and_then(Json::as_str), Some("0.2.2"));
         assert_eq!(r.get("protocol").and_then(Json::as_str), Some("0.3"));
         assert_eq!(
             r.get("languages").and_then(Json::as_array).map(Vec::len),

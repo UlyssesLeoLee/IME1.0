@@ -129,6 +129,7 @@ const TASE_CRATES = [
   'tase-local-store',
   'tase-agent-scheduler',
   'tase-local-hub',
+  'tase-worker',
   'tase-catalog-mcp',
   'tase-ime-core',
 ];

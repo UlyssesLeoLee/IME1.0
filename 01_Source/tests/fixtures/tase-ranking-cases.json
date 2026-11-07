@@ -1,0 +1,1841 @@
+{
+  "version": 1,
+  "note": "The cases of the candidate ranking, of the context classification and of the privacy policy. BOTH sides read this file: tests/rust/parity_tase_ime.rs runs the crate tase-ime-core (the only truth source) and tests/js/ut-tase-candidates.test.js runs the JavaScript mirror (editor-bridges/vscode/src/core/candidates.js). The 'expect' blocks are printed by the Rust side (TASE_PARITY_EMIT=1), so they are refreshed from the truth source and never by hand.",
+  "cases": [
+    {
+      "name": "dd-0204-the-order-of-the-candidates",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-204",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "python",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "status": "CANDIDATE_ONLY"
+        },
+        {
+          "candidate_id": "cand-404",
+          "asset_ref": "algorithm.graph.dijkstra@1.0.0",
+          "language": "rust",
+          "label": "Dijkstra shortest path",
+          "status": "IMPLEMENTATION_AVAILABLE"
+        },
+        {
+          "candidate_id": "cand-304",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "complete_project_edit": true,
+          "status": "CANDIDATE_ONLY"
+        },
+        {
+          "candidate_id": "cand-104",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "implementation_ref": "pattern.gof.behavioral.strategy.rust@1.0.0",
+          "language": "rust",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "status": "CANDIDATE_ONLY"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        },
+        {
+          "current_generation": 2
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-104",
+          "cand-304",
+          "cand-404",
+          "cand-204"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-104",
+            "total": 2.05,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.1
+          },
+          {
+            "candidate_id": "cand-304",
+            "total": 1.55,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.6
+          },
+          {
+            "candidate_id": "cand-404",
+            "total": 1,
+            "language_match": 1,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-204",
+            "total": 0.05,
+            "language_match": -1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.1
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": true,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          },
+          {
+            "current_generation": 2,
+            "is_stale": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "equal-scores-are-broken-by-the-candidate-id",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-b",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        },
+        {
+          "candidate_id": "cand-a",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-a",
+          "cand-b"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-a",
+            "total": 2.15,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-b",
+            "total": 2.15,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": true,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-parts-decide-before-the-id",
+      "request": {
+        "query": "alpha gamma",
+        "language": null,
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-alpha",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "",
+          "label": "alpha gamma"
+        },
+        {
+          "candidate_id": "cand-beta",
+          "asset_ref": "alpha.b.c.d.e.f@1.0.0",
+          "language": "",
+          "label": "beta only"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-alpha",
+          "cand-beta"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-alpha",
+            "total": 1,
+            "language_match": 0,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-beta",
+            "total": 1,
+            "language_match": 0,
+            "keyword_match": 0.5,
+            "applicability": 0.5,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-language-part-decides",
+      "request": {
+        "query": "alpha",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-none",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "",
+          "label": "alpha helper"
+        },
+        {
+          "candidate_id": "cand-rust",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "trait helper"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-rust",
+          "cand-none"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-rust",
+            "total": 1,
+            "language_match": 1,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-none",
+            "total": 1,
+            "language_match": 0,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "a-request-without-a-word-or-a-language-says-nothing",
+      "request": {
+        "query": "",
+        "language": null,
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "plain_text",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-b",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "one"
+        },
+        {
+          "candidate_id": "cand-a",
+          "asset_ref": "yy.xx@1.0.0",
+          "language": "rust",
+          "label": "two"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-a",
+          "cand-b"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-a",
+            "total": 0,
+            "language_match": 0,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-b",
+            "total": 0,
+            "language_match": 0,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-context-hint-is-used-when-the-request-names-no-language",
+      "request": {
+        "query": "",
+        "language": null,
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-python",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "python",
+          "label": "one"
+        },
+        {
+          "candidate_id": "cand-rust",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "two"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-rust",
+          "cand-python"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-rust",
+            "total": 1,
+            "language_match": 1,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-python",
+            "total": -1,
+            "language_match": -1,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-clock-of-the-caller-does-not-change-the-order",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 999999
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        },
+        {
+          "candidate_id": "cand-2",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "python",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1",
+          "cand-2"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2.15,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-2",
+            "total": 0.15,
+            "language_match": -1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": true,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-order-does-not-depend-on-the-order-of-the-candidates",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-104",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "implementation_ref": "pattern.gof.behavioral.strategy.rust@1.0.0",
+          "language": "rust",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "status": "CANDIDATE_ONLY"
+        },
+        {
+          "candidate_id": "cand-304",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "complete_project_edit": true,
+          "status": "CANDIDATE_ONLY"
+        },
+        {
+          "candidate_id": "cand-404",
+          "asset_ref": "algorithm.graph.dijkstra@1.0.0",
+          "language": "rust",
+          "label": "Dijkstra shortest path",
+          "status": "IMPLEMENTATION_AVAILABLE"
+        },
+        {
+          "candidate_id": "cand-204",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "python",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "status": "CANDIDATE_ONLY"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-104",
+          "cand-304",
+          "cand-404",
+          "cand-204"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-104",
+            "total": 2.05,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.1
+          },
+          {
+            "candidate_id": "cand-304",
+            "total": 1.55,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.6
+          },
+          {
+            "candidate_id": "cand-404",
+            "total": 1,
+            "language_match": 1,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-204",
+            "total": 0.05,
+            "language_match": -1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.1
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": true,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-context-kind-does-not-change-the-order",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "plain_text",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-204",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "python",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "status": "CANDIDATE_ONLY"
+        },
+        {
+          "candidate_id": "cand-404",
+          "asset_ref": "algorithm.graph.dijkstra@1.0.0",
+          "language": "rust",
+          "label": "Dijkstra shortest path",
+          "status": "IMPLEMENTATION_AVAILABLE"
+        },
+        {
+          "candidate_id": "cand-304",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "complete_project_edit": true,
+          "status": "CANDIDATE_ONLY"
+        },
+        {
+          "candidate_id": "cand-104",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "implementation_ref": "pattern.gof.behavioral.strategy.rust@1.0.0",
+          "language": "rust",
+          "label": "Strategy: trait + implementations",
+          "risk": "新 trait 带来抽象与维护成本",
+          "status": "CANDIDATE_ONLY"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-104",
+          "cand-304",
+          "cand-404",
+          "cand-204"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-104",
+            "total": 2.05,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.1
+          },
+          {
+            "candidate_id": "cand-304",
+            "total": 1.55,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.6
+          },
+          {
+            "candidate_id": "cand-404",
+            "total": 1,
+            "language_match": 1,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-204",
+            "total": 0.05,
+            "language_match": -1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": -0.1
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-plain_text",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "plain_text",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-code",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": true,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-password",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "password",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "deny",
+          "reason": "password: the candidates are disabled in a password control"
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-secure_desktop",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "secure_desktop",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "deny",
+          "reason": "secure_desktop: the candidates are disabled on the secure desktop"
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-uac_prompt",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "uac_prompt",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "deny",
+          "reason": "uac_prompt: the candidates are disabled in an elevation prompt"
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-app_container",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "app_container",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "deny",
+          "reason": "app_container: the candidates are disabled in a restricted AppContainer"
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-browser_secure_input",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "browser_secure_input",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "deny",
+          "reason": "browser_secure_input: the candidates are disabled in a secure input field of a browser"
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-unknown",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "unknown",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow_read_only",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-default-policy-collects-nothing-and-shares-nothing",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-excerpt-of-a-code-context-needs-the-permission",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": true,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-text-of-another-program-is-not-collected",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "plain_text",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": true,
+        "allow_agent_orchestration": true
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-1",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "Strategy"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-1"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-1",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": true,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "the-unicode-words-are-the-same-on-both-sides",
+      "request": {
+        "query": "策略 trait",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-cjk",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "策略 trait + implementations"
+        },
+        {
+          "candidate_id": "cand-ascii",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Strategy trait"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-cjk",
+          "cand-ascii"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-cjk",
+            "total": 2,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-ascii",
+            "total": 1.5,
+            "language_match": 1,
+            "keyword_match": 0.5,
+            "applicability": 0,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "an-empty-risk-note-is-not-a-penalty",
+      "request": {
+        "query": "x",
+        "language": null,
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "plain_text",
+        "language_hint": null,
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-empty",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "empty",
+          "risk": "   "
+        },
+        {
+          "candidate_id": "cand-note",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "note",
+          "risk": "maintenance cost"
+        },
+        {
+          "candidate_id": "cand-project",
+          "asset_ref": "zz.yy@1.0.0",
+          "language": "rust",
+          "label": "project",
+          "complete_project_edit": true
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-empty",
+          "cand-note",
+          "cand-project"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-empty",
+            "total": 0,
+            "language_match": 0,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-note",
+            "total": -0.1,
+            "language_match": 0,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": -0.1
+          },
+          {
+            "candidate_id": "cand-project",
+            "total": -0.5,
+            "language_match": 0,
+            "keyword_match": 0,
+            "applicability": 0,
+            "risk_penalty": -0.5
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "an-asset-without-a-version",
+      "request": {
+        "query": "behavioral",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [
+        {
+          "candidate_id": "cand-version",
+          "asset_ref": "pattern.gof.behavioral.strategy@1.0.0",
+          "language": "rust",
+          "label": "Behavioral note"
+        },
+        {
+          "candidate_id": "cand-noversion",
+          "asset_ref": "pattern.gof.behavioral.strategy",
+          "language": "rust",
+          "label": "Behavioral note"
+        }
+      ],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [
+          "cand-noversion",
+          "cand-version"
+        ],
+        "scores": [
+          {
+            "candidate_id": "cand-noversion",
+            "total": 2.15,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": 0
+          },
+          {
+            "candidate_id": "cand-version",
+            "total": 2.15,
+            "language_match": 1,
+            "keyword_match": 1,
+            "applicability": 0.15,
+            "risk_penalty": 0
+          }
+        ],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "no-candidate-at-all",
+      "request": {
+        "query": "strategy",
+        "language": "rust",
+        "now_ms": 0
+      },
+      "context": {
+        "kind": "code",
+        "language_hint": "rust",
+        "focus_context_generation": 1,
+        "excerpt": null
+      },
+      "policy": {
+        "allow_excerpt_in_code_context": false,
+        "allow_agent_orchestration": false
+      },
+      "candidates": [],
+      "stale_checks": [
+        {
+          "current_generation": 1
+        }
+      ],
+      "expect": {
+        "order": [],
+        "scores": [],
+        "decision": {
+          "kind": "allow",
+          "reason": null
+        },
+        "excerpt_allowed": false,
+        "may_share_with_agent": false,
+        "stale": [
+          {
+            "current_generation": 1,
+            "is_stale": false
+          }
+        ]
+      }
+    }
+  ],
+  "invalid_candidates": [
+    {
+      "candidate": {
+        "asset_ref": "a@1"
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the candidate has no candidate_id"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": 7
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the candidate has no asset_ref"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": null
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the candidate has no asset_ref"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": ""
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the asset_ref is not an id@version reference"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@b@c"
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the asset_ref is not an id@version reference"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "implementation_ref": 5
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the implementation_ref is not a string"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "implementation_ref": "x@y@z"
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the implementation_ref is not an id@version reference"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "language": 7
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the candidate shape"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "label": null
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the candidate shape"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "complete_project_edit": "yes"
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the candidate shape"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "risk": 3
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the risk is not a string"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "status": "MAYBE"
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the status of the candidate is unknown"
+      }
+    },
+    {
+      "candidate": {
+        "candidate_id": "c",
+        "asset_ref": "a@1",
+        "status": null
+      },
+      "error": {
+        "code": "OUTPUT_INVALID",
+        "message": "the status of the candidate is unknown"
+      }
+    }
+  ]
+}

@@ -29,6 +29,9 @@ path = "src/bin/pime-ime.rs"
 [dependencies]
 # The wire format of the bridge and the strict JSON parser come from the core; no other dependency is allowed.
 pime-core = { path = "../pime-core" }
+# The catalogue of the standard assets (the tools catalog.search / catalog.recommend / catalog.instantiate /
+# catalog.describe). It reads the files on the disk; it does not touch the text service.
+tase-catalog-mcp = { path = "../tase-catalog-mcp" }
 
 [dependencies.windows]
 version = "=0.58.0"

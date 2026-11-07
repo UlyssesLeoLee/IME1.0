@@ -5,5 +5,8 @@
   "selectedPageTitle": "插件",
   "candidateRows": 5,
   "settingsRect": [680, 338, 1240, 694],
-  "screen": [1920, 1080]
+  "screen": [1920, 1080],
+  "mouths": [{"key": "user", "label": "user", "colour": "#9ED8FF", "edge": "left", "x": 12, "y": 540},
+    {"key": "agent:anthropic:claude-code:demo", "label": "claude-code", "colour": "#FF8F1F", "edge": "top", "x": 274, "y": 12},
+    {"key": "agent:anthropic:claude-code:demo-2", "label": "claude-code-2", "colour": "#FC17FC", "edge": "right", "x": 1908, "y": 154}]
 }

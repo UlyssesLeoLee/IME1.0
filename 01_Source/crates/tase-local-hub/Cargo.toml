@@ -1,0 +1,73 @@
+# TASE-LOCAL-HUB: the resident Local Agent Hub of TASE - the process that owns the state of the local
+# agents (detailed design §17.1 / §17.2).
+#
+# The Hub is one process per logon session: it takes the connections of the agents, it authorizes them,
+# it keeps their sessions, it arbitrates the writes into the workspaces and it hands the jobs to the
+# scheduler.
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that it
+# can be built on its own, next to `tase-local-ipc` and `tase-local-store`.
+#
+# The frames, the protocol negotiation, the connection and the access control of the pipe come from
+# `tase-local-ipc`; the persistence comes from `tase-local-store` (SQLite in WAL mode, `rusqlite`); the
+# identifiers and the business error codes come from `tase-contract`; the JSON and the SHA-256 come from
+# `pime-core`. No other third-party dependency is allowed.
+[package]
+name = "tase-local-hub"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE Local Agent Hub: the resident local multi-agent service of TASE"
+
+# The unit tests live inside the modules of src/ (the crate is a library and has no tests/ directory), so
+# cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_local_hub"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tase-local-hub"
+path = "src/bin/tase-local-hub.rs"
+
+[dependencies]
+# The strict JSON parser/serializer and the SHA-256 come from the core.
+pime-core = { path = "../pime-core" }
+# The identifiers, the states and the business error codes come from the contract layer.
+tase-contract = { path = "../tase-contract" }
+# The frame format, the protocol negotiation, the connection and the ACL of the pipe come from the IPC
+# crate of TASE: this crate writes no second transport.
+tase-local-ipc = { path = "../tase-local-ipc" }
+# The persistence of the sessions, the jobs, the leases, the idempotency records and the file generations.
+tase-local-store = { path = "../tase-local-store" }
+
+# The Windows part of the Hub reads the token of the process (the logon SID is the namespace of the pipe,
+# detailed design §17.2). `windows` is pinned to 0.58 because 0.60+ import the Windows functions with
+# raw-dylib, which needs a real binutils `dlltool`/`as` on the x86_64-pc-windows-gnu toolchain (the same
+# pin as `pime-agent` and `pime-ipc`).
+[target.'cfg(windows)'.dependencies.windows]
+version = "=0.58.0"
+features = [
+  "Win32_Foundation",
+  # TOKEN_QUERY, TokenUser, TokenLogonId, TOKEN_USER
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  # SetConsoleCtrlHandler: Ctrl+C ends the Hub in an orderly way
+  "Win32_System_Console",
+  # ProcessIdToSessionId: the terminal-services session of the peer
+  "Win32_System_RemoteDesktop",
+  # OpenProcessToken, GetCurrentProcess
+  "Win32_System_Threading",
+]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the Hub down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

@@ -1,0 +1,35 @@
+# TASE-SEMANTIC: the semantic layer of TASE (detailed design §4, "semantic index and symbol modification").
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that the worker and
+# the application service can build it on their own.
+#
+# The crate holds no third-party dependency: the source masking (comments and string literals) and the small text
+# utilities come from `pime-core`; the position basis is UTF-16, like every edit of this repository.
+[package]
+name = "tase-semantic"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE semantic layer: the symbol index, the position mapping and the impact set"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_semantic"
+path = "src/lib.rs"
+
+[dependencies]
+# The source masking and the text helpers come from the core; no other dependency is allowed.
+pime-core = { path = "../pime-core" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take a worker down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

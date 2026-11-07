@@ -214,7 +214,10 @@ function loadRegistry(dir = findPackDir(), options = {}) {
   return reg;
 }
 let defaultRegistry = null;
-const registry = () => defaultRegistry || (defaultRegistry = loadRegistry());
+const registry = () => {
+  if (!defaultRegistry) { defaultRegistry = loadRegistry(); validators.setFamilies(defaultRegistry.families()); }
+  return defaultRegistry;
+};
 function setRegistry(reg) { defaultRegistry = reg; validators.setFamilies(reg.families()); }
 
 // ---------------------------------------------------------------- dialects (FR-012)

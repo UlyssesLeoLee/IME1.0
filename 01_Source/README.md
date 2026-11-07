@@ -1,4 +1,4 @@
-# IME1.0（编程输入法）— 源码 v0.2.1
+# IME1.0（编程输入法）— 源码 v0.2.2
 
 **状态：VS Code 侧功能完整的编辑器桥接 + 零依赖 Rust 本地核心 + Playwright 用户验收脚本。不是可发布的 Windows 系统输入法。**
 Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credential Manager、签名安装器没有实现。

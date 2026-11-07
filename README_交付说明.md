@@ -1,8 +1,8 @@
-# IME1.0（编程输入法）— 设计文档与源码合集（v0.2.1）
+# IME1.0（编程输入法）— 设计文档与源码合集（v0.2.2）
 
-- 交付版本：**Code v0.2.1**（2026-11-05）；**安装包与框架矩阵 v0.2.1（2026-11-05）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
+- 交付版本：**Code v0.2.2**（2026-11-07）；**安装包与框架矩阵 v0.2.2（2026-11-07）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
 - 产品名称：**IME1.0**，描述：**编程输入法**。语言栏里三个语言 profile 显示为「IME1.0 中文」「IME1.0 English」「IME1.0 日本語」，「添加/删除程序」里的名称是 IME1.0、说明（Comments）是「编程输入法」。**安装目录改为 `C:\Program Files\IME1.0`**：**程序永远在自己名为 `IME1.0` 的文件夹里**，向导与 `--prefix` 给的都是它的**上级**（默认 → `C:\Program Files\IME1.0`；选 `D:\` → `D:\IME1.0`；选 `D:\Tools` → `D:\Tools\IME1.0`），**磁盘根目录永远不会成为安装目录**。机器上已装的旧版（`C:\Program Files\Programming IME`）**不会原地升级**：改名会让旧副本变成孤儿目录（旧的 CLSID 注册仍指向旧 DLL），所以向导会提示旧版残留并要求**先卸载旧版再装新版**（详见 `02_Verification/FRAMEWORK_GAPS.md` 的待裁定项）。
-- **已发布：[GitHub Release `v0.2.1`](https://github.com/UlyssesLeoLee/IME1.0/releases/tag/v0.2.1)（2026-11-05，未签名）**——本仓库第一个公开版本：`ProgrammingIME-0.2.1-win-x64-setup.exe`（9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9`）与 VS Code 扩展 `programming-ime-vscode-bridge-0.2.1.vsix`。**没有代码签名**（SmartScreen 会报未知发布者），**系统输入法尚未在真实宿主里验证过**。
+- **已发布：[GitHub Release `v0.2.1`]（那是上一版）**；当前源码是 **v0.2.2**(https://github.com/UlyssesLeoLee/IME1.0/releases/tag/v0.2.1)（2026-11-05，未签名）**——本仓库第一个公开版本：`ProgrammingIME-0.2.1-win-x64-setup.exe`（9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9`）与 VS Code 扩展 `programming-ime-vscode-bridge-0.2.1.vsix`。**没有代码签名**（SmartScreen 会报未知发布者），**系统输入法尚未在真实宿主里验证过**。
 - 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；Windows 系统输入法已在真实系统上完成一次提权安装（2026-11-04）**。系统输入法（`01_Source/crates/pime-tsf`，纯 Rust）已能构建 x64 DLL 并通过产物检查；按键处理（TIP）、候选窗和注册代码都已写成并通过单元测试。**2026-11-04 13:52 在本机做了一次提权安装**（`--silent --prefix D:\`，12 步全过，regsvr32 不再报 `E_FAIL`），注册表里三个语言 profile（中文 / English / 日本語）都指向 `D:\IME1.0\pime.ico`；**但真实宿主里的打字、候选选择、Ctrl+F12 切换、语音识别仍然没有验证过**。安装包已产出（`01_Source/dist/ProgrammingIME-0.2.1-win-x64-setup.exe`，未签名），正式发布仍暂停。**2026-11-04 第十五轮**：切输入法 / 切语言后悬浮窗不再残留（新增活动语言档通知 + 重入延迟收工），**悬浮界面统一到左侧蓝色微光激光口区域（悬浮栏整块删除，右下角只留品牌 logo）**，**快捷键设计归档成 `01_Source/docs/HOTKEYS.md`，并补上了唯一没做的 Alt+F2（切换语言）**。
 - 框架完整性：见 `02_Verification/IME_FRAMEWORK_MATRIX.md`（逐项矩阵，含代码位置与测试证据）；未实现项与待裁定事项见 `02_Verification/FRAMEWORK_GAPS.md`。
 
@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，651 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，699 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -59,7 +59,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **345 / 345** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **298 / 298** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **60 / 60** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **308 / 308** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **63 / 63** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器的实际安装/卸载与签名、IPC 的异用户/远程场景、AI Worker 与扩展的对接、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。

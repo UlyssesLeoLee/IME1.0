@@ -33,7 +33,7 @@ use pime_core::pack::render_plain;
 
 use crate::keymap::{
     Modifiers, ShiftTapDetector, breaks_context, is_compose_chord, is_input_mode_chord,
-    is_language_chord, translate,
+    is_language_chord, is_vertical_chord, translate,
 };
 use crate::ui::{Anchor, CandidateRow, CandidateUi, CandidateView, ListAction};
 
@@ -95,6 +95,11 @@ pub struct TipConfig {
     pub input_mode: bool,
     /// Language profile of the prediction engine.
     pub language: String,
+    /// OFF by default. On: the text that is written stands as a **column** (the vertical writing mode).
+    ///
+    /// The user asked for it: "书写自然语言时写好之后，可以自动把文字纵向排成一列，并且确保前列内容不受干扰，
+    /// tab或者空格也能自动保留成和前列一样的形式，只是单纯输入一列纵向文字排在前列后方".
+    pub vertical: bool,
 }
 
 impl Default for TipConfig {
@@ -108,6 +113,7 @@ impl Default for TipConfig {
             // that must not be touched, and Alt+F1 switches to it.
             input_mode: true,
             language: "rust".to_string(),
+            vertical: false,
         }
     }
 }
@@ -246,6 +252,8 @@ pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPred
     /// The hook cannot touch the state of the text service: the controller has it borrowed while the key is handled,
     /// so the request travels through the queue of the actions of the text service instead.
     language_hook: Option<Rc<dyn Fn()>>,
+    /// The writer of the columns of the vertical writing mode.
+    vertical: crate::vertical::VerticalWriter,
     now_ms: u64,
 }
 
@@ -268,6 +276,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             probed: None,
             commit_hook: None,
             language_hook: None,
+            vertical: crate::vertical::VerticalWriter::new(),
             now_ms: 0,
         }
     }
@@ -380,6 +389,22 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             if !on {
                 // the composition and the list of the input mode end with it
                 c.reset();
+            }
+        });
+    }
+
+    /// Whether the vertical writing mode is on (the text that is written stands as a column).
+    pub fn vertical_mode(&self) -> bool {
+        self.config.vertical
+    }
+
+    /// Switch the vertical writing mode on or off. This is what Ctrl+Alt+V does.
+    pub fn set_vertical_mode(&mut self, on: bool) {
+        self.guarded((), |c| {
+            c.config.vertical = on;
+            if !on {
+                // the next column starts where the caret is again
+                c.vertical = crate::vertical::VerticalWriter::new();
             }
         });
     }
@@ -522,6 +547,18 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             // `ITfUIElement::Show(TRUE)` and the popup could not be drawn): nothing may be eaten behind it
             self.visible = false;
             self.settle();
+        }
+        if is_vertical_chord(key.code, key.mods) {
+            // Ctrl+Alt+V switches the vertical writing mode (the text stands as a column).
+            self.seen = None;
+            if self.secure {
+                return false; // nothing is collected in a secure field: the key stays with the host
+            }
+            if test_only {
+                return true; // the host asks whether the key is ours: it is
+            }
+            self.set_vertical_mode(!self.vertical_mode());
+            return true;
         }
         if is_language_chord(key.code, key.mods) {
             // Alt+F2 walks through the three languages of the product (the panel of the laser interface offers the
@@ -675,7 +712,14 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
                     let typed = self.machine.typed_prefix().to_string();
                     // Where the text lands: the caret before the write is the place the character appears at.
                     let anchor = self.host.caret_anchor().or(self.last_anchor);
-                    let ok = self.host.commit(&typed, &render_plain(&text, "")).is_ok();
+                    let plain = render_plain(&text, "");
+                    // The vertical writing mode: the text stands as a column, behind the column before it.
+                    let to_write = if self.config.vertical {
+                        self.vertical.column(&plain)
+                    } else {
+                        plain
+                    };
+                    let ok = self.host.commit(&typed, &to_write).is_ok();
                     if ok && let Some(hook) = self.commit_hook.clone() {
                         // The light of the input method shines on the character that was written. The hook is inside
                         // the panic guard of the caller, so a panic in it degrades the input method and not the host.

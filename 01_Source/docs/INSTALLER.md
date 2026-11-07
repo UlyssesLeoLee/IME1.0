@@ -98,10 +98,10 @@ pime-setup.exe / ProgrammingIME-<版本>-win-x64-setup.exe [选项]
 `--dry-run` 实例（节选，本机实测，什么都没有改变）：
 
 ```
-IME1.0 0.2.1 - install plan (dry run: nothing is changed)
+IME1.0 0.2.2 - install plan (dry run: nothing is changed)
   folder: C:\Program Files\IME1.0
   administrator rights needed: yes (the setup restarts itself elevated)
-  payload: 7 files, version 0.2.1, SHA-256 of every file verified
+  payload: 7 files, version 0.2.2, SHA-256 of every file verified
   VS Code: `code` found at D:\Microsoft VS Code\bin\code.cmd
   steps:
      1. create folder C:\Program Files\IME1.0

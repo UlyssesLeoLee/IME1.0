@@ -15,6 +15,7 @@
 //! `SECURE_FIELD`, `BUSY`, `TOO_LARGE`, `MALFORMED`, `UNSUPPORTED`) plus `CORE_UNAVAILABLE` for the core engine.
 #![deny(unsafe_code, unsafe_op_in_unsafe_fn)]
 
+pub mod catalog;
 pub mod bridge;
 pub mod cli;
 pub mod core;

@@ -7,6 +7,7 @@ const lang = require('./languageState');
 const f1 = require('./f1');
 const f2 = require('./f2');
 const languages = require('./core/languages');
+const taseCandidates = require('./core/candidates');
 const aiMod = require('./core/ai');
 const settingsMod = require('./core/settings');
 const {fail, codeOf} = require('./core/errors');
@@ -54,6 +55,30 @@ async function updateContextKeys() {
 
 // ------------------------------------------------------------------ local candidates (JS engine; optional Rust core)
 const toRange = (position, prefix) => new vscode.Range(position.line, position.character - prefix.length, position.line, position.character);
+
+// ------------------------------------------------------------------ the rules of the input method (tase-ime-core)
+// The window and the AI path of the bridge follow the same privacy policy and the same order as the input method
+// itself: the rules live in the Rust core (01_Source/crates/tase-ime-core) and the JavaScript mirror
+// (core/candidates.js) is held against it by the shared fixture (tests/fixtures/tase-ranking-cases.json).
+// The context of VS Code is always an editor context - a secret-class file is refused by the file gate before
+// anything is read - so it is a code context when the host names a language and a plain text context otherwise.
+// The generation is the version of the document: it changes with the document, so the candidates of an older focus
+// are stale (DD-IME 20.2).
+function taseContext(info, generation) {
+  const language = info && info.language ? info.language : null;
+  const kind = language && language !== 'unknown' ? 'code' : 'plain_text';
+  return taseCandidates.makeContext({
+    kind, language_hint: language,
+    focus_context_generation: generation === undefined ? rt.session.documentEpoch : generation
+  });
+}
+// The two permissions of the policy are the consent the bridge already has: the user turned the AI on and the
+// realtime suggestions on. The other checks (the provider grant, the model, the trust of the workspace) stay where
+// they are.
+function tasePolicy() {
+  const allowed = aiEnabled() && cfg().get('realtimeAI') === true;
+  return taseCandidates.makePrivacyPolicy({allow_excerpt_in_code_context: allowed, allow_agent_orchestration: allowed});
+}
 function usageMap() { return new Map(Object.entries(rt.ctx.globalState.get('pime.usage') || {})); }
 function bumpUsage(id) {
   const u = rt.ctx.globalState.get('pime.usage') || {};
@@ -94,6 +119,10 @@ function realtimeAllowed() {
 async function runRealtime(payload, signal) {
   const sc = settingsMod.resolveScenario(rt.settings, 'realtime');
   const key = await rt.ctx.secrets.get('pime-key:' + sc.providerId);
+  // the context leaves the machine only when the policy of the input method allows it (DD-IME 20.2): the same
+  // question the IME asks before it hands a context to an agent, with the same answer
+  if (!tasePolicy().may_share_with_agent(taseContext({language: payload.language})))
+    throw fail('CONSENT_REQUIRED', 'the context may not be shared with an agent');
   const verdict = await rt.engine.privacy.assess(payload.before + payload.after, {fileName: payload.fileName, scope: 'realtime'});
   if (verdict.action === 'block') throw fail('SENSITIVE_BLOCKED', 'nearby code contains high-risk secrets');
   let {before, after} = payload;
@@ -138,6 +167,8 @@ const inlineProvider = {
     if (!await fileGate.ensure(doc, {interactive: false, purpose: 'candidates'})) return [];
     const info = lang.infoFor(doc);
     if (info.language === 'unknown') return [];
+    // the privacy policy of the input method: a protected context offers nothing (the typing path never says anything)
+    if (!taseCandidates.isAllowed(tasePolicy().decide(taseContext(info, doc.version)))) return [];
     const {prefix, range, candidates} = await localCandidates(doc, position, info);
     if (!prefix || token.isCancellationRequested) return [];
     const items = [];
@@ -177,8 +208,15 @@ async function showCandidates() {
   if (!await fileGate.ensure(doc, {interactive: false, purpose: 'candidates'})) { vscode.window.showInformationMessage(L('sec.refused.candidates')); return; }
   const info = lang.infoFor(doc);
   const version0 = doc.version, selection0 = editor.selection;
+  // the context of the editor in the words of the input method: its privacy policy decides whether anything may
+  // be shown here at all (a protected context shows nothing and inserts nothing)
+  const taseCtx = taseContext(info, version0);
+  const verdict = tasePolicy().decide(taseCtx);
+  if (!taseCandidates.isAllowed(verdict)) { vscode.window.showInformationMessage(verdict.reason || L('cand.none')); return; }
   const {prefix, range, candidates} = await localCandidates(doc, editor.selection.active, info);
-  const all = [...candidates, ...cachedAi(doc)];
+  // the asset cards keep the order of the input method; the rule pack candidates keep the order of DD §4.2
+  const all = taseCandidates.rankAssetCandidates([...candidates, ...cachedAi(doc)],
+    taseCandidates.makeRankRequest({query: prefix, language: info.language, context: taseCtx}));
   if (!all.length) { vscode.window.showInformationMessage(L('cand.none')); return; }
   const rows = await rt.engine.candidateRows(rt.locale, all);
   const items = all.map((c, i) => ({label: rows[i].label, description: rows[i].description, detail: rows[i].detail, accessibilityInformation: {label: rows[i].ariaLabel}, c}));
@@ -189,7 +227,7 @@ async function showCandidates() {
   // autoComment / graphComment: the user's AI adds comments to the chosen snippet; null = insert it unchanged
   const annotated = (c.kind === 'syntax' || c.kind === 'ai_inline') ? await annotateInsertion({doc, info, template: c.text, position: editor.selection.active}) : null;
   const text = annotated ? annotated.text : c.text;
-  if (vscode.window.activeTextEditor !== editor || doc.version !== version0 || !editor.selection.isEqual(selection0)) {
+  if (vscode.window.activeTextEditor !== editor || taseCandidates.contextIsStale(taseCtx, doc.version) || !editor.selection.isEqual(selection0)) {
     vscode.window.showWarningMessage(L('cand.stale')); return; // never insert at an old position (also after waiting for the AI)
   }
   const ok = await editor.insertSnippet(c.plain ? new vscode.SnippetString(escapePlain(text)) : new vscode.SnippetString(languages.toSnippet(text)), range);
@@ -204,10 +242,10 @@ async function chooseLanguage() {
   const items = [{label: L('lang.auto'), value: 'auto'}, {label: L('lang.fileLock'), kind: vscode.QuickPickItemKind.Separator}];
   for (const id of languages.LANGUAGES) items.push({label: id, description: L('lang.fileLock'), value: id, scope: 'file'});
   // the plugin languages that are on are offered next to the built-in ones
-  for (const id of reg.enabledPluginProfiles()) items.push({label: id, description: L('plugin.tag', (reg.plugin(id) || {}).display_name || id), value: id, scope: 'file'});
+  for (const id of reg.enabledPluginProfiles()) items.push({label: id, description: pluginTag(id), value: id, scope: 'file'});
   items.push({label: L('lang.globalLock'), kind: vscode.QuickPickItemKind.Separator});
   for (const id of languages.LANGUAGES) items.push({label: `${id} (all files)`, description: L('lang.globalLock'), value: id, scope: 'global'});
-  for (const id of reg.enabledPluginProfiles()) items.push({label: `${id} (all files)`, description: L('plugin.tag', (reg.plugin(id) || {}).display_name || id), value: id, scope: 'global'});
+  for (const id of reg.enabledPluginProfiles()) items.push({label: `${id} (all files)`, description: pluginTag(id), value: id, scope: 'global'});
   const pick = await vscode.window.showQuickPick(items, {title: L('lang.pick'), matchOnDescription: true});
   if (!pick || !editor) return;
   if (pick.value === 'auto') lang.unlock(editor.document); else lang.lock(editor.document, pick.value, pick.scope);
@@ -330,6 +368,8 @@ async function toggleRealtimeAI() {
 // The built-in seven are always on. A plugin profile is on or off; the set lives in programmingIme.pluginLanguages.
 const RULE_DIR = () => path.join(rt.ctx.globalStorageUri.fsPath, 'rules');
 const PLUGIN_DIR = () => path.join(rt.ctx.globalStorageUri.fsPath, 'language-plugins');
+// The name of a plugin language in the lists (the display name of its pack).
+const pluginTag = id => `${(languages.registry().plugin(id) || {}).display_name || id} (plugin language)`;
 function enabledPluginLanguages() {
   const raw = cfg().get('pluginLanguages');
   const list = Array.isArray(raw) ? raw.filter(x => typeof x === 'string' && x) : [];
@@ -359,12 +399,12 @@ async function reloadRules() {
   languages.setRegistry(built.registry);
   await tellCorePluginLanguages(enabled);
   const rejected = [...built.rejected, ...built.rules.rejected];
-  if (rejected.length) vscode.window.showWarningMessage(L('plugin.packRejected', rejected.length, rejected.map(r => `${r.name}: ${r.message}`).join('; ')));
+  if (rejected.length) vscode.window.showWarningMessage(`Programming IME: ${rejected.length} pack(s) rejected - ${rejected.map(r => `${r.name}: ${r.message}`).join('; ')}`);
   else {
     const parts = [];
     if (built.accepted.length) parts.push(`plugin packs: ${built.accepted.join(', ')}`);
     if (built.rules.accepted.length) parts.push(`rules: ${built.rules.accepted.join(', ')}`);
-    if (parts.length) vscode.window.showInformationMessage(L('plugin.loaded', parts.join('; ')));
+    if (parts.length) vscode.window.showInformationMessage(`Programming IME loaded - ${parts.join('; ')}`);
   }
   return built;
 }
@@ -372,25 +412,25 @@ async function reloadRules() {
 async function choosePluginLanguages() {
   const reg = languages.registry();
   const ids = reg.pluginProfiles();
-  if (!ids.length) { vscode.window.showInformationMessage(L('plugin.none')); return; }
+  if (!ids.length) { vscode.window.showInformationMessage('Programming IME: no plugin language is installed - import a plugin pack first'); return; }
   const on = new Set(reg.enabledPluginProfiles());
-  const items = ids.map(id => ({label: id, description: L('plugin.tag', (reg.plugin(id) || {}).display_name || id), picked: on.has(id)}));
+  const items = ids.map(id => ({label: id, description: pluginTag(id), picked: on.has(id)}));
   const picks = await vscode.window.showQuickPick(items, {canPickMany: true, title: 'Programming IME: plugin languages (on / off)'});
   if (!picks) return; // Esc / dismiss: nothing is written
   const next = picks.map(p => p.label);
   await cfg().update('pluginLanguages', next, vscode.ConfigurationTarget.Global);
-  vscode.window.showInformationMessage(L('plugin.enabled', next.length ? next.join(', ') : 'none'));
+  vscode.window.showInformationMessage(`Programming IME plugin languages: ${next.length ? next.join(', ') : 'none'}`);
 }
 // Import plugin packs from a folder: every *.json is validated, the accepted ones are copied into the plugin folder.
 async function importPluginPacks() {
-  const picked = await vscode.window.showOpenDialog({canSelectFolders: true, canSelectFiles: false, canSelectMany: false, openLabel: L('plugin.importLabel')});
+  const picked = await vscode.window.showOpenDialog({canSelectFolders: true, canSelectFiles: false, canSelectMany: false, openLabel: 'Select the folder with the plugin packs (*.json)'});
   if (!picked || !picked.length) return;
   const src = picked[0].fsPath;
   const files = fs.readdirSync(src).filter(n => n.toLowerCase().endsWith('.json')).sort().map(name => ({name, text: fs.readFileSync(path.join(src, name), 'utf8')}));
   const result = settingsMod.importPluginPacks(files, PLUGIN_DIR(), (pack, bytes) => languages.checkPluginPack(pack, bytes));
   await reloadRules();
-  if (result.accepted.length) vscode.window.showInformationMessage(L('plugin.imported', result.accepted.length, result.accepted.join(', ')));
-  if (result.rejected.length) vscode.window.showWarningMessage(L('plugin.rejected', result.rejected.length, result.rejected.map(r => `${r.name}: ${r.message}`).join('; ')));
+  if (result.accepted.length) vscode.window.showInformationMessage(`Programming IME: ${result.accepted.length} plugin pack(s) imported - ${result.accepted.join(', ')}`);
+  if (result.rejected.length) vscode.window.showWarningMessage(`Programming IME: ${result.rejected.length} plugin pack(s) rejected - ${result.rejected.map(r => `${r.name}: ${r.message}`).join('; ')}`);
 }
 async function migrateOldSettings() {
   if (rt.ctx.globalState.get('pime.settingsSchema') === settingsMod.SCHEMA_VERSION) return;

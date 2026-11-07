@@ -19,6 +19,12 @@ autotests = false
 name = "tase_ime_core"
 path = "src/lib.rs"
 
+# The parity test against the JavaScript side of the extension: the two implementations of the ranking rules
+# have to agree on the same fixtures (the fixture is 01_Source/tests/fixtures/tase-ranking-cases.json).
+[[test]]
+name = "parity_tase_ime"
+path = "../../tests/rust/parity_tase_ime.rs"
+
 [dependencies]
 # The strict JSON parser and the error codes come from the core; no other dependency is allowed.
 pime-core = { path = "../pime-core" }

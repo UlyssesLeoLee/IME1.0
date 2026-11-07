@@ -1,0 +1,40 @@
+# TASE-CATALOG-MCP: the projection of the unified standard asset catalog into MCP tools.
+#
+# The crate turns the catalog of `tase-catalog` into the four MCP tools an AI client calls
+# (`catalog.search`, `catalog.recommend`, `catalog.instantiate`, `catalog.describe`) and answers
+# the JSON-RPC shape of `pime-agent` (detailed design §19.6, basic design §17.5).
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so
+# that the agent front-ends can build it on their own. It has no third-party dependency.
+[package]
+name = "tase-catalog-mcp"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE catalog MCP: the unified standard asset catalog projected into MCP tools - search, recommend, instantiate and describe"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_catalog_mcp"
+path = "src/lib.rs"
+
+[dependencies]
+# The strict JSON parser/serializer comes from the core; the error codes come from the contract layer;
+# the catalog itself (the index, the ranking, the governance) comes from `tase-catalog`.
+# No other dependency is allowed.
+pime-core = { path = "../pime-core" }
+tase-contract = { path = "../tase-contract" }
+tase-catalog = { path = "../tase-catalog" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the host of the MCP client down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

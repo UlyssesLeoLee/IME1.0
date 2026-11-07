@@ -1,0 +1,43 @@
+# TASE-CATALOG: the recommendation layer of the unified standard asset catalog.
+#
+# It sits on top of `tase-registry` (which loads the 93 knowledge cards of `assets/tase-catalog`) and adds the
+# three things the design book asks of the catalog and the registry does not hold:
+#
+# * the logical layer, the tags and the aliases of an asset, derived from its manifest (basic design §17.1);
+# * the selection and the ranking of the assets, with the score broken down, the counterexamples and the risks
+#   always carried along (detailed design §19.3, basic design §17.4, requirements §14.4);
+# * the governance of the assets: the state of the knowledge card, the state of the language implementations,
+#   the transition rules between them and the registry of the implementations (requirements §14.4).
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that the
+# catalog MCP and the planner can build it on their own. It has no third-party dependency.
+[package]
+name = "tase-catalog"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE catalog: the recommendation layer of the unified standard asset catalog - scoring, governance and the registry of the implementations"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_catalog"
+path = "src/lib.rs"
+
+[dependencies]
+# The manifests, the digests and the search of the catalog come from the registry; the DTOs, the identifiers and
+# the error codes come from the contract layer. No other dependency is allowed.
+tase-contract = { path = "../tase-contract" }
+tase-registry = { path = "../tase-registry" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the host of the MCP client down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

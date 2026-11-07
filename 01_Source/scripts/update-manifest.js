@@ -25,6 +25,8 @@ const EXCLUDED = new Set([
   '02_Verification/setup-tests-2026-11-02.log',
   '02_Verification/run-all-2026-11-03.log',
   '02_Verification/setup-tests-2026-11-03.log',
+  '02_Verification/run-all-2026-11-04.log',
+  '02_Verification/setup-tests-2026-11-04.log',
   '02_Verification/installer-build.log',
 ]);
 
@@ -42,6 +44,11 @@ const ADDITION_DIRECTORIES = [
   '01_Source/crates/tase-metrics',
   '01_Source/crates/tase-local-ipc',
   '01_Source/crates/tase-ime-core',
+  '01_Source/crates/tase-local-store',
+  '01_Source/crates/tase-semantic',
+  '01_Source/crates/tase-catalog',
+  '01_Source/crates/tase-catalog-mcp',
+  '01_Source/crates/tase-local-hub',
 ];
 
 // The files of a directory, in the order the walk finds them.
@@ -166,6 +173,17 @@ const ADDITIONS = [
   '01_Source/crates/pime-agent/src/bin/pime-ime.rs',
   // how the mainstream AI clients call the input method
   '01_Source/docs/AI_AGENT_API.md',
+  // the vertical writing mode (the words sideways, the characters one per line)
+  '01_Source/crates/pime-tsf/src/vertical.rs',
+  // the catalogue adapter of the AI agent (it finds the TASE catalogue on disk)
+  '01_Source/crates/pime-agent/src/catalog.rs',
+  '01_Source/crates/pime-tray/Cargo.lock',
+  '01_Source/crates/pime-tsf/examples/profile_probe.rs',
+  // the one ranking rule on both sides: the Rust core and the extension mirror it
+  '01_Source/editor-bridges/vscode/src/core/candidates.js',
+  '01_Source/tests/fixtures/tase-ranking-cases.json',
+  '01_Source/tests/js/ut-tase-candidates.test.js',
+  '01_Source/tests/rust/parity_tase_ime.rs',
 ];
 
 const isBinary = bytes => bytes.includes(0);

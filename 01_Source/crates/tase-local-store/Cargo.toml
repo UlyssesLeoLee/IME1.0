@@ -1,0 +1,44 @@
+# TASE-LOCAL-STORE: the persistence layer of the TASE Local Agent Hub - the sessions, the agents, the jobs, the
+# leases, the idempotency records and the per-file generations, plus the migrations, the snapshots and the crash
+# reconciliation (detailed design §18, §17.4, §17.6).
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that the Hub and
+# the scheduler can build it on their own.
+#
+# The storage is SQLite in WAL mode (detailed design §18.1): SQLite is public domain and `rusqlite` is MIT, so the
+# licence of the dependency is clean; the SQLite amalgamation is compiled by the `cc` crate, so no system SQLite is
+# needed on the target machine.
+[package]
+name = "tase-local-store"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE local store: the SQLite WAL persistence of the local multi-agent Hub"
+
+# The unit tests live inside the modules of src/ (the crate is a library and has no tests/ directory), so cargo is
+# told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_local_store"
+path = "src/lib.rs"
+
+[dependencies]
+# The identifiers and the business error codes come from the contract layer; the JSON and the SHA-256 come from the
+# core.
+pime-core = { path = "../pime-core" }
+tase-contract = { path = "../tase-contract" }
+# The SQLite binding. `bundled` compiles the SQLite amalgamation (public domain) into the library, so the crate does
+# not need a system SQLite and behaves the same on every target.
+rusqlite = { version = "0.37", features = ["bundled"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the Hub down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

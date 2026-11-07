@@ -165,6 +165,15 @@ pub struct LaserUi {
     place: Option<MouthPlace>,
     /// The drag that is going on right now.
     drag: Option<Drag>,
+
+    /// Whether the picture of the panel has to be drawn again.
+    ///
+    /// The panel is the expensive window (268 by 296 pixels and an 18 pixel shadow blur), so its picture is only
+    /// drawn again when something in it really changed. D-27 measured a whole core of CPU before this.
+    panel_dirty: bool,
+    /// Whether the picture of the beam has to be drawn again.
+    beam_dirty: bool,
+
     /// That the interface has to go off the screen, asked for while it was busy.
     ///
     /// The switch of the input method happens in the callback of the mouth, and TSF deactivates the text service
@@ -225,6 +234,8 @@ impl LaserUi {
                 visible: false,
                 place: None,
                 drag: None,
+                panel_dirty: true,
+                beam_dirty: true,
                 hide_requested: Rc::new(Cell::new(false)),
             };
             ui.ensure_windows();
@@ -445,7 +456,9 @@ impl LaserUi {
             beam_window.move_to(left, top);
             beam_window.show();
         }
-        self.repaint_all();
+        // only the beam (and the mouths) changed: the panel keeps its picture
+        self.beam_dirty = true;
+        self.repaint_changed();
     }
 
     /// The mouths of light that are on the screen right now (the human and every agent).
@@ -466,10 +479,14 @@ impl LaserUi {
                 && beam.is_finished(now)
             {
                 model.beam = None;
+                // the beam is gone: its picture has to be wiped once
+                self.beam_dirty = true;
             }
             // the panel wipes itself open
             if model.panel.open && model.panel.reveal < 1.0 {
                 model.panel.reveal = (model.panel.reveal + 0.14).min(1.0);
+                // the wipe is still running: its picture has to be drawn again
+                self.panel_dirty = true;
             }
         }
         // the mouse rested on the mouth long enough: the panel opens
@@ -491,7 +508,7 @@ impl LaserUi {
                 self.close_panel();
             }
         }
-        self.repaint_all();
+        self.repaint_changed();
     }
 
     /// What the user did in one of the windows.
@@ -681,6 +698,8 @@ impl LaserUi {
                 let layout = self.model.borrow().panel.layout.clone();
                 let hot = layout.rows.iter().position(|(_, rect)| rect.contains(x, y));
                 self.model.borrow_mut().panel.hot = hot;
+                // the highlighted row changed: the picture of the panel has to be drawn again
+                self.panel_dirty = true;
             }
             Role::Beam => {}
         }
@@ -751,7 +770,8 @@ impl LaserUi {
         if let Some(panel) = &self.panel {
             panel.show();
         }
-        self.repaint_all();
+        self.panel_dirty = true;
+        self.repaint_changed();
     }
 
     /// Close the panel.
@@ -760,6 +780,7 @@ impl LaserUi {
         if let Some(panel) = &self.panel {
             panel.hide();
         }
+        self.panel_dirty = true;
     }
 
     /// The screen position of one of the windows.
@@ -950,6 +971,10 @@ impl LaserUi {
         let height = panel_height(layout.rows.len());
         self.panel_height = height;
         self.model.borrow_mut().panel.layout = layout;
+        // the rows changed: the picture of the panel has to be drawn again
+        self.panel_dirty = true;
+        // the rows changed: the picture of the panel has to be drawn again
+        self.panel_dirty = true;
         if height != PANEL_HEIGHT {
             // the window follows the picture: the picture is made again at the new size
             if let Some(panel) = &mut self.panel {
@@ -975,13 +1000,37 @@ impl LaserUi {
         }
     }
 
-    /// Draw every window that is on the screen.
+    /// Draw every window that is on the screen (everything is marked as changed first).
     fn repaint_all(&mut self) {
-        let mut windows: Vec<&GlassWindow> = self.glows.iter().map(|glow| &glow.window).collect();
-        windows.extend([self.beam.as_ref(), self.panel.as_ref()].into_iter().flatten());
-        for window in windows {
-            ensure_surface(window.shared(), window.width(), window.height());
-            window.repaint();
+        self.panel_dirty = true;
+        self.beam_dirty = true;
+        self.repaint_changed();
+    }
+
+    /// Draw the windows whose picture changed since the last time.
+    ///
+    /// The mouths are small (40 by 40) and they breathe, so they are drawn on every tick. The beam only lives for
+    /// half a second and the panel only changes when it opens, when the list changes or when the mouse moves over
+    /// a row. Before this, the panel was drawn 60 times a second (and once more for every character that was
+    /// written), which cost a whole core: D-27.
+    fn repaint_changed(&mut self) {
+        for glow in &self.glows {
+            ensure_surface(glow.window.shared(), glow.window.width(), glow.window.height());
+            glow.window.repaint();
+        }
+        if self.beam_dirty {
+            self.beam_dirty = false;
+            if let Some(beam) = &self.beam {
+                ensure_surface(beam.shared(), beam.width(), beam.height());
+                beam.repaint();
+            }
+        }
+        if self.panel_dirty {
+            self.panel_dirty = false;
+            if let Some(panel) = &self.panel {
+                ensure_surface(panel.shared(), panel.width(), panel.height());
+                panel.repaint();
+            }
         }
     }
 
