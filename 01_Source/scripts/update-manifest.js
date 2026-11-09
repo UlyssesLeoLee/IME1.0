@@ -197,6 +197,7 @@ const ADDITIONS = [
   '01_Source/scripts/validate-tase-catalog.js',
   // the map of the fifteen TASE crates of this repository
   '01_Source/docs/TASE_CRATES.md',
+  '01_Source/docs/TASE_CHAIN.md',
   // the cost and the latency benchmark of the product
   '01_Source/scripts/bench-cost.js',
   '01_Source/crates/tase-metrics/examples/cost_bench.rs',

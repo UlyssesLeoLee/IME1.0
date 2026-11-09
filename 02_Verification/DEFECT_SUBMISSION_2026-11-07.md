@@ -9,7 +9,7 @@
 | 类别 | 数量 | 说明 |
 |---|---:|---|
 | 已发生、未经你批准的改动 | 8 项 | §1。每一项都给了回退方式，你可以逐项「保留 / 回退 / 部分保留」 |
-| 待你裁定的缺陷与取舍 | 56 条（D-16 ~ D-80） | §2，按主题分 A~G；其中 D-57 ~ D-65 来自 `tase-executor` / `tase-agent-scheduler` 的实现，D-67 ~ D-80 来自 `tase-worker` 与五十个算法的实现 |
+| 待你裁定的缺陷与取舍 | 59 条（D-16 ~ D-83） | §2，按主题分 A~G；D-57 ~ D-65 来自 `tase-executor` / `tase-agent-scheduler`，D-67 ~ D-80 来自 `tase-worker` 与五十个算法，D-81 ~ D-83 是接线时发现的既有落差 |
 | 需要你给信息才能继续的空白 | 3 条 | §3 |
 | 本单子未覆盖 | 真机验收 | 新 DLL 还没换上（注销/重启后才有），实拍取证都是进程内宿主 |
 
@@ -104,6 +104,8 @@
 | **D-26** | 低 | `pime-core` 的 `cargo clippy --all-targets -- -D warnings` 是红的：**4 条，全是既有代码**被新版 clippy（1.99）判出来的 | `base64.rs:53`（`manual_is_multiple_of`）、`style.rs` 的 `put`/`blend`（`chunks_exact_mut` → `as_chunks_mut`）、`style.rs` 的 `stroke_segment`（`too_many_arguments`，8 个参数） | 门禁**不含 clippy**，三道 claims 门禁不受影响 | 纯风格改写，各 1~3 行，不改行为。要我改就说一声 |
 | **D-41** | 低 | `pime-tsf` 的 clippy 有 **3 条**（第十八轮实测更正过一次，原来写 2 条） | `predictor.rs:21`（`new_without_default`）、`tip.rs:1669`（`let_and_return`）、`examples/ime_ui_probe.rs:261`（`unnecessary_cast`） | 同上 | 同上。**注意第三条在第十八轮之前就在**，不是本轮引入 |
 | **D-81** | 低 | **`tase-local-hub` 的 clippy 不是干净的（2 条，都是既有代码）** | `tase-local-hub/src/session.rs:449` 的 `assert_eq!(LOGON.len() > 0, true)` ⇒ `clippy::len_zero`（本轮接线时实测发现；与 HEAD 逐字相同，**不是接线引入的**） | 门禁**不含 clippy**，不影响三道 claims 校验 | 纯风格改写（`assert!(!LOGON.is_empty())`），1 行，不改行为。**按规矩交你裁定，我没有动** |
+| **D-82** | 低中 | **宿主适配器把「读不到文本」一律映射成 `NotFound`，桥接的错误码丢了**（由宿主门接线时发现） | `crates/tase-executor/src/host.rs` 的 `snapshot`：读失败时 `TaseError::new(ErrorCode::NotFound, "the host did not give the text of the focused window: {code}")`——**桥接的码只留在消息里，TASE 的码一律是 NotFound** | 「输入法不在前台窗口」（`NO_IME`）与「没有文档」（`NO_CONTEXT`）在 TASE 这一层**长得一模一样**（NotFound），调用方分不出「输入法没运行」与「这个位置没有文档」 | 把桥接的码映射成对应的 TASE 码（`NO_IME` → `WorkerUnavailable`、`NO_CONTEXT` → `NotFound`）。**按规矩交你裁定，我没有动** |
+| **D-83** | 低 | **偏移非法时适配器报的是「被拒绝」而不是「报错」**（由宿主门接线时发现） | `crates/tase-executor/src/host.rs` 的 `apply_edits`：编辑套不上文本时返回 `HostEditOutcome::Rejected`；而 `HostEditOutcome::Rejected` 的文档说的是「**编辑器拒绝了这次编辑**」（`apply.rs` 的枚举注释） | 两种读法都说得通（从「写没写成」看是拒绝，从「谁的问题」看是报错），但**枚举的语义是编辑器的拒绝**，而非法偏移是**调用方的错** | 要么改成 `Err(TaseError::invalid_argument(...))`，要么把枚举的文档改成「宿主没有接受这次编辑」。**按规矩交你裁定，我没有动** |
 | **D-27** | 高（已修） | 激光界面开着时一个核跑满 | 见 §1 | 已降到 4% | 追认或回退 |
 
 ### G. 更早登记、仍未决的产品取舍（摘要，原文在 FRAMEWORK_GAPS.md）
