@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，798 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，799 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -59,7 +59,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **316 / 316** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **63 / 63** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **316 / 316** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **74 / 74** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器的实际安装/卸载与签名、IPC 的异用户/远程场景、AI Worker 与扩展的对接、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
@@ -383,6 +383,11 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 15. **真机**：新 DLL 还没换上（注销/重启后才有）。设置窗开关与共享隐私策略只过了**单元测试**，没有新的实拍截图。
 16. **安装包**：0.3.0 的包用 `--skip-dry-run` 构建——360 安全卫士会「执行即隔离」未签名的安装包，本机跑不了它自己的 dry-run 自检
     （其余自检全过：x64 PE、只导入系统 DLL、载荷 10 条的页脚哈希由独立读取器验证）。
-17. **TASE 只接了一半**：Hub 已经用上真正的调度器（第 8 条），但**执行器与 worker 还没有被 Agent 调用**——
-    `tase-worker` 的二进制**没有宿主门**（没有宿主就拒单，绝不假装写过文件），Agent 端也还没有「提交计划 → 预览 → 应用」这条链。
+17. **宿主门接上了**：执行器不再只认抽象——新增 `tase-executor/src/host.rs`（宿主接缝 `HostTransport` + `BridgeHost`），
+产品侧给出**真实传输**（`pime-agent/src/host_transport.rs`，用桥接客户端），AI 客户端多了两个工具：**`tase_preview`**（只看 diff，不写）
+与 **`tase_apply`**（一次写进去）。一次调用 = 一条读 + 一条算 + 一条写（`replace=true`），**没有第二条写、没有写一半**。
+**协议与 DLL 一个字节都没改**（用的是现有的 `ime_read_selection` / `ime_insert_text` 两个 op）——这条宿主能改的是
+**光标所在的编辑区**，不是磁盘文件。
+18. **还差一段**：Hub 已经用上真正的调度器（第 8 条）、执行器已经接上宿主（第 17 条），但**中间的队列还没接**——
+    AI 客户端还**不能**把一个作业交给 Hub、让 worker 算完再拿回来；`tase-worker` 的二进制也**没有宿主门**（没有宿主就拒单，绝不假装写过文件）。
     接线前要先裁定 D-63（Hub 的文件锁没有 fencing token）与 D-64（租约职责重叠）。

@@ -32,6 +32,12 @@ pime-core = { path = "../pime-core" }
 # The catalogue of the standard assets (the tools catalog.search / catalog.recommend / catalog.instantiate /
 # catalog.describe). It reads the files on the disk; it does not touch the text service.
 tase-catalog-mcp = { path = "../tase-catalog-mcp" }
+# The executor of TASE (the preview, the apply and the door to the host). The product side is the only layer that
+# may touch the window that has the focus, so the real transport of the host adapter lives here: the executor only
+# knows the seam (`tase_executor::host::HostTransport`) and never the bridge of the text service.
+tase-executor = { path = "../tase-executor" }
+# The business codes of TASE: the door to the host answers with them, so the product side has to name them.
+tase-contract = { path = "../tase-contract" }
 
 [dependencies.windows]
 version = "=0.58.0"

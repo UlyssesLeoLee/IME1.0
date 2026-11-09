@@ -80,6 +80,20 @@ pub enum Command {
         /// The text to scan.
         text: String,
     },
+    /// The preview of a change of TASE: the diff of the change, without writing anything.
+    TasePreview {
+        /// The text the edits are computed against.
+        text: String,
+        /// The edits: objects with a start, an end and a text.
+        edits: Json,
+    },
+    /// The write of a change of TASE into the region the user has selected.
+    TaseApply {
+        /// The text of the region, as it was read.
+        text: String,
+        /// The edits: objects with a start, an end and a text.
+        edits: Json,
+    },
     /// The local server (the named pipe and the HTTP server).
     Serve {
         /// Whether the named pipe is served.
@@ -121,6 +135,7 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
     let mut path: Option<String> = None;
     let mut file: Option<String> = None;
     let mut dialect: Option<Json> = None;
+    let mut edits: Option<Json> = None;
     let mut limit: Option<i64> = None;
     let mut replace = false;
     let mut pipe = false;
@@ -158,6 +173,15 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
                     return Err("the dialect is not a JSON object".to_string());
                 }
                 dialect = Some(parsed);
+            }
+            "--edits" => {
+                let value = value_of(args, &mut index, arg)?;
+                let parsed = json::parse(value.trim(), Limits::DEFAULT)
+                    .map_err(|error| format!("the edits are not JSON: {error}"))?;
+                if parsed.as_array().is_none() {
+                    return Err("the edits are not a JSON array".to_string());
+                }
+                edits = Some(parsed);
             }
             "--http" => http = Some(value_of(args, &mut index, arg)?),
             "--token" => token = Some(value_of(args, &mut index, arg)?),
@@ -215,6 +239,14 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
         "scan" => Command::Scan {
             text: need(text, positional.first(), "--text", "scan")?,
         },
+        "tase_preview" => Command::TasePreview {
+            text: need(text, positional.first(), "--text", "tase_preview")?,
+            edits: need_json(edits, "--edits", "tase_preview")?,
+        },
+        "tase_apply" => Command::TaseApply {
+            text: need(text, positional.first(), "--text", "tase_apply")?,
+            edits: need_json(edits, "--edits", "tase_apply")?,
+        },
         "serve" => Command::Serve {
             pipe,
             http,
@@ -264,6 +296,11 @@ fn need(
     Err(format!("the operation {op} needs a value ({option} or an argument)"))
 }
 
+/// The value of an operation that is a JSON value: there is no positional form for it.
+fn need_json(value: Option<Json>, option: &str, op: &str) -> Result<Json, String> {
+    value.ok_or_else(|| format!("the operation {op} needs a value ({option})"))
+}
+
 /// The help of the CLI.
 pub fn usage() -> String {
     let mut out = String::new();
@@ -282,6 +319,10 @@ pub fn usage() -> String {
     out.push_str("  misses                  the words the user typed and that had no candidate\n");
     out.push_str("  resolve <path>          the language of a file\n");
     out.push_str("  scan --text <text>      scan a text for secrets\n");
+    out.push_str("  tase_preview --text <text> --edits <json>\n");
+    out.push_str("                          the diff of a set of edits, without writing anything\n");
+    out.push_str("  tase_apply --text <text> --edits <json>\n");
+    out.push_str("                          write a set of edits into the region the user has selected\n");
     out.push_str("  serve                   the local server (--pipe, --http <addr>, --token <token>)\n\n");
     out.push_str("options:\n");
     out.push_str("  --json                  print the raw JSON answer\n");
@@ -385,6 +426,10 @@ fn build(command: &Command) -> Result<(Op, Json), String> {
         Command::Misses => Vec::new(),
         Command::Resolve { path } => vec![("path", Json::str(path))],
         Command::Scan { text } => vec![("text", Json::str(text))],
+        Command::TasePreview { text, edits } | Command::TaseApply { text, edits } => vec![
+            ("text", Json::str(text)),
+            ("edits", edits.clone()),
+        ],
     };
     let op = match command {
         Command::Help | Command::Serve { .. } => Op::Status,
@@ -399,6 +444,8 @@ fn build(command: &Command) -> Result<(Op, Json), String> {
         Command::Misses => Op::Misses,
         Command::Resolve { .. } => Op::Resolve,
         Command::Scan { .. } => Op::Scan,
+        Command::TasePreview { .. } => Op::TasePreview,
+        Command::TaseApply { .. } => Op::TaseApply,
     };
     Ok((op, Json::obj(pairs)))
 }
@@ -525,6 +572,15 @@ fn human_line(op: Op, answer: &Json) -> String {
             .and_then(Json::as_str)
             .unwrap_or("")
             .to_string(),
+        Op::TasePreview => {
+            let added = answer.get("added").and_then(Json::as_i64).unwrap_or(0);
+            let removed = answer.get("removed").and_then(Json::as_i64).unwrap_or(0);
+            format!("{added} line(s) added, {removed} removed")
+        }
+        Op::TaseApply => {
+            let inserted = answer.get("inserted").and_then(Json::as_i64).unwrap_or(0);
+            format!("written {inserted} character(s)")
+        }
     }
 }
 

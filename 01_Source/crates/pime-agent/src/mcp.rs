@@ -41,6 +41,9 @@ pub const INSTRUCTIONS: &str = concat!(
     "for the code completions of the engine, and ime_validate to check a snippet before it is written.\n\n",
     "ime_curate_dictionary stores the words you propose in the word bank of the user. The storage is written by the ",
     "text service: in this build the tool answers UNSUPPORTED and nothing is stored.\n\n",
+    "tase_preview shows the diff of a set of edits on a piece of text and touches nothing. tase_apply writes those ",
+    "edits into the region the user has selected in the focused window: the offsets are UTF-16 code units of the text ",
+    "you give, and one call is one write.\n\n",
     "Everything is local: nothing leaves the machine. When the input method is not running in the focused window the ",
     "answer is NO_IME: ask the user to click into the window he wants written into and try again."
 );
@@ -72,7 +75,7 @@ pub struct Tool {
 }
 
 /// The tools of the server. This is the one declaration every list is read from.
-pub const TOOLS: [Tool; 7] = [
+pub const TOOLS: [Tool; 9] = [
     Tool {
         name: "ime_insert_text",
         op: Op::Insert,
@@ -200,6 +203,50 @@ pub const TOOLS: [Tool; 7] = [
             required: true,
             description: "The words to store: objects with a word, a reading and a reason.",
         }],
+    },
+    Tool {
+        name: "tase_preview",
+        op: Op::TasePreview,
+        description: "Show what a set of edits does to a piece of text: the diff, the number of lines that come and go, and the text the edits produce. It reads nothing and writes nothing - it only works on the text you give it. Use it to show the user what tase_apply would write into the region the user has selected (the caret), before it is written.",
+        params: &[
+            Param {
+                name: "text",
+                kind: "string",
+                required: true,
+                description: "The text the edits are computed against.",
+            },
+            Param {
+                name: "edits",
+                kind: "array",
+                required: true,
+                description: "The edits: objects with a start, an end and a text. The offsets are UTF-16 code units of the text (not bytes), and the range [start, end) is half-open: it is replaced by the text.",
+            },
+        ],
+    },
+    Tool {
+        name: "tase_apply",
+        op: Op::TaseApply,
+        description: "Write a set of edits into the region the user has selected in the window that has the focus, in ONE call: the region is read, the edits are applied to the text you give, and the whole new text is written in one edit that replaces the region. It is NOT a file path: the unit that changes is the selection at the caret, and one call is one write. The offsets of the edits are UTF-16 code units of the text you give (not bytes). When the region moved since you read it, nothing is written and the answer is STALE_BASE: read it again.",
+        params: &[
+            Param {
+                name: "text",
+                kind: "string",
+                required: true,
+                description: "The text of the region, as you read it: the edits are computed against it.",
+            },
+            Param {
+                name: "edits",
+                kind: "array",
+                required: true,
+                description: "The edits: objects with a start, an end and a text. The offsets are UTF-16 code units of the text (not bytes), and the range [start, end) is half-open: it is replaced by the text.",
+            },
+            Param {
+                name: "agent",
+                kind: "string",
+                required: false,
+                description: "The name of the sub-agent that writes. Two sub-agents of the same provider are two different speakers: each of them gets a laser mouth of its own colour on the screen of the user.",
+            },
+        ],
     },
 ];
 
@@ -784,5 +831,77 @@ mod tests {
         )
         .expect("an answer");
         assert_eq!(answer.get("id").and_then(Json::as_i64), Some(1));
+    }
+
+    /// The two tools of TASE are published with the rest, and their description says what they write into.
+    #[test]
+    fn the_tools_of_tase_are_published_with_their_schema() {
+        let published = tool_list_json();
+        let list = published
+            .get("tools")
+            .and_then(Json::as_array)
+            .expect("the list of the tools");
+        for name in ["tase_preview", "tase_apply"] {
+            let tool = list
+                .iter()
+                .find(|tool| tool.get("name").and_then(Json::as_str) == Some(name))
+                .unwrap_or_else(|| panic!("{name} is published"));
+            let description = tool
+                .get("description")
+                .and_then(Json::as_str)
+                .expect("the description");
+            assert!(
+                description.contains("region"),
+                "{name} does not say what it writes into: {description}"
+            );
+            let schema = tool.get("inputSchema").expect("the schema");
+            let properties = schema.get("properties").expect("the properties");
+            assert!(properties.get("text").is_some(), "{name} has no text");
+            assert!(properties.get("edits").is_some(), "{name} has no edits");
+            let required = schema.get("required").and_then(Json::as_array).expect("the required");
+            assert!(required.iter().any(|r| r.as_str() == Some("edits")));
+        }
+    }
+
+    /// A parameter that is not valid is refused, and nothing reaches the window of the user.
+    #[test]
+    fn a_tool_of_tase_that_gets_a_bad_parameter_answers_with_an_error() {
+        let backend = backend();
+        let answer = call(
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"tase_apply","arguments":{"text":"abc","edits":[{"start":"x","end":1,"text":"y"}]}}}"#,
+            &backend,
+        )
+        .expect("an answer");
+        let result = answer.get("result").expect("the result");
+        assert_eq!(result.get("isError"), Some(&Json::Bool(true)));
+        let content = result.get("content").and_then(Json::as_array).expect("the content");
+        let text = content[0].get("text").and_then(Json::as_str).expect("the text");
+        assert!(text.contains("INVALID_ARGUMENT"), "{text}");
+        assert!(
+            backend.requests().is_empty(),
+            "an illegal request never reaches the window of the user"
+        );
+    }
+
+    /// One call of tase_apply is one write: the region is read, the edits are applied and the whole new text goes
+    /// out in one edit.
+    #[test]
+    fn one_call_of_tase_apply_writes_once() {
+        let backend = backend();
+        let answer = call(
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"tase_apply","arguments":{"text":"selected","edits":[{"start":0,"end":8,"text":"selected!"}]}}}"#,
+            &backend,
+        )
+        .expect("an answer");
+        let result = answer.get("result").expect("the result");
+        assert_eq!(result.get("isError"), Some(&Json::Bool(false)));
+        let requests = backend.requests();
+        let writes: Vec<_> = requests
+            .iter()
+            .filter(|request| request.op == pime_core::agent_proto::Op::Insert)
+            .collect();
+        assert_eq!(writes.len(), 1, "one call, one write");
+        assert!(writes[0].replace, "the write replaces the region");
+        assert_eq!(writes[0].text, "selected!", "the whole new text");
     }
 }

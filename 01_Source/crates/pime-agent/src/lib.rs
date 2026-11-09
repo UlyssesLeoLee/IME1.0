@@ -19,8 +19,10 @@ pub mod catalog;
 pub mod bridge;
 pub mod cli;
 pub mod core;
+pub mod host_transport;
 pub mod mcp;
 pub mod serve;
+pub mod tase;
 
 use pime_core::agent_proto::{Error, Op as BridgeOp, Reply, Request, SourceIdentity};
 use pime_core::json::Json;
@@ -62,6 +64,10 @@ pub enum Op {
     Resolve,
     /// The secret scan of a text.
     Scan,
+    /// The preview of a change of TASE: the diff of the change, without writing anything.
+    TasePreview,
+    /// The write of a change of TASE into the region the user has selected.
+    TaseApply,
 }
 
 impl Op {
@@ -79,6 +85,8 @@ impl Op {
             Op::Misses => "misses",
             Op::Resolve => "resolve",
             Op::Scan => "scan",
+            Op::TasePreview => "tase_preview",
+            Op::TaseApply => "tase_apply",
         }
     }
 
@@ -96,12 +104,14 @@ impl Op {
             "misses" => Some(Op::Misses),
             "resolve" => Some(Op::Resolve),
             "scan" => Some(Op::Scan),
+            "tase_preview" => Some(Op::TasePreview),
+            "tase_apply" => Some(Op::TaseApply),
             _ => None,
         }
     }
 
     /// Every operation, in the order the documentation lists them.
-    pub fn all() -> [Op; 11] {
+    pub fn all() -> [Op; 13] {
         [
             Op::Status,
             Op::Insert,
@@ -114,6 +124,8 @@ impl Op {
             Op::Misses,
             Op::Resolve,
             Op::Scan,
+            Op::TasePreview,
+            Op::TaseApply,
         ]
     }
 }
@@ -399,6 +411,14 @@ impl Backend {
         self.bridge.as_ref()
     }
 
+    /// The bridge, as a handle that may be shared.
+    ///
+    /// The transport of the host of TASE needs the bridge of this backend, and it holds it as a handle so that the
+    /// adapter and the transport may live in another structure.
+    pub fn bridge_handle(&self) -> Arc<dyn ImeBridge> {
+        Arc::clone(&self.bridge)
+    }
+
     /// The core engine.
     pub fn core(&self) -> &dyn CoreEngine {
         self.core.as_ref()
@@ -452,6 +472,8 @@ pub fn dispatch_op(op: Op, params: &Json, backend: &Backend) -> Json {
         Op::Misses => misses(),
         Op::Resolve => resolve(params, backend),
         Op::Scan => scan(params, backend),
+        Op::TasePreview => Ok(crate::tase::preview(params, backend)),
+        Op::TaseApply => Ok(crate::tase::apply(params, backend)),
     };
     match answer {
         Ok(answer) => answer,
@@ -982,7 +1004,7 @@ mod tests {
         }
         assert_eq!(Op::parse("nonsense"), None);
         assert!("nonsense".parse::<Op>().is_err());
-        assert_eq!(Op::all().len(), 11);
+        assert_eq!(Op::all().len(), 13);
     }
 
     #[test]
@@ -1125,12 +1147,17 @@ pub mod testsupport {
         pub reply: Reply,
         /// The request the bridge was given last.
         pub seen: Arc<Mutex<Option<Request>>>,
+        /// Every request the bridge was given, in the order they came.
+        pub requests: Arc<Mutex<Vec<Request>>>,
     }
 
     impl ImeBridge for FakeBridge {
         fn send(&self, request: &Request) -> Result<Reply, AgentError> {
             if let Ok(mut slot) = self.seen.lock() {
                 *slot = Some(request.clone());
+            }
+            if let Ok(mut slot) = self.requests.lock() {
+                slot.push(request.clone());
             }
             Ok(self.reply.clone())
         }
@@ -1153,6 +1180,8 @@ pub mod testsupport {
         inner: Backend,
         /// The request the bridge was given last.
         seen: Arc<Mutex<Option<Request>>>,
+        /// Every request the bridge was given, in the order they came.
+        requests: Arc<Mutex<Vec<Request>>>,
     }
 
     impl Default for FakeBackend {
@@ -1175,21 +1204,29 @@ pub mod testsupport {
                 ("protocol", Json::str("0.3")),
             ]);
             let seen = Arc::new(Mutex::new(None));
+            let requests = Arc::new(Mutex::new(Vec::new()));
             FakeBackend {
                 inner: Backend::new(
                     Arc::new(FakeBridge {
                         reply,
                         seen: Arc::clone(&seen),
+                        requests: Arc::clone(&requests),
                     }),
                     Arc::new(FakeCore { answer: core }),
                 ),
                 seen,
+                requests,
             }
         }
 
         /// The request the bridge was given last (the tests look at the source of it).
         pub fn last_request(&self) -> Option<Request> {
             self.seen.lock().ok().and_then(|slot| slot.clone())
+        }
+
+        /// Every request the bridge was given, in the order they came (the tests count them).
+        pub fn requests(&self) -> Vec<Request> {
+            self.requests.lock().map(|slot| slot.clone()).unwrap_or_default()
         }
 
         /// The backend itself.

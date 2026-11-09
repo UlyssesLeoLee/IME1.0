@@ -8,6 +8,8 @@ version = "0.1.0"
 dependencies = [
  "pime-core",
  "tase-catalog-mcp",
+ "tase-contract",
+ "tase-executor",
  "windows",
 ]
 
@@ -69,11 +71,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "tase-executor"
+version = "1.1.0"
+dependencies = [
+ "pime-core",
+ "tase-contract",
+ "tase-planner",
+ "tase-registry",
+ "tase-semantic",
+]
+
+[[package]]
+name = "tase-planner"
+version = "1.1.0"
+dependencies = [
+ "pime-core",
+ "tase-contract",
+]
+
+[[package]]
 name = "tase-registry"
 version = "0.1.0"
 dependencies = [
  "pime-core",
  "tase-contract",
+]
+
+[[package]]
+name = "tase-semantic"
+version = "1.1.0"
+dependencies = [
+ "pime-core",
 ]
 
 [[package]]

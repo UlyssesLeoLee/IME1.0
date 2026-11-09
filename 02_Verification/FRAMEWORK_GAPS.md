@@ -1028,7 +1028,7 @@ DD 5.3 / UT-009 原本写的是「默认不吃任何代码字符」。这一轮�
 
 | crate | 职责 | 覆盖的设计节 | 测试 | clippy |
 |---|---|---|---:|---|
-| `tase-executor` | Preview / Apply / Rebase / 冲突判定 / 工作区快照 / **Git CAS 提交** / 撤销 | DD §8.1~§8.3 | **59 通过** | 干净 |
+| `tase-executor` | Preview / Apply / Rebase / 冲突判定 / 工作区快照 / **Git CAS 提交** / 撤销 / **宿主门**（`host.rs`：把编辑交给宿主的那道接缝） | DD §8.1~§8.3 | **68 通过** | 干净 |
 | `tase-agent-scheduler` | 每 Agent 公平队列（加权轮转 / DRR）、四级配额、租约与 **fencing token**、预算、事件分发（至少一次 + 按 Agent 保序） | DD §17.5 | **63 通过** | 干净 |
 | `tase-worker` | 队列消费者、租约与 fencing、沙箱允许清单、ACI 断言与 token/成本/延迟、崩溃恢复（幂等键 + 重放/完成/放弃） | DD §14（S3）、§5.2、§6.2、§7.2、§13 | **74 通过**（含 10 项 doctest） | 干净 |
 | `tase-impls` | 目录里**五十个算法**的 Rust 实现（只用标准库、零第三方、无 unsafe） | DD §19.1 | **111 通过**（含 18 项 doctest） | 干净 |
@@ -1069,10 +1069,41 @@ D-60（`Target.symbol_kind` 是自由字符串）、D-63（Hub 的文件锁没�
 * **两个闸门都改走这条规则**：控制器的采集闸门（`refresh_secure`）与代理的写入闸门（`agent_bridge::may_write`）。
   代理那一侧**线格式没变**（还是 `Secure` 错误），只是判定的出处变成共享策略。
 
+#### 5.21.5 宿主门：执行器接到真的宿主上了（协议与 DLL 一个字节都没改）
+
+这是设计书里最后一段没接的线。DD §8.1 说执行器**不持有 buffer、不写文件**，它把「受约束 diff + 逆操作」交给宿主，
+由宿主**一次编辑**写进去。本仓库的宿主就是**输入法（TSF DLL）**：外部进程要往用户正在编辑的文档里写字，
+只能走桥接（`WM_COPYDATA` → DLL 的桥接窗口）。
+
+| # | 做了什么 | 落点 |
+|---|---|---|
+| 1 | **宿主接缝**：执行器里新增 `host.rs`——`HostTransport`（一个请求出去、一个回答回来）与 `BridgeHost`（实现执行器自己的 `DocumentEditAdapter`） | `crates/tase-executor/src/host.rs` |
+| 2 | **真实传输**：产品侧（唯一能碰到焦点窗口的那一层）用桥接客户端实现那个接缝 | `crates/pime-agent/src/host_transport.rs` |
+| 3 | **两个工具**：`tase_preview`（只看 diff，不写）与 `tase_apply`（真的写进去） | `crates/pime-agent/src/tase.rs` + `mcp.rs` 的工具表 |
+
+**一次调用的顺序**（一条读、一条写，没有第二条写、没有写一半）：
+
+| 步 | 做什么 | 过桥的东西 |
+|---|---|---|
+| 读 | 适配器向宿主要当前文本 | 一次 `ime_read_selection` |
+| 算 | 编辑套用在那份文本上（**UTF-16 偏移**，用核心自己的 `textrange`，不另抄一份算法） | 不走桥 |
+| 写 | 整段新文本写回去 | 一次 `ime_insert_text`（`replace = true`） |
+
+**两条硬约束都守住了**：
+
+* **协议一个字没改**：`pime-core/src/agent_proto.rs`、`schemas/core-protocol-v0.3.json`、**整个 `crates/pime-tsf/`** 都没有 diff
+  （用 `git diff --stat` 核过，输出为空）——用的是**现有的两个 op**，不需要冻结契约开口子。
+* **偏移的单位**：编辑的偏移是 **UTF-16**（协议里每个位置都是这个单位），核心的 `textrange::{validate_offsets, apply_edits}` 负责套用。
+
+**这个宿主的语义要说清楚**：它能改的单元是**光标所在的编辑区（选区）**，不是磁盘上的一个文件——路径只是调用者给这段文本起的名字。
+另外：文本在读与写之间变了 ⇒ **拒绝写**（不把偏移套到别的文本上）；宿主拒绝（密码框 / 没有焦点 / 输入法不在）⇒ `Rejected`；
+宿主没给出确定答案 ⇒ `Failed`（结果未知，绝不谎称写成功）。
+
 #### 5.21.5 门禁与产物
 
 * `pime-tsf` **316 项**测试全绿（本轮 +8：纵向开关 2 项、共享策略 6 项）；clippy 仍只有 D-41 的三条既有告警。
-* **TASE 十五个 crate 合计 1019 项测试**（本轮新增：executor 59 + scheduler 63 + worker 74 + impls 111，Hub 接线 +15），clippy 全部干净（**Hub 一条既有 lint 见 D-81**）。
+* `pime-agent` **74 项**（原 63，宿主门 +11）；`tase-executor` **68 项**（原 59，宿主门 +9）。两个 crate 的 clippy 都是干净的。
+* **TASE 十五个 crate 合计 1028 项测试**（本轮新增：executor 68 + scheduler 63 + worker 74 + impls 111，Hub 接线 +15），clippy 全部干净（**Hub 一条既有 lint 见 D-81**）。
 * **成本基准与延迟基准**（M4 的落点）：新增 `crates/tase-metrics/examples/cost_bench.rs` + `scripts/bench-cost.js`，
   量**本地候选路径的延迟**（设计书 DD-IME §20.2 的 `p95 <= 50 ms`）与**一次模型调用的成本**（token 用核心自己的规则数，
   价格用**操作者自己的价目表**；仓库里那份是**样例**，provider 写的就是 `sample`）。实测 **p50 0.3 µs / p95 28.5 µs / max 60.9 µs**

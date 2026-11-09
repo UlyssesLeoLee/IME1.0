@@ -55,6 +55,7 @@
 pub mod apply;
 pub mod conflict;
 pub mod git_tx;
+pub mod host;
 pub mod preview;
 pub mod rebase;
 pub mod undo;

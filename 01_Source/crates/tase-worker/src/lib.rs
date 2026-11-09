@@ -53,9 +53,12 @@
 //!   of §7.2 are the job of the operating system and of the runner of the commands, which this repository does not
 //!   have yet.
 //! * **The door to the host.** The apply of the worker hands the edits to the `DocumentEditAdapter` of the executor
-//!   and waits for the editor. The IPC that would carry that door (the Named Pipe of the local hub, the crates
-//!   `tase-local-ipc` and `tase-local-hub`) is not there yet, so the binary of this crate runs with a host that
-//!   refuses every job instead of pretending that it wrote something.
+//!   and waits for the editor. In this repository that door is **not** carried by the named pipe of the hub: the only
+//!   process that can reach the focused window is the one that speaks the bridge of the text service (the
+//!   `WM_COPYDATA` bridge of `pime-agent`), so the **client side** holds the adapter and the worker holds the plan
+//!   and the diff. The worker therefore never writes into a document by itself: the binary of this crate runs with a
+//!   host that refuses every job instead of pretending that it wrote something, and the round trip
+//!   "plan → preview → apply" ends in the client that asked for it.
 //! * **The decision of the rebase.** The rebase decision of §5.3 needs the symbol index of the new head, and the
 //!   symbol index belongs to `tase-semantic`. The worker does not depend on the semantic layer: it asks a
 //!   [`runner::RebaseGate`], and the host that owns the index answers it with the decision of `tase-executor`.
