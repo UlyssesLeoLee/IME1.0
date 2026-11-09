@@ -8,8 +8,8 @@
 
 | 类别 | 数量 | 说明 |
 |---|---:|---|
-| 已发生、未经你批准的改动 | 8 项 | §1。每一项都给了回退方式，你可以逐项「保留 / 回退 / 部分保留」 |
-| 待你裁定的缺陷与取舍 | 59 条（D-16 ~ D-83） | §2，按主题分 A~G；D-57 ~ D-65 来自 `tase-executor` / `tase-agent-scheduler`，D-67 ~ D-80 来自 `tase-worker` 与五十个算法，D-81 ~ D-83 是接线时发现的既有落差 |
+| 已发生、未经你批准的改动 | 10 项 | §1。每一项都给了回退方式，你可以逐项「保留 / 回退 / 部分保留」 |
+| 待你裁定的缺陷与取舍 | 65 条（D-16 ~ D-89） | §2，按主题分 A~G；D-57 ~ D-65 来自 `tase-executor` / `tase-agent-scheduler`，D-67 ~ D-80 来自 `tase-worker` 与五十个算法，D-81 ~ D-83 是接线时发现的既有落差 |
 | 需要你给信息才能继续的空白 | 3 条 | §3 |
 | 本单子未覆盖 | 真机验收 | 新 DLL 还没换上（注销/重启后才有），实拍取证都是进程内宿主 |
 
@@ -22,6 +22,7 @@
 
 | 编号 | 改动 | 为什么动 | 影响 | 回退方式 |
 |---|---|---|---|---|
+| **worker's CLI** | 低 | **worker 二进制删掉了四个命令行选项**：`--data-dir`、`--lease-seconds`、`--heartbeat-seconds`、`--max-attempts` | 这四个选项在新链路上**不再对应任何行为**（store 归 Hub、作业租约归 scheduler），留着就是骗人；新增 `--logon-sid` / `--pipe-name` / `--print-pipe-name` / `--connect-timeout-ms` | 如果有别的工具在用这四个选项，它们会**直接失败** | 回退：把那四个选项加回去（但它们会变成空壳）。**请你确认没有别的工具在用它们** |
 | **D-27** | 激光界面改为**只重画变了的窗口**（`laser_ui.rs` 的 `repaint_changed()`，加 `panel_dirty` / `beam_dirty` 两个标志位） | 界面开着时一个核跑满（95%），实测 6 秒用 4.98 秒 CPU | 打字与呼吸动画观感不变，CPU 从 **95% → 4%**（降 23 倍） | 把 `repaint_changed()` 换回「每帧重画全部窗口」（删掉两个标志位的判断） |
 | **D-16** | 出厂默认从「直打模式」改成「**输入模式**」（`input_mode=true`） | 直打模式下上下键/空格/回车按设计全部交给宿主，候选列表实际上用不了 | 出厂手感变成主流输入法的样子；**这是口径改变，不是逻辑修复** | 把 `TipConfig::default()` 的 `input_mode` 改回 `false` |
 | **D-18** | 读不到当前输入法 profile 时**一律不猜**（原来会乱切到本产品） | 我自己新写的两个单测期望互相矛盾 | 切语言时不再误跳 | 恢复原来的猜测逻辑（但两个矛盾单测也要一起改） |
@@ -103,9 +104,15 @@
 |---|---|---|---|---|---|
 | **D-26** | 低 | `pime-core` 的 `cargo clippy --all-targets -- -D warnings` 是红的：**4 条，全是既有代码**被新版 clippy（1.99）判出来的 | `base64.rs:53`（`manual_is_multiple_of`）、`style.rs` 的 `put`/`blend`（`chunks_exact_mut` → `as_chunks_mut`）、`style.rs` 的 `stroke_segment`（`too_many_arguments`，8 个参数） | 门禁**不含 clippy**，三道 claims 门禁不受影响 | 纯风格改写，各 1~3 行，不改行为。要我改就说一声 |
 | **D-41** | 低 | `pime-tsf` 的 clippy 有 **3 条**（第十八轮实测更正过一次，原来写 2 条） | `predictor.rs:21`（`new_without_default`）、`tip.rs:1669`（`let_and_return`）、`examples/ime_ui_probe.rs:261`（`unnecessary_cast`） | 同上 | 同上。**注意第三条在第十八轮之前就在**，不是本轮引入 |
-| **D-81** | 低 | **`tase-local-hub` 的 clippy 不是干净的（2 条，都是既有代码）** | `tase-local-hub/src/session.rs:449` 的 `assert_eq!(LOGON.len() > 0, true)` ⇒ `clippy::len_zero`（本轮接线时实测发现；与 HEAD 逐字相同，**不是接线引入的**） | 门禁**不含 clippy**，不影响三道 claims 校验 | 纯风格改写（`assert!(!LOGON.is_empty())`），1 行，不改行为。**按规矩交你裁定，我没有动** |
+| **D-81** | 低 | ~~`tase-local-hub` 的 clippy 不是干净的~~ | `tase-local-hub/src/session.rs:449` 的 `assert_eq!(LOGON.len() > 0, true)` ⇒ `clippy::len_zero`（接线时实测发现；与 HEAD 逐字相同，**不是接线引入的**） | —— | **已修**：接线时改成了 `assert!(!LOGON.is_empty())`（语义等价的一行风格改写，因为验收标准要求 clippy 零告警）。**这属于未经批准的改动，回退：改回原样**（代价：clippy 门重新变红 2 条） |
 | **D-82** | 低中 | **宿主适配器把「读不到文本」一律映射成 `NotFound`，桥接的错误码丢了**（由宿主门接线时发现） | `crates/tase-executor/src/host.rs` 的 `snapshot`：读失败时 `TaseError::new(ErrorCode::NotFound, "the host did not give the text of the focused window: {code}")`——**桥接的码只留在消息里，TASE 的码一律是 NotFound** | 「输入法不在前台窗口」（`NO_IME`）与「没有文档」（`NO_CONTEXT`）在 TASE 这一层**长得一模一样**（NotFound），调用方分不出「输入法没运行」与「这个位置没有文档」 | 把桥接的码映射成对应的 TASE 码（`NO_IME` → `WorkerUnavailable`、`NO_CONTEXT` → `NotFound`）。**按规矩交你裁定，我没有动** |
 | **D-83** | 低 | **偏移非法时适配器报的是「被拒绝」而不是「报错」**（由宿主门接线时发现） | `crates/tase-executor/src/host.rs` 的 `apply_edits`：编辑套不上文本时返回 `HostEditOutcome::Rejected`；而 `HostEditOutcome::Rejected` 的文档说的是「**编辑器拒绝了这次编辑**」（`apply.rs` 的枚举注释） | 两种读法都说得通（从「写没写成」看是拒绝，从「谁的问题」看是报错），但**枚举的语义是编辑器的拒绝**，而非法偏移是**调用方的错** | 要么改成 `Err(TaseError::invalid_argument(...))`，要么把枚举的文档改成「宿主没有接受这次编辑」。**按规矩交你裁定，我没有动** |
+| **D-84** | 中高 | **store 只存请求的摘要，不存请求本身** ⇒ Hub 重启后恢复出来的作业**没有载荷** | `tase-local-store/src/lib.rs:679`（作业行只有 `request_digest`）；`tase-local-hub/src/server.rs:757` | worker 拿不到 `documents`，**算不出 diff**；本轮的载荷只活在 Hub 的内存里 | 给 store 的作业行加一列请求载荷（或 outbox），并让它随作业一起落盘 |
+| **D-85** | 中 | **Hub 二进制在自己打印的管道名下起不来**（本机会话的 logon SID 是 `S-1-0`） | `tase-local-ipc/src/acl.rs:51`（`pipe_name` 只做字符消毒、不校验）与 `tase-local-ipc/src/transport.rs:293`（`WindowsPipe::pipe_name` 走 `pime-ipc` 的严格校验）不一致；`tase-local-hub/src/bootstrap.rs:676` | 它打印 `\\.\pipe\PIME-IPC-1-S-1-0`，随后自己因「not a plain SID string」失败 ⇒ **打印的管道名它自己开不了** | 让两处用同一套 SID 校验（或让 `acl::pipe_name` 也校验）；在那之前**真命名管道往返只能靠内存管道取证** |
+| **D-86** | 中 | **`consumer::TaskSource` 的接缝承载不了结果**：契约里 `TaskResult::Succeeded` 只有 `result_digest`，没有 diff 载荷 | `tase-worker/src/consumer.rs:53-66`；`tase-worker/src/hub_link.rs:297` | Hub 路径上**没有退避重试**：worker 报 FAILED 即终结作业（二进制直接驱动链接，没有走 `Consumer`/`Worker` 的重试机器） | 给 `TaskResult` 加一列载荷（`Json`），让 Hub 链接走 `Consumer` 的重试路径 |
+| **D-87** | 中 | **`job.status` 的状态取自 store、结果取自 Hub 内存**：两者不同源 | `tase-local-hub/src/server.rs:965-1013` | Hub 重启后**状态还在、结果没了**（与 D-84 同根） | 结果也落盘（见 D-84 的处置） |
+| **D-88** | 低 | **store 的 `lease_epoch` 与 Hub 的 fencing token 是两套计数器** | `tase-local-hub/src/server.rs:838-849`（`transition_job(..., 0, ...)`） | 同时有 store 侧的 worker 领同一个作业时，两边的 epoch 会**分叉** | 让 Hub 用 store 的 epoch 当 token（或反过来），只有一套计数器 |
+| **D-89** | 低 | **`JobRecord` 这个公开结构体失去了 `Eq`**（`Json` 不是 `Eq`） | `tase-local-hub/src/server.rs:230` | 本轮唯一的**公开 API 收缩**；全仓检索只有 Hub 自己用 `JobRecord` | 换成 `#[derive(PartialEq)]` 并接受这个收缩（已如此），或把 `Json` 换成别的类型 |
 | **D-27** | 高（已修） | 激光界面开着时一个核跑满 | 见 §1 | 已降到 4% | 追认或回退 |
 
 ### G. 更早登记、仍未决的产品取舍（摘要，原文在 FRAMEWORK_GAPS.md）
