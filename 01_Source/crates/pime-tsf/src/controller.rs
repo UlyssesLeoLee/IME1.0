@@ -689,7 +689,11 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             stamp,
             at_ms: now_ms,
         });
-        let secure = self.secure_mode || self.host.is_secure_field();
+        // The shared policy of TASE decides (crate::tase_policy): the secure desktop and a password field are
+        // protected contexts, and nothing is collected in them. The host is asked only when the thread is not on
+        // the secure desktop (`||` short-circuits), so the host is still asked once per key event and never on a
+        // key-up.
+        let secure = self.secure_mode || !crate::tase_policy::may_collect(false, self.host.is_secure_field());
         if secure != self.secure {
             self.secure = secure;
             let effects = self.machine.set_secure_context(secure);

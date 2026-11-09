@@ -191,11 +191,15 @@ mod tests {
         assert_eq!(catalog.len(), 93);
         assert!(!catalog.is_empty());
         assert_eq!(catalog.index().len(), 93);
-        // not one implementation
-        assert!(catalog.implementations().is_empty());
+        // The fifty algorithms carry their implementation (the crate `tase-impls`), the forty-three patterns do not.
+        assert_eq!(catalog.implementations().len(), 50);
         for view in catalog.index().views() {
             assert_eq!(view.entry.status, "DOCUMENTED", "{}", view.id());
-            assert!(view.entry.implementations.is_empty(), "{}", view.id());
+            if view.id().starts_with("pattern.") {
+                assert!(view.entry.implementations.is_empty(), "{}", view.id());
+            } else {
+                assert_eq!(view.entry.implementations.len(), 1, "{}", view.id());
+            }
         }
     }
 
@@ -214,13 +218,24 @@ mod tests {
     #[test]
     fn the_governance_of_an_asset_of_the_repository_says_it_is_a_knowledge_card() {
         let catalog = real_catalog();
+        // A pattern carries no implementation: it is a knowledge card, and it says so.
+        let state = catalog
+            .governance_of("pattern.gof.creational.singleton", "rust")
+            .expect("the asset is there");
+        assert_eq!(state.card_status, KnowledgeCardStatus::Documented);
+        assert!(state.recommendable);
+        assert!(!state.instantiable);
+        assert!(state.implementations.is_empty());
+        // An algorithm carries its implementation, which is TESTED and not APPROVED: it may be recommended, but it may
+        // not be instantiated (D-61).
         let state = catalog
             .governance_of("algorithm.graph.dijkstra", "rust")
             .expect("the asset is there");
         assert_eq!(state.card_status, KnowledgeCardStatus::Documented);
         assert!(state.recommendable);
         assert!(!state.instantiable);
-        assert!(state.implementations.is_empty());
+        assert_eq!(state.implementations.len(), 1);
+        assert_eq!(state.implementations[0].status, ImplementationStatus::Tested);
     }
 
     #[test]

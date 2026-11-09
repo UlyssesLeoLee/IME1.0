@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.datastructure.monotonic_stack",
+  "implementation_id": "tase-impls.rust.algorithm.datastructure.monotonic_stack",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/datastructure.rs",
+    "sha256": "0f7ce8033b0bbc83fe0a4aa5dbac330f80ae20ac400bd762c190e1c714cdb45c",
+    "function": "monotonic_stack"
+  },
+  "tests": [
+    "monotonic_stack_finds_the_next_strictly_greater_element",
+    "monotonic_stack_answers_nothing_for_the_equal_elements"
+  ],
+  "command": "cargo test -p tase-impls monotonic_stack"
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.graph.bellman_ford",
+  "implementation_id": "tase-impls.rust.algorithm.graph.bellman_ford",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+    "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+    "function": "bellman_ford"
+  },
+  "tests": [
+    "bellman_ford_asset_computes_the_shortest_distances_with_negative_edges",
+    "bellman_ford_asset_detects_a_negative_cycle"
+  ],
+  "command": "cargo test -p tase-impls bellman_ford"
+}

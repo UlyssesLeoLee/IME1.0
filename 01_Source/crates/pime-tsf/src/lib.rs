@@ -43,6 +43,7 @@ pub mod popup;
 pub mod register;
 pub mod settings_window;
 pub mod skin;
+pub mod tase_policy;
 pub mod tip;
 pub mod ui;
 pub mod uielement;

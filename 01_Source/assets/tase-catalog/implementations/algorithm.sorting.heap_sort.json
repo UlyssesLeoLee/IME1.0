@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.sorting.heap_sort",
+  "implementation_id": "tase-impls.rust.algorithm.sorting.heap_sort",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+    "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+    "function": "heap_sort"
+  },
+  "tests": [
+    "heap_sort_sorts_in_place",
+    "heap_sort_builds_a_max_heap_and_does_not_preserve_the_order_of_equal_keys"
+  ],
+  "command": "cargo test -p tase-impls heap_sort"
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.datastructure.binary_heap",
+  "implementation_id": "tase-impls.rust.algorithm.datastructure.binary_heap",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/datastructure.rs",
+    "sha256": "0f7ce8033b0bbc83fe0a4aa5dbac330f80ae20ac400bd762c190e1c714cdb45c",
+    "function": "binary_heap"
+  },
+  "tests": [
+    "binary_heap_pops_the_values_in_descending_order",
+    "binary_heap_keeps_only_the_root_in_order"
+  ],
+  "command": "cargo test -p tase-impls binary_heap"
+}

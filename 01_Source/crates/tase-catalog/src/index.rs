@@ -433,10 +433,11 @@ mod tests {
     #[test]
     fn the_assets_of_a_language_are_found() {
         let index = real_index();
-        // every asset of the repository is a knowledge card: it is language neutral and it matches
+        // The forty-three patterns carry no implementation: they answer in every language. The fifty algorithms
+        // carry their implementation in Rust, so they answer in Rust only.
         assert_eq!(index.in_language("rust").len(), 93);
-        assert_eq!(index.in_language("typescript").len(), 93);
-        assert_eq!(index.in_language("").len(), 93);
+        assert_eq!(index.in_language("typescript").len(), 43);
+        assert_eq!(index.in_language("").len(), 43);
     }
 
     #[test]

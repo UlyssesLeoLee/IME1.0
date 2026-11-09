@@ -37,7 +37,19 @@
     "time": "O(n)",
     "extra_space": "O(n)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.string.z_algorithm",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/string.rs",
+      "sha256": "8f00079b65c0ae772d1d2c3d7f4287abd990912e455d1c1422e5e2315adbb384",
+      "parameters_schema": "pub fn z_algorithm<T: PartialEq>(s: &[T]) -> Vec<usize>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.string.z_algorithm.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Z_algorithm"

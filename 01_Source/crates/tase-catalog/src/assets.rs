@@ -506,9 +506,21 @@ mod tests {
     fn a_card_without_an_implementation_answers_for_every_language() {
         let views = real_views();
         for view in &views {
-            assert!(view.entry.implementations.is_empty(), "{}", view.id());
-            assert!(view.answers_for("rust"));
-            assert!(view.answers_for("typescript"));
+            // The patterns carry no implementation: they answer in every language. The fifty algorithms carry their
+            // implementation (the crate `tase-impls`), so they answer in the language of that implementation.
+            if view.id().starts_with("pattern.") {
+                assert!(view.entry.implementations.is_empty(), "{}", view.id());
+                assert!(view.answers_for("rust"));
+                assert!(view.answers_for("typescript"));
+            } else {
+                assert_eq!(view.entry.implementations.len(), 1, "{}", view.id());
+                assert!(view.answers_for("rust"), "{}", view.id());
+                assert!(
+                    !view.answers_for("typescript"),
+                    "{} has no implementation in typescript",
+                    view.id()
+                );
+            }
         }
     }
 

@@ -284,22 +284,39 @@ mod tests {
     }
 
     #[test]
-    fn the_repository_holds_no_implementation_at_all() {
+    fn the_repository_holds_the_implementations_of_the_fifty_algorithms() {
+        // The catalogue of this repository carries the implementation of every algorithm of it (the crate
+        // `tase-impls`): one per algorithm, in Rust, in the state TESTED. The patterns carry none - a pattern is a
+        // shape, it is not one algorithm.
         let registry = real_registry();
         let implementations = ImplementationRegistry::from_registry(&registry).expect("the registry is read");
-        assert!(implementations.is_empty());
-        assert_eq!(implementations.len(), 0);
-        assert!(implementations.for_asset("algorithm.graph.dijkstra").is_empty());
-        assert!(implementations.in_language("rust").is_empty());
+        assert_eq!(implementations.len(), 50, "the fifty algorithms of the catalogue");
+        assert_eq!(implementations.in_language("rust").len(), 50);
+        // The implementation of an algorithm is found by its asset and by its language.
+        let dijkstra = implementations.for_asset("algorithm.graph.dijkstra");
+        assert_eq!(dijkstra.len(), 1, "the dijkstra carries its implementation");
+        assert_eq!(dijkstra[0].language, "rust");
+        assert_eq!(dijkstra[0].status, ImplementationStatus::Tested);
+        assert!(dijkstra[0].sha256.is_some(), "a real digest");
+        // Nothing is approved yet: APPROVED needs a person to look at the code (defect D-61).
         assert!(
             implementations
                 .approved_for("algorithm.graph.dijkstra", "rust")
-                .is_none()
+                .is_none(),
+            "nothing is approved yet"
         );
         assert!(
             implementations
                 .with_status(ImplementationStatus::Approved)
-                .is_empty()
+                .is_empty(),
+            "nothing is approved yet"
+        );
+        // A pattern carries no implementation.
+        assert!(
+            implementations
+                .for_asset("pattern.gof.creational.abstract_factory")
+                .is_empty(),
+            "a pattern has no implementation"
         );
     }
 

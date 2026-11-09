@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.sorting.radix_sort",
+  "implementation_id": "tase-impls.rust.algorithm.sorting.radix_sort",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+    "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+    "function": "radix_sort"
+  },
+  "tests": [
+    "radix_sort_sorts_fixed_width_integer_keys",
+    "radix_sort_maps_a_signed_key_in_an_order_preserving_way"
+  ],
+  "command": "cargo test -p tase-impls radix_sort"
+}

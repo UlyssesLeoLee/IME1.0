@@ -920,8 +920,9 @@ mod tests {
             text.contains("the card does not declare whether the asset is thread safe"),
             "{text}"
         );
+        // The algorithm carries its implementation, but it is TESTED and not APPROVED: the answer says so.
         assert!(
-            text.contains("there is no implementation of the asset in rust"),
+            text.contains("the implementation of the asset in rust is not APPROVED"),
             "{text}"
         );
     }
@@ -1083,10 +1084,13 @@ mod tests {
             .and_then(Json::as_array)
             .expect("the reasons");
         let reasons: Vec<&str> = reasons.iter().filter_map(Json::as_str).collect();
+        // The governance reasons name the state of the implementation of the card and the language of it: the
+        // algorithm carries its implementation (the crate `tase-impls`), in the state TESTED, in Rust. The language
+        // is named with it - never left dangling.
         assert!(
             reasons
                 .iter()
-                .any(|reason| reason.contains("no implementation in any language")),
+                .any(|reason| reason.contains("is TESTED in rust")),
             "{reasons:?}"
         );
         for reason in &reasons {
@@ -1101,9 +1105,12 @@ mod tests {
         assert!(
             risks
                 .iter()
-                .any(|risk| risk.contains("in any language")),
+                .any(|risk| risk.contains("does not declare whether the asset is thread safe")),
             "{risks:?}"
         );
+        for risk in &risks {
+            assert!(!risk.ends_with(" in "), "{risk}");
+        }
     }
 
     #[test]
@@ -1119,9 +1126,14 @@ mod tests {
                     ("language", Json::str("rust")),
                 ]),
             )
-            .expect_err("a knowledge card may not be instantiated");
+            .expect_err("an implementation that is not approved may not be instantiated");
         assert_eq!(error.code, ErrorCode::PolicyRejected);
-        assert!(error.message.contains("knowledge card"), "{}", error.message);
+        // The implementation exists, but it is TESTED and not APPROVED: only an approved one may be instantiated.
+        assert!(
+            error.message.contains("not APPROVED"),
+            "{}",
+            error.message
+        );
     }
 
     #[test]

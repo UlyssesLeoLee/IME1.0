@@ -37,7 +37,19 @@
     "time": "O(n^3)",
     "extra_space": "O(n^2)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.dp.interval_dp",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/dp.rs",
+      "sha256": "ed0ffbe6ecec6107340caa8c88cb2a5a69ce6a146b10bf7499db8dbc145c2328",
+      "parameters_schema": "pub fn interval_dp<F>(length: usize, cost: F) -> Result<IntervalSolution, DpError> where F: Fn(usize, usize) -> i64,",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.dp.interval_dp.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Dynamic_programming",

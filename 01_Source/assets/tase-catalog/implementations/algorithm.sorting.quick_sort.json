@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.sorting.quick_sort",
+  "implementation_id": "tase-impls.rust.algorithm.sorting.quick_sort",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+    "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+    "function": "quick_sort"
+  },
+  "tests": [
+    "quick_sort_sorts_and_uses_a_deterministic_pivot",
+    "quick_sort_survives_the_sorted_input_that_breaks_a_first_element_pivot"
+  ],
+  "command": "cargo test -p tase-impls quick_sort"
+}

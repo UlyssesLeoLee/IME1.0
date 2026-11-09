@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.datastructure.hash_table",
+  "implementation_id": "tase-impls.rust.algorithm.datastructure.hash_table",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/datastructure.rs",
+    "sha256": "0f7ce8033b0bbc83fe0a4aa5dbac330f80ae20ac400bd762c190e1c714cdb45c",
+    "function": "hash_table"
+  },
+  "tests": [
+    "hash_table_inserts_finds_and_removes_the_keys",
+    "hash_table_walks_the_entries_in_a_fixed_order"
+  ],
+  "command": "cargo test -p tase-impls hash_table"
+}

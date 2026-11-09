@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.graph.union_find",
+  "implementation_id": "tase-impls.rust.algorithm.graph.union_find",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+    "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+    "function": "union_find"
+  },
+  "tests": [
+    "union_find_asset_merges_and_queries_the_sets",
+    "union_find_asset_refuses_an_element_outside_the_structure"
+  ],
+  "command": "cargo test -p tase-impls union_find"
+}

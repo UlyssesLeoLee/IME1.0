@@ -36,7 +36,19 @@
     "time": "O(n + k)",
     "extra_space": "O(k)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.sorting.counting_sort",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+      "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+      "parameters_schema": "pub fn counting_sort<T: Clone>(items: &mut [T], key: impl Fn(&T) -> usize) -> Result<(), SortingError>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.sorting.counting_sort.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Counting_sort"

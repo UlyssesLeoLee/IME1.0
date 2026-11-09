@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.sorting.quickselect",
+  "implementation_id": "tase-impls.rust.algorithm.sorting.quickselect",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+    "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+    "function": "quickselect"
+  },
+  "tests": [
+    "quickselect_returns_the_kth_smallest_element",
+    "quickselect_rejects_an_index_outside_the_slice"
+  ],
+  "command": "cargo test -p tase-impls quickselect"
+}

@@ -5,7 +5,7 @@
 # libraries, so no MSVC, Windows SDK or binutils is needed. See docs/VERSIONS.md.
 [package]
 name = "pime-tsf"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 license = "MIT"
 publish = false
@@ -37,6 +37,9 @@ path = "../../tests/tsf/ime_selection.rs"
 
 [dependencies]
 pime-core = { path = "../pime-core" }
+# The privacy and the safety rules of TASE are shared: the text service asks the same policy the extension and the
+# agents obey, so the three sides cannot drift apart (DD-IME sections 20.2 and 20.3).
+tase-ime-core = { path = "../tase-ime-core" }
 
 [dependencies.windows]
 version = "=0.58.0"

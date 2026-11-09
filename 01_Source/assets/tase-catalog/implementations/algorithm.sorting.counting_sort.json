@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.sorting.counting_sort",
+  "implementation_id": "tase-impls.rust.algorithm.sorting.counting_sort",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+    "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+    "function": "counting_sort"
+  },
+  "tests": [
+    "counting_sort_sorts_and_keeps_the_order_of_equal_keys",
+    "counting_sort_rejects_a_key_range_that_does_not_fit_in_memory"
+  ],
+  "command": "cargo test -p tase-impls counting_sort"
+}

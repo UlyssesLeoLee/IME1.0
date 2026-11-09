@@ -37,7 +37,19 @@
     "time": "O(log n) 查询与更新，建树 O(n)",
     "extra_space": "O(n)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.datastructure.segment_tree",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/datastructure.rs",
+      "sha256": "0f7ce8033b0bbc83fe0a4aa5dbac330f80ae20ac400bd762c190e1c714cdb45c",
+      "parameters_schema": "pub fn segment_tree(values: &[i64]) -> SegmentTree",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.datastructure.segment_tree.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Segment_tree"

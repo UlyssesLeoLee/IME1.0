@@ -36,7 +36,19 @@
     "time": "O(E log V) 堆实现 / O(V²) 矩阵实现",
     "extra_space": "O(V)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.graph.prim",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+      "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+      "parameters_schema": "pub fn prim(graph: &Graph) -> Result<MinimumSpanningTree, GraphError>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.graph.prim.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Prim%27s_algorithm"

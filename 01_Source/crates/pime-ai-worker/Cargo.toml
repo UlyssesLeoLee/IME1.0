@@ -4,7 +4,7 @@
 # binutils `dlltool`/`as` on the x86_64-pc-windows-gnu toolchain). See docs/VERSIONS.md and docs/AI_WORKER.md.
 [package]
 name = "pime-ai-worker"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 license = "MIT"
 publish = false

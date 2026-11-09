@@ -1,0 +1,19 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.dp.longest_increasing_subsequence",
+  "implementation_id": "tase-impls.rust.algorithm.dp.longest_increasing_subsequence",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/dp.rs",
+    "sha256": "ed0ffbe6ecec6107340caa8c88cb2a5a69ce6a146b10bf7499db8dbc145c2328",
+    "function": "longest_increasing_subsequence"
+  },
+  "tests": [
+    "longest_increasing_subsequence_asset_finds_the_longest_run",
+    "longest_increasing_subsequence_asset_on_the_boundary_inputs",
+    "longest_increasing_subsequence_asset_is_strictly_increasing"
+  ],
+  "command": "cargo test -p tase-impls longest_increasing_subsequence"
+}

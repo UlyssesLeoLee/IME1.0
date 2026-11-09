@@ -1,0 +1,36 @@
+# TASE-AGENT-SCHEDULER: the fair queues of the agents, the resource quotas, the leases with their fencing
+# tokens, the budgets and the dispatch of the events (detailed design §17.5).
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that the
+# Local Agent Hub can build it on its own, next to tase-local-ipc and tase-local-store.
+#
+# The crate never goes on the network, never reads the clock and never touches the disk: every time comes
+# from the caller, so a TTL, a rate window and an age are exact in a test.
+[package]
+name = "tase-agent-scheduler"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE agent scheduler: the fair queues, the quotas, the leases and the fencing, the budgets and the events"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_agent_scheduler"
+path = "src/lib.rs"
+
+[dependencies]
+# The identifiers and the business error codes come from the contract layer. No other dependency is allowed.
+tase-contract = { path = "../tase-contract" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take the Hub down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

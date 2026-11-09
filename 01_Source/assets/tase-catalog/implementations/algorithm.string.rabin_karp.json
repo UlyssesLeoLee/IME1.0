@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.string.rabin_karp",
+  "implementation_id": "tase-impls.rust.algorithm.string.rabin_karp",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/string.rs",
+    "sha256": "8f00079b65c0ae772d1d2c3d7f4287abd990912e455d1c1422e5e2315adbb384",
+    "function": "rabin_karp"
+  },
+  "tests": [
+    "rabin_karp_finds_the_same_matches_as_the_naive_search",
+    "rabin_karp_verifies_the_candidates_after_a_collision"
+  ],
+  "command": "cargo test -p tase-impls rabin_karp"
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.graph.kruskal",
+  "implementation_id": "tase-impls.rust.algorithm.graph.kruskal",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+    "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+    "function": "kruskal"
+  },
+  "tests": [
+    "kruskal_asset_builds_the_cheapest_tree",
+    "kruskal_asset_refuses_a_directed_graph_and_a_disconnected_graph"
+  ],
+  "command": "cargo test -p tase-impls kruskal"
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.math.fast_power",
+  "implementation_id": "tase-impls.rust.algorithm.math.fast_power",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/math.rs",
+    "sha256": "6a4bc648ba631e7d2d9defa55b3952e6edd2619d46abebbe87b356dec513e341",
+    "function": "fast_power"
+  },
+  "tests": [
+    "fast_power_computes_the_exact_power",
+    "fast_power_reports_an_overflow_instead_of_wrapping_around"
+  ],
+  "command": "cargo test -p tase-impls fast_power"
+}

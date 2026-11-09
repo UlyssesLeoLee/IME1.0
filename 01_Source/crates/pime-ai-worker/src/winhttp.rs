@@ -40,7 +40,7 @@ use windows::core::PCWSTR;
 /// `WINHTTP_DECOMPRESSION_FLAG_ALL` (gzip | deflate); not exported by the pinned `windows` version.
 const DECOMPRESSION_ALL: u32 = 3;
 const READ_CHUNK: usize = 16 * 1024;
-const AGENT: &str = "ProgrammingIME-AIWorker/0.2.2";
+const AGENT: &str = "ProgrammingIME-AIWorker/0.3.0";
 
 #[derive(Clone, Copy)]
 struct Handle(*mut c_void);

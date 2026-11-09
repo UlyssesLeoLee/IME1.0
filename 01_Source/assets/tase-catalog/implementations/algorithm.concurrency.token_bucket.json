@@ -1,0 +1,19 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.concurrency.token_bucket",
+  "implementation_id": "tase-impls.rust.algorithm.concurrency.token_bucket",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+    "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+    "function": "token_bucket"
+  },
+  "tests": [
+    "token_bucket_grants_the_burst_and_then_refuses",
+    "token_bucket_never_grants_more_than_the_capacity_under_concurrency",
+    "token_bucket_rejects_a_bucket_without_capacity"
+  ],
+  "command": "cargo test -p tase-impls token_bucket"
+}

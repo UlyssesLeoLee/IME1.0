@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.concurrency.work_stealing",
+  "implementation_id": "tase-impls.rust.algorithm.concurrency.work_stealing",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+    "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+    "function": "work_stealing"
+  },
+  "tests": [
+    "work_stealing_runs_every_task_exactly_once",
+    "work_stealing_steals_a_task_from_another_worker"
+  ],
+  "command": "cargo test -p tase-impls work_stealing"
+}

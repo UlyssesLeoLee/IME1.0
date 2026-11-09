@@ -37,7 +37,19 @@
     "time": "O(n log k)",
     "extra_space": "O(k)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.sorting.top_k_heap",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+      "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+      "parameters_schema": "pub fn top_k<T: Ord>(items: impl IntoIterator<Item = T>, k: usize) -> Vec<T>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.sorting.top_k_heap.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Selection_algorithm",

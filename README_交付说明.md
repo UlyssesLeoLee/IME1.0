@@ -1,8 +1,8 @@
-# IME1.0（编程输入法）— 设计文档与源码合集（v0.2.2）
+# IME1.0（编程输入法）— 设计文档与源码合集（v0.3.0）
 
-- 交付版本：**Code v0.2.2**（2026-11-07）；**安装包与框架矩阵 v0.2.2（2026-11-07）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
+- 交付版本：**Code v0.3.0**（2026-11-07）；**安装包与框架矩阵 v0.3.0（2026-11-07）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
 - 产品名称：**IME1.0**，描述：**编程输入法**。语言栏里三个语言 profile 显示为「IME1.0 中文」「IME1.0 English」「IME1.0 日本語」，「添加/删除程序」里的名称是 IME1.0、说明（Comments）是「编程输入法」。**安装目录改为 `C:\Program Files\IME1.0`**：**程序永远在自己名为 `IME1.0` 的文件夹里**，向导与 `--prefix` 给的都是它的**上级**（默认 → `C:\Program Files\IME1.0`；选 `D:\` → `D:\IME1.0`；选 `D:\Tools` → `D:\Tools\IME1.0`），**磁盘根目录永远不会成为安装目录**。机器上已装的旧版（`C:\Program Files\Programming IME`）**不会原地升级**：改名会让旧副本变成孤儿目录（旧的 CLSID 注册仍指向旧 DLL），所以向导会提示旧版残留并要求**先卸载旧版再装新版**（详见 `02_Verification/FRAMEWORK_GAPS.md` 的待裁定项）。
-- **已发布：[GitHub Release `v0.2.1`]（那是上一版）**；当前源码是 **v0.2.2**(https://github.com/UlyssesLeoLee/IME1.0/releases/tag/v0.2.1)（2026-11-05，未签名）**——本仓库第一个公开版本：`ProgrammingIME-0.2.1-win-x64-setup.exe`（9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9`）与 VS Code 扩展 `programming-ime-vscode-bridge-0.2.1.vsix`。**没有代码签名**（SmartScreen 会报未知发布者），**系统输入法尚未在真实宿主里验证过**。
+- **已发布：[GitHub Release `v0.2.1`]（那是上一版）**；当前源码是 **v0.3.0**(https://github.com/UlyssesLeoLee/IME1.0/releases/tag/v0.2.1)（2026-11-05，未签名）**——本仓库第一个公开版本：`ProgrammingIME-0.2.1-win-x64-setup.exe`（9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9`）与 VS Code 扩展 `programming-ime-vscode-bridge-0.2.1.vsix`。**没有代码签名**（SmartScreen 会报未知发布者），**系统输入法尚未在真实宿主里验证过**。
 - 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；Windows 系统输入法已在真实系统上完成一次提权安装（2026-11-04）**。系统输入法（`01_Source/crates/pime-tsf`，纯 Rust）已能构建 x64 DLL 并通过产物检查；按键处理（TIP）、候选窗和注册代码都已写成并通过单元测试。**2026-11-04 13:52 在本机做了一次提权安装**（`--silent --prefix D:\`，12 步全过，regsvr32 不再报 `E_FAIL`），注册表里三个语言 profile（中文 / English / 日本語）都指向 `D:\IME1.0\pime.ico`；**但真实宿主里的打字、候选选择、Ctrl+F12 切换、语音识别仍然没有验证过**。安装包已产出（`01_Source/dist/ProgrammingIME-0.2.1-win-x64-setup.exe`，未签名），正式发布仍暂停。**2026-11-04 第十五轮**：切输入法 / 切语言后悬浮窗不再残留（新增活动语言档通知 + 重入延迟收工），**悬浮界面统一到左侧蓝色微光激光口区域（悬浮栏整块删除，右下角只留品牌 logo）**，**快捷键设计归档成 `01_Source/docs/HOTKEYS.md`，并补上了唯一没做的 Alt+F2（切换语言）**。
 - 框架完整性：见 `02_Verification/IME_FRAMEWORK_MATRIX.md`（逐项矩阵，含代码位置与测试证据）；未实现项与待裁定事项见 `02_Verification/FRAMEWORK_GAPS.md`。
 
@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，699 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，793 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -59,7 +59,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **308 / 308** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **63 / 63** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **316 / 316** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **63 / 63** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器的实际安装/卸载与签名、IPC 的异用户/远程场景、AI Worker 与扩展的对接、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
@@ -332,3 +332,51 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 10. `tase-semantic`（AST 索引）、`tase-executor`（Preview/Apply/Git CAS）、`tase-local-hub` / `-store` / `tase-agent-scheduler`（常驻 Hub、公平队列、租约）、`tase-catalog`（Rust 侧）、`tase-catalog-mcp`（MCP 工具）——**都还没写**；`pime-agent` 也**还没有** `tase.*` 工具。**M0 与 M1 的一部分已落地，M1 的 Hub 与 M2 还没落地。**
 11. **这套设计是为另一个仓库 IDE1.0 写的**（它假定有 `ide-kernel` / `editcore` / `ide-shell-protocol`）；本仓库的对应物是 `pime-core` / `pime-agent` / `pime-ipc` / `pime-tsf`，落地时是按映射文档逐条适配的，不是照单施工。
 12. **新 crate 没有进根 workspace**（沿用 `pime-agent` 的独立 workspace 惯例），因此主 workspace 的测试数不变，另有门禁单独跑它们。
+
+## 2026-11-07 第二十二轮改动（本轮：纵向模式进设置窗 + TASE 执行器/调度器 + 五十个算法的实现 + 缺陷提交单）
+
+### 一、纵向书写模式：设置窗里也有开关了
+
+1. **落盘的开关**：`ImeSettings` 多了全局字段 `vertical`（写进 `%LOCALAPPDATA%\Programming IME\settings.json` 的 `"vertical"`）。
+2. **设置窗「常规」页**多了复选框「**纵向书写（文字排成一列，Ctrl+Alt+V 也可以切）**」；保存后**运行中的输入法立刻跟着变**，不用重启。
+3. **两个开关的分工**：**Ctrl+Alt+V 切的是本次会话**（不落盘），**设置窗里那个是落盘的**（下次启动照它）。这条语义写在代码注释里，也写在 `01_Source/docs/HOTKEYS.md` 的口径里。
+
+### 二、TASE：执行器与调度器落地
+
+4. **`tase-executor`（59 项测试全绿、clippy 干净）**：Preview / Apply / Rebase / 冲突判定 / 工作区快照 / **Git CAS 提交** / 撤销。
+   它**不持有文本 buffer**——本仓库的 `pime-core` 没有 `Document`（设计落差 G1），所以按裁定方向产出「**受约束 diff + 逆操作**」，
+   交宿主编辑器单次 `applyEdit`；撤销是**一个事务对象**。Git CAS 的原子性边界是 **ref**：所有文件进同一个 tree、同一个 commit object，
+   ref 只移动一次，head 不匹配就拒绝且**工作区不动**。
+5. **`tase-agent-scheduler`（63 项测试全绿、clippy 干净）**：每 Agent **公平队列**（加权轮转 / DRR）、四级资源配额、
+   **租约与 fencing token**（token 单调递增，旧持有者的迟到写入被拒）、token/成本预算、事件分发（**至少一次** + 按 Agent 保序）。
+   它的**时间是注入的**，所以 TTL 与退避都能被确定性测试覆盖，**没有一个 sleep 型测试**。
+6. **`tase-worker`（74 项测试全绿、clippy 干净）**：队列消费者（退避重试）、租约与 fencing、沙箱允许清单、ACI 断言与 token/成本/延迟、崩溃恢复（幂等键 + 重放/完成/放弃）。**它是最后一个核心 crate**——十五个 TASE crate 到此全部落地。
+7. **十五个 crate 的落点与依赖方向**写在 `01_Source/docs/TASE_CRATES.md`；对照稿新增 §9「实现现状（2026-11-07 观察）」。
+
+### 三、TASE：目录里的五十个算法第一次有了真正的实现与认证登记
+
+8. **新 crate `tase-impls`**：**只用标准库**、零第三方依赖、无 unsafe；目录里**五十个算法**（排序 7 / 查找 5 / 图 9 / DP 6 / 字符串 6 /
+   数据结构 6 / 数学 6 / 并发 5）按分类分模块实现，**111 项测试 + 18 项 doctest 全绿**；并发那五个是真多线程实现（阻塞/拒绝背压、工作窃取、令牌桶）。
+9. **登记脚本** `scripts/collect-implementations.js` 读代码里的标记（`* asset:` / `* card:`），把实现写回资产的 manifest：
+   实现所在文件、**该文件的真实 SHA-256**（LF 归一化，与 `MANIFEST_SHA256.txt` 同一把尺子）、函数签名、**具名测试清单**。
+10. **校验器升级** `scripts/validate-tase-catalog.js`：现在逐条核对——文件必须在、**摘要必须对得上**（占位摘要过不去）、
+   声明 `TESTED` 的必须有一条具名测试。**认证状态停在 `TESTED`，不是 `APPROVED`**（那要人签字，见 D-61）。
+
+### 四、输入法与 TASE 共用同一条隐私规则
+
+11. `pime-tsf` 现在**依赖 `tase-ime-core`**；新模块 `crates/pime-tsf/src/tase_policy.rs` 把宿主的答案（密码框？安全桌面？）
+    映射成 TASE 的上下文，再问**共享的那把尺子**：五种受保护上下文一律拒绝，理由用共享的那套词。
+    **控制器的采集闸门与代理的写入闸门都改走这条规则**（代理那一侧线格式没变，还是 `Secure` 错误）。
+
+### 五、缺陷提交单（本轮的新交付物）
+
+12. **`02_Verification/DEFECT_SUBMISSION_2026-11-07.md`**：把散在各节的待裁定项**收成一张单子**——
+    **§1 已发生但未经你批准的改动（8 项，每项都给了回退方式）**、**§2 待你裁定的缺陷与取舍（56 条，逐条给严重度/证据/影响/建议处置）**、
+    **§3 只需要你回答的三个问题**（D-53 存储选型、D-51 要不要引 AST 依赖、D-42 面板入口的快捷键用哪个键）。
+
+### 六、这一轮**没有**验证的（不虚报）
+
+13. **真机**：新 DLL 还没换上（注销/重启后才有）。设置窗开关与共享隐私策略只过了**单元测试**，没有新的实拍截图。
+14. **安装包**：0.3.0 的包用 `--skip-dry-run` 构建——360 安全卫士会「执行即隔离」未签名的安装包，本机跑不了它自己的 dry-run 自检
+    （其余自检全过：x64 PE、只导入系统 DLL、载荷 10 条的页脚哈希由独立读取器验证）。
+15. **TASE 还没接线**：执行器与调度器是**可用的库**，还没有被 Hub / Worker / Agent 调用；接线前要先裁定 D-63 与 D-64。

@@ -1006,3 +1006,94 @@ DD 5.3 / UT-009 原本写的是「默认不吃任何代码字符」。这一轮�
 3. **D-55（新增）：`tase-catalog` 的打分权重是我定的**（意图 60 / 约束 15 / 复杂度 10 / 实现 15）——设计书 §17.4 只说「先硬门禁再评分」，没给数值。**权重是口味，不是对错**，你要调我就调。
 4. **D-56（新增）：`tase-semantic` 的解析是「结构化行级扫描」，不是完整 AST**（D-51 未决，本轮一律零依赖 ⇒ 没引 `syn`/`tree-sitter`）。它认得 `fn`/`struct`/`impl`/`trait`/`enum`/`const` 与 TS 的 `function`/`class`/`interface`/`type`，**遇到不认识的写法老实跳过**。想要真正的 AST，得先定 D-51。
 5. **D-27 仍需你追认**（见 5.20.1）；**D-26 / D-41 的 clippy 仍未决**（`pime-core` 4 条、`pime-tsf` 2 条 + 1 条 example，全是既有代码，本轮没动）；**D-42 ~ D-52 仍未决**。
+
+### 5.21 第二十二轮（2026-11-07）：纵向模式有了开关、TASE 的执行器与调度器落地、五十个算法有了实现、缺陷提交单
+
+这一轮接的是你早先那句**「完成后续所有内容的开发和测试」**，以及你点过的一件小事：纵向书写模式只有热键、没有开关。
+本轮做完四件事：**纵向模式进了设置窗**、**TASE 的执行器与调度器落地**、**目录里的五十个算法第一次有了真正的实现与认证登记**、
+**输入法与 TASE 共用同一条隐私规则**。另外把**所有待你裁定的事**整理成了一份**缺陷提交单**（§5.21.6）。
+
+#### 5.21.1 纵向书写模式：设置窗里也有开关了
+
+| # | 做了什么 | 落点 | 证据 |
+|---|---|---|---|
+| 1 | `ImeSettings` 多了**全局**字段 `vertical`，落盘为 `"vertical": true/false` | `crates/pime-tsf/src/imesettings.rs` | 单测 `the_vertical_writing_mode_survives_the_file`：写进去、读回来；不写这个键的文件仍是出厂默认（关） |
+| 2 | 设置窗「常规」页多了复选框：**「纵向书写（文字排成一列，Ctrl+Alt+V 也可以切）」** | `crates/pime-tsf/src/settings_window.rs`（`Toggle::Vertical`） | 单测 `the_vertical_writing_mode_has_a_check_box_of_its_own`：开关在版面上有自己的盒子，标签写着它做什么 |
+| 3 | 保存设置时，运行中的控制器**立刻**跟着变 | `crates/pime-tsf/src/tip.rs` 的 `reload_settings` | 写进 `apply_settings` 之后紧跟 `controller.set_vertical_mode(settings.vertical)` |
+
+**两个开关的语义**（这是设计决定，写在代码注释里）：**Ctrl+Alt+V 是本次会话的开关**（不落盘），
+**设置窗里的那个是落盘的那个**（下次启动照它）。因此「用热键切了模式 → 之后在设置窗点保存」会把模式退回设置文件里的值。
+
+#### 5.21.2 TASE：执行器与调度器落地（两个 crate，我独立复跑过）
+
+| crate | 职责 | 覆盖的设计节 | 测试 | clippy |
+|---|---|---|---:|---|
+| `tase-executor` | Preview / Apply / Rebase / 冲突判定 / 工作区快照 / **Git CAS 提交** / 撤销 | DD §8.1~§8.3 | **59 通过** | 干净 |
+| `tase-agent-scheduler` | 每 Agent 公平队列（加权轮转 / DRR）、四级配额、租约与 **fencing token**、预算、事件分发（至少一次 + 按 Agent 保序） | DD §17.5 | **63 通过** | 干净 |
+| `tase-worker` | 队列消费者、租约与 fencing、沙箱允许清单、ACI 断言与 token/成本/延迟、崩溃恢复（幂等键 + 重放/完成/放弃） | DD §14（S3）、§5.2、§6.2、§7.2、§13 | **74 通过**（含 10 项 doctest） | 干净 |
+| `tase-impls` | 目录里**五十个算法**的 Rust 实现（只用标准库、零第三方、无 unsafe） | DD §19.1 | **111 通过**（含 18 项 doctest） | 干净 |
+
+**两个设计要点**（不是我定的，是实现的必然）：
+
+* **执行器不持有 buffer**：本仓库的 `pime-core` 没有 `Document`/`apply`（映射文档 §7-G1），所以按裁定方向 (a)，
+  执行器产出「**受约束 diff + 逆操作**」，交宿主编辑器单次 `applyEdit`；撤销是**一个事务对象**（整份 plan 的逆操作合成一个）。
+* **Git CAS 的原子性边界 = ref**：`create_commit` 用临时 index 把 plan 的**所有文件写进同一个 tree、同一个 commit object**，
+  ref 只移动一次（`git update-ref <ref> <new> <old>` 三参形式）。head 不匹配就拒绝，**工作区、index、ref 都不变**：不 force、不 reset --hard。
+
+**调度器的时间是注入的**：crate 里没有自己的时钟（`Timestamp` + `LogicalClock` 由调用者推进），
+所以 TTL、租约过期、退避窗口都能被确定性测试覆盖，**没有一个 sleep 型测试**。
+
+**这两个 crate 各自报了实现期的落差，我没有替它们改别人的代码**，全部进了缺陷提交单：
+D-57（core 无 `Document`/undo 栈）、D-58（core 拒绝多文件 plan）、D-59（`symbol_signature_hash` 无规范定义）、
+D-60（`Target.symbol_kind` 是自由字符串）、D-63（Hub 的文件锁没有 fencing token）、D-64（租约职责重叠）、D-65（outbox 表容不下按订阅者 ack）。
+
+#### 5.21.3 TASE：五十个算法第一次有了真正的实现与认证登记
+
+| # | 做了什么 | 落点 |
+|---|---|---|
+| 1 | 新 crate `tase-impls`：**只用标准库**、零第三方依赖、`#![forbid(unsafe_code)]`、每个算法一个模块（按目录的 8 个分类） | `crates/tase-impls/` |
+| 2 | 每个实现的文档注释都带**两行标记**（登记脚本靠它把代码和目录对上）：`* asset: \`algorithm.sorting.merge_sort\`` 与 `* card: \`01_Source/assets/.../card.md\`` | 同上 |
+| 3 | **登记脚本**读这些标记，把实现写回资产的 `manifest.json`：`path`（实现所在文件）、`sha256`（**该文件的真实摘要**，按 LF 归一化，与 `MANIFEST_SHA256.txt` 同一把尺子）、`parameters_schema`（函数签名）、`tests_manifest`（具名测试清单） | `01_Source/scripts/collect-implementations.js` |
+| 4 | **校验器现在逐条核对**：实现指向的文件必须在、**摘要必须对得上**（占位摘要过不去）、声明 `TESTED` 的必须有一条具名测试 | `01_Source/scripts/validate-tase-catalog.js` |
+
+**认证状态是诚实的**：这五十个实现登记为 **`TESTED`**（有具名测试），**不是 `APPROVED`** ——
+`APPROVED` 需要一个人看过代码并签字，那是你的裁定（**D-61**）。知识卡的状态仍是 `DOCUMENTED`（卡与实现是两条轴，RD §14.4）。
+
+#### 5.21.4 输入法与 TASE 共用同一条隐私规则
+
+* `pime-tsf` 现在**依赖 `tase-ime-core`**（TSF crate 第一次依赖 TASE crate），依赖方向仍是 contract 在底、TSF 在上。
+* 新模块 `crates/pime-tsf/src/tase_policy.rs`：把宿主的答案（**是不是密码框**、**是不是安全桌面**）映射成
+  TASE 的上下文，再问**共享的那把尺子**（`tase-ime-core::policy`）：密码框 / 安全桌面 / UAC / AppContainer /
+  浏览器安全输入 → **拒绝**，理由用共享的那套词（`password: the candidates are disabled in a password control` …）。
+* **两个闸门都改走这条规则**：控制器的采集闸门（`refresh_secure`）与代理的写入闸门（`agent_bridge::may_write`）。
+  代理那一侧**线格式没变**（还是 `Secure` 错误），只是判定的出处变成共享策略。
+
+#### 5.21.5 门禁与产物
+
+* `pime-tsf` **316 项**测试全绿（本轮 +8：纵向开关 2 项、共享策略 6 项）；clippy 仍只有 D-41 的三条既有告警。
+* **TASE 十五个 crate 合计 1004 项测试**（本轮新增：executor 59 + scheduler 63 + worker 74 + impls 111），clippy 全部干净。
+* 门禁新增/改了三处：`run-all.js` 的 TASE crate 列表加上 `tase-impls`；TASE 这一步现在**先核对登记**（实现条目里的摘要必须等于文件的实际摘要）**再校验目录**（93 张卡 + 50 条实现的字段、摘要与测试清单）；目录校验器不再禁止 `IMPLEMENTED/TESTED` 状态，但开始逐条核对摘要与具名测试。
+* **登记改变了三处既有断言**（都是「目录里没有实现」的旧事实）：`tase-registry` 的 `the_catalog_of_the_repository_is_loaded`、`tase-catalog` 的四处（治理/推荐/索引/资产视图）、`tase-catalog-mcp` 的两处。改的是**断言**，不是实现：现在它们分别断言「五十个算法各有一条 `TESTED` 实现、四十三个模式一条也没有」「没有一条被 `APPROVED`」。
+* 新增两份文档：`01_Source/docs/TASE_CRATES.md`（十五个 crate 的落点与依赖方向）、本节的对照稿新增 §9「实现现状（2026-11-07 观察）」。
+* **版本 0.3.0**：安装包 `ProgrammingIME-0.3.0-win-x64-setup.exe`（10,157,083 字节，sha256 `ef907b2be3bf814997c70e105131b389cfb1fc6ec2744375b9a240527a9b0ff9`），扩展 `programming-ime-vscode-bridge-0.3.0.vsix`（218,968 字节）；清单 **793 条**全部对得上。
+
+#### 5.21.6 缺陷提交单（本轮的新交付物）
+
+**`02_Verification/DEFECT_SUBMISSION_2026-11-07.md`**：把散在本文各节的待裁定项**收成一张单子**：
+
+* **§1 已发生、但未经你批准的改动（8 项）**：每一项都写了「为什么动」「影响什么」「**怎么回退**」，由你逐项说「保留 / 回退 / 部分保留」——
+  我不替你选。含 D-27（只重画变化窗口）、D-16（出厂默认改输入模式）、D-53（rusqlite 破例）、D-51/D-56（零依赖的行级扫描）、D-55（打分权重）。
+* **§2 待你裁定的缺陷与取舍（56 条，D-16 ~ D-80）**：按主题分 A~G（界面与交互 / 协议与契约 / 依赖与许可 / 管道与安全 / 打包口径 / 质量与性能 / 更早的取舍），
+  每条给**严重度、证据（文件:行）、影响、建议处置**。
+* **§3 只需要你回答三个问题**：D-53（SQLite 还是零依赖）、D-51（要不要引 AST 依赖）、D-42（面板入口的快捷键用哪个键）。
+
+#### 5.21.7 这一轮**没有**验证的地方（不虚报）
+
+* **真机**：新 DLL 还没换上（注销/重启后才有）。本轮的设置窗开关与共享隐私策略都只经过**单元测试**，
+  进程内探针的截图仍是上一轮那三道口的图，**没有**新截图。
+* **安装包**：0.3.0 的包是用 `--skip-dry-run` 构建的——**360 安全卫士会「执行即隔离」未签名的安装包**，
+  本机跑不了它自己的 dry-run 自检（其余自检全过：x64 PE、只导入系统 DLL、载荷 10 条的页脚哈希由独立读取器验证）。
+* **TASE 的接线**：执行器与调度器**还没有**被 Hub、Worker 或 Agent 调用——它们是**可用的库**，不是已接线的功能。
+  接线前要先裁定 D-63（Hub 的文件锁没有 fencing token）与 D-64（租约职责重叠）。
+* **50 个算法的实现**：**认证状态是 `TESTED` 不是 `APPROVED`**；并发那五个是真多线程实现，但只在单元测试里跑过，
+  没有做过长时间的压力测试。

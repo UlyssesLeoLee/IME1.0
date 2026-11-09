@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.math.euclidean_gcd",
+  "implementation_id": "tase-impls.rust.algorithm.math.euclidean_gcd",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/math.rs",
+    "sha256": "6a4bc648ba631e7d2d9defa55b3952e6edd2619d46abebbe87b356dec513e341",
+    "function": "euclidean_gcd"
+  },
+  "tests": [
+    "euclidean_gcd_computes_the_greatest_common_divisor",
+    "euclidean_gcd_does_not_give_the_coefficients_of_the_bezout_identity"
+  ],
+  "command": "cargo test -p tase-impls euclidean_gcd"
+}

@@ -1,4 +1,4 @@
-# 输入法框架完整性矩阵（Programming IME v0.2.2）
+# 输入法框架完整性矩阵（Programming IME v0.3.0）
 
 - 生成日期：2026-11-05（**第十六轮：设置窗六页页签 + 候选列表归位左侧激光面板 + 自带中日英词库 + 分层窗口原子移动**；安装包与 §5 全部数字已整体刷新到本轮）
 - 代码基线：`fa17ddd` + 本轮改动（工作区未提交）
@@ -28,9 +28,9 @@
 
 | 项 | 值 |
 |---|---|
-| 文件 | `01_Source/dist/ProgrammingIME-0.2.2-win-x64-setup.exe` |
-| 大小 | 10,132,518 字节 |
-| SHA-256 | `23776fa0c34c7352508b63fe46d9c59db3f46c682432981bb3e349736945ac50` |
+| 文件 | `01_Source/dist/ProgrammingIME-0.3.0-win-x64-setup.exe` |
+| 大小 | 10,157,083 字节 |
+| SHA-256 | `ef907b2be3bf814997c70e105131b389cfb1fc6ec2744375b9a240527a9b0ff9` |
 | 形态 | x64 控制台子系统 EXE；载荷以 PE overlay 附在桩程序之后 |
 | 桩程序 | `pime-setup.exe`，788,480 字节（含安装向导与内嵌 logo） |
 | 载荷（`pime_tsf.dll` 2,632,704 B ／ `pime-core.exe` 3,214,200 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,138 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 1,104,896 B ／ `pime-ai-worker.exe` 400,896 B ／ `pime-mcp.exe` 706,560 B ／ `pime-ime.exe` 762,880 B ／ `meta.json` 87 B 条） |  |
@@ -199,7 +199,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | 检查 | 结果 | 证据 |
 |---|---|---|
 | Rust 核心 `cargo test --workspace` | **441 / 441 通过**（本轮新增**AI 代理的线上契约** `pime-core/src/agent_proto.rs`：请求 / 回答 / 6 个操作 / 8 个错误码 / 载荷上限 / 消息码 / 窗口类名与标题前缀，10 项往返单测） | `run-all-2026-11-04.log` |
-| Rust TSF `cargo test` | **308 / 308 通过**（本轮新增 **DLL 侧的 AI 桥接**：`agent_bridge.rs`（隐藏桥接窗口 + `WM_COPYDATA` 收发 + 密码框不写 + 结构体布局）与 `tip.rs` 的接线（写入光标处 / 替换选区 / 读选区 / 切语言 / 状态）；另修掉一个**真缺陷**：桥接窗口**第二次就打不开**（类注册结果记在局部变量里，`Once` 的闭包只执行一次 ⇒ 切走再切回来，AI 就再也叫不动输入法），并补了**真机跨进程往返**测试） | `run-all-2026-11-04.log` |
+| Rust TSF `cargo test` | **316 / 316 通过**（本轮新增 **DLL 侧的 AI 桥接**：`agent_bridge.rs`（隐藏桥接窗口 + `WM_COPYDATA` 收发 + 密码框不写 + 结构体布局）与 `tip.rs` 的接线（写入光标处 / 替换选区 / 读选区 / 切语言 / 状态）；另修掉一个**真缺陷**：桥接窗口**第二次就打不开**（类注册结果记在局部变量里，`Once` 的闭包只执行一次 ⇒ 切走再切回来，AI 就再也叫不动输入法），并补了**真机跨进程往返**测试） | `run-all-2026-11-04.log` |
 | Rust agent `cargo test` | **63 / 63 通过**（本轮新增 `crates/pime-agent`：**MCP 服务端**（7 个工具）、**CLI**（12 个操作）、**本地服务**（命名管道 `\\.\pipe\pime-agent-v1` + HTTP 127.0.0.1 + 令牌）；含一条**真机 `WM_COPYDATA` 往返**与一条「桥接不回答时按时放弃」的保护） | `run-all-2026-11-04.log` |
 | 安装器 `cargo test`（单元 105 + 真实文件系统 13 + 真实链接 5） | **123 / 123 通过**（本轮载荷 8 → **10** 条：新增 `pime-mcp.exe` 与 `pime-ime.exe`；安装计划、清单、步骤数与期望值全部同步） | `setup-tests-2026-11-04.log` |
 | JavaScript 单元 / 集成 + 引擎差分 | **353 / 353 通过**（0 失败 0 跳过） | `run-all-2026-11-04.log` |
@@ -226,7 +226,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | 文档数字 ↔ 产物一致性（含反向对照：篡改任一数字必变红） | 通过 | `01_Source/tests/smoke/installer-claims-check.js` |
 | 证据集交叉核对（**构建日志 ↔ dist 产物 ↔ `.sha256` sidecar ↔ 文档正文 ↔ 两份测试日志**） | 通过（第六轮新增；18 项断言） | `01_Source/tests/smoke/evidence-cross-check.js` |
 | 签名脚本自检（`-Help` / 无证书 / 解析 / ASCII / 假 signtool 端到端） | 通过 | `01_Source/scripts/sign-installer.ps1`、`01_Source/docs/SIGNING.md` |
-| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **699 / 699 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`））；**第十五轮再刷 19 条 + 补登记 2 个新文件**（`skin.rs`、`docs/HOTKEYS.md`）**并移除 2 个已删文件**（`floating.rs`、`bar_skin.rs`）；**本轮（第十六轮）再刷 22 条 + 补登记 10 个新文件**——`cjk.rs` 与 5 个词库数据文件、`services.rs`、`laser_candidates.rs`、`predictor.rs`、`probe-report.json`；**本轮（第十七轮）再刷 18 条 + 补登记 13 个新文件**——线上契约 `agent_proto.rs`、桥接窗口 `agent_bridge.rs`、`crates/pime-agent/` 的 9 个文件与它的 `Cargo.lock`、`docs/AI_AGENT_API.md`，并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
+| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **793 / 793 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`））；**第十五轮再刷 19 条 + 补登记 2 个新文件**（`skin.rs`、`docs/HOTKEYS.md`）**并移除 2 个已删文件**（`floating.rs`、`bar_skin.rs`）；**本轮（第十六轮）再刷 22 条 + 补登记 10 个新文件**——`cjk.rs` 与 5 个词库数据文件、`services.rs`、`laser_candidates.rs`、`predictor.rs`、`probe-report.json`；**本轮（第十七轮）再刷 18 条 + 补登记 13 个新文件**——线上契约 `agent_proto.rs`、桥接窗口 `agent_bridge.rs`、`crates/pime-agent/` 的 9 个文件与它的 `Cargo.lock`、`docs/AI_AGENT_API.md`，并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
 
 **注意口径**：上一行 9 项全部是**代码层与行为层**的证据。它们**不**构成"这是一个能用的 Windows 输入法"的证明——那一层是空的（见第 4 节）。
 
@@ -398,25 +398,25 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 
 <!-- installer-claims:begin -->
 # machine-readable claims (checked by 01_Source/tests/smoke/installer-claims-check.js)
-installer_file = ProgrammingIME-0.2.2-win-x64-setup.exe
-installer_bytes = 10132518
-installer_sha256 = 23776fa0c34c7352508b63fe46d9c59db3f46c682432981bb3e349736945ac50
+installer_file = ProgrammingIME-0.3.0-win-x64-setup.exe
+installer_bytes = 10157083
+installer_sha256 = ef907b2be3bf814997c70e105131b389cfb1fc6ec2744375b9a240527a9b0ff9
 stub_bytes = 788480
 payload_entry_count = 10
-payload_pime_tsf_dll_bytes = 2637824
-payload_pime_core_exe_bytes = 3214648
+payload_pime_tsf_dll_bytes = 2664960
+payload_pime_core_exe_bytes = 3213103
 payload_license_bytes = 1085
-payload_programming_ime_vsix_bytes = 218970
+payload_programming_ime_vsix_bytes = 218968
 payload_pime_ico_bytes = 66724
 payload_pime_tray_exe_bytes = 1111040
 payload_pime_ai_worker_exe_bytes = 400896
-payload_pime_mcp_exe_bytes = 929792
-payload_pime_ime_exe_bytes = 762368
+payload_pime_mcp_exe_bytes = 929280
+payload_pime_ime_exe_bytes = 761856
 payload_meta_json_bytes = 87
 rust_core_tests = 441
-rust_tsf_tests = 308
+rust_tsf_tests = 316
 rust_agent_tests = 63
-rust_tase_tests = 678
+rust_tase_tests = 1004
 js_tests = 353
 evidence_run_all_log = run-all-2026-11-04.log
 evidence_setup_log = setup-tests-2026-11-04.log

@@ -73,11 +73,11 @@ dependencies = [
 
 [[package]]
 name = "pime-core"
-version = "0.2.2"
+version = "0.3.0"
 
 [[package]]
 name = "pime-ipc"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "pime-core",
  "windows",

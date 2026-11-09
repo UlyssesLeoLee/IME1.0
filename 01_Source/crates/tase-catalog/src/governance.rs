@@ -755,13 +755,35 @@ mod tests {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/tase-catalog");
         let registry = tase_registry::Registry::load(&dir).expect("the catalog is valid");
         let implementations = ImplementationRegistry::from_registry(&registry).expect("the registry is read");
-        let entry = registry.get("algorithm.graph.dijkstra").expect("the asset is there");
+        // A pattern carries no implementation: it is a shape, not one algorithm.
+        let entry = registry
+            .get("pattern.gof.creational.abstract_factory")
+            .expect("the asset is there");
         let state = assess(entry, &implementations, "rust");
         assert_eq!(state.card_status, KnowledgeCardStatus::Documented);
         assert!(state.implementations.is_empty());
         assert!(state.recommendable);
         assert!(!state.instantiable);
         assert!(state.reasons.iter().any(|reason| reason.contains("knowledge card")));
+    }
+
+    #[test]
+    fn an_algorithm_with_an_implementation_is_not_only_a_card() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/tase-catalog");
+        let registry = tase_registry::Registry::load(&dir).expect("the catalog is valid");
+        let implementations = ImplementationRegistry::from_registry(&registry).expect("the registry is read");
+        // The fifty algorithms of the catalogue carry their implementation (the crate `tase-impls`), in the state
+        // TESTED. The card is still a card: the two axes are separate (requirements §14.4).
+        let entry = registry.get("algorithm.graph.dijkstra").expect("the asset is there");
+        let state = assess(entry, &implementations, "rust");
+        assert_eq!(state.card_status, KnowledgeCardStatus::Documented);
+        assert_eq!(state.implementations.len(), 1, "the dijkstra carries its implementation");
+        assert_eq!(state.implementations[0].status, ImplementationStatus::Tested);
+        assert!(state.recommendable, "a tested implementation may be recommended");
+        assert!(
+            !state.instantiable,
+            "TESTED is not APPROVED: only an approved implementation may be instantiated (D-61)"
+        );
     }
 
     #[test]

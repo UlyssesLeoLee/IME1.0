@@ -36,7 +36,19 @@
     "time": "O(n)",
     "extra_space": "O(1)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.searching.two_pointers",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/searching.rs",
+      "sha256": "1e20138733948c44a7db5e8e8520036ebd125575e77c11e3e4234eff9a2668ea",
+      "parameters_schema": "pub fn two_pointers(items: &[i64], target: i64) -> Result<Option<(usize, usize)>, SearchingError>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.searching.two_pointers.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://doc.rust-lang.org/std/slice/index.html"

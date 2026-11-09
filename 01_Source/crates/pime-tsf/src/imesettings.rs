@@ -308,6 +308,11 @@ pub struct ImeSettings {
     ///
     /// The product ships with Cypher and PL/SQL on and T-SQL off.
     pub plugins: Vec<String>,
+    /// The vertical writing mode (a global setting: the way the text is written does not depend on the language).
+    ///
+    /// On: the text that is written stands as a column (the words sideways, the characters one per line), behind the
+    /// column before it. Off (the default): the text is written as it is typed.
+    pub vertical: bool,
 }
 
 impl Default for ImeSettings {
@@ -322,6 +327,8 @@ impl Default for ImeSettings {
             mouth_place: String::new(),
             // Cypher and PL/SQL are on, T-SQL is off: the two SQL plugins share the `.sql` extension.
             plugins: pime_core::pack::default_plugin_ids(),
+            // The vertical writing mode is off until the user asks for it (Ctrl+Alt+V or the settings window).
+            vertical: false,
         }
     }
 }
@@ -396,6 +403,7 @@ impl ImeSettings {
             ("skin".to_string(), Json::Str(self.skin.clone())),
             ("mouthPlace".to_string(), Json::Str(self.mouth_place.clone())),
             ("plugins".to_string(), Json::strs(&self.plugins)),
+            ("vertical".to_string(), Json::Bool(self.vertical)),
             ("languages".to_string(), Json::Obj(languages)),
         ])
     }
@@ -461,6 +469,10 @@ impl ImeSettings {
                 }
             }
             settings.plugins = plugins;
+        }
+        // The vertical writing mode: a file that does not mention it keeps the default (off).
+        if let Some(flag) = value.get("vertical").and_then(Json::as_bool) {
+            settings.vertical = flag;
         }
         Ok(settings)
     }
@@ -720,6 +732,21 @@ mod tests {
         let text = settings.to_text();
         let read = ImeSettings::from_text(&text).expect("the text it just wrote must read back");
         assert_eq!(read, settings);
+    }
+
+    #[test]
+    fn the_vertical_writing_mode_survives_the_file() {
+        // The mode is a global setting: it is the same for every language.
+        let mut settings = ImeSettings::default();
+        assert!(!settings.vertical, "the product ships with the mode off");
+        settings.vertical = true;
+        let text = settings.to_text();
+        assert!(text.contains("vertical"), "the file says it: {text}");
+        let read = ImeSettings::from_text(&text).expect("the text it just wrote must read back");
+        assert!(read.vertical, "the mode comes back from the file");
+        // A file that does not mention the mode keeps the default (off).
+        let read = ImeSettings::from_text("{}").expect("an empty file loads");
+        assert!(!read.vertical, "a file without the flag is the shipped default");
     }
 
     #[test]

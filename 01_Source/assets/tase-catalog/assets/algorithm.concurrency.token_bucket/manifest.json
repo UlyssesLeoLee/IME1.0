@@ -37,7 +37,19 @@
     "time": "O(1) 每次判定",
     "extra_space": "O(1)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.concurrency.token_bucket",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+      "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+      "parameters_schema": "pub fn token_bucket( capacity: u64, refill_per_second: u64, now_ms: u64, ) -> Result<TokenBucket, String>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.concurrency.token_bucket.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Token_bucket"

@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.searching.sliding_window",
+  "implementation_id": "tase-impls.rust.algorithm.searching.sliding_window",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/searching.rs",
+    "sha256": "1e20138733948c44a7db5e8e8520036ebd125575e77c11e3e4234eff9a2668ea",
+    "function": "sliding_window"
+  },
+  "tests": [
+    "sliding_window_finds_the_longest_window_with_the_fewest_distinct_values",
+    "sliding_window_rejects_a_window_size_of_zero"
+  ],
+  "command": "cargo test -p tase-impls sliding_window"
+}

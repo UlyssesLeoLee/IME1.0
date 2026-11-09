@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.string.edit_distance",
+  "implementation_id": "tase-impls.rust.algorithm.string.edit_distance",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/string.rs",
+    "sha256": "8f00079b65c0ae772d1d2c3d7f4287abd990912e455d1c1422e5e2315adbb384",
+    "function": "edit_distance"
+  },
+  "tests": [
+    "edit_distance_counts_the_minimum_edits",
+    "edit_distance_measures_characters_and_not_bytes"
+  ],
+  "command": "cargo test -p tase-impls edit_distance"
+}

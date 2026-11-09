@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.searching.two_pointers",
+  "implementation_id": "tase-impls.rust.algorithm.searching.two_pointers",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/searching.rs",
+    "sha256": "1e20138733948c44a7db5e8e8520036ebd125575e77c11e3e4234eff9a2668ea",
+    "function": "two_pointers"
+  },
+  "tests": [
+    "two_pointers_finds_the_pair_that_adds_up_to_the_target",
+    "two_pointers_rejects_an_unordered_slice"
+  ],
+  "command": "cargo test -p tase-impls two_pointers"
+}

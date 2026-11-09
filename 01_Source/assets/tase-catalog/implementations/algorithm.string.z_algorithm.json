@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.string.z_algorithm",
+  "implementation_id": "tase-impls.rust.algorithm.string.z_algorithm",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/string.rs",
+    "sha256": "8f00079b65c0ae772d1d2c3d7f4287abd990912e455d1c1422e5e2315adbb384",
+    "function": "z_algorithm"
+  },
+  "tests": [
+    "z_algorithm_matches_the_brute_force_common_prefixes",
+    "z_algorithm_finds_the_pattern_through_the_separator_construction"
+  ],
+  "command": "cargo test -p tase-impls z_algorithm"
+}

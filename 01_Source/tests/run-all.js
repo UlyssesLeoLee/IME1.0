@@ -132,6 +132,7 @@ const TASE_CRATES = [
   'tase-worker',
   'tase-catalog-mcp',
   'tase-ime-core',
+  'tase-impls',
 ];
 if (want('tase')) {
   step('TASE crates (the template-aware semantic execution system): cargo test (every crate of its own)', () => {
@@ -147,6 +148,12 @@ if (want('tase')) {
     }
     return {ok: done > 0, note: `${done} crates, ${tests} tests`};
   });
+  // The catalogue and the code must agree: the implementations of the catalogue carry the real digest of the file
+  // they live in, so a change in the code that is not registered turns this step red.
+  step('TASE catalog: the implementations of the code are registered with their digest', () =>
+    sh(process.execPath, [path.join(src, 'scripts', 'collect-implementations.js'), '--check']));
+  step('TASE catalog: the 93 knowledge cards and the registered implementations agree', () =>
+    sh(process.execPath, [path.join(src, 'scripts', 'validate-tase-catalog.js')]));
 }
 if (want('agent')) {
   step('AI agent front-ends (crates/pime-agent): cargo test (the MCP server, the CLI and the local server)', () => cargoRetry('pime-agent', ['test']));

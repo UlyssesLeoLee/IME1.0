@@ -1,0 +1,20 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.concurrency.bounded_queue",
+  "implementation_id": "tase-impls.rust.algorithm.concurrency.bounded_queue",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+    "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+    "function": "bounded_queue"
+  },
+  "tests": [
+    "bounded_queue_keeps_the_fifo_order_and_refuses_when_it_is_full",
+    "bounded_queue_blocks_the_producer_when_it_is_full",
+    "bounded_queue_keeps_every_item_with_many_producers_and_consumers",
+    "bounded_queue_rejects_a_capacity_of_zero"
+  ],
+  "command": "cargo test -p tase-impls bounded_queue"
+}

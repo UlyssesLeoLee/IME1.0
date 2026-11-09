@@ -37,7 +37,19 @@
     "time": "O(n + m)",
     "extra_space": "O(m)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.string.kmp",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/string.rs",
+      "sha256": "8f00079b65c0ae772d1d2c3d7f4287abd990912e455d1c1422e5e2315adbb384",
+      "parameters_schema": "pub fn kmp<T: PartialEq>(text: &[T], pattern: &[T]) -> Result<Vec<usize>, String>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.string.kmp.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm"

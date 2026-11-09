@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.datastructure.fenwick_tree",
+  "implementation_id": "tase-impls.rust.algorithm.datastructure.fenwick_tree",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/datastructure.rs",
+    "sha256": "0f7ce8033b0bbc83fe0a4aa5dbac330f80ae20ac400bd762c190e1c714cdb45c",
+    "function": "fenwick_tree"
+  },
+  "tests": [
+    "fenwick_tree_answers_the_prefix_and_range_sums",
+    "fenwick_tree_rejects_the_indices_out_of_the_array"
+  ],
+  "command": "cargo test -p tase-impls fenwick_tree"
+}

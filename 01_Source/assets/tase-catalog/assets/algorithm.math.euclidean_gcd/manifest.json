@@ -37,7 +37,19 @@
     "time": "O(log min(a, b))",
     "extra_space": "O(1)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.math.euclidean_gcd",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/math.rs",
+      "sha256": "6a4bc648ba631e7d2d9defa55b3952e6edd2619d46abebbe87b356dec513e341",
+      "parameters_schema": "pub fn euclidean_gcd(a: u64, b: u64) -> u64",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.math.euclidean_gcd.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Euclidean_algorithm"

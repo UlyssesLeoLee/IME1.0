@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.sorting.top_k_heap",
+  "implementation_id": "tase-impls.rust.algorithm.sorting.top_k_heap",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/sorting.rs",
+    "sha256": "48dd81d5badc072e4db8023fb56579717c263ea7a8da5343091ca11c63b6311b",
+    "function": "top_k"
+  },
+  "tests": [
+    "top_k_returns_the_k_largest_elements_in_descending_order",
+    "top_k_keeps_the_earlier_of_two_equal_elements_and_does_not_consume_the_input_for_k_zero"
+  ],
+  "command": "cargo test -p tase-impls top_k"
+}

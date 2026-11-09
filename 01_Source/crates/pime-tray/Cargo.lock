@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "pime-core"
-version = "0.2.2"
+version = "0.3.0"
 
 [[package]]
 name = "pime-tray"
@@ -17,9 +17,10 @@ dependencies = [
 
 [[package]]
 name = "pime-tsf"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "pime-core",
+ "tase-ime-core",
  "windows",
  "windows-core",
 ]
@@ -51,6 +52,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tase-ime-core"
+version = "0.1.0"
+dependencies = [
+ "pime-core",
 ]
 
 [[package]]

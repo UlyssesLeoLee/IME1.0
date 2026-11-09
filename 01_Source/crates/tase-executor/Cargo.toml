@@ -1,0 +1,43 @@
+# TASE-EXECUTOR: the executor of TASE - the read-only preview, the apply, the rebase and the conflict decision,
+# the pinned workspace, the Git compare-and-swap commit and the undo description (detailed design §5, §6.3 and §8).
+#
+# Deliberately NOT a member of the main workspace: it has its own Cargo.lock, so that the worker, the local hub and
+# the catalog MCP can build it on their own.
+#
+# The crate has no third-party dependency: the strict JSON parser, the SHA-256, the UTF-16 text ranges and the line
+# diff come from `pime-core`, the DTOs and the error codes from `tase-contract`, the digest of the plan from
+# `tase-planner`, the catalog and its policy from `tase-registry`, the symbol index from `tase-semantic`.
+# The Git capability is the `git` command line: there is no Git library in this repository and there may not be one.
+[package]
+name = "tase-executor"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE executor: the preview, the apply, the rebase and conflict decisions, the pinned workspace, the Git CAS commit and the undo description"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_executor"
+path = "src/lib.rs"
+
+[dependencies]
+# The path dependencies of the crate: the core, the contract layer, the planner, the registry and the semantic layer.
+# No other dependency is allowed.
+pime-core = { path = "../pime-core" }
+tase-contract = { path = "../tase-contract" }
+tase-planner = { path = "../tase-planner" }
+tase-registry = { path = "../tase-registry" }
+tase-semantic = { path = "../tase-semantic" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take a worker down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

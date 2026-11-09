@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.searching.upper_bound",
+  "implementation_id": "tase-impls.rust.algorithm.searching.upper_bound",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/searching.rs",
+    "sha256": "1e20138733948c44a7db5e8e8520036ebd125575e77c11e3e4234eff9a2668ea",
+    "function": "upper_bound"
+  },
+  "tests": [
+    "upper_bound_closes_the_range_of_the_equal_elements",
+    "upper_bound_rejects_an_unordered_slice"
+  ],
+  "command": "cargo test -p tase-impls upper_bound"
+}

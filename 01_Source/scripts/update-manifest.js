@@ -49,6 +49,10 @@ const ADDITION_DIRECTORIES = [
   '01_Source/crates/tase-catalog',
   '01_Source/crates/tase-catalog-mcp',
   '01_Source/crates/tase-local-hub',
+  '01_Source/crates/tase-executor',
+  '01_Source/crates/tase-agent-scheduler',
+  '01_Source/crates/tase-worker',
+  '01_Source/crates/tase-impls',
 ];
 
 // The files of a directory, in the order the walk finds them.
@@ -184,6 +188,15 @@ const ADDITIONS = [
   '01_Source/tests/fixtures/tase-ranking-cases.json',
   '01_Source/tests/js/ut-tase-candidates.test.js',
   '01_Source/tests/rust/parity_tase_ime.rs',
+  // the shared privacy and safety rules of TASE, used by the text service
+  '01_Source/crates/pime-tsf/src/tase_policy.rs',
+  // the registration of the implementations of the catalogue
+  '01_Source/scripts/collect-implementations.js',
+  '01_Source/scripts/validate-tase-catalog.js',
+  // the map of the fifteen TASE crates of this repository
+  '01_Source/docs/TASE_CRATES.md',
+  // the defect submission sheet (the items the user has to decide)
+  '02_Verification/DEFECT_SUBMISSION_2026-11-07.md',
 ];
 
 const isBinary = bytes => bytes.includes(0);

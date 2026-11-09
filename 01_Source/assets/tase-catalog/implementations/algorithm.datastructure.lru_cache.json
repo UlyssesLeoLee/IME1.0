@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.datastructure.lru_cache",
+  "implementation_id": "tase-impls.rust.algorithm.datastructure.lru_cache",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/datastructure.rs",
+    "sha256": "0f7ce8033b0bbc83fe0a4aa5dbac330f80ae20ac400bd762c190e1c714cdb45c",
+    "function": "lru_cache"
+  },
+  "tests": [
+    "lru_cache_evicts_the_least_recently_used_entry",
+    "lru_cache_rejects_a_capacity_of_zero"
+  ],
+  "command": "cargo test -p tase-impls lru_cache"
+}

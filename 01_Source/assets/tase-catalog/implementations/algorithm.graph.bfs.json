@@ -1,0 +1,19 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.graph.bfs",
+  "implementation_id": "tase-impls.rust.algorithm.graph.bfs",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+    "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+    "function": "bfs"
+  },
+  "tests": [
+    "bfs_asset_walks_the_graph_level_by_level",
+    "bfs_asset_on_an_empty_graph_and_on_a_self_loop",
+    "bfs_asset_refuses_a_weighted_graph"
+  ],
+  "command": "cargo test -p tase-impls bfs"
+}

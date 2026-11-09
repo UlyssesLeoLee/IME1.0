@@ -1099,6 +1099,9 @@ impl Inner {
         self.skin = settings.skin.clone();
         self.mouth_place = settings.mouth_place.clone();
         self.controller.apply_settings(&value);
+        // The vertical writing mode is a global setting: the file says whether the text stands as a column.
+        // Ctrl+Alt+V switches it for the session only; saving the settings makes the file the truth again.
+        self.controller.set_vertical_mode(settings.vertical);
         self.sync_laser();
     }
 
@@ -1549,6 +1552,8 @@ impl Tip {
             config.keymap.space_confirms = values.space_confirms;
             config.auto_compose = values.auto_compose;
             config.input_mode = values.input_mode;
+            // The vertical writing mode is a global setting: the text stands as a column when it is on.
+            config.vertical = settings.vertical;
             // The profile of the engine follows the language: the Chinese and the Japanese are answered by the
             // dictionaries of the core, the English one by the engine of the code.
             config.language = pime_core::imeswitch::profile_of(&language).to_string();

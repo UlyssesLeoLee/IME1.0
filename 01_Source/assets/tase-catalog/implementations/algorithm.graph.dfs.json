@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.graph.dfs",
+  "implementation_id": "tase-impls.rust.algorithm.graph.dfs",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+    "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+    "function": "dfs"
+  },
+  "tests": [
+    "dfs_asset_visits_every_node_once",
+    "dfs_asset_does_not_overflow_the_stack_on_a_deep_graph"
+  ],
+  "command": "cargo test -p tase-impls dfs"
+}

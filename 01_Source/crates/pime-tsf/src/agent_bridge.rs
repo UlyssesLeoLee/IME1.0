@@ -269,7 +269,9 @@ unsafe fn send_reply(target: HWND, reply: &Reply) {
 /// A password field never gets anything from an agent either: the rule of the product is that a secure field collects
 /// nothing, and an agent is not more trusted than the keyboard.
 pub fn may_write(secure_field: bool) -> Result<(), Error> {
-    if secure_field {
+    // The shared policy of TASE decides (crate::tase_policy): a password field is a protected context, and nothing
+    // is written into one. The wire format does not change: the answer is still the `Secure` error.
+    if !crate::tase_policy::may_write(false, secure_field) {
         return Err(Error::Secure);
     }
     Ok(())

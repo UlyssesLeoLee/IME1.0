@@ -1281,8 +1281,9 @@ mod tests {
     fn every_asset_of_the_repository_is_a_knowledge_card_and_is_not_instantiable() {
         let index = real_index();
         let implementations = real_implementations();
-        // not one asset of the repository has an implementation at all
-        assert!(implementations.is_empty());
+        // The fifty algorithms of the catalogue carry their implementation (the crate `tase-impls`), in the state
+        // TESTED. Nothing is APPROVED yet, so not one asset of the repository may be instantiated (D-61).
+        assert_eq!(implementations.len(), 50);
         for view in index.views() {
             let mut request = request(&view.entry.names.values().next().cloned().unwrap_or_default());
             request.limit = MAX_LIMIT;
@@ -1293,16 +1294,30 @@ mod tests {
                 .find(|candidate| candidate.asset_id == view.id())
                 .unwrap_or_else(|| panic!("{} is not in the answer", view.id()));
             assert!(!candidate.instantiable, "{}", view.id());
-            assert!(
-                candidate
-                    .reasons
-                    .iter()
-                    .any(|reason| reason.contains("knowledge card")),
-                "{}: {:?}",
-                view.id(),
-                candidate.reasons
-            );
-            assert_eq!(candidate.breakdown.implementation, 0);
+            if view.id().starts_with("pattern.") {
+                // a pattern has no implementation at all: it is a knowledge card
+                assert!(
+                    candidate
+                        .reasons
+                        .iter()
+                        .any(|reason| reason.contains("knowledge card")),
+                    "{}: {:?}",
+                    view.id(),
+                    candidate.reasons
+                );
+            } else {
+                // an algorithm has an implementation that is not approved yet
+                assert!(
+                    candidate
+                        .reasons
+                        .iter()
+                        .any(|reason| reason.contains("not APPROVED")),
+                    "{}: {:?}",
+                    view.id(),
+                    candidate.reasons
+                );
+            }
+            assert_eq!(candidate.breakdown.implementation, 0, "{}", view.id());
         }
     }
 

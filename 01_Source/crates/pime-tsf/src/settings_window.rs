@@ -186,6 +186,8 @@ pub enum Toggle {
     LaserUi,
     /// `=`, `.`, `]` page the list forward and `-`, `,`, `[` page it back.
     PunctPaging,
+    /// The text that is written stands as a column (the vertical writing mode).
+    Vertical,
 }
 
 /// The drop-down lists of the window.
@@ -295,6 +297,7 @@ fn rows_of(page: SettingsPage) -> Vec<ControlKind> {
         SettingsPage::General => vec![
             ControlKind::Label("候选页大小"),
             ControlKind::Combo(Combo::PageSize),
+            ControlKind::Check(Toggle::Vertical),
             ControlKind::Check(Toggle::InputMode),
             ControlKind::Check(Toggle::SpaceConfirms),
             ControlKind::Check(Toggle::AutoCompose),
@@ -334,7 +337,7 @@ fn rows_of(page: SettingsPage) -> Vec<ControlKind> {
         ],
         SettingsPage::About => vec![
             ControlKind::Label("编程输入法 IME1.0"),
-            ControlKind::Label("版本 0.2.2"),
+            ControlKind::Label("版本 0.3.0"),
             ControlKind::Label("设置文件：%LOCALAPPDATA%\\Programming IME\\settings.json"),
             ControlKind::Label("快捷键与按键方案：01_Source/docs/HOTKEYS.md"),
         ],
@@ -433,6 +436,7 @@ pub fn toggle_label(toggle: Toggle) -> &'static str {
         Toggle::InputMode => "默认进入输入模式（否则直接输入）",
         Toggle::LaserUi => "显示激光界面",
         Toggle::PunctPaging => "标点翻页（= . ] 翻页，- , [ 后退）",
+        Toggle::Vertical => "纵向书写（文字排成一列，Ctrl+Alt+V 也可以切）",
     }
 }
 
@@ -635,6 +639,8 @@ impl SettingsState {
                         Toggle::InputMode => value.input_mode = checked,
                         Toggle::LaserUi => value.laser_ui = checked,
                         Toggle::PunctPaging => value.punct_paging = checked,
+                        // The vertical writing mode is a global setting: it does not belong to a language profile.
+                        Toggle::Vertical => settings.vertical = checked,
                     }
                 }
                 ControlKind::PluginCheck(id) => {
@@ -718,6 +724,8 @@ impl SettingsState {
                         Toggle::InputMode => value.input_mode,
                         Toggle::LaserUi => value.laser_ui,
                         Toggle::PunctPaging => value.punct_paging,
+                        // The vertical writing mode is a global setting (it is the same for every language).
+                        Toggle::Vertical => self.settings.vertical,
                     };
                     // SAFETY: a plain call on our own check box.
                     unsafe {
@@ -1491,9 +1499,41 @@ mod tests {
             Toggle::InputMode,
             Toggle::LaserUi,
             Toggle::PunctPaging,
+            Toggle::Vertical,
         ] {
             assert!(!toggle_label(toggle).is_empty());
         }
+    }
+
+    #[test]
+    fn the_vertical_writing_mode_has_a_check_box_of_its_own() {
+        // The user asked for the vertical writing mode; the hotkey alone is not enough, the setting must be there.
+        let rows = rows_of(SettingsPage::General);
+        let checks: Vec<Toggle> = rows
+            .iter()
+            .filter_map(|kind| match kind {
+                ControlKind::Check(toggle) => Some(*toggle),
+                _ => None,
+            })
+            .collect();
+        assert!(
+            checks.contains(&Toggle::Vertical),
+            "the general page carries the switch of the vertical writing mode"
+        );
+        let label = toggle_label(Toggle::Vertical);
+        assert!(
+            label.contains("纵向"),
+            "the label says what it does: {label}"
+        );
+        // The layout gives the new row a box of its own (the rows of a page never overlap).
+        let layout = compute_layout();
+        let slot = layout
+            .controls
+            .iter()
+            .find(|slot| slot.kind == ControlKind::Check(Toggle::Vertical))
+            .expect("the switch is in the layout");
+        assert_eq!(slot.page, SettingsPage::General);
+        assert!(slot.rect.height() > 0, "the switch has a box to click on");
     }
 
     #[test]

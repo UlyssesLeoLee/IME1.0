@@ -38,7 +38,19 @@
     "time": "O((V + E) log V)",
     "extra_space": "O(V + E)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.graph.dijkstra",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+      "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+      "parameters_schema": "pub fn dijkstra(graph: &Graph, source: usize) -> Result<ShortestPaths, GraphError>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.graph.dijkstra.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm"

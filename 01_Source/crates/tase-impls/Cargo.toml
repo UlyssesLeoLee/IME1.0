@@ -1,0 +1,37 @@
+# TASE-IMPLS: the implementations of the catalogue of the standard assets.
+#
+# The catalogue (01_Source/assets/tase-catalog) holds the knowledge cards of the patterns and the algorithms: what
+# they are for, when they apply, when they do NOT apply and what they cost. A card is documentation; an
+# implementation is code that somebody can call. This crate is the implementation of the fifty algorithms of the
+# catalogue, written in Rust, with tests.
+#
+# Deliberately NOT a member of the main workspace and deliberately free of any dependency: the crate has to build
+# everywhere and to stay auditable line by line (design §1.2 asks for a licence review of every dependency). It has
+# its own Cargo.lock and its own workspace.
+[package]
+name = "tase-impls"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE standard assets: the Rust implementation of the fifty algorithms of the catalogue, with their tests"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+[lib]
+name = "tase_impls"
+path = "src/lib.rs"
+
+[dependencies]
+# None: the crate uses the standard library only.
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take a worker down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

@@ -18,10 +18,10 @@
 //      constraints, counterexamples (not empty) and alternatives.
 //   4. every alternative really exists in the catalog, and no alias is an asset
 //      id: an alias may not inflate the number of assets.
-//   5. status is DOCUMENTED or REVIEWED. This catalog holds no certified
-//      implementation, so no implementation may claim APPROVED, TESTED or
-//      IMPLEMENTED, and an implementation that is not APPROVED must carry a
-//      sha256.
+//   5. status is DOCUMENTED or REVIEWED. An implementation carries its own state (IMPLEMENTED / TESTED /
+//      APPROVED / DEPRECATED / REVOKED), names the file it lives in, carries the real digest of that file and
+//      names the tests that stand behind it: an implementation that is not APPROVED must carry a sha256, and a
+//      digest that is there must be the digest of the file it names.
 //   6. an algorithm states a real complexity (never n/a); a pattern has a card.
 //   7. every card exists, is not empty and carries the eight required sections.
 //   8. every asset id quoted inside a card exists in the catalog.
@@ -31,6 +31,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const SOURCE_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(SOURCE_ROOT, '..');
 const catalogDir = path.resolve(process.argv[2] || path.join(SOURCE_ROOT, 'assets', 'tase-catalog'));
 
 // The eight sections every knowledge card must carry.
@@ -66,9 +67,25 @@ const SCHEMA_VERSION = 'tase.asset.v1';
 const EXPECTED_TOTAL = 93;
 const EXPECTED_GROUPS = { gof: 23, modern: 20, algorithm: 50 };
 const ALLOWED_STATUS = ['DOCUMENTED', 'REVIEWED'];
-// An implementation may not claim these states: the catalog carries knowledge
-// cards only, there is no certified language implementation behind them.
-const FORBIDDEN_IMPLEMENTATION_STATUS = ['APPROVED', 'TESTED', 'IMPLEMENTED'];
+// The states of an implementation (design §14.4). The card keeps its own state; the implementation has its own.
+const ALLOWED_IMPLEMENTATION_STATUS = ['IMPLEMENTED', 'TESTED', 'APPROVED', 'DEPRECATED', 'REVOKED'];
+// The fields an implementation must carry (design §19.1, the same list the registry parses).
+const REQUIRED_IMPLEMENTATION_FIELDS = [
+  'implementation_id',
+  'language',
+  'version',
+  'status',
+  'engine',
+  'path',
+  'sha256',
+  'parameters_schema',
+  'tests_manifest',
+];
+
+// The digest of a text file: the LF normalised content (the bytes of its git blob), exactly like
+// MANIFEST_SHA256.txt does it.
+const sha256OfText = text =>
+  require('node:crypto').createHash('sha256').update(Buffer.from(text.replace(/\r\n/g, '\n'), 'utf8')).digest('hex');
 
 const problems = [];
 const missing = [];
@@ -261,7 +278,8 @@ for (const entry of assets) {
     }
   }
 
-  // 5. the honest states
+  // 5. the honest states: the card keeps its own state, the implementation has its own, and the digest of an
+  // implementation that is not approved has to be a real one (the file it names has to carry it).
   if (!ALLOWED_STATUS.includes(manifest.status)) {
     fail(id + ': status 只能是 ' + ALLOWED_STATUS.join(' 或 ') + '，实际是 ' + JSON.stringify(manifest.status));
   }
@@ -273,12 +291,42 @@ for (const entry of assets) {
         fail(id + ': implementations 的元素必须是对象');
         continue;
       }
-      const state = implementation.status;
-      if (FORBIDDEN_IMPLEMENTATION_STATUS.includes(state)) {
-        fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 的状态是 ' + state + '，本目录没有任何已认证的实现');
+      for (const field of REQUIRED_IMPLEMENTATION_FIELDS) {
+        if (!(field in implementation)) {
+          fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 缺少字段 ' + field);
+        }
       }
-      if (state !== 'APPROVED' && !nonEmptyString(implementation.sha256)) {
-        fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 不是 APPROVED，必须带 sha256');
+      const state = implementation.status;
+      if (!ALLOWED_IMPLEMENTATION_STATUS.includes(state)) {
+        fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 的状态 ' + JSON.stringify(state) + ' 不在 ' + ALLOWED_IMPLEMENTATION_STATUS.join(' / ') + ' 之中');
+      }
+      if (state !== 'APPROVED' && !/^[0-9a-f]{64}$/.test(String(implementation.sha256 || ''))) {
+        fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 不是 APPROVED，必须带 64 位 sha256');
+        continue;
+      }
+      // the digest has to be the digest of the file the implementation names: a placeholder is never published
+      const source = path.resolve(REPO_ROOT, implementation.path);
+      if (!fs.existsSync(source)) {
+        fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 指向不存在的文件 ' + implementation.path);
+      } else {
+        const actual = sha256OfText(fs.readFileSync(source, 'utf8'));
+        if (actual !== implementation.sha256) {
+          fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 的 sha256 与 ' + implementation.path + ' 的实际摘要不符（文件被改过或摘要是占位符）');
+        }
+      }
+      // the tests that stand behind the implementation have to be named
+      const testsManifest = path.resolve(REPO_ROOT, implementation.tests_manifest);
+      if (!fs.existsSync(testsManifest)) {
+        fail(id + ': 实现 ' + JSON.stringify(implementation.implementation_id) + ' 的测试清单不存在: ' + implementation.tests_manifest);
+      } else {
+        const tests = readJson(testsManifest);
+        if (tests.error) {
+          fail(id + ': 测试清单 ' + implementation.tests_manifest + ' ' + tests.error);
+        } else if (tests.value.asset_id !== id) {
+          fail(id + ': 测试清单 ' + implementation.tests_manifest + ' 属于另一个资产');
+        } else if (state === 'TESTED' && (!Array.isArray(tests.value.tests) || tests.value.tests.length === 0)) {
+          fail(id + ': 实现声明自己是 TESTED，但测试清单里没有一条测试');
+        }
       }
     }
   }
@@ -357,6 +405,17 @@ for (const key of [...namespaces.keys()].sort()) {
   console.log('  ' + key.padEnd(26, ' ') + namespaces.get(key));
 }
 console.log('缺失项    : ' + (missing.length ? missing.join(', ') : '无'));
+const implementationCount = assets.reduce((sum, entry) => {
+  const manifestFile = path.join(catalogDir, 'assets', entry.id, 'manifest.json');
+  if (!fs.existsSync(manifestFile)) return sum;
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+    return sum + (Array.isArray(manifest.implementations) ? manifest.implementations.length : 0);
+  } catch (e) {
+    return sum;
+  }
+}, 0);
+console.log('实现登记  : ' + implementationCount + ' 条');
 
 if (problems.length) {
   console.error('');

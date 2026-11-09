@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.concurrency.producer_consumer",
+  "implementation_id": "tase-impls.rust.algorithm.concurrency.producer_consumer",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+    "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+    "function": "producer_consumer"
+  },
+  "tests": [
+    "producer_consumer_hands_every_item_over_without_loss_or_duplication",
+    "producer_consumer_ends_the_consumers_when_it_is_closed"
+  ],
+  "command": "cargo test -p tase-impls producer_consumer"
+}

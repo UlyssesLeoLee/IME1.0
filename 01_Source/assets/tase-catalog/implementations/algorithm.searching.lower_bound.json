@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.searching.lower_bound",
+  "implementation_id": "tase-impls.rust.algorithm.searching.lower_bound",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/searching.rs",
+    "sha256": "1e20138733948c44a7db5e8e8520036ebd125575e77c11e3e4234eff9a2668ea",
+    "function": "lower_bound"
+  },
+  "tests": [
+    "lower_bound_returns_the_insertion_point",
+    "lower_bound_rejects_an_unordered_slice"
+  ],
+  "command": "cargo test -p tase-impls lower_bound"
+}

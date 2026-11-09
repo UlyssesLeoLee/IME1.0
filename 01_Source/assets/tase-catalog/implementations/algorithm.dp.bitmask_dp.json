@@ -1,0 +1,19 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.dp.bitmask_dp",
+  "implementation_id": "tase-impls.rust.algorithm.dp.bitmask_dp",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/dp.rs",
+    "sha256": "ed0ffbe6ecec6107340caa8c88cb2a5a69ce6a146b10bf7499db8dbc145c2328",
+    "function": "bitmask_dp"
+  },
+  "tests": [
+    "bitmask_dp_asset_finds_the_shortest_tour",
+    "bitmask_dp_asset_on_the_boundary_inputs",
+    "bitmask_dp_asset_refuses_a_matrix_that_gives_no_tour"
+  ],
+  "command": "cargo test -p tase-impls bitmask_dp"
+}

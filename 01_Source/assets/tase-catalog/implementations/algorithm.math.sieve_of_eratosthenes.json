@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.math.sieve_of_eratosthenes",
+  "implementation_id": "tase-impls.rust.algorithm.math.sieve_of_eratosthenes",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/math.rs",
+    "sha256": "6a4bc648ba631e7d2d9defa55b3952e6edd2619d46abebbe87b356dec513e341",
+    "function": "sieve_of_eratosthenes"
+  },
+  "tests": [
+    "sieve_of_eratosthenes_lists_the_primes_up_to_the_limit",
+    "sieve_of_eratosthenes_rejects_a_limit_beyond_the_memory"
+  ],
+  "command": "cargo test -p tase-impls sieve_of_eratosthenes"
+}

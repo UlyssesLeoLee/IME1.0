@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.string.trie",
+  "implementation_id": "tase-impls.rust.algorithm.string.trie",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/string.rs",
+    "sha256": "8f00079b65c0ae772d1d2c3d7f4287abd990912e455d1c1422e5e2315adbb384",
+    "function": "trie"
+  },
+  "tests": [
+    "trie_finds_the_keys_by_prefix",
+    "trie_does_not_answer_a_fuzzy_question"
+  ],
+  "command": "cargo test -p tase-impls trie"
+}

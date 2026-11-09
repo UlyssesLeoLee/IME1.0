@@ -348,3 +348,40 @@ tase-contract  ←  tase-registry / tase-semantic / tase-planner / tase-metrics
 - **可以直接复用的**：`pime-ipc` 的管道安全基线、`pime-tsf` 的 TSF 与候选 UI、`pime-agent` 的 MCP/CLI/HTTP 前端、`pime-core` 的计划-令牌-失效事务骨架，以及 TASE 的**依赖方向约束**（contract 在底、executor 不反向依赖协议层）。
 - **必须从零新建的**：`tase-contract` / `tase-registry` / `tase-semantic` / `tase-planner` / `tase-executor` / `tase-worker` / `tase-metrics` / `tase-local-hub` / `tase-local-ipc` / `tase-agent-scheduler` / `tase-local-store` / `tase-catalog` / `tase-catalog-mcp` / `tase-ime-core` / `tase-ime-tsf` 共 15 个 crate。
 - **必须由决策裁定、不能由实现绕过**的：G1（编辑内核等价性）、G3（是否做 Web 前端）、G5（`tase-ime-tsf` 与 `pime-tsf` 的关系）、G7（持久化选型）、G8（位置基准）、G12（是否全量改文档内引用）。
+
+---
+
+## 9. 实现现状（2026-11-07 观察，**新增章节，不改动上文 2026-11-05 的观察**）
+
+上文 §6 的里程碑现状是 **2026-11-05 观察**，那一栏保留原样（它描述的是当时的事实）。
+本节是**同一条路线的最新观察**：哪些 crate 已经落地、哪些落差被实现证实、哪些要你裁定。
+
+| 阶段 | 2026-11-05 观察（原文保留） | 2026-11-07 观察（新增） |
+|---|---|---|
+| **M0** | `Contract v1.1`、知识卡 Schema、Local Hub **均无** | `tase-contract`（契约层，冻结 12 个错误码）已落地；93 张知识卡的 Schema 与索引已落地（`tase-catalog`）；`tase-local-hub` 已落地（鉴权、会话、工作区、事件流）。**G7 持久化选型仍未决**（D-53） |
+| **M1** | Catalog/Plan/Preview/Apply **全无**；持久化为 JSON/Markdown | Catalog（`tase-catalog`）、Plan（`tase-planner`）、Preview/Apply/Rebase/Git CAS（`tase-executor`，59 项测试）已落地；持久化改成 SQLite WAL（`tase-local-store`，71 项）。**G1 按裁定方向 (a) 实现**：executor 产出「受约束 diff + 逆操作」交宿主单次 `applyEdit`，不自己持有 buffer |
+| **M2** | 队列无、目录与 `tase_*` MCP 工具无 | 公平队列/配额/租约与 fencing/预算/事件分发已落地（`tase-agent-scheduler`，63 项）；93 项目录已落地且**开始有认证实现**（`tase-impls`：五十个算法，状态 `TESTED`）；`catalog.*` 四个 MCP 工具已接进 `pime-agent` |
+| **M3** | TSF 已有且可用；F1 智能修改在既有范围内；Vercel Router/可视化无 | TSF 侧**接入了 TASE 的共享隐私规则**（`pime-tsf/src/tase_policy.rs`：密码框/安全桌面/UAC/AppContainer/浏览器安全输入五种上下文的判定，与扩展、Agent 共用同一把尺子）。F1 的改造不在本仓库 |
+| **M4** | TASE 侧的算法认证/签名/运维体系无 | 算法认证**开始落地**：目录里每个算法带一条实现登记（真实摘要 + 具名测试清单），状态停在 `TESTED`——`APPROVED` 需要人签字（**D-61**）。签名与运维体系仍无 |
+
+### 9.1 落地的 crate（14 个；第 15 个 `tase-ime-tsf` 按 §7-G5 合并进 `pime-tsf`，不单独建）
+
+`tase-contract` · `tase-registry` · `tase-planner` · `tase-metrics` · `tase-local-ipc` · `tase-local-store` ·
+`tase-semantic` · `tase-catalog` · `tase-catalog-mcp` · `tase-ime-core` · `tase-local-hub` ·
+`tase-executor` · `tase-agent-scheduler` · `tase-worker` · `tase-impls`
+
+**依赖方向与 §4 的约束一致**：contract 在底，executor 不反向依赖协议层；每个 crate 有自己的 `Cargo.lock`、不进主 workspace（D-50）。详见 `01_Source/docs/TASE_CRATES.md`。
+
+### 9.2 实现证实、仍要你裁定的落差
+
+| 编号 | 落差 | 证据 | 谁发现的 |
+|---|---|---|---|
+| **D-57** | `pime-core` 没有 `Document`/`apply`，undo 栈只在测试替身里 | `pime-core/src/edit/transaction.rs:227,330,373,427`、`:557` | `tase-executor` |
+| **D-58** | core 的 coordinator 拒绝多文件 plan（`CROSS_FILE_DENIED`） | `pime-core/src/edit/transaction.rs:232` | `tase-executor` |
+| **D-59** | `symbol_signature_hash` 没有规范定义（占位符 `"sha256:FULL64HEX"`） | `tase-contract/src/api.rs:2092` | `tase-executor` |
+| **D-60** | `Target.symbol_kind` 是自由字符串，未知名字被静默映射 | `tase-contract/src/api.rs:654`、`tase-semantic/src/symbol.rs:83` | `tase-executor` |
+| **D-63** | Hub 的文件写锁没有 fencing token，也没有写前守卫 | `tase-local-hub/src/workspace.rs:85-107,189-198,274-276,316-330` | `tase-agent-scheduler` |
+| **D-64** | 「租约与 fencing」的职责同时给了 worker 与 scheduler 两个 crate | 本对照稿 `:184` 与 `:188` | `tase-agent-scheduler` |
+| **D-65** | 设计书的 outbox 表容不下「至少一次 + 按订阅者 ack」 | `IDE1_TASE_Complete_Design_v1.1.md:1885-1890` | `tase-agent-scheduler` |
+
+**全部待裁定项（44 条）见 `02_Verification/DEFECT_SUBMISSION_2026-11-07.md`**：那份单子还列了**已经发生但未经你批准的改动**（D-27 的重画优化、D-16 的出厂默认、D-53 的 rusqlite 破例等），每一项都给了回退方式。

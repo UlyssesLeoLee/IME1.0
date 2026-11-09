@@ -408,20 +408,57 @@ mod tests {
         assert_eq!(registry.len(), 93);
         assert!(!registry.is_empty());
         assert_eq!(registry.catalog_version(), "1.0.0");
-        // every asset is a knowledge card and nothing else
+        // Every asset is a knowledge card. The fifty algorithms of the catalogue carry an implementation (the
+        // crate `tase-impls`), the forty-three patterns do not: a pattern is a shape, it is not one algorithm.
+        let mut with_implementation = 0;
         for entry in registry.entries() {
             assert_eq!(entry.status, "DOCUMENTED", "{}", entry.id);
-            assert!(
-                entry.implementations.is_empty(),
-                "{} has an implementation",
-                entry.id
-            );
             assert!(!entry.digest.is_empty(), "{} has no digest", entry.id);
             assert!(entry.digest.starts_with("sha256:"), "{}", entry.id);
             assert_eq!(entry.digest.len(), "sha256:".len() + 64, "{}", entry.id);
             assert!(entry.card_path.is_some(), "{} has no card", entry.id);
             assert_eq!(entry.license.as_deref(), Some("MIT"), "{}", entry.id);
+            if entry.id.starts_with("pattern.") {
+                assert!(
+                    entry.implementations.is_empty(),
+                    "{} is a pattern and has no implementation",
+                    entry.id
+                );
+                continue;
+            }
+            assert_eq!(
+                entry.implementations.len(),
+                1,
+                "{} carries exactly one implementation",
+                entry.id
+            );
+            let implementation = &entry.implementations[0];
+            assert_eq!(implementation.language, "rust", "{}", entry.id);
+            assert_eq!(implementation.status, "TESTED", "{}", entry.id);
+            assert_eq!(implementation.engine, "rust", "{}", entry.id);
+            assert!(
+                implementation.path.starts_with("01_Source/crates/tase-impls/"),
+                "{} names the file of the implementation: {}",
+                entry.id,
+                implementation.path
+            );
+            assert!(
+                implementation.sha256.len() == 64
+                    && implementation
+                        .sha256
+                        .chars()
+                        .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()),
+                "{} carries the real digest of its file",
+                entry.id
+            );
+            assert!(
+                implementation.tests_manifest.starts_with("01_Source/assets/tase-catalog/implementations/"),
+                "{} names the tests that stand behind it",
+                entry.id
+            );
+            with_implementation += 1;
         }
+        assert_eq!(with_implementation, 50, "the fifty algorithms of the catalogue");
         // the first asset of the index is the first asset of the registry
         assert_eq!(
             registry.entries()[0].id,

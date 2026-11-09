@@ -1,0 +1,19 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.dp.knapsack_01",
+  "implementation_id": "tase-impls.rust.algorithm.dp.knapsack_01",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/dp.rs",
+    "sha256": "ed0ffbe6ecec6107340caa8c88cb2a5a69ce6a146b10bf7499db8dbc145c2328",
+    "function": "knapsack_01"
+  },
+  "tests": [
+    "knapsack_01_asset_picks_the_best_items",
+    "knapsack_01_asset_on_the_boundary_inputs",
+    "knapsack_01_asset_refuses_a_negative_capacity_and_a_negative_weight"
+  ],
+  "command": "cargo test -p tase-impls knapsack_01"
+}

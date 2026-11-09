@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.concurrency.exponential_backoff_jitter",
+  "implementation_id": "tase-impls.rust.algorithm.concurrency.exponential_backoff_jitter",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+    "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+    "function": "exponential_backoff_jitter"
+  },
+  "tests": [
+    "exponential_backoff_jitter_grows_exponentially_and_stays_under_the_cap",
+    "exponential_backoff_jitter_rejects_the_configuration_that_cannot_back_off"
+  ],
+  "command": "cargo test -p tase-impls exponential_backoff_jitter"
+}

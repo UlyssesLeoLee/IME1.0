@@ -37,7 +37,19 @@
     "time": "O(尝试次数 × 平均退避时长)",
     "extra_space": "O(1)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.concurrency.exponential_backoff_jitter",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+      "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+      "parameters_schema": "pub fn exponential_backoff_jitter( base_ms: u64, cap_ms: u64, attempt: u32, random: u64, ) -> Result<u64, String>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.concurrency.exponential_backoff_jitter.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Exponential_backoff",

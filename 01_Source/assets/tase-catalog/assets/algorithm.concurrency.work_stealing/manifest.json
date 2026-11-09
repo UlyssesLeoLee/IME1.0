@@ -37,7 +37,19 @@
     "time": "O(1) 摊还 入队/出队/窃取",
     "extra_space": "O(任务队列总容量)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.concurrency.work_stealing",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/concurrency.rs",
+      "sha256": "c1cef06b482db70d6184df86db3775f94672795e5de4d95d879f1e52e4b72d72",
+      "parameters_schema": "pub fn work_stealing<T: Send + 'static, F: Fn(usize, T) + Send + Sync + 'static>( worker_count: usize, tasks: Vec<T>, work: F, ) -> Result<usize, String>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.concurrency.work_stealing.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Work_stealing"

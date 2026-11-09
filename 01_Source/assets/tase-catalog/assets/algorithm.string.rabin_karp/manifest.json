@@ -37,7 +37,19 @@
     "time": "O(n + m) 期望",
     "extra_space": "O(1)"
   },
-  "implementations": [],
+  "implementations": [
+    {
+      "implementation_id": "tase-impls.rust.algorithm.string.rabin_karp",
+      "language": "rust",
+      "version": "0.1.0",
+      "status": "TESTED",
+      "engine": "rust",
+      "path": "01_Source/crates/tase-impls/src/algorithm/string.rs",
+      "sha256": "8f00079b65c0ae772d1d2c3d7f4287abd990912e455d1c1422e5e2315adbb384",
+      "parameters_schema": "pub fn rabin_karp( text: &[u8], pattern: &[u8], base: u64, modulus: u64, ) -> Result<Vec<usize>, String>",
+      "tests_manifest": "01_Source/assets/tase-catalog/implementations/algorithm.string.rabin_karp.json"
+    }
+  ],
   "provenance": {
     "references": [
       "https://en.wikipedia.org/wiki/Rabin%E2%80%93Karp_algorithm"

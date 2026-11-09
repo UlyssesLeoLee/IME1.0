@@ -1,0 +1,50 @@
+# TASE-WORKER: the resident worker of TASE - the queue consumer, the lease with its fencing token, the runner that
+# hands a job to the executor, the verifier of the gates and the recovery after a crash (detailed design §14, S3
+# "Worker & Queue", and §5.2, §6.2, §7.2, §10, §13).
+#
+# Deliberately NOT a member of the main workspace: it is a TASE crate with its own Cargo.lock, so that the local hub
+# and the agent scheduler can build it on their own.
+#
+# The crate has no third-party dependency: the diff, the apply, the rollback and the Git compare-and-swap come from
+# `tase-executor`, the token metering, the cost and the ACI assertions come from `tase-metrics`, the jobs, the leases,
+# the idempotency records, the snapshots and the reconciliation come from `tase-local-store` (SQLite in WAL mode), and
+# the identifiers and the business error codes come from `tase-contract`.
+[package]
+name = "tase-worker"
+version = "1.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "TASE worker: the queue consumer, the lease and the fencing token, the runner, the verifier and the recovery"
+
+# The unit tests live inside the modules of src/ (there is no tests/ directory), so cargo is told not to look for one.
+autotests = false
+
+# `src/main.rs` is the module of the skeleton of the worker, not the root of a binary: the autodiscovery of the
+# binaries is turned off, so the only binary of the crate is the one that is named below.
+autobins = false
+
+[lib]
+name = "tase_worker"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tase-worker"
+path = "src/bin/tase-worker.rs"
+
+[dependencies]
+# The path dependencies of the crate. No other dependency is allowed.
+tase-contract = { path = "../tase-contract" }
+tase-executor = { path = "../tase-executor" }
+tase-local-store = { path = "../tase-local-store" }
+tase-metrics = { path = "../tase-metrics" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# "unwind", not "abort": a panic must not take a worker down without a message
+panic = "unwind"
+strip = true
+
+[workspace]

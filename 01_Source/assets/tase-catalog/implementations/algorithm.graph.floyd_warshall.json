@@ -1,0 +1,18 @@
+{
+  "schema_version": "tase.implementation.tests.v1",
+  "asset_id": "algorithm.graph.floyd_warshall",
+  "implementation_id": "tase-impls.rust.algorithm.graph.floyd_warshall",
+  "status": "TESTED",
+  "language": "rust",
+  "version": "0.1.0",
+  "source": {
+    "path": "01_Source/crates/tase-impls/src/algorithm/graph.rs",
+    "sha256": "ab01ddb9c77f53eaf1b6c103225b6c42e8daf17142efb28594211b4411e7719e",
+    "function": "floyd_warshall"
+  },
+  "tests": [
+    "floyd_warshall_asset_agrees_with_dijkstra",
+    "floyd_warshall_asset_detects_a_negative_cycle"
+  ],
+  "command": "cargo test -p tase-impls floyd_warshall"
+}
