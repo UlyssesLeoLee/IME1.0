@@ -28,9 +28,9 @@ const tests = __dirname, src = path.resolve(tests, '..'), root = path.resolve(sr
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|installer|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|bench|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'installer'];
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -164,6 +164,12 @@ if (want('worker')) {
     const b = cargoRetry('pime-ai-worker', ['build']);
     return b.ok ? sh(process.execPath, [path.join(tests, 'smoke', 'ai-worker-smoke.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}) : b;
   });
+}
+if (want('bench')) {
+  // The cost and the latency benchmark: the local candidate path has to stay inside its budget (DD-IME §20.2:
+  // p95 <= 50 ms). The evidence is written into 02_Verification/cost-benchmark.json.
+  step('cost benchmark: the local candidate path stays inside its budget (DD-IME 20.2)', () =>
+    sh(process.execPath, [path.join(src, 'scripts', 'bench-cost.js')]));
 }
 if (want('ipc')) step('IPC (crates/pime-ipc): unit + loopback tests on real named pipes', () => sh(process.execPath, [path.join(tests, 'smoke', 'ipc-smoke.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
 if (want('setup')) step('Installer (crates/pime-setup): cargo test (temp-folder integration tests only)', () => cargoRetry('pime-setup', ['test']));

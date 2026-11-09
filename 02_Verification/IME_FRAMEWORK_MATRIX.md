@@ -226,7 +226,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | 文档数字 ↔ 产物一致性（含反向对照：篡改任一数字必变红） | 通过 | `01_Source/tests/smoke/installer-claims-check.js` |
 | 证据集交叉核对（**构建日志 ↔ dist 产物 ↔ `.sha256` sidecar ↔ 文档正文 ↔ 两份测试日志**） | 通过（第六轮新增；18 项断言） | `01_Source/tests/smoke/evidence-cross-check.js` |
 | 签名脚本自检（`-Help` / 无证书 / 解析 / ASCII / 假 signtool 端到端） | 通过 | `01_Source/scripts/sign-installer.ps1`、`01_Source/docs/SIGNING.md` |
-| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **793 / 793 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`））；**第十五轮再刷 19 条 + 补登记 2 个新文件**（`skin.rs`、`docs/HOTKEYS.md`）**并移除 2 个已删文件**（`floating.rs`、`bar_skin.rs`）；**本轮（第十六轮）再刷 22 条 + 补登记 10 个新文件**——`cjk.rs` 与 5 个词库数据文件、`services.rs`、`laser_candidates.rs`、`predictor.rs`、`probe-report.json`；**本轮（第十七轮）再刷 18 条 + 补登记 13 个新文件**——线上契约 `agent_proto.rs`、桥接窗口 `agent_bridge.rs`、`crates/pime-agent/` 的 9 个文件与它的 `Cargo.lock`、`docs/AI_AGENT_API.md`，并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
+| 仓库完整性清单（`MANIFEST_SHA256.txt`，文本按 LF 归一化、二进制按原字节） | **798 / 798 对得上**（第五轮统一口径全量重算：172 条刷新 + 8 个新文件；第六轮再刷 13 条 + 补登记 2 个新文件 `build.rs` 与 `evidence-cross-check.js`；**第七轮补登记 `paint.rs`**；**第八轮补登记 `examples/tsf_host.rs` 与 `uat-claims-check.js`**；**第十轮再刷 33 条 + 补登记 18 个新文件**——3 个插件包、插件语言规范、输入法测试矩阵、IME 场景/账本/宿主三套测试、原生窗口探针与抓屏脚本、插件语言两侧测试与夹具，以及 L4 取证的两张桌面截图；**上一轮再刷 20 条 + 补登记 5 个新文件**——`autostart.rs`、`bar_skin.rs`、`candidate_skin.rs`，以及两张放大取证图（`candidate-list-zoom.png`、`floating-bar-zoom.png`）；**本轮再刷 9 条 + 补登记 3 个新文件**——`examples/laser_beam_probe.rs` 与两张取证图（`settings-panel-zoom.png`、`laser-beam-zoom.png`））；**第十五轮再刷 19 条 + 补登记 2 个新文件**（`skin.rs`、`docs/HOTKEYS.md`）**并移除 2 个已删文件**（`floating.rs`、`bar_skin.rs`）；**本轮（第十六轮）再刷 22 条 + 补登记 10 个新文件**——`cjk.rs` 与 5 个词库数据文件、`services.rs`、`laser_candidates.rs`、`predictor.rs`、`probe-report.json`；**本轮（第十七轮）再刷 18 条 + 补登记 13 个新文件**——线上契约 `agent_proto.rs`、桥接窗口 `agent_bridge.rs`、`crates/pime-agent/` 的 9 个文件与它的 `Cargo.lock`、`docs/AI_AGENT_API.md`，并与磁盘实际文件**零缺口** | `node 01_Source/scripts/update-manifest.js --check` |
 
 **注意口径**：上一行 9 项全部是**代码层与行为层**的证据。它们**不**构成"这是一个能用的 Windows 输入法"的证明——那一层是空的（见第 4 节）。
 
@@ -416,7 +416,7 @@ payload_meta_json_bytes = 87
 rust_core_tests = 441
 rust_tsf_tests = 316
 rust_agent_tests = 63
-rust_tase_tests = 1004
+rust_tase_tests = 1019
 js_tests = 353
 evidence_run_all_log = run-all-2026-11-04.log
 evidence_setup_log = setup-tests-2026-11-04.log

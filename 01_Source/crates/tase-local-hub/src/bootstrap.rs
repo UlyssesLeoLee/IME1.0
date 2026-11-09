@@ -24,6 +24,8 @@ use std::time::Duration;
 use tase_contract::TaseError;
 use tase_local_ipc::{FrameError, PeerIdentity, Transport};
 
+use crate::scheduler::SchedulerKind;
+
 /// The prefix of the pipe of the Hub, as the IPC crate of TASE writes it.
 pub const PIPE_PREFIX: &str = tase_local_ipc::acl::PIPE_PREFIX;
 
@@ -45,6 +47,18 @@ pub struct HubConfig {
     pub max_connections: u32,
     /// The most jobs that are not finished at the same time (detailed design §17.5: 16).
     pub max_concurrent_jobs: u32,
+    /// Which scheduler the Hub uses for its jobs (detailed design §17.5).
+    ///
+    /// The default is the fair scheduler of `tase-agent-scheduler` (the five classes and the
+    /// weighted round robin). The round robin of the Hub is the degradation that the design book
+    /// allows, and it stays in the code.
+    pub scheduler: SchedulerKind,
+    /// The weight the Hub gives to an agent that does not ask for another one.
+    ///
+    /// The weight is the share of the agent inside a class: the fair scheduler grants the agent
+    /// `weight × quantum` credits at every visit of the round robin, so a weight of two is twice
+    /// the share of a weight of one.
+    pub agent_weight: u32,
 }
 
 impl Default for HubConfig {
@@ -54,6 +68,8 @@ impl Default for HubConfig {
             data_dir: default_data_dir(),
             max_connections: crate::defaults::MAX_CONNECTIONS,
             max_concurrent_jobs: crate::defaults::MAX_CONCURRENT_JOBS,
+            scheduler: SchedulerKind::default(),
+            agent_weight: 1,
         }
     }
 }
@@ -81,6 +97,11 @@ impl HubConfig {
         }
         if self.max_concurrent_jobs == 0 {
             return Err(TaseError::invalid_argument("the hub runs no job"));
+        }
+        if self.agent_weight == 0 {
+            return Err(TaseError::invalid_argument(
+                "the weight of an agent must be at least one",
+            ));
         }
         Ok(())
     }
@@ -961,8 +982,10 @@ mod tests {
 
     #[test]
     fn a_prefix_that_the_transport_does_not_use_is_refused() {
-        let mut config = HubConfig::default();
-        config.pipe_prefix = r"\\.\pipe\ide1-tase-".to_string();
+        let config = HubConfig {
+            pipe_prefix: r"\\.\pipe\ide1-tase-".to_string(),
+            ..HubConfig::default()
+        };
         let error = config.validate().expect_err("the prefix is refused");
         assert_eq!(error.code, tase_contract::ErrorCode::InvalidArgument);
         let mut factory = FakeFactory::new();
@@ -973,11 +996,15 @@ mod tests {
 
     #[test]
     fn a_hub_without_a_connection_or_a_job_is_refused() {
-        let mut config = HubConfig::default();
-        config.max_connections = 0;
+        let config = HubConfig {
+            max_connections: 0,
+            ..HubConfig::default()
+        };
         assert!(config.validate().is_err());
-        let mut config = HubConfig::default();
-        config.max_concurrent_jobs = 0;
+        let config = HubConfig {
+            max_concurrent_jobs: 0,
+            ..HubConfig::default()
+        };
         assert!(config.validate().is_err());
     }
 

@@ -12,6 +12,7 @@
 //! | [`auth`] | who may talk to the Hub? |
 //! | [`session`] | what is a session of an agent? |
 //! | [`workspace`] | who may write into which file? |
+//! | [`scheduler`] | which job runs next, and who may write while it runs? |
 //! | [`server`] | what does the Hub do with the frames it receives? |
 //! | [`telemetry`] | what did the Hub see? |
 //!
@@ -21,6 +22,9 @@
 //!   control of the pipe. The Hub speaks it; it does not write a second transport;
 //! * `tase-local-store` owns the persistence (the sessions, the jobs, the leases, the idempotency
 //!   records and the generation of the files);
+//! * `tase-agent-scheduler` owns the fairness of the jobs (the five classes, the weighted round
+//!   robin, the leases and the fencing); the Hub plugs it into its seam and writes no second
+//!   scheduler of its own;
 //! * `tase-contract` owns the identifiers and the twelve business error codes;
 //! * `pime-core` owns the strict JSON parser and the SHA-256.
 //!
@@ -40,6 +44,7 @@
 
 pub mod auth;
 pub mod bootstrap;
+pub mod scheduler;
 pub mod server;
 pub mod session;
 pub mod telemetry;
@@ -51,6 +56,7 @@ pub use bootstrap::{
     PlatformSessionIdentity, SessionIdentity, StaticSessionIdentity, platform_factory,
     platform_identity, start_or_connect, start_or_connect_with,
 };
+pub use scheduler::{DEFAULT_WORK_CLASS, FairScheduler, SchedulerKind, cost_of, work_class_of};
 pub use server::{Hub, HubState, JobRequest, JobScheduler, RecoveryReport, RoundRobinScheduler};
 pub use session::{AgentSession, SessionEntry, SessionRegistry, SessionState};
 pub use telemetry::{HubEvent, HubEventKind, Telemetry};
@@ -85,6 +91,12 @@ pub mod defaults {
     pub const MAX_CONCURRENT_JOBS: u32 = 16;
     /// How long a session lease lasts when the agent does not say otherwise.
     pub const SESSION_LEASE_MS: u64 = 30_000;
+    /// How long the lease of a job lasts when nobody says otherwise.
+    ///
+    /// The design book fixes the numbers of the budgets of §17.5 and not the deadline of a job; a
+    /// job that is not done in half a minute is taken back, and the holder that comes back is a
+    /// zombie whose write is refused.
+    pub const JOB_LEASE_MS: u64 = 30_000;
     /// How long a write lock lasts when the agent does not say otherwise.
     pub const FILE_LEASE_MS: u64 = 60_000;
     /// How often the Hub expects a heartbeat.

@@ -4,6 +4,12 @@
 
 use crate::error::{Result, fail};
 
+/// The number of tokens of a text, as the product counts them: `ceil(length / 3)` of the UTF-16 length.
+///
+/// It is re-exported here because this module is the one that accounts for the tokens: the benchmark of the cost
+/// (02_Verification) and the tools that measure a request need the **same** rule as the one the core sends with.
+pub use crate::ai::estimate_tokens;
+
 /// A reservation; settle or release it exactly once.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Ticket {

@@ -103,6 +103,7 @@
 |---|---|---|---|---|---|
 | **D-26** | 低 | `pime-core` 的 `cargo clippy --all-targets -- -D warnings` 是红的：**4 条，全是既有代码**被新版 clippy（1.99）判出来的 | `base64.rs:53`（`manual_is_multiple_of`）、`style.rs` 的 `put`/`blend`（`chunks_exact_mut` → `as_chunks_mut`）、`style.rs` 的 `stroke_segment`（`too_many_arguments`，8 个参数） | 门禁**不含 clippy**，三道 claims 门禁不受影响 | 纯风格改写，各 1~3 行，不改行为。要我改就说一声 |
 | **D-41** | 低 | `pime-tsf` 的 clippy 有 **3 条**（第十八轮实测更正过一次，原来写 2 条） | `predictor.rs:21`（`new_without_default`）、`tip.rs:1669`（`let_and_return`）、`examples/ime_ui_probe.rs:261`（`unnecessary_cast`） | 同上 | 同上。**注意第三条在第十八轮之前就在**，不是本轮引入 |
+| **D-81** | 低 | **`tase-local-hub` 的 clippy 不是干净的（2 条，都是既有代码）** | `tase-local-hub/src/session.rs:449` 的 `assert_eq!(LOGON.len() > 0, true)` ⇒ `clippy::len_zero`（本轮接线时实测发现；与 HEAD 逐字相同，**不是接线引入的**） | 门禁**不含 clippy**，不影响三道 claims 校验 | 纯风格改写（`assert!(!LOGON.is_empty())`），1 行，不改行为。**按规矩交你裁定，我没有动** |
 | **D-27** | 高（已修） | 激光界面开着时一个核跑满 | 见 §1 | 已降到 4% | 追认或回退 |
 
 ### G. 更早登记、仍未决的产品取舍（摘要，原文在 FRAMEWORK_GAPS.md）

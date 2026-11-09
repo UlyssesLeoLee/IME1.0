@@ -28,6 +28,8 @@ const EXCLUDED = new Set([
   '02_Verification/run-all-2026-11-04.log',
   '02_Verification/setup-tests-2026-11-04.log',
   '02_Verification/installer-build.log',
+  // The benchmark is rewritten on every run (the numbers are a measurement of this machine).
+  '02_Verification/cost-benchmark.json',
 ]);
 
 // The directories whose files this round added to the repository.
@@ -195,6 +197,11 @@ const ADDITIONS = [
   '01_Source/scripts/validate-tase-catalog.js',
   // the map of the fifteen TASE crates of this repository
   '01_Source/docs/TASE_CRATES.md',
+  // the cost and the latency benchmark of the product
+  '01_Source/scripts/bench-cost.js',
+  '01_Source/crates/tase-metrics/examples/cost_bench.rs',
+  '01_Source/assets/pricing/sample-price-table.json',
+  '02_Verification/COST_BENCHMARK.md',
   // the defect submission sheet (the items the user has to decide)
   '02_Verification/DEFECT_SUBMISSION_2026-11-07.md',
 ];

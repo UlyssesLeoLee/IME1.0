@@ -1,0 +1,37 @@
+{
+  "schema_version": "tase.cost-benchmark.v1",
+  "measured_at": "2026-11-09T03:30:12.057Z",
+  "machine": "SEIKOIST002",
+  "budget": {
+    "rule": "the local candidate path stays inside its budget (DD-IME 20.2)",
+    "p95_us": 50000,
+    "source": "design §20.2 (p95 <= 50 ms for the local cache)"
+  },
+  "latency": {
+    "samples": 1200,
+    "candidates_seen": 9800,
+    "p50_us": 0.3,
+    "p95_us": 28.6,
+    "max_us": 33.9,
+    "p95_ns": 28600,
+    "budget_us": 50000,
+    "within_budget": true
+  },
+  "cost": {
+    "price_table": "E:\\IME1.0\\01_Source\\assets\\pricing\\sample-price-table.json",
+    "input_tokens": 96,
+    "output_tokens": 200,
+    "models": [
+      {
+        "provider": "sample",
+        "model": "sample-model-small",
+        "cost_usd": 0.00013440000000000001
+      },
+      {
+        "provider": "sample",
+        "model": "sample-model-large",
+        "cost_usd": 0.003288
+      }
+    ]
+  }
+}

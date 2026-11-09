@@ -112,7 +112,7 @@ impl HubEventKind {
 
     /// The kind of a name; `None` when the name is not one of ours.
     #[must_use]
-    pub fn from_str(name: &str) -> Option<HubEventKind> {
+    pub fn from_name(name: &str) -> Option<HubEventKind> {
         HubEventKind::ALL
             .into_iter()
             .find(|kind| kind.as_str() == name)
@@ -333,7 +333,7 @@ impl HubEvent {
         let kind = value
             .get("kind")
             .and_then(Json::as_str)
-            .and_then(HubEventKind::from_str)
+            .and_then(HubEventKind::from_name)
             .ok_or_else(|| TaseError::invalid_argument("the event has no known kind"))?;
         let at_ms = value
             .get("at_ms")
@@ -675,9 +675,9 @@ mod tests {
     #[test]
     fn every_kind_has_a_name_and_comes_back_from_it() {
         for kind in HubEventKind::ALL {
-            assert_eq!(HubEventKind::from_str(kind.as_str()), Some(kind));
+            assert_eq!(HubEventKind::from_name(kind.as_str()), Some(kind));
         }
-        assert_eq!(HubEventKind::from_str("nonsense"), None);
+        assert_eq!(HubEventKind::from_name("nonsense"), None);
         assert_eq!(HubEventKind::ALL.len(), 8);
     }
 

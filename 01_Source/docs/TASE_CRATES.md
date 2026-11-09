@@ -97,7 +97,7 @@ node 01_Source\tests\run-all.js --tase
 ## 还没定的事
 
 设计书与本仓库之间的落差**没有**被悄悄抹平：13 条 G1~G13 在对照稿 §7，
-56 条待裁定的缺陷与取舍在 `02_Verification/DEFECT_SUBMISSION_2026-11-07.md`。
+57 条待裁定的缺陷与取舍在 `02_Verification/DEFECT_SUBMISSION_2026-11-07.md`。
 其中三条会挡住后面的活，需要你给一句话：
 
 1. **D-53**：`tase-local-store` 用 SQLite（设计书口径、许可干净、破了零依赖）还是改成零依赖追加式？

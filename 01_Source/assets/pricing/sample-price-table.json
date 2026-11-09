@@ -1,0 +1,21 @@
+{
+  "schema_version": "tase.price-table.v1",
+  "note": "SAMPLE TABLE - the numbers below are an example, not the price of any provider. Put your own table here (or pass another file to the benchmark) and the cost of the report is yours.",
+  "currency": "USD",
+  "entries": [
+    {
+      "provider": "sample",
+      "model": "sample-model-small",
+      "input_per_million": 0.15,
+      "output_per_million": 0.6,
+      "cached_input_per_million": 0.015
+    },
+    {
+      "provider": "sample",
+      "model": "sample-model-large",
+      "input_per_million": 3.0,
+      "output_per_million": 15.0,
+      "cached_input_per_million": 0.3
+    }
+  ]
+}

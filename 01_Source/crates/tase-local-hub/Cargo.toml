@@ -42,6 +42,10 @@ tase-contract = { path = "../tase-contract" }
 tase-local-ipc = { path = "../tase-local-ipc" }
 # The persistence of the sessions, the jobs, the leases, the idempotency records and the file generations.
 tase-local-store = { path = "../tase-local-store" }
+# The fair queues, the leases and the fencing, and the budgets of the jobs come from the scheduler
+# crate of TASE: the Hub writes no second scheduler of its own, it plugs that one into the seam of
+# `JobScheduler` (detailed design §17.5).
+tase-agent-scheduler = { path = "../tase-agent-scheduler" }
 
 # The Windows part of the Hub reads the token of the process (the logon SID is the namespace of the pipe,
 # detailed design §17.2). `windows` is pinned to 0.58 because 0.60+ import the Windows functions with

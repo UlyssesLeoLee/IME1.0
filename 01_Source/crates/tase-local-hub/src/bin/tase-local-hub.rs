@@ -16,7 +16,7 @@ use std::process::ExitCode;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use tase_local_hub::{Hub, HubConfig, HubRole, platform_identity, start_or_connect};
+use tase_local_hub::{Hub, HubConfig, HubRole, SchedulerKind, platform_identity, start_or_connect};
 use tase_local_store::Store;
 
 /// Whether the user asked the Hub to stop.
@@ -56,6 +56,8 @@ Options:
       --data-dir <dir>    the directory where the Hub keeps its data
       --max-connections <n>  the most connections at the same time (default 64)
       --max-jobs <n>      the most jobs that are not finished at the same time (default 16)
+      --scheduler <kind>  the scheduler of the jobs: fair or round-robin (default fair)
+      --agent-weight <n>  the share of an agent in the queue of its class (default 1)
 
 The Hub serves one logon session: the name of its pipe is computed out of the logon SID of the
 process, and a second Hub of the same session connects to the first one instead of writing into the
@@ -129,6 +131,20 @@ fn parse(args: &[String]) -> Result<Options, String> {
                 config.max_concurrent_jobs = value
                     .parse::<u32>()
                     .map_err(|_| "--max-jobs wants a number".to_string())?;
+                index += 1;
+            }
+            "--scheduler" => {
+                let value = value_of(args, index + 1, "--scheduler")?;
+                config.scheduler = SchedulerKind::from_name(&value).ok_or_else(|| {
+                    format!("--scheduler wants fair or round-robin, not {value}")
+                })?;
+                index += 1;
+            }
+            "--agent-weight" => {
+                let value = value_of(args, index + 1, "--agent-weight")?;
+                config.agent_weight = value
+                    .parse::<u32>()
+                    .map_err(|_| "--agent-weight wants a number".to_string())?;
                 index += 1;
             }
             other => return Err(format!("unknown option {other}")),
@@ -328,9 +344,38 @@ mod tests {
             "--data-dir",
             "--max-connections",
             "--max-jobs",
+            "--scheduler",
+            "--agent-weight",
         ] {
             assert!(USAGE.contains(option), "the usage must name {option}");
         }
+    }
+
+    #[test]
+    fn the_scheduler_of_the_jobs_is_read() {
+        let options = parse(&args(&["--scheduler", "fair"])).expect("the command line is read");
+        assert_eq!(options.config.scheduler, SchedulerKind::Fair);
+        let options = parse(&args(&["--scheduler", "round-robin"]))
+            .expect("the command line is read");
+        assert_eq!(options.config.scheduler, SchedulerKind::RoundRobin);
+    }
+
+    #[test]
+    fn a_scheduler_that_is_not_ours_is_refused() {
+        let error = parse(&args(&["--scheduler", "nonsense"])).expect_err("the scheduler is refused");
+        assert!(error.contains("--scheduler"), "{error}");
+    }
+
+    #[test]
+    fn the_weight_of_an_agent_is_read() {
+        let options = parse(&args(&["--agent-weight", "3"])).expect("the command line is read");
+        assert_eq!(options.config.agent_weight, 3);
+    }
+
+    #[test]
+    fn a_weight_that_is_not_a_number_is_refused() {
+        let error = parse(&args(&["--agent-weight", "heavy"])).expect_err("the weight is refused");
+        assert!(error.contains("--agent-weight"), "{error}");
     }
 
     #[test]

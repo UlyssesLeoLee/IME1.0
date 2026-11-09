@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，793 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，798 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -353,30 +353,36 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 6. **`tase-worker`（74 项测试全绿、clippy 干净）**：队列消费者（退避重试）、租约与 fencing、沙箱允许清单、ACI 断言与 token/成本/延迟、崩溃恢复（幂等键 + 重放/完成/放弃）。**它是最后一个核心 crate**——十五个 TASE crate 到此全部落地。
 7. **十五个 crate 的落点与依赖方向**写在 `01_Source/docs/TASE_CRATES.md`；对照稿新增 §9「实现现状（2026-11-07 观察）」。
 
+8. **Hub 接上了真正的调度器**：`tase-local-hub` 不再挂那个轮转占位实现——新的 `src/scheduler.rs` 把 `tase-agent-scheduler` 接进 `JobScheduler` 这道接缝（**五类分层队列 + 每 Agent 加权公平 + 租约与 fencing**），这正是对照稿的 crate 表里写着、却一直没接的那根线。Hub 的测试 **93 → 108 项全绿**。
+
 ### 三、TASE：目录里的五十个算法第一次有了真正的实现与认证登记
 
-8. **新 crate `tase-impls`**：**只用标准库**、零第三方依赖、无 unsafe；目录里**五十个算法**（排序 7 / 查找 5 / 图 9 / DP 6 / 字符串 6 /
+9. **新 crate `tase-impls`**：**只用标准库**、零第三方依赖、无 unsafe；目录里**五十个算法**（排序 7 / 查找 5 / 图 9 / DP 6 / 字符串 6 /
    数据结构 6 / 数学 6 / 并发 5）按分类分模块实现，**111 项测试 + 18 项 doctest 全绿**；并发那五个是真多线程实现（阻塞/拒绝背压、工作窃取、令牌桶）。
-9. **登记脚本** `scripts/collect-implementations.js` 读代码里的标记（`* asset:` / `* card:`），把实现写回资产的 manifest：
+10. **登记脚本** `scripts/collect-implementations.js` 读代码里的标记（`* asset:` / `* card:`），把实现写回资产的 manifest：
    实现所在文件、**该文件的真实 SHA-256**（LF 归一化，与 `MANIFEST_SHA256.txt` 同一把尺子）、函数签名、**具名测试清单**。
-10. **校验器升级** `scripts/validate-tase-catalog.js`：现在逐条核对——文件必须在、**摘要必须对得上**（占位摘要过不去）、
+11. **校验器升级** `scripts/validate-tase-catalog.js`：现在逐条核对——文件必须在、**摘要必须对得上**（占位摘要过不去）、
    声明 `TESTED` 的必须有一条具名测试。**认证状态停在 `TESTED`，不是 `APPROVED`**（那要人签字，见 D-61）。
 
 ### 四、输入法与 TASE 共用同一条隐私规则
 
-11. `pime-tsf` 现在**依赖 `tase-ime-core`**；新模块 `crates/pime-tsf/src/tase_policy.rs` 把宿主的答案（密码框？安全桌面？）
+12. `pime-tsf` 现在**依赖 `tase-ime-core`**；新模块 `crates/pime-tsf/src/tase_policy.rs` 把宿主的答案（密码框？安全桌面？）
     映射成 TASE 的上下文，再问**共享的那把尺子**：五种受保护上下文一律拒绝，理由用共享的那套词。
     **控制器的采集闸门与代理的写入闸门都改走这条规则**（代理那一侧线格式没变，还是 `Secure` 错误）。
 
 ### 五、缺陷提交单（本轮的新交付物）
 
-12. **`02_Verification/DEFECT_SUBMISSION_2026-11-07.md`**：把散在各节的待裁定项**收成一张单子**——
-    **§1 已发生但未经你批准的改动（8 项，每项都给了回退方式）**、**§2 待你裁定的缺陷与取舍（56 条，逐条给严重度/证据/影响/建议处置）**、
+13. **`02_Verification/DEFECT_SUBMISSION_2026-11-07.md`**：把散在各节的待裁定项**收成一张单子**——
+
+14. **成本基准与延迟基准**（M4 的落点）：`crates/tase-metrics/examples/cost_bench.rs` + `scripts/bench-cost.js` 量两件事——**本地候选路径的延迟**（设计书 DD-IME §20.2 的 `p95 <= 50 ms`）与**一次模型调用的成本**（token 用核心自己的规则数，价格用**操作者自己的价目表**；仓库里那份是**样例**，provider 写的就是 `sample`）。实测 **p50 0.3 µs / p95 28.5 µs / max 60.9 µs**（1200 个样本），一次典型请求 **96 输入 token + 200 输出 token**。**门禁多了一步**（`bench` 组）：p95 超预算即红。证据 `02_Verification/cost-benchmark.json`，报告 `02_Verification/COST_BENCHMARK.md`。
+    **§1 已发生但未经你批准的改动（8 项，每项都给了回退方式）**、**§2 待你裁定的缺陷与取舍（57 条，逐条给严重度/证据/影响/建议处置）**、
     **§3 只需要你回答的三个问题**（D-53 存储选型、D-51 要不要引 AST 依赖、D-42 面板入口的快捷键用哪个键）。
 
 ### 六、这一轮**没有**验证的（不虚报）
 
-13. **真机**：新 DLL 还没换上（注销/重启后才有）。设置窗开关与共享隐私策略只过了**单元测试**，没有新的实拍截图。
-14. **安装包**：0.3.0 的包用 `--skip-dry-run` 构建——360 安全卫士会「执行即隔离」未签名的安装包，本机跑不了它自己的 dry-run 自检
+15. **真机**：新 DLL 还没换上（注销/重启后才有）。设置窗开关与共享隐私策略只过了**单元测试**，没有新的实拍截图。
+16. **安装包**：0.3.0 的包用 `--skip-dry-run` 构建——360 安全卫士会「执行即隔离」未签名的安装包，本机跑不了它自己的 dry-run 自检
     （其余自检全过：x64 PE、只导入系统 DLL、载荷 10 条的页脚哈希由独立读取器验证）。
-15. **TASE 还没接线**：执行器与调度器是**可用的库**，还没有被 Hub / Worker / Agent 调用；接线前要先裁定 D-63 与 D-64。
+17. **TASE 只接了一半**：Hub 已经用上真正的调度器（第 8 条），但**执行器与 worker 还没有被 Agent 调用**——
+    `tase-worker` 的二进制**没有宿主门**（没有宿主就拒单，绝不假装写过文件），Agent 端也还没有「提交计划 → 预览 → 应用」这条链。
+    接线前要先裁定 D-63（Hub 的文件锁没有 fencing token）与 D-64（租约职责重叠）。

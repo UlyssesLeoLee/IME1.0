@@ -37,6 +37,7 @@ use tase_local_store::{Job, JobStatus, NewFileTransaction, NewJob, NewSession, S
 
 use crate::auth::authorize;
 use crate::bootstrap::{AcceptedConnection, BoxedTransport, HubConfig, PipeListener, SessionIdentity};
+use crate::scheduler::{FairScheduler, SchedulerKind};
 use crate::session::{AgentSession, SessionRegistry};
 use crate::telemetry::{HubEvent, Telemetry, redact};
 use crate::workspace::{Clock, SystemClock, WorkspaceRegistry};
@@ -106,6 +107,16 @@ pub trait JobScheduler: Send {
 
     /// The number of the jobs that run now.
     fn running(&self) -> usize;
+
+    /// Says that an agent may run jobs, and with which weight.
+    ///
+    /// The weight is the share of the agent inside a class: the fair scheduler of
+    /// `tase-agent-scheduler` grants the agent `weight × quantum` credits at every visit of the
+    /// round robin. The default does nothing, because the round robin of the Hub gives every agent
+    /// the same turn and needs no weight.
+    fn register_agent(&mut self, _agent_id: &AgentId, _weight: u32) -> Result<(), TaseError> {
+        Ok(())
+    }
 }
 
 /// The scheduler of the Hub when nobody brought one: a round robin over the agents.
@@ -300,14 +311,12 @@ impl std::fmt::Debug for HubState {
 
 impl HubState {
     /// A state without a session and without a job.
-    fn new(clock: Arc<dyn Clock>) -> HubState {
+    fn new(clock: Arc<dyn Clock>, config: &HubConfig) -> HubState {
         HubState {
             sessions: SessionRegistry::new(),
             workspaces: WorkspaceRegistry::new(clock, crate::defaults::FILE_LEASE_MS),
             telemetry: Telemetry::new(),
-            scheduler: Box::new(RoundRobinScheduler::new(
-                crate::defaults::MAX_CONCURRENT_JOBS,
-            )),
+            scheduler: build_scheduler(config),
             store: None,
             connections: Vec::new(),
             next_connection_id: 1,
@@ -342,6 +351,20 @@ impl HubState {
 /// Whether a state of a job is the end of it.
 fn is_terminal(status: &str) -> bool {
     matches!(status, "COMMITTED" | "FAILED" | "CANCELLED" | "CONFLICT")
+}
+
+/// The scheduler of the configuration of the Hub (detailed design §17.5).
+///
+/// The default is the fair scheduler of `tase-agent-scheduler`: the five classes of the design
+/// book and the weighted round robin over the agents. The round robin of the Hub stays as the
+/// degradation that the design book allows, and the configuration says which one is used.
+fn build_scheduler(config: &HubConfig) -> Box<dyn JobScheduler> {
+    match config.scheduler {
+        SchedulerKind::Fair => Box::new(FairScheduler::new(config.max_concurrent_jobs)),
+        SchedulerKind::RoundRobin => {
+            Box::new(RoundRobinScheduler::new(config.max_concurrent_jobs))
+        }
+    }
 }
 
 /// The parts of the Hub that every thread shares.
@@ -495,6 +518,13 @@ impl HubInner {
             now_ms,
             crate::defaults::SESSION_LEASE_MS,
         )?;
+
+        // The scheduler knows the agent and the share it gets in the queue of its class
+        // (detailed design §17.5): the fair scheduler weighs the agents, the round robin of the
+        // Hub does not need a weight.
+        state
+            .scheduler
+            .register_agent(&session.agent, self.config.agent_weight)?;
 
         if let Some(store) = state.store.as_mut() {
             store.open_session(NewSession {
@@ -944,10 +974,11 @@ impl Hub {
             identity.session_id(),
         );
         let clock: Arc<dyn Clock> = Arc::new(SystemClock);
+        let state = HubState::new(Arc::clone(&clock), &config);
         let inner = HubInner {
             config,
             acl,
-            state: Mutex::new(HubState::new(Arc::clone(&clock))),
+            state: Mutex::new(state),
             clock: Mutex::new(clock),
             capabilities: HUB_CAPABILITIES.iter().map(|name| name.to_string()).collect(),
             timeouts: Timeouts::default(),
@@ -1011,7 +1042,7 @@ impl Hub {
     }
 
     /// The state of the Hub, under its lock.
-    #[must_use]
+    #[must_use = "the state of the hub is only good while its lock is held"]
     pub fn state(&self) -> MutexGuard<'_, HubState> {
         self.inner.lock()
     }

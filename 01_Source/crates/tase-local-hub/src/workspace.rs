@@ -257,10 +257,10 @@ impl WorkspaceRegistry {
                 .get(&key)
                 .map(|lock| &lock.agent == agent)
                 .unwrap_or(false);
-            if matches {
-                if let Some(lock) = self.locks.remove(&key) {
-                    released.push(lock);
-                }
+            if matches
+                && let Some(lock) = self.locks.remove(&key)
+            {
+                released.push(lock);
             }
         }
         released
@@ -322,10 +322,10 @@ impl WorkspaceRegistry {
                 .get(&key)
                 .map(|lock| !lock.is_valid_at(now_ms))
                 .unwrap_or(false);
-            if stale {
-                if let Some(lock) = self.locks.remove(&key) {
-                    expired.push(lock);
-                }
+            if stale
+                && let Some(lock) = self.locks.remove(&key)
+            {
+                expired.push(lock);
             }
         }
         expired
@@ -388,12 +388,12 @@ pub fn normalize_path(path: &str) -> Result<String, TaseError> {
             "the path of a file is relative to the workspace",
         ));
     }
-    if let Some(drive) = trimmed.get(1..2) {
-        if drive == ":" {
-            return Err(TaseError::invalid_argument(
-                "the path of a file is relative to the workspace",
-            ));
-        }
+    if let Some(drive) = trimmed.get(1..2)
+        && drive == ":"
+    {
+        return Err(TaseError::invalid_argument(
+            "the path of a file is relative to the workspace",
+        ));
     }
     let mut parts: Vec<&str> = Vec::new();
     for part in trimmed.split('/') {
