@@ -7,8 +7,9 @@
 #
 # The crate has no third-party dependency: the diff, the apply, the rollback and the Git compare-and-swap come from
 # `tase-executor`, the token metering, the cost and the ACI assertions come from `tase-metrics`, the jobs, the leases,
-# the idempotency records, the snapshots and the reconciliation come from `tase-local-store` (SQLite in WAL mode), and
-# the identifiers and the business error codes come from `tase-contract`.
+# the idempotency records, the snapshots and the reconciliation come from `tase-local-store` (SQLite in WAL mode), the
+# identifiers and the business error codes come from `tase-contract`, and the frame format, the protocol negotiation
+# and the named pipe of the link to the Hub come from `tase-local-ipc`.
 [package]
 name = "tase-worker"
 version = "1.1.0"
@@ -34,10 +35,21 @@ path = "src/bin/tase-worker.rs"
 
 [dependencies]
 # The path dependencies of the crate. No other dependency is allowed.
+# The strict JSON parser/serializer and the SHA-256 come from the core: the link to the Hub speaks
+# the JSON of the protocol.
+pime-core = { path = "../pime-core" }
 tase-contract = { path = "../tase-contract" }
 tase-executor = { path = "../tase-executor" }
 tase-local-store = { path = "../tase-local-store" }
 tase-metrics = { path = "../tase-metrics" }
+# The frame format, the protocol negotiation, the connection and the named pipe come from the IPC
+# crate of TASE: the worker writes no second transport.
+tase-local-ipc = { path = "../tase-local-ipc" }
+
+[dev-dependencies]
+# The Hub is the other side of the link: the tests of the round trip run against the real Hub over
+# a memory pipe (no named pipe is opened, and no window of the user is written).
+tase-local-hub = { path = "../tase-local-hub" }
 
 [profile.release]
 opt-level = "s"

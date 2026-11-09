@@ -86,6 +86,7 @@
 #![allow(special_module_name)]
 
 pub mod consumer;
+pub mod hub_link;
 pub mod lease;
 // The mapping document asks for `src/main.rs` as the module of the skeleton of the worker (the fifth row of the table
 // of the crates). The file is a module of the library and not the root of a binary: the autodiscovery of the binaries
@@ -99,6 +100,10 @@ pub mod verifier;
 pub use consumer::{
     ConsumeOutcome, Consumer, MemoryTaskSource, QueuedTask, RetryPolicy, StoreTaskSource, Task,
     TaskExecutor, TaskQueue, TaskReport, TaskResult, TaskSource,
+};
+pub use hub_link::{
+    COMPLETE_METHOD, HubJobRunner, HubLink, LinkOutcome, PreviewRunner, TAKE_METHOD, TakenJob,
+    WORKER_CAPABILITIES, preview_to_json, run_request_of,
 };
 pub use lease::{
     Clock, FenceGuard, Lease, LeaseError, LeaseGuard, LeaseState, LeaseTable, LogicalClock,

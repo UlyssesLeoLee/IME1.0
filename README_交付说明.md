@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，799 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，801 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -388,6 +388,8 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 与 **`tase_apply`**（一次写进去）。一次调用 = 一条读 + 一条算 + 一条写（`replace=true`），**没有第二条写、没有写一半**。
 **协议与 DLL 一个字节都没改**（用的是现有的 `ime_read_selection` / `ime_insert_text` 两个 op）——这条宿主能改的是
 **光标所在的编辑区**，不是磁盘文件。
-18. **还差一段**：Hub 已经用上真正的调度器（第 8 条）、执行器已经接上宿主（第 17 条），但**中间的队列还没接**——
-    AI 客户端还**不能**把一个作业交给 Hub、让 worker 算完再拿回来；`tase-worker` 的二进制也**没有宿主门**（没有宿主就拒单，绝不假装写过文件）。
-    接线前要先裁定 D-63（Hub 的文件锁没有 fencing token）与 D-64（租约职责重叠）。
+18. **队列也接上了**：Hub 现在能把作业交出去（`job.take`，**一次只给一个**，带 fencing token；`job.complete` **token 不对就拒**），
+    worker 侧新增 `hub_link.rs`（管道客户端：握手 → 取作业 → 跑 → 回报），二进制连上 Hub 的管道真跑起来了——
+    **Hub 不在时它打印一句人话就退出，不假装在工作**。至此 TASE 的链路是通的：
+    **AI 客户端 → 目录/预览/应用 → 宿主 → 用户文档**，另一条是**客户端 → Hub → worker → 结果**。
+    仍要你裁定：**D-63**（Hub 的文件锁没有 fencing token）与 **D-64**（租约职责重叠）——这两条不裁定，「谁有权写」还是含糊的。

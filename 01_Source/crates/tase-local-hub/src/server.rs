@@ -29,7 +29,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use pime_core::json::{Json, Limits};
-use tase_contract::{AgentId, JobId, SessionId, TaseError, WorkspaceId};
+use tase_contract::{AgentId, ErrorCode, JobId, SessionId, TaseError, WorkspaceId};
 use tase_local_ipc::{
     AclPolicy, Connection, FrameError, FrameHeader, FrameKind, PeerIdentity, Timeouts, Transport,
 };
@@ -101,6 +101,16 @@ pub trait JobScheduler: Send {
 
     /// Says that a job is done.
     fn complete(&mut self, job_id: &JobId, now_ms: u64);
+
+    /// The token of the lease of a job, when the scheduler keeps a lease for it.
+    ///
+    /// The Hub hands this token to the worker that takes the job and checks it when the worker
+    /// reports: the store does not check the epoch of a job, so this token is the fence of the
+    /// split brain (detailed design §17.6). A scheduler that keeps no lease of its own says
+    /// `None`, and the Hub mints a token for the handout.
+    fn lease_token(&self, _job_id: &JobId) -> Option<u64> {
+        None
+    }
 
     /// The number of the jobs that wait.
     fn queued(&self) -> usize;
@@ -212,7 +222,11 @@ pub struct ConnectionInfo {
 }
 
 /// What the Hub knows about a job that is not finished.
-#[derive(Clone, Debug, PartialEq, Eq)]
+///
+/// The record carries the request of the job (the worker needs it to run the job) and its result
+/// (the client needs it to show the diff). The JSON of the request and of the result is not `Eq`
+/// (a number is a float), so the record is `PartialEq` and not `Eq`.
+#[derive(Clone, Debug, PartialEq)]
 pub struct JobRecord {
     /// The id of the job.
     pub job_id: JobId,
@@ -234,6 +248,17 @@ pub struct JobRecord {
     pub created_at_ms: u64,
     /// The time the job was touched the last time.
     pub updated_at_ms: u64,
+    /// The request of the job, as the client sent it.
+    ///
+    /// The Hub does not read it: it carries it to the worker that takes the job. A job that comes
+    /// from the store after a restart has no request (the store keeps the digest of the request,
+    /// not the request itself), and the field is [`Json::Null`].
+    pub request: Json,
+    /// The result of the job, when it is done; `None` while the job runs.
+    ///
+    /// The result lives in the memory of the Hub: the store keeps the digest of the result, not
+    /// the result itself.
+    pub result: Option<Json>,
 }
 
 impl JobRecord {
@@ -251,8 +276,28 @@ impl JobRecord {
             status: job.status.as_str().to_string(),
             created_at_ms: job.created_at_ms,
             updated_at_ms: job.updated_at_ms,
+            request: Json::Null,
+            result: None,
         }
     }
+}
+
+/// The record of a job that the Hub handed to a worker and that is not reported yet.
+///
+/// The token of the handout is the fence of the split brain: a worker that was replaced carries an
+/// old token, and the Hub refuses its report (the store does not check the epoch of a job).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Handoff {
+    /// The job that was handed out.
+    pub job_id: JobId,
+    /// The token the worker has to send back with its report.
+    pub fencing_token: u64,
+    /// The agent the job belongs to.
+    pub agent_id: AgentId,
+    /// The session that asked for the job.
+    pub session_id: SessionId,
+    /// The time of the handout.
+    pub at_ms: u64,
 }
 
 /// The record of an idempotency key.
@@ -296,6 +341,13 @@ pub struct HubState {
     next_connection_id: u64,
     jobs: HashMap<String, JobRecord>,
     idempotency: HashMap<String, IdempotencyEntry>,
+    /// The jobs that were handed to a worker and that are not reported yet.
+    ///
+    /// The table holds the token of the handout: the Hub checks it when the worker reports, and
+    /// a report that carries another token comes from a worker that was replaced.
+    handoffs: HashMap<String, Handoff>,
+    /// The counter of the tokens that the Hub mints for the schedulers that keep no lease.
+    token_counter: u64,
 }
 
 impl std::fmt::Debug for HubState {
@@ -322,6 +374,8 @@ impl HubState {
             next_connection_id: 1,
             jobs: HashMap::new(),
             idempotency: HashMap::new(),
+            handoffs: HashMap::new(),
+            token_counter: 0,
         }
     }
 
@@ -345,6 +399,20 @@ impl HubState {
             .values()
             .filter(|job| !is_terminal(&job.status))
             .count()
+    }
+
+    /// A token for a handout, for the schedulers that keep no lease of their own.
+    ///
+    /// The token grows with every handout, so the token of a job that is handed out again is never
+    /// the token of the handout before it: the report of the old holder is refused.
+    fn mint_token(&mut self) -> u64 {
+        self.token_counter = self.token_counter.saturating_add(1);
+        self.token_counter
+    }
+
+    /// The handout of a job, when the job was handed to a worker and is not reported yet.
+    fn handoff_of(&self, job_id: &JobId) -> Option<&Handoff> {
+        self.handoffs.get(job_id.as_str())
     }
 }
 
@@ -467,6 +535,8 @@ impl HubInner {
             "agent.heartbeat" => self.agent_heartbeat(session_id, now_ms),
             "agent.unregister" => self.agent_unregister(session_id, now_ms),
             "job.enqueue" => self.job_enqueue(session_id, params, now_ms),
+            "job.take" => self.job_take(session_id, params, now_ms),
+            "job.complete" => self.job_complete(session_id, params, now_ms),
             "job.status" => self.job_status(params),
             "local.status" => self.local_status(),
             "local.events" => self.local_events(params),
@@ -682,6 +752,10 @@ impl HubInner {
             status: JobStatus::Queued.as_str().to_string(),
             created_at_ms: now_ms,
             updated_at_ms: now_ms,
+            // the request is kept as the client sent it: the Hub does not read it, it carries it
+            // to the worker that takes the job
+            request: params.clone(),
+            result: None,
         };
         state.jobs.insert(job_id.as_str().to_string(), record);
         state.idempotency.insert(
@@ -715,9 +789,186 @@ impl HubInner {
         ]))
     }
 
+    /// Gives the job that may run now to the worker that asks for it.
+    ///
+    /// The answer carries the job, the request of the job and the token of the handout: the
+    /// worker sends the token back with its report, and the Hub checks it.
+    ///
+    /// There is no error when there is no job: the worker polls, and an empty queue is not a
+    /// failure.
+    fn job_take(
+        &self,
+        _session_id: &SessionId,
+        _params: &Json,
+        now_ms: u64,
+    ) -> Result<Json, TaseError> {
+        let mut state = self.lock();
+        let Some(job) = state.scheduler.next_job(now_ms) else {
+            return Ok(Json::obj(vec![
+                ("available", Json::Bool(false)),
+                ("job", Json::Null),
+                ("fencing_token", Json::int(0)),
+            ]));
+        };
+
+        // The token of the handout: the token of the lease of the scheduler when it keeps one (the
+        // fair scheduler of `tase-agent-scheduler` does), the token of the Hub when it keeps none
+        // (the round robin of the Hub has no lease of its own).
+        let leased = state.scheduler.lease_token(&job.job_id);
+        let token = match leased {
+            Some(token) => token,
+            None => state.mint_token(),
+        };
+
+        let request = state
+            .jobs
+            .get(job.job_id.as_str())
+            .map(|record| record.request.clone())
+            .unwrap_or(Json::Null);
+        state.handoffs.insert(
+            job.job_id.as_str().to_string(),
+            Handoff {
+                job_id: job.job_id.clone(),
+                fencing_token: token,
+                agent_id: job.agent_id.clone(),
+                session_id: job.session_id.clone(),
+                at_ms: now_ms,
+            },
+        );
+        if let Some(record) = state.jobs.get_mut(job.job_id.as_str()) {
+            record.status = JobStatus::Running.as_str().to_string();
+            record.updated_at_ms = now_ms;
+        }
+        // The store knows the state of the job too. The epoch of the store is not the token of the
+        // Hub: the store does not fence a job, the Hub does.
+        if let Some(store) = state.store.as_mut()
+            && store.get_job(&job.job_id)?.is_some()
+        {
+            let _ = store.transition_job(
+                &job.job_id,
+                JobStatus::Queued,
+                JobStatus::Running,
+                0,
+                now_ms,
+            )?;
+        }
+        state.telemetry.push(HubEvent::JobDispatched {
+            job_id: job.job_id.as_str().to_string(),
+            agent_id: job.agent_id.as_str().to_string(),
+            at_ms: now_ms,
+        });
+
+        Ok(Json::obj(vec![
+            ("available", Json::Bool(true)),
+            (
+                "job",
+                Json::obj(vec![
+                    ("job_id", Json::str(job.job_id.as_str())),
+                    ("job_type", Json::str(&job.job_type)),
+                    ("agent_id", Json::str(job.agent_id.as_str())),
+                    ("session_id", Json::str(job.session_id.as_str())),
+                    ("workspace_id", Json::str(job.workspace_id.as_str())),
+                    ("priority", Json::int(i64::from(job.priority))),
+                    ("enqueued_at_ms", Json::int(job.enqueued_at_ms as i64)),
+                ]),
+            ),
+            ("fencing_token", Json::int(token as i64)),
+            ("request", request),
+        ]))
+    }
+
+    /// Takes the report of a worker: the job is done, or it failed.
+    ///
+    /// The report carries the token of the handout: a report whose token is not the current one of
+    /// the job comes from a worker that was replaced (the lease of the job ran out and the job was
+    /// handed out again), and it is refused. The job is **not** finished by such a report: the
+    /// store does not check the epoch of a job, so this is the only fence against the split brain
+    /// (detailed design §17.6).
+    fn job_complete(
+        &self,
+        _session_id: &SessionId,
+        params: &Json,
+        now_ms: u64,
+    ) -> Result<Json, TaseError> {
+        let job_id = JobId::new(string_param(params, &["job_id", "id"])?)?;
+        let token = params
+            .get("fencing_token")
+            .and_then(Json::as_i64)
+            .and_then(|number| u64::try_from(number).ok())
+            .ok_or_else(|| TaseError::invalid_argument("the report carries no fencing token"))?;
+        let status = JobStatus::from_name(&string_param(params, &["status"])?)
+            .ok_or_else(|| TaseError::invalid_argument("the report names no state of the contract"))?;
+        if !status.is_terminal() {
+            return Err(TaseError::invalid_argument(
+                "a report ends the job: it may not name a state that is not the end of it",
+            ));
+        }
+        let result = params
+            .get("result")
+            .cloned()
+            .filter(|value| *value != Json::Null);
+        let error_code = optional_string_param(params, &["error_code"])
+            .and_then(|name| ErrorCode::from_str(&name));
+
+        let mut state = self.lock();
+        let Some(handoff) = state.handoff_of(&job_id).cloned() else {
+            // The job was never handed out, or it is already done. A report that comes again for a
+            // job that is done is accepted and changes nothing: the job is never run twice.
+            let done = state
+                .jobs
+                .get(job_id.as_str())
+                .is_some_and(|record| is_terminal(&record.status));
+            if done {
+                return Ok(Json::obj(vec![
+                    ("job_id", Json::str(job_id.as_str())),
+                    ("status", Json::str(status.as_str())),
+                    ("accepted", Json::Bool(true)),
+                    ("deduplicated", Json::Bool(true)),
+                ]));
+            }
+            return Err(TaseError::not_found(format!(
+                "the job {job_id} was not handed to a worker"
+            )));
+        };
+        if handoff.fencing_token != token {
+            return Err(TaseError::permission_denied(format!(
+                "the job {job_id} was handed out again: the report of the old holder is refused"
+            )));
+        }
+
+        state.handoffs.remove(job_id.as_str());
+        state.scheduler.complete(&job_id, now_ms);
+        let digest = result
+            .as_ref()
+            .map(|value| pime_core::sha256::sha256_hex(&value.to_json_string()));
+        if let Some(record) = state.jobs.get_mut(job_id.as_str()) {
+            record.status = status.as_str().to_string();
+            record.result = result;
+            record.updated_at_ms = now_ms;
+        }
+        if let Some(store) = state.store.as_mut() {
+            store.finish_job(&job_id, status, digest, error_code, now_ms)?;
+        }
+        state.telemetry.push(HubEvent::JobFinished {
+            job_id: job_id.as_str().to_string(),
+            status: status.as_str().to_string(),
+            at_ms: now_ms,
+        });
+        Ok(Json::obj(vec![
+            ("job_id", Json::str(job_id.as_str())),
+            ("status", Json::str(status.as_str())),
+            ("accepted", Json::Bool(true)),
+            ("deduplicated", Json::Bool(false)),
+        ]))
+    }
+
     fn job_status(&self, params: &Json) -> Result<Json, TaseError> {
         let job_id = JobId::new(string_param(params, &["job_id", "id"])?)?;
         let state = self.lock();
+        let record = state.jobs.get(job_id.as_str());
+        let result = record
+            .and_then(|record| record.result.clone())
+            .unwrap_or(Json::Null);
         if let Some(store) = state.store.as_ref()
             && let Some(job) = store.get_job(&job_id)?
         {
@@ -730,11 +981,10 @@ impl HubInner {
                 ("workspace_id", Json::str(job.workspace_id.as_str())),
                 ("created_at_ms", Json::int(job.created_at_ms as i64)),
                 ("updated_at_ms", Json::int(job.updated_at_ms as i64)),
+                ("result", result),
             ]));
         }
-        let record = state
-            .jobs
-            .get(job_id.as_str())
+        let record = record
             .ok_or_else(|| TaseError::not_found(format!("the job {job_id} is not known")))?;
         Ok(Json::obj(vec![
             ("job_id", Json::str(record.job_id.as_str())),
@@ -745,6 +995,7 @@ impl HubInner {
             ("workspace_id", Json::str(record.workspace_id.as_str())),
             ("created_at_ms", Json::int(record.created_at_ms as i64)),
             ("updated_at_ms", Json::int(record.updated_at_ms as i64)),
+            ("result", result),
         ]))
     }
 
@@ -1085,6 +1336,19 @@ impl Hub {
     /// Ends a connection: the session, its leases and its write locks go with it.
     pub fn close_connection(&self, connection_id: u64, reason: &str) {
         self.inner.close_connection(connection_id, reason);
+    }
+
+    /// Serves one connection of the namespace.
+    ///
+    /// The frames of the peer are read and answered until the peer goes or the Hub is asked to
+    /// stop. The transport is any transport of `tase-local-ipc`, so a test may serve a memory
+    /// pipe: the Hub itself does not know the difference between a named pipe and a pipe of the
+    /// memory.
+    ///
+    /// A peer whose identity is not known is refused: it cannot be told apart from anybody.
+    pub fn serve(&self, transport: BoxedTransport, peer: Option<PeerIdentity>) {
+        let accepted = AcceptedConnection { transport, peer };
+        serve_connection(&self.inner, accepted, &self.stopped);
     }
 
     /// Answers a request of a session.
@@ -1492,6 +1756,79 @@ mod tests {
             .with_clock(Arc::new(clock.clone()))
             .with_scheduler(Box::new(RoundRobinScheduler::new(2)));
         (hub, clock)
+    }
+
+    /// A Hub whose scheduler is the fair one of `tase-agent-scheduler`, with its leases and its
+    /// fencing tokens.
+    fn fair_hub(max_jobs: u32) -> (Hub, ManualClock) {
+        let clock = ManualClock::new(1000);
+        let hub = Hub::new(
+            HubConfig {
+                max_connections: 2,
+                max_concurrent_jobs: max_jobs,
+                ..HubConfig::default()
+            },
+            &identity(),
+        )
+        .expect("the hub is built")
+        .with_clock(Arc::new(clock.clone()))
+        .with_scheduler(Box::new(FairScheduler::new(max_jobs)));
+        (hub, clock)
+    }
+
+    /// Puts a job in the queue of the Hub and gives its id back.
+    fn enqueue(hub: &Hub, session: &SessionId, key: &str, now_ms: u64) -> String {
+        let params = Json::obj(vec![
+            ("idempotency_key", Json::str(key)),
+            ("request_digest", Json::str(&format!("digest-{key}"))),
+            ("job_type", Json::str("preview")),
+        ]);
+        let answer = hub
+            .handle_message(session, "job.enqueue", &params, now_ms)
+            .expect("the job is queued");
+        answer
+            .get("job_id")
+            .and_then(Json::as_str)
+            .expect("the job")
+            .to_string()
+    }
+
+    /// Asks the Hub for the job that may run now.
+    fn take(hub: &Hub, session: &SessionId, now_ms: u64) -> Json {
+        hub.handle_message(session, "job.take", &Json::Obj(Vec::new()), now_ms)
+            .expect("the worker asks for a job")
+    }
+
+    /// The report of a worker that ran the job.
+    fn report(token: u64, job_id: &str, status: &str, result: Option<Json>) -> Json {
+        let mut fields = vec![
+            ("job_id", Json::str(job_id)),
+            ("fencing_token", Json::int(token as i64)),
+            ("status", Json::str(status)),
+        ];
+        if let Some(result) = result {
+            fields.push(("result", result));
+        }
+        Json::obj(fields)
+    }
+
+    /// The id of the job the answer of a handout carries.
+    fn job_of(answer: &Json) -> String {
+        answer
+            .get("job")
+            .and_then(|job| job.get("job_id"))
+            .and_then(Json::as_str)
+            .expect("the job of the answer")
+            .to_string()
+    }
+
+    /// The token of the handout of an answer.
+    fn token_of(answer: &Json) -> u64 {
+        answer
+            .get("fencing_token")
+            .and_then(Json::as_i64)
+            .and_then(|number| u64::try_from(number).ok())
+            .expect("the token of the handout")
     }
 
     fn peer() -> PeerIdentity {
@@ -2081,5 +2418,295 @@ mod tests {
         let _ = std::fs::remove_dir_all(&directory);
         std::fs::create_dir_all(&directory).expect("the directory is made");
         directory
+    }
+
+    // -- the handout of the jobs -------------------------------------------------------------------
+
+    /// A job is handed to one worker only: the second worker finds nothing.
+    #[test]
+    fn a_job_is_handed_to_one_worker_only() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+
+        let first = take(&hub, &session, now);
+        assert_eq!(first.get("available").and_then(Json::as_bool), Some(true));
+        assert_eq!(job_of(&first), job_id, "the worker takes the job of the queue");
+        assert!(token_of(&first) > 0, "the handout carries a token");
+
+        // the second worker asks while the Hub runs its one job: there is nothing for it
+        let second = take(&hub, &session, now);
+        assert_eq!(
+            second.get("available").and_then(Json::as_bool),
+            Some(false),
+            "the job is not handed to a second worker"
+        );
+        assert_eq!(second.get("job"), Some(&Json::Null));
+    }
+
+    /// Two workers take two different jobs: the queue never hands the same job out twice.
+    #[test]
+    fn two_workers_take_two_different_jobs() {
+        let (hub, _clock) = fair_hub(2);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let first_id = enqueue(&hub, &session, "key-1", now);
+        let second_id = enqueue(&hub, &session, "key-2", now);
+
+        let first = take(&hub, &session, now);
+        let second = take(&hub, &session, now);
+        assert_ne!(job_of(&first), job_of(&second), "the jobs are not the same");
+        let mut taken = vec![job_of(&first), job_of(&second)];
+        taken.sort();
+        let mut queued = vec![first_id, second_id];
+        queued.sort();
+        assert_eq!(taken, queued);
+
+        // the queue is empty now
+        let third = take(&hub, &session, now);
+        assert_eq!(third.get("available").and_then(Json::as_bool), Some(false));
+    }
+
+    /// The method is also known with the prefix of the design book.
+    #[test]
+    fn the_handout_is_also_known_with_the_prefix_of_the_design_book() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+
+        let answer = hub
+            .handle_message(&session, "tase.job.take", &Json::Obj(Vec::new()), now)
+            .expect("the worker asks for a job");
+        assert_eq!(job_of(&answer), job_id);
+        let token = token_of(&answer);
+        let accepted = hub
+            .handle_message(
+                &session,
+                "tase.job.complete",
+                &report(token, &job_id, "COMMITTED", None),
+                now,
+            )
+            .expect("the report is accepted");
+        assert_eq!(accepted.get("accepted").and_then(Json::as_bool), Some(true));
+    }
+
+    /// The report of a worker that was replaced is refused, and the job is not finished.
+    #[test]
+    fn a_report_with_a_wrong_token_is_refused_and_the_job_is_not_finished() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+        let taken = take(&hub, &session, now);
+        let token = token_of(&taken);
+
+        // the report carries another token: the worker is old
+        let error = hub
+            .handle_message(
+                &session,
+                "job.complete",
+                &report(token + 1, &job_id, "COMMITTED", None),
+                now,
+            )
+            .expect_err("the report of the old holder is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+
+        // the job is not finished, and the handout is still there
+        let status = hub
+            .handle_message(
+                &session,
+                "job.status",
+                &Json::obj(vec![("job_id", Json::str(&job_id))]),
+                now,
+            )
+            .expect("the state of the job");
+        assert_eq!(status.get("status").and_then(Json::as_str), Some("RUNNING"));
+        assert!(hub.state().handoff_of(&JobId::new(job_id.clone()).expect("the job")).is_some());
+    }
+
+    /// The report that carries the token of the handout finishes the job, and the result is there.
+    #[test]
+    fn a_report_with_the_right_token_finishes_the_job_and_the_status_holds_the_result() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+        let taken = take(&hub, &session, now);
+        let token = token_of(&taken);
+
+        let diff = Json::obj(vec![
+            ("diff_text", Json::str("--- a\n+++ b\n")),
+            ("changed_paths", Json::strs(&["src/main.rs"])),
+        ]);
+        let accepted = hub
+            .handle_message(
+                &session,
+                "job.complete",
+                &report(token, &job_id, "COMMITTED", Some(diff.clone())),
+                now,
+            )
+            .expect("the report is accepted");
+        assert_eq!(accepted.get("accepted").and_then(Json::as_bool), Some(true));
+        assert_eq!(accepted.get("status").and_then(Json::as_str), Some("COMMITTED"));
+
+        // the client that polls the state of the job finds the result
+        let status = hub
+            .handle_message(
+                &session,
+                "job.status",
+                &Json::obj(vec![("job_id", Json::str(&job_id))]),
+                now,
+            )
+            .expect("the state of the job");
+        assert_eq!(status.get("status").and_then(Json::as_str), Some("COMMITTED"));
+        assert_eq!(
+            status.get("result").and_then(|result| result.get("diff_text")),
+            Some(&Json::str("--- a\n+++ b\n")),
+            "the result of the job is in the state of the job"
+        );
+        assert!(
+            hub.state().handoff_of(&JobId::new(job_id.clone()).expect("the job")).is_none(),
+            "the handout is over"
+        );
+    }
+
+    /// A report of a job that was never handed out is refused: there is no token to check.
+    #[test]
+    fn a_report_of_a_job_that_was_never_handed_out_is_refused() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+
+        let error = hub
+            .handle_message(
+                &session,
+                "job.complete",
+                &report(1, &job_id, "COMMITTED", None),
+                now,
+            )
+            .expect_err("the report is refused");
+        assert_eq!(error.code, ErrorCode::NotFound);
+    }
+
+    /// The same report may come again: the job is not run twice, and nothing changes.
+    #[test]
+    fn the_same_report_twice_changes_nothing() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+        let taken = take(&hub, &session, now);
+        let token = token_of(&taken);
+
+        hub.handle_message(
+            &session,
+            "job.complete",
+            &report(token, &job_id, "COMMITTED", None),
+            now,
+        )
+        .expect("the report is accepted");
+        let again = hub
+            .handle_message(
+                &session,
+                "job.complete",
+                &report(token, &job_id, "COMMITTED", None),
+                now,
+            )
+            .expect("the report is accepted again");
+        assert_eq!(again.get("accepted").and_then(Json::as_bool), Some(true));
+        assert_eq!(again.get("deduplicated").and_then(Json::as_bool), Some(true));
+    }
+
+    /// A report that does not end the job is refused: only the end of a job is a report.
+    #[test]
+    fn a_report_that_does_not_end_the_job_is_refused() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+        let taken = take(&hub, &session, now);
+        let token = token_of(&taken);
+
+        let error = hub
+            .handle_message(
+                &session,
+                "job.complete",
+                &report(token, &job_id, "RUNNING", None),
+                now,
+            )
+            .expect_err("the report is refused");
+        assert_eq!(error.code, ErrorCode::InvalidArgument);
+    }
+
+    /// The round robin of the Hub keeps no lease: the Hub mints a token of its own for the
+    /// handout, and the report is checked against it.
+    #[test]
+    fn the_round_robin_of_the_hub_mints_a_token_of_its_own() {
+        let (hub, _clock) = hub();
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+        let taken = take(&hub, &session, now);
+        let token = token_of(&taken);
+        assert!(token > 0, "the handout carries a token");
+
+        let error = hub
+            .handle_message(
+                &session,
+                "job.complete",
+                &report(token + 1, &job_id, "COMMITTED", None),
+                now,
+            )
+            .expect_err("the report of the old holder is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+    }
+
+    /// The token of the handout is the token of the lease of the scheduler.
+    #[test]
+    fn the_token_of_the_handout_is_the_token_of_the_lease() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let job_id = enqueue(&hub, &session, "key-1", now);
+
+        let taken = take(&hub, &session, now);
+        let token = token_of(&taken);
+        let leased = hub
+            .state()
+            .scheduler
+            .lease_token(&JobId::new(job_id.clone()).expect("the job"));
+        assert_eq!(
+            leased,
+            Some(token),
+            "the handout carries the fencing token of the lease of the scheduler"
+        );
+    }
+
+    /// The request of the job goes with the handout: the worker needs it to run the job.
+    #[test]
+    fn the_request_of_the_job_goes_with_the_handout() {
+        let (hub, _clock) = fair_hub(1);
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let params = Json::obj(vec![
+            ("idempotency_key", Json::str("key-1")),
+            ("request_digest", Json::str("digest-1")),
+            ("job_type", Json::str("preview")),
+            ("plan_digest", Json::str("sha256:plan")),
+        ]);
+        hub.handle_message(&session, "job.enqueue", &params, now)
+            .expect("the job is queued");
+
+        let taken = take(&hub, &session, now);
+        assert_eq!(
+            taken
+                .get("request")
+                .and_then(|request| request.get("plan_digest")),
+            Some(&Json::str("sha256:plan")),
+            "the worker finds the request of the job in the handout"
+        );
     }
 }

@@ -1099,11 +1099,28 @@ D-60（`Target.symbol_kind` 是自由字符串）、D-63（Hub 的文件锁没�
 另外：文本在读与写之间变了 ⇒ **拒绝写**（不把偏移套到别的文本上）；宿主拒绝（密码框 / 没有焦点 / 输入法不在）⇒ `Rejected`；
 宿主没给出确定答案 ⇒ `Failed`（结果未知，绝不谎称写成功）。
 
-#### 5.21.5 门禁与产物
+#### 5.21.5 队列接上了：Hub 出队，worker 取作业
+
+Hub 的 `next_job` 以前**只在测试里被调用**——作业进了队列就躺在那儿，生产路径上没人取。
+这一轮补齐了这段：
+
+| # | 做了什么 | 落点 |
+|---|---|---|
+| 1 | **Hub 出队**：`job.take`（worker 来要作业，**一次只给一个**，带这一轮的 fencing token）与 `job.complete`（**token 不对就拒**），`job.status` 能拿到做完的结果 | `crates/tase-local-hub/src/{server,scheduler,session}.rs` |
+| 2 | **worker 取作业**：新的 `hub_link.rs`——管道客户端那一侧（握手 → `job.take` → 跑 → `job.complete`），传输可注入（测试用 `MemoryPipe`，生产用 `WindowsPipe`） | `crates/tase-worker/src/hub_link.rs` |
+| 3 | **二进制真的接上了**：它连 Hub 的管道、取作业、跑（**只算 diff，不写用户的窗口**）、回报；**Hub 不在时打印一句人话就退出，不假装在工作** | `crates/tase-worker/src/bin/tase-worker.rs` |
+
+**fencing 为什么必须在 Hub 这一层校验**：store 的 `finish_job` **不**校验 lease epoch（**D-67**），
+所以 Hub 是最后一道防线——旧持有者的迟到回报在这里被拒。
+
+**测试**：Hub **118 项**（原 108）、worker **90 项**（原 74），两边 clippy 都干净；一次完整往返（交作业 → 取 → 跑 → 回报 → 读状态）、
+「没有作业时取到的是『没有』而不是错误」、「token 不对时被拒」都有测试。
+
+#### 5.21.6 门禁与产物
 
 * `pime-tsf` **316 项**测试全绿（本轮 +8：纵向开关 2 项、共享策略 6 项）；clippy 仍只有 D-41 的三条既有告警。
 * `pime-agent` **74 项**（原 63，宿主门 +11）；`tase-executor` **68 项**（原 59，宿主门 +9）。两个 crate 的 clippy 都是干净的。
-* **TASE 十五个 crate 合计 1028 项测试**（本轮新增：executor 68 + scheduler 63 + worker 74 + impls 111，Hub 接线 +15），clippy 全部干净（**Hub 一条既有 lint 见 D-81**）。
+* **TASE 十五个 crate 合计 1054 项测试**（本轮新增：executor 68 + scheduler 63 + worker 90 + impls 111，Hub 接线 +15），clippy 全部干净（**Hub 一条既有 lint 见 D-81**）。
 * **成本基准与延迟基准**（M4 的落点）：新增 `crates/tase-metrics/examples/cost_bench.rs` + `scripts/bench-cost.js`，
   量**本地候选路径的延迟**（设计书 DD-IME §20.2 的 `p95 <= 50 ms`）与**一次模型调用的成本**（token 用核心自己的规则数，
   价格用**操作者自己的价目表**；仓库里那份是**样例**，provider 写的就是 `sample`）。实测 **p50 0.3 µs / p95 28.5 µs / max 60.9 µs**

@@ -378,6 +378,15 @@ impl JobScheduler for FairScheduler {
         }
     }
 
+    /// The token of the lease of a job: the fence of the split brain.
+    ///
+    /// The Hub hands this token to the worker that takes the job and checks it when the worker
+    /// reports: the store does not check the epoch of a job, so the token of the lease is the only
+    /// thing that refuses the report of a holder that was replaced (detailed design §17.6).
+    fn lease_token(&self, job_id: &JobId) -> Option<u64> {
+        self.leases.current(job_id).map(|lease| lease.token.as_u64())
+    }
+
     fn queued(&self) -> usize {
         self.scheduler.len()
     }

@@ -446,6 +446,6 @@ mod tests {
         assert_eq!(SessionState::Connected.as_str(), "CONNECTED");
         assert_eq!(SessionState::Disconnected.as_str(), "DISCONNECTED");
         assert_eq!(SessionState::Expired.as_str(), "EXPIRED");
-        assert_eq!(LOGON.len() > 0, true);
+        assert!(!LOGON.is_empty());
     }
 }

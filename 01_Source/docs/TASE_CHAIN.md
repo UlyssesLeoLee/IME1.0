@@ -76,17 +76,20 @@
 | 执行器 → 宿主 | **通** | `tase-executor` 68 项；`BridgeHost` + `HostTransport` | 适配器改的是**选区**，不是磁盘文件（设计如此，已写进文档） |
 | 宿主 → 文档 | **通（十七轮已证）** | 真机 `WM_COPYDATA` 往返（`pime-agent` 侧） | 本轮**没重测**（真机待验收） |
 | 客户端 → Hub（交作业） | **通** | `job.enqueue` / `job.status` 已在 Hub 里 | —— |
-| Hub → worker（取作业） | **本轮在做** | —— | 见下面「还没通的那一段」 |
-| worker → Hub（回报结果） | **本轮在做** | —— | 同上 |
+| Hub → worker（取作业） | **通** | `job.take`：一次只给一个作业，带这一轮的 fencing token；`job.complete`：token 不对就拒 | —— |
+| worker → Hub（回报结果） | **通** | `tase-worker` 的 `hub_link.rs`：管道客户端（`MemoryPipe` 测、`WindowsPipe` 真），一次完整往返有测试 | —— |
 | worker → 用户窗口 | **不通（有意）** | worker 没有宿主 | worker 只算 diff；写由客户端做（设计如此） |
 
 ## 四、还没通的那一段（说清楚）
 
 * **Hub 的 `next_job` 以前只在测试里被调用**：作业进了队列就躺在那儿，生产路径上没人取。
-  ⇒ 本轮补：`job.take`（worker 来要作业，**一次只给一个**，带 fencing token）与 `job.complete`（**token 不对就拒**）。
-* **fencing 必须在 Hub 这一层校验**：store 的 `finish_job` 不校验 lease epoch（**D-67**），所以 Hub 是最后一道防线。
-* **接线前要你裁定**：**D-63**（Hub 的文件锁没有 fencing token）、**D-64**（租约职责重叠：worker 与 scheduler 都写着「租约与 fencing」）。
-  这两条不裁定，队列接上去会把「谁有权写」搞糊。
+  ⇒ 本轮补齐了：`job.take`（worker 来要作业，**一次只给一个**，带这一轮的 fencing token）、`job.complete`
+  （**token 不对就拒**）、`job.status` 能拿到做完的结果。
+* **fencing 在 Hub 这一层校验**：store 的 `finish_job` 不校验 lease epoch（**D-67**），所以 Hub 是最后一道防线。
+* **worker 的二进制现在真的接上了**：它连的是 Hub 的管道，取作业、跑（**只算 diff，不写用户的窗口**）、回报；
+  **Hub 不在时它打印一句人话就退出，不假装在工作**。
+* **仍然要你裁定**：**D-63**（Hub 的文件锁没有 fencing token）、**D-64**（租约职责重叠：worker 与 scheduler 都写着「租约与 fencing」）。
+  这两条不裁定，队列上的「谁有权写」还是含糊的。
 
 ## 五、这套东西**不做**什么（不吹）
 
