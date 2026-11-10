@@ -173,6 +173,9 @@ const ADDITIONS = [
   '01_Source/crates/pime-agent/src/bridge.rs',
   '01_Source/crates/pime-agent/src/core.rs',
   '01_Source/crates/pime-agent/src/mcp.rs',
+  // the link of the agent to the Hub of TASE (the pipe of the logon session) and the tools that use it
+  '01_Source/crates/pime-agent/src/hub_client.rs',
+  '01_Source/crates/pime-agent/src/hub_tools.rs',
   '01_Source/crates/pime-agent/src/cli.rs',
   '01_Source/crates/pime-agent/src/serve.rs',
   '01_Source/crates/pime-agent/src/bin/pime-mcp.rs',
@@ -205,6 +208,8 @@ const ADDITIONS = [
   '02_Verification/COST_BENCHMARK.md',
   // the defect submission sheet (the items the user has to decide)
   '02_Verification/DEFECT_SUBMISSION_2026-11-07.md',
+  // the checklist the user walks through after the new DLL is in place
+  '02_Verification/REAL_MACHINE_CHECKLIST.md',
 ];
 
 const isBinary = bytes => bytes.includes(0);

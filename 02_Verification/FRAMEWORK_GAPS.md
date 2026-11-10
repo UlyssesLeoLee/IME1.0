@@ -1116,7 +1116,23 @@ Hub 的 `next_job` 以前**只在测试里被调用**——作业进了队列就
 **测试**：Hub **118 项**（原 108）、worker **90 项**（原 74），两边 clippy 都干净；一次完整往返（交作业 → 取 → 跑 → 回报 → 读状态）、
 「没有作业时取到的是『没有』而不是错误」、「token 不对时被拒」都有测试。
 
-#### 5.21.6 门禁与产物
+#### 5.21.6 客户端也接上了：AI 客户端能把作业交给 Hub
+
+上一轮接的是 **Hub → worker**；这一轮把 **客户端 → Hub** 也接上，队列的链路才是闭合的。
+
+| # | 做了什么 | 落点 |
+|---|---|---|
+| 1 | **Hub 客户端**：`hub_client.rs`——握手、`job.enqueue`（交作业）、`job.status`（读状态与结果），传输可注入（测试 `MemoryPipe`，生产 `WindowsPipe`） | `crates/pime-agent/src/hub_client.rs` |
+| 2 | **两个 MCP 工具**：`tase_submit`（交作业，拿到 job_id）与 `tase_result`（读状态与结果） | `crates/pime-agent/src/hub_tools.rs` |
+| 3 | **命令行**：`hub_submit` / `hub_result`，走**同一个**客户端 | `crates/pime-agent/src/cli.rs` |
+
+**管道名从哪来**：客户端**算不出**自己的 logon SID（传输层只读 token user，不读 logon SID ⇒ **D-48**），
+所以 SID 是配置项：工具参数 `logon_sid`、命令行 `--logon-sid`、或变量 `TASE_LOGON_SID`。**没有就不猜**，直接报错说该给什么。
+
+**测试**：`pime-agent` **85 项**（原 74，+11），clippy 干净；其中一条是**真 Hub + 真帧 + 内存管道**的往返
+（交作业 → 拿到 job_id → 读状态），另有一条是「Hub 不在 ⇒ 可读的错误」。
+
+#### 5.21.7 门禁与产物
 
 * `pime-tsf` **316 项**测试全绿（本轮 +8：纵向开关 2 项、共享策略 6 项）；clippy 仍只有 D-41 的三条既有告警。
 * `pime-agent` **74 项**（原 63，宿主门 +11）；`tase-executor` **68 项**（原 59，宿主门 +9）。两个 crate 的 clippy 都是干净的。

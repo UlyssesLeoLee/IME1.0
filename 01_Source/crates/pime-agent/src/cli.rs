@@ -94,6 +94,26 @@ pub enum Command {
         /// The edits: objects with a start, an end and a text.
         edits: Json,
     },
+    /// A job is handed to the Hub of TASE: the Hub queues it and a worker computes it.
+    HubSubmit {
+        /// The documents the job works on.
+        documents: Json,
+        /// What the job computes.
+        job_type: Option<String>,
+        /// The digest of the plan the job runs.
+        plan_digest: Option<String>,
+        /// The workspace the job works in.
+        workspace_id: Option<String>,
+        /// The logon SID of the session of the Hub.
+        logon_sid: Option<String>,
+    },
+    /// The state of a job of the Hub of TASE, and its result when it is done.
+    HubResult {
+        /// The job the answer is about.
+        job_id: String,
+        /// The logon SID of the session of the Hub.
+        logon_sid: Option<String>,
+    },
     /// The local server (the named pipe and the HTTP server).
     Serve {
         /// Whether the named pipe is served.
@@ -136,6 +156,11 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
     let mut file: Option<String> = None;
     let mut dialect: Option<Json> = None;
     let mut edits: Option<Json> = None;
+    let mut documents: Option<Json> = None;
+    let mut job_type: Option<String> = None;
+    let mut plan_digest: Option<String> = None;
+    let mut workspace_id: Option<String> = None;
+    let mut logon_sid: Option<String> = None;
     let mut limit: Option<i64> = None;
     let mut replace = false;
     let mut pipe = false;
@@ -188,6 +213,19 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
             "--provider" => provider = Some(value_of(args, &mut index, arg)?),
             "--agent" => agent = Some(value_of(args, &mut index, arg)?),
             "--instance" => instance = Some(value_of(args, &mut index, arg)?),
+            "--job-type" => job_type = Some(value_of(args, &mut index, arg)?),
+            "--plan-digest" => plan_digest = Some(value_of(args, &mut index, arg)?),
+            "--workspace-id" => workspace_id = Some(value_of(args, &mut index, arg)?),
+            "--logon-sid" => logon_sid = Some(value_of(args, &mut index, arg)?),
+            "--documents" => {
+                let value = value_of(args, &mut index, arg)?;
+                let parsed = json::parse(value.trim(), Limits::DEFAULT)
+                    .map_err(|error| format!("the documents are not JSON: {error}"))?;
+                if parsed.as_array().is_none() {
+                    return Err("the documents are not a JSON array".to_string());
+                }
+                documents = Some(parsed);
+            }
             other if other.starts_with('-') && other != "-" => {
                 return Err(format!("there is no option named {other}"));
             }
@@ -246,6 +284,17 @@ pub fn parse_args(args: &[String]) -> Result<Invocation, String> {
         "tase_apply" => Command::TaseApply {
             text: need(text, positional.first(), "--text", "tase_apply")?,
             edits: need_json(edits, "--edits", "tase_apply")?,
+        },
+        "hub_submit" => Command::HubSubmit {
+            documents: need_json(documents, "--documents", "hub_submit")?,
+            job_type,
+            plan_digest,
+            workspace_id,
+            logon_sid,
+        },
+        "hub_result" => Command::HubResult {
+            job_id: need(text, positional.first(), "--text", "hub_result")?,
+            logon_sid,
         },
         "serve" => Command::Serve {
             pipe,
@@ -323,12 +372,19 @@ pub fn usage() -> String {
     out.push_str("                          the diff of a set of edits, without writing anything\n");
     out.push_str("  tase_apply --text <text> --edits <json>\n");
     out.push_str("                          write a set of edits into the region the user has selected\n");
+    out.push_str("  hub_submit --documents <json>\n");
+    out.push_str("                          hand a job to the Hub of TASE (--job-type, --plan-digest,\n");
+    out.push_str("                          --workspace-id, --logon-sid)\n");
+    out.push_str("  hub_result --text <job id>\n");
+    out.push_str("                          the state of a job of the Hub, and its result when it is done\n");
     out.push_str("  serve                   the local server (--pipe, --http <addr>, --token <token>)\n\n");
     out.push_str("options:\n");
     out.push_str("  --json                  print the raw JSON answer\n");
     out.push_str("  --provider <name>       the provider of this client (openai, anthropic, ...)\n");
     out.push_str("  --agent <name>          the name of the agent that writes (claude-code, cursor, ...)\n");
     out.push_str("  --instance <id>         the instance of this client (it keeps the same mouth of light)\n");
+    out.push_str("  --logon-sid <sid>       the logon SID of the session of the Hub (the TASE_LOGON_SID\n");
+    out.push_str("                          variable is the default)\n");
     out.push_str("  --help                  this text\n\n");
     out.push_str("exit codes: 0 = the operation worked, 1 = the operation failed, 2 = the command line is wrong\n");
     out
@@ -358,6 +414,27 @@ pub fn run(args: &[String], backend: &Backend) -> i32 {
     {
         return serve::serve(*pipe, http.as_deref(), token.as_deref(), &backend);
     }
+    // The commands of the Hub do not go through the text service: they speak the pipe of the logon session.
+    if let Some((name, hub_params)) = hub_call_of(&invocation.command) {
+        let answer = crate::hub_tools::call(name, &hub_params).unwrap_or_else(|| {
+            Json::obj(vec![
+                ("ok", Json::Bool(false)),
+                ("error", Json::str("UNSUPPORTED")),
+                ("message", Json::str("the hub of TASE is not reachable")),
+            ])
+        });
+        let worked = answer.get("ok").and_then(Json::as_bool) == Some(true);
+        if invocation.json {
+            println!("{}", answer.to_json_string());
+        } else if worked {
+            println!("{}", human_line(Op::Status, &answer));
+        } else {
+            let code = answer.get("error").and_then(Json::as_str).unwrap_or("ERROR");
+            let message = answer.get("message").and_then(Json::as_str).unwrap_or("");
+            eprintln!("{code}: {message}");
+        }
+        return if worked { 0 } else { 1 };
+    }
     let (op, params) = match build(&invocation.command) {
         Ok(pair) => pair,
         Err(message) => {
@@ -379,10 +456,54 @@ pub fn run(args: &[String], backend: &Backend) -> i32 {
     if worked { 0 } else { 1 }
 }
 
+/// The command of the Hub and the arguments of its tool.
+///
+/// The commands of the Hub do not go through the text service: they speak the pipe of the logon session, the same
+/// pipe the Hub listens on. `None` for every other command.
+fn hub_call_of(command: &Command) -> Option<(&'static str, Json)> {
+    match command {
+        Command::HubSubmit {
+            documents,
+            job_type,
+            plan_digest,
+            workspace_id,
+            logon_sid,
+        } => {
+            let mut pairs: Vec<(String, Json)> =
+                vec![("documents".to_string(), documents.clone())];
+            if let Some(value) = job_type {
+                pairs.push(("job_type".to_string(), Json::str(value)));
+            }
+            if let Some(value) = plan_digest {
+                pairs.push(("plan_digest".to_string(), Json::str(value)));
+            }
+            if let Some(value) = workspace_id {
+                pairs.push(("workspace_id".to_string(), Json::str(value)));
+            }
+            if let Some(value) = logon_sid {
+                pairs.push(("logon_sid".to_string(), Json::str(value)));
+            }
+            Some((crate::hub_tools::SUBMIT, Json::Obj(pairs)))
+        }
+        Command::HubResult { job_id, logon_sid } => {
+            let mut pairs: Vec<(String, Json)> =
+                vec![("job_id".to_string(), Json::str(job_id))];
+            if let Some(value) = logon_sid {
+                pairs.push(("logon_sid".to_string(), Json::str(value)));
+            }
+            Some((crate::hub_tools::RESULT, Json::Obj(pairs)))
+        }
+        _ => None,
+    }
+}
+
 /// The parameters of a command.
 fn build(command: &Command) -> Result<(Op, Json), String> {
     let pairs = match command {
         Command::Help | Command::Serve { .. } => {
+            return Err("there is nothing to do".to_string());
+        }
+        Command::HubSubmit { .. } | Command::HubResult { .. } => {
             return Err("there is nothing to do".to_string());
         }
         Command::Status => Vec::new(),
@@ -433,6 +554,7 @@ fn build(command: &Command) -> Result<(Op, Json), String> {
     };
     let op = match command {
         Command::Help | Command::Serve { .. } => Op::Status,
+        Command::HubSubmit { .. } | Command::HubResult { .. } => Op::Status,
         Command::Status => Op::Status,
         Command::Insert { .. } => Op::Insert,
         Command::Read => Op::Read,
@@ -620,6 +742,42 @@ mod tests {
 
     fn args(list: &[&str]) -> Vec<String> {
         list.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn the_two_commands_of_the_hub_are_parsed() {
+        let submit = parse_args(&args(&[
+            "hub_submit",
+            "--documents",
+            "[{\"path\":\"src/main.rs\"}]",
+            "--job-type",
+            "preview",
+            "--logon-sid",
+            "S-1-5-5-1000-1000",
+        ]))
+        .expect("hub_submit");
+        match submit.command {
+            Command::HubSubmit {
+                documents,
+                job_type,
+                logon_sid,
+                ..
+            } => {
+                assert_eq!(documents.as_array().map(Vec::len), Some(1));
+                assert_eq!(job_type.as_deref(), Some("preview"));
+                assert_eq!(logon_sid.as_deref(), Some("S-1-5-5-1000-1000"));
+            }
+            other => panic!("the command is {other:?}"),
+        }
+
+        let result = parse_args(&args(&["hub_result", "--text", "job_01"])).expect("hub_result");
+        match result.command {
+            Command::HubResult { job_id, .. } => assert_eq!(job_id, "job_01"),
+            other => panic!("the command is {other:?}"),
+        }
+
+        // the documents are needed
+        assert!(parse_args(&args(&["hub_submit"])).is_err());
     }
 
     #[test]

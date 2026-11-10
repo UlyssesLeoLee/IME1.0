@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，801 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，804 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -59,7 +59,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **316 / 316** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **74 / 74** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **316 / 316** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **85 / 85** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器的实际安装/卸载与签名、IPC 的异用户/远程场景、AI Worker 与扩展的对接、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
@@ -392,4 +392,7 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
     worker 侧新增 `hub_link.rs`（管道客户端：握手 → 取作业 → 跑 → 回报），二进制连上 Hub 的管道真跑起来了——
     **Hub 不在时它打印一句人话就退出，不假装在工作**。至此 TASE 的链路是通的：
     **AI 客户端 → 目录/预览/应用 → 宿主 → 用户文档**，另一条是**客户端 → Hub → worker → 结果**。
+    **客户端那一侧也接上了**：`pime-agent` 新增 `hub_client.rs`（管道客户端）与两个 MCP 工具 **`tase_submit`** / **`tase_result`**，
+    命令行也有 `hub_submit` / `hub_result`。**管道名从 logon SID 来**（客户端算不出自己的 SID ⇒ D-48），所以是配置项（`--logon-sid` / `TASE_LOGON_SID`）。
+    至此队列链路闭合：**客户端交作业 → Hub 排队 → worker 算 diff → 客户端读结果 → 客户端用 `tase_apply` 写进窗口**。
     仍要你裁定：**D-63**（Hub 的文件锁没有 fencing token）与 **D-64**（租约职责重叠）——这两条不裁定，「谁有权写」还是含糊的。

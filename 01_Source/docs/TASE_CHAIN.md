@@ -45,8 +45,8 @@
 ## 二、还有一条「重活」的路：Hub 与 worker
 
 ```
-  AI 客户端
-      │  交一个作业（job.enqueue）
+  AI 客户端（pime-agent：MCP 工具 tase_submit / tase_result，命令行 hub_submit / hub_result）
+      │  交一个作业（job.enqueue），过管道 \.\pipe\PIME-IPC-1-<logon sid>
       ▼
   tase-local-hub（常驻 Hub：一个登录会话一个）
       │  · 鉴权、会话、工作区的写锁
@@ -75,7 +75,7 @@
 | `tase_apply`（真写） | **通（代码层）** | 单元测试：一条读 + **一条**写、`replace=true`、拒绝与失败分开 | **没在真机跑过**（新 DLL 要注销/重启才换上） |
 | 执行器 → 宿主 | **通** | `tase-executor` 68 项；`BridgeHost` + `HostTransport` | 适配器改的是**选区**，不是磁盘文件（设计如此，已写进文档） |
 | 宿主 → 文档 | **通（十七轮已证）** | 真机 `WM_COPYDATA` 往返（`pime-agent` 侧） | 本轮**没重测**（真机待验收） |
-| 客户端 → Hub（交作业） | **通** | `job.enqueue` / `job.status` 已在 Hub 里 | —— |
+| 客户端 → Hub（交作业） | **通** | 客户端侧新增 `hub_client.rs`（管道客户端）+ 两个 MCP 工具 `tase_submit` / `tase_result`；命令行也有 `hub_submit` / `hub_result` | 管道名从 logon SID 来（客户端**算不出**自己的 SID ⇒ D-48），所以是配置项 |
 | Hub → worker（取作业） | **通** | `job.take`：一次只给一个作业，带这一轮的 fencing token；`job.complete`：token 不对就拒 | —— |
 | worker → Hub（回报结果） | **通** | `tase-worker` 的 `hub_link.rs`：管道客户端（`MemoryPipe` 测、`WindowsPipe` 真），一次完整往返有测试 | —— |
 | worker → 用户窗口 | **不通（有意）** | worker 没有宿主 | worker 只算 diff；写由客户端做（设计如此） |

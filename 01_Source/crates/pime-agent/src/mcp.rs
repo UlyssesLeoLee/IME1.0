@@ -299,6 +299,9 @@ pub fn tool_list_json() -> Json {
     // the tools of the catalogue of the standard assets (they read the files on the disk, they do not touch the
     // focused window)
     tools.extend(crate::catalog::tool_list());
+    // the tools that talk to the Hub of TASE (they speak the pipe of the logon session, they do not touch the
+    // focused window either)
+    tools.extend(crate::hub_tools::tool_list());
     Json::obj(vec![("tools", Json::Arr(tools))])
 }
 
@@ -419,6 +422,10 @@ fn tools_call(params: &Json, backend: &Backend) -> Json {
     };
     // the tools of the catalogue do not go through the text service: they read the files on the disk
     if let Some(answer) = crate::catalog::call(name, &arguments) {
+        return answer;
+    }
+    // the tools of the Hub do not go through the text service either: they speak the pipe of the logon session
+    if let Some(answer) = crate::hub_tools::call(name, &arguments) {
         return answer;
     }
     let Some(tool) = TOOLS.iter().find(|tool| tool.name == name) else {
@@ -691,7 +698,8 @@ mod tests {
             .collect();
         let declared: Vec<&str> = tool_names();
         // the list of the tools of the input method comes first, then the ones of the catalogue (they read the files
-        // on the disk, they do not touch the focused window)
+        // on the disk, they do not touch the focused window) and the ones of the Hub (they speak the pipe of the
+        // logon session, they do not touch the focused window either)
         let catalogue: Vec<&str> = names
             .iter()
             .filter(|name| name.starts_with(crate::catalog::TOOL_PREFIX))
@@ -699,11 +707,22 @@ mod tests {
             .collect();
         let own: Vec<&str> = names
             .iter()
-            .filter(|name| !name.starts_with(crate::catalog::TOOL_PREFIX))
+            .filter(|name| declared.contains(name))
             .copied()
             .collect();
         assert_eq!(own, declared, "the published list drifted from the declaration");
         assert_eq!(own.len(), TOOLS.len());
+        // every tool that is not declared is one of the catalogue or one of the Hub
+        for name in &names {
+            if declared.contains(name) {
+                continue;
+            }
+            assert!(
+                name.starts_with(crate::catalog::TOOL_PREFIX)
+                    || name.starts_with(crate::hub_tools::TOOL_PREFIX),
+                "{name} is neither a tool of the input method nor one of the catalogue or of the Hub"
+            );
+        }
         if crate::catalog::available() {
             assert_eq!(
                 catalogue.len(),
@@ -738,10 +757,12 @@ mod tests {
             let properties = schema.get("properties").expect("the properties");
             let required = schema.get("required").and_then(Json::as_array).expect("the required");
             let Some(declaration) = TOOLS.iter().find(|candidate| candidate.name == name) else {
-                // the tools of the catalogue bring their own schema (they are not declared in TOOLS)
+                // the tools of the catalogue and the ones of the Hub bring their own schema (they are not declared
+                // in TOOLS)
                 assert!(
-                    name.starts_with(crate::catalog::TOOL_PREFIX),
-                    "{name} is neither a tool of the input method nor one of the catalogue"
+                    name.starts_with(crate::catalog::TOOL_PREFIX)
+                        || name.starts_with(crate::hub_tools::TOOL_PREFIX),
+                    "{name} is neither a tool of the input method nor one of the catalogue or of the Hub"
                 );
                 match properties {
                     Json::Obj(map) => {

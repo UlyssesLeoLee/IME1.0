@@ -20,6 +20,8 @@ pub mod bridge;
 pub mod cli;
 pub mod core;
 pub mod host_transport;
+pub mod hub_client;
+pub mod hub_tools;
 pub mod mcp;
 pub mod serve;
 pub mod tase;

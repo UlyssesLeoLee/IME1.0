@@ -38,6 +38,13 @@ tase-catalog-mcp = { path = "../tase-catalog-mcp" }
 tase-executor = { path = "../tase-executor" }
 # The business codes of TASE: the door to the host answers with them, so the product side has to name them.
 tase-contract = { path = "../tase-contract" }
+# The pipe of the logon session: the client hands a job to the Hub of TASE over it (the frames, the handshake and
+# the named pipe of the session).
+tase-local-ipc = { path = "../tase-local-ipc" }
+
+[dev-dependencies]
+# The Hub of TASE: the tests of the client speak to a real Hub over a memory pipe (no named pipe is opened).
+tase-local-hub = { path = "../tase-local-hub" }
 
 [dependencies.windows]
 version = "=0.58.0"
