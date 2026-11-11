@@ -1,4 +1,4 @@
-# 输入法框架完整性矩阵（Programming IME v0.3.1）
+# 输入法框架完整性矩阵（Programming IME v0.3.2）
 
 - 生成日期：2026-11-05（**第十六轮：设置窗六页页签 + 候选列表归位左侧激光面板 + 自带中日英词库 + 分层窗口原子移动**；安装包与 §5 全部数字已整体刷新到本轮）
 - 代码基线：`fa17ddd` + 本轮改动（工作区未提交）
@@ -28,9 +28,9 @@
 
 | 项 | 值 |
 |---|---|
-| 文件 | `01_Source/dist/ProgrammingIME-0.3.1-win-x64-setup.exe` |
-| 大小 | 10,365,426 字节 |
-| SHA-256 | `0a55197e5ab614bf7c5e6a3078a47167a917c69f8f118af2ea310ffb882c2c34` |
+| 文件 | `01_Source/dist/ProgrammingIME-0.3.2-win-x64-setup.exe` |
+| 大小 | 10,393,911 字节 |
+| SHA-256 | `c9bc5d90128e5b5ca92e00b8185d7445208d7f525b752627483eed072ce6bd1d` |
 | 形态 | x64 控制台子系统 EXE；载荷以 PE overlay 附在桩程序之后 |
 | 桩程序 | `pime-setup.exe`，788,480 字节（含安装向导与内嵌 logo） |
 | 载荷（`pime_tsf.dll` 2,632,704 B ／ `pime-core.exe` 3,214,200 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,138 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 1,104,896 B ／ `pime-ai-worker.exe` 400,896 B ／ `pime-mcp.exe` 706,560 B ／ `pime-ime.exe` 762,880 B ／ `meta.json` 87 B 条） |  |
@@ -399,17 +399,17 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 
 <!-- installer-claims:begin -->
 # machine-readable claims (checked by 01_Source/tests/smoke/installer-claims-check.js)
-installer_file = ProgrammingIME-0.3.1-win-x64-setup.exe
-installer_bytes = 10365426
-installer_sha256 = 0a55197e5ab614bf7c5e6a3078a47167a917c69f8f118af2ea310ffb882c2c34
+installer_file = ProgrammingIME-0.3.2-win-x64-setup.exe
+installer_bytes = 10393911
+installer_sha256 = c9bc5d90128e5b5ca92e00b8185d7445208d7f525b752627483eed072ce6bd1d
 stub_bytes = 788480
 payload_entry_count = 10
-payload_pime_tsf_dll_bytes = 2682880
-payload_pime_core_exe_bytes = 3216644
+payload_pime_tsf_dll_bytes = 2698752
+payload_pime_core_exe_bytes = 3216969
 payload_license_bytes = 1085
 payload_programming_ime_vsix_bytes = 218970
 payload_pime_ico_bytes = 66724
-payload_pime_tray_exe_bytes = 1124352
+payload_pime_tray_exe_bytes = 1136640
 payload_pime_ai_worker_exe_bytes = 400896
 payload_pime_mcp_exe_bytes = 1013760
 payload_pime_ime_exe_bytes = 850944

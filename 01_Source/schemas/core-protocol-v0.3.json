@@ -852,7 +852,7 @@
           "type": "object",
           "required": ["ok", "name", "version", "protocol", "languages"],
           "properties": {
-            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "name": {"const": "pime-core"}, "version": {"const": "0.3.1"}, "protocol": {"const": "0.3"},
+            "ok": {"const": true}, "id": {"$ref": "#/$defs/id"}, "name": {"const": "pime-core"}, "version": {"const": "0.3.2"}, "protocol": {"const": "0.3"},
             "languages": {"type": "array", "items": {"$ref": "#/$defs/language"}, "minItems": 7, "maxItems": 7},
             "pluginLanguages": {"type": "array", "items": {"type": "string"}, "description": "The plugin profiles that are enabled right now (cypher and plsql out of the box)."},
             "availablePluginLanguages": {"type": "array", "items": {"type": "string"}, "description": "Every plugin profile the core knows (the three that ship with the distribution)."},
