@@ -137,11 +137,31 @@ pub fn mouth_at(work: Rect, place: MouthPlace, radius: i32) -> Mouth {
     }
 }
 
+/// A mouth that floats in the middle of the screen, away from the edges.
+///
+/// The mouths of the agents sit on the edges of the screen; the demonstration puts them in the middle of
+/// it, so that the beams fly across the screen instead of along its border. The edge of a mouth only says
+/// how the slit of light is turned, so a floating mouth keeps the turn of the horizontal slit. The point is
+/// kept inside the work area and away from its border, so that the lens is never cut off.
+pub fn floating_mouth(work: Rect, x: i32, y: i32, radius: i32) -> Mouth {
+    let radius = radius.max(1);
+    let margin = radius + FLOATING_MARGIN;
+    Mouth {
+        x: x.clamp(work.left + margin, (work.right - margin).max(work.left + margin)),
+        y: y.clamp(work.top + margin, (work.bottom - margin).max(work.top + margin)),
+        radius,
+        edge: Edge::Top,
+    }
+}
+
 /// How long the slit of light at the mouth is (in pixels).
 ///
 /// The user asked for "a small piece of it" ("一小截淡蓝色半透明激光"): long enough to be found at a glance, short
 /// enough to be a detail of the screen and not a decoration of it.
 pub const SLIT_LENGTH: i32 = 26;
+
+/// How far a mouth that floats in the middle of the screen stays away from the border of it.
+pub const FLOATING_MARGIN: i32 = 28;
 
 /// How wide the bright core of the slit is (in pixels): a hairline, not a bar.
 pub const SLIT_WIDTH: i32 = 1;
@@ -364,6 +384,8 @@ pub enum PanelItem {
         /// The value that is chosen right now.
         value: String,
     },
+    /// The row that runs the demonstration of the laser interface: ten agents write their own domain.
+    Demo,
     /// The row that opens the settings window.
     Settings,
     /// One candidate of the list.
@@ -376,6 +398,7 @@ impl PanelItem {
         match self {
             PanelItem::Toggle { label, .. } => label,
             PanelItem::Menu { label, .. } => label,
+            PanelItem::Demo => "多 Agent 演示",
             PanelItem::Settings => "设置",
             PanelItem::Candidate(candidate) => &candidate.text,
         }
@@ -389,6 +412,7 @@ impl PanelItem {
             }
             .to_string(),
             PanelItem::Menu { value, .. } => value.clone(),
+            PanelItem::Demo => String::new(),
             PanelItem::Settings => "…".to_string(),
             PanelItem::Candidate(candidate) => candidate.detail.clone(),
         }
@@ -407,6 +431,8 @@ pub enum PanelAction {
     Toggle { key: &'static str, on: bool },
     /// Open one of the lists.
     Menu { key: &'static str },
+    /// Run the demonstration of the laser interface.
+    Demo,
     /// Open the settings window.
     Settings,
     /// Take the candidate of the row (the index is the one of the row in the panel).
@@ -421,6 +447,8 @@ pub struct PanelLayout {
     pub height: i32,
     /// The rectangle of every row, in the order the rows are drawn.
     pub rows: Vec<(PanelItem, Rect)>,
+    /// The one line the panel shows under its rows: what the last action did.
+    pub status: Option<String>,
 }
 
 impl PanelLayout {
@@ -437,6 +465,7 @@ impl PanelLayout {
             width,
             height: y + padding,
             rows,
+            status: None,
         }
     }
 
@@ -461,6 +490,7 @@ impl PanelLayout {
                 on: !*on,
             }),
             PanelItem::Menu { key, .. } => Some(PanelAction::Menu { key }),
+            PanelItem::Demo => Some(PanelAction::Demo),
             PanelItem::Settings => Some(PanelAction::Settings),
             PanelItem::Candidate(_) => Some(PanelAction::Candidate { index }),
         }
@@ -691,5 +721,46 @@ mod tests {
             assert!(rect.top >= 0 && rect.bottom <= layout.height);
         }
         assert_eq!(layout.rows.len(), 3);
+    }
+
+    /// The row of the demonstration is a row of the panel, and a click on it asks for the demonstration.
+    #[test]
+    fn a_click_on_the_row_of_the_demonstration_asks_for_the_demonstration() {
+        let items = vec![
+            PanelItem::Toggle {
+                key: "input_mode",
+                label: "输入模式",
+                on: true,
+            },
+            PanelItem::Demo,
+            PanelItem::Settings,
+        ];
+        let layout = PanelLayout::compute(&items, 30, 8, 260);
+        let (row, rect) = &layout.rows[1];
+        assert_eq!(row, &PanelItem::Demo);
+        assert_eq!(row.label(), "多 Agent 演示");
+        assert_eq!(row.value(), "", "the row has no value of its own");
+        assert_eq!(
+            layout.action_at(rect.left + 1, rect.top + 1),
+            Some(PanelAction::Demo)
+        );
+        // and it is no switch: it is drawn without one
+        assert!(!row.is_toggle());
+    }
+
+    /// A mouth that floats in the middle of the screen stays inside it and away from its border.
+    #[test]
+    fn a_floating_mouth_stays_inside_the_work_area() {
+        let work = Rect::new(0, 0, 1920, 1040);
+        let mouth = floating_mouth(work, 900, 400, 12);
+        assert_eq!((mouth.x, mouth.y), (900, 400));
+        // a point outside of the screen is pulled back into it
+        let outside = floating_mouth(work, -500, 9000, 12);
+        assert!(outside.x > work.left, "the mouth is off the screen");
+        assert!(outside.y < work.bottom, "the mouth is off the screen");
+        assert!(outside.x - outside.radius >= work.left, "the lens is not cut off");
+        assert!(outside.y + outside.radius <= work.bottom);
+        // and it is not on the border either
+        assert!(outside.x >= work.left + outside.radius + FLOATING_MARGIN);
     }
 }

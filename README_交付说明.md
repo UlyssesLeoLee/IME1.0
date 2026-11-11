@@ -1,8 +1,8 @@
-# IME1.0（编程输入法）— 设计文档与源码合集（v0.3.0）
+# IME1.0（编程输入法）— 设计文档与源码合集（v0.3.1）
 
-- 交付版本：**Code v0.3.0**（2026-11-07）；**安装包与框架矩阵 v0.3.0（2026-11-07）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
+- 交付版本：**Code v0.3.1**（2026-11-11）；**安装包与框架矩阵 v0.3.1（2026-11-11）**。上游文档：SRS v1.2 / 基本设计 v1.0 / 详细设计 v1.0 / UT、IT、ST v1.0
 - 产品名称：**IME1.0**，描述：**编程输入法**。语言栏里三个语言 profile 显示为「IME1.0 中文」「IME1.0 English」「IME1.0 日本語」，「添加/删除程序」里的名称是 IME1.0、说明（Comments）是「编程输入法」。**安装目录改为 `C:\Program Files\IME1.0`**：**程序永远在自己名为 `IME1.0` 的文件夹里**，向导与 `--prefix` 给的都是它的**上级**（默认 → `C:\Program Files\IME1.0`；选 `D:\` → `D:\IME1.0`；选 `D:\Tools` → `D:\Tools\IME1.0`），**磁盘根目录永远不会成为安装目录**。机器上已装的旧版（`C:\Program Files\Programming IME`）**不会原地升级**：改名会让旧副本变成孤儿目录（旧的 CLSID 注册仍指向旧 DLL），所以向导会提示旧版残留并要求**先卸载旧版再装新版**（详见 `02_Verification/FRAMEWORK_GAPS.md` 的待裁定项）。
-- **已发布：[GitHub Release `v0.2.1`]（那是上一版）**；当前源码是 **v0.3.0**(https://github.com/UlyssesLeoLee/IME1.0/releases/tag/v0.2.1)（2026-11-05，未签名）**——本仓库第一个公开版本：`ProgrammingIME-0.2.1-win-x64-setup.exe`（9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9`）与 VS Code 扩展 `programming-ime-vscode-bridge-0.2.1.vsix`。**没有代码签名**（SmartScreen 会报未知发布者），**系统输入法尚未在真实宿主里验证过**。
+- **已发布：[GitHub Release `v0.2.1`]（那是上一版）**；当前源码是 **v0.3.1**(https://github.com/UlyssesLeoLee/IME1.0/releases/tag/v0.2.1)（2026-11-05，未签名）**——本仓库第一个公开版本：`ProgrammingIME-0.2.1-win-x64-setup.exe`（9,890,254 字节，sha256 `9344c0a60e53a6f765e4a2e0dc670752308f4d3f591bc3230aa51e22489b58f9`）与 VS Code 扩展 `programming-ime-vscode-bridge-0.2.1.vsix`。**没有代码签名**（SmartScreen 会报未知发布者），**系统输入法尚未在真实宿主里验证过**。
 - 状态：**VS Code 桥接功能完整并通过自动化验收；Rust 核心通过测试；Windows 系统输入法已在真实系统上完成一次提权安装（2026-11-04）**。系统输入法（`01_Source/crates/pime-tsf`，纯 Rust）已能构建 x64 DLL 并通过产物检查；按键处理（TIP）、候选窗和注册代码都已写成并通过单元测试。**2026-11-04 13:52 在本机做了一次提权安装**（`--silent --prefix D:\`，12 步全过，regsvr32 不再报 `E_FAIL`），注册表里三个语言 profile（中文 / English / 日本語）都指向 `D:\IME1.0\pime.ico`；**但真实宿主里的打字、候选选择、Ctrl+F12 切换、语音识别仍然没有验证过**。安装包已产出（`01_Source/dist/ProgrammingIME-0.2.1-win-x64-setup.exe`，未签名），正式发布仍暂停。**2026-11-04 第十五轮**：切输入法 / 切语言后悬浮窗不再残留（新增活动语言档通知 + 重入延迟收工），**悬浮界面统一到左侧蓝色微光激光口区域（悬浮栏整块删除，右下角只留品牌 logo）**，**快捷键设计归档成 `01_Source/docs/HOTKEYS.md`，并补上了唯一没做的 Alt+F2（切换语言）**。
 - 框架完整性：见 `02_Verification/IME_FRAMEWORK_MATRIX.md`（逐项矩阵，含代码位置与测试证据）；未实现项与待裁定事项见 `02_Verification/FRAMEWORK_GAPS.md`。
 
@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，804 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，807 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -59,7 +59,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **353 / 353** 通过；Rust 核心 **441 / 441** 通过；Rust TSF crate **316 / 316** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **85 / 85** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **353 / 353** 通过；Rust 核心 **454 / 454** 通过；Rust TSF crate **341 / 341** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **85 / 85** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 38/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
 - **未执行**：Windows TSF 注册/三语言激活/按键处理/候选窗（DLL 仅完成构建与产物检查）、安装器的实际安装/卸载与签名、IPC 的异用户/远程场景、AI Worker 与扩展的对接、真实 AI 服务商、DPI/多屏/读屏、30 分钟离线长稳。
@@ -396,3 +396,28 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
     命令行也有 `hub_submit` / `hub_result`。**管道名从 logon SID 来**（客户端算不出自己的 SID ⇒ D-48），所以是配置项（`--logon-sid` / `TASE_LOGON_SID`）。
     至此队列链路闭合：**客户端交作业 → Hub 排队 → worker 算 diff → 客户端读结果 → 客户端用 `tase_apply` 写进窗口**。
     仍要你裁定：**D-63**（Hub 的文件锁没有 fencing token）与 **D-64**（租约职责重叠）——这两条不裁定，「谁有权写」还是含糊的。
+
+## 2026-11-11 第二十七轮改动（本轮：多 Agent 演示模式 + .NEMA 领域规则）
+
+19. **多 Agent 演示模式（你点名的那个）**：左侧激光面板多一行「**多 Agent 演示**」（在「外观」与「设置」之间）。点一下——
+    **10 个 Agent** 各自从**屏幕中间的一个随机位置**向你的光标射出一道**自己颜色的光束**，并**各写 20 个字符**。
+    写入的内容按 **.NEMA v1.2 的领域规则**组织：每个 Agent 写进**自己的领域**，领域头是一个**真 Tab** + 领域 ID + 空格 + 正整数修订号
+    （`\tA01 1`），领域之间**没有空行**；**你的文本里一个领域头都没有时**，才在 10 个领域**之前**补一行
+    `https://nema-thread.vercel.app/website/download.html`（那是 .NEMA 的**解释器与语法规则**所在，见 `01_Source/docs/NEMA_SPEC_v1.2.md`，**外部参考副本**）。
+    **安全**：密码框里**一个字符都不写**（面板底部只给一句话）；有选区时**不覆盖你的选区**（面板说「写入被宿主拒绝」）；
+    普通打字行为**一点没变**（演示是一次性的）。
+    落地：`crates/pime-core/src/nema.rs`（领域头的识别与领域范围，13 个单测）＋ `crates/pime-tsf/src/demo.rs`（演示本体，20 个单测），
+    面板与嘴的部分在 `laser.rs` / `laser_ui.rs` / `mouths.rs` / `tip.rs`。
+20. **同一领域再写一次时修订号递增**（`\tA01 1` → `\tA01 2`）：不这样的话，连点两次演示会在同一文档里留下**两个同名同修订号的领域**，
+    谁也说不清哪个是新的。这是我的口径选择（规范只说修订号是「正整数」，没说再写时怎么变）——**D-92 待你裁定**，回退是一行。
+21. **两处 .NEMA 口径也请你裁定**：**D-90**（补的那行 URL 是「说明行」还是「领域 ID」）与
+    **D-91**（规范要求整份文档以两个空行结束，但演示是往**编辑区中段**写，补空行会在文档中间造空行 ⇒ 维持不补）。
+    本仓库**没有**实现 .NEMA 的解释器与无损 Codec（那是官方发布的参考实现），这里实现的只是**领域结构的识别**与**演示模式**。
+22. **本轮的数字**：新增 2 个模块、33 个单测（core 13 + tsf 20），`pime-core` 322 单元 + 132 集成、`pime-tsf` 325 单元 + 16 集成，
+    **都是我独立复跑的**（不是只听子代理自报）；clippy **零新增告警**。
+    安装包：**`01_Source/dist/ProgrammingIME-0.3.1-win-x64-setup.exe`**（10,365,426 字节，
+    sha256 `0a55197e5ab614bf7c5e6a3078a47167a917c69f8f118af2ea310ffb882c2c34`），扩展 `programming-ime-vscode-bridge-0.3.1.vsix`（218,970 字节）。
+23. **这一轮没有验证的**：**真机**——新 DLL 还没换上（要注销/重启），演示模式的**真机手感**（10 束光束、颜色、面板那一行）
+    只在代码层与单元测试里验过，清单见 `02_Verification/REAL_MACHINE_CHECKLIST.md` 的「三点五」；
+    **安装包**——0.3.1 的包是用 `--skip-dry-run` 构建的（**360 安全卫士会「执行即隔离」未签名的安装包**，本机跑不了它自己的 dry-run 自检；
+    其余自检全过：x64 PE、只导入系统 DLL、载荷 10 条的页脚哈希由独立读取器验证）。

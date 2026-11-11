@@ -5,7 +5,7 @@
 # dependency-free and `#![forbid(unsafe_code)]`; this crate reuses its SHA-256/HMAC and JSON parser.
 [package]
 name = "pime-ipc"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 license = "MIT"
 publish = false

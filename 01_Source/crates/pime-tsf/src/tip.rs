@@ -84,6 +84,12 @@ const DEFAULT_LANGUAGE: &str = "zh-CN";
 /// hand to an agent: it is far more likely a mistake than an intention.
 const MAX_SELECTION_CHARS: usize = 1 << 20;
 
+/// How much of the text before the caret is read for the demonstration (in UTF-16 units).
+///
+/// The demonstration asks whether the document holds a domain header of its own: only the piece it writes
+/// into matters, and a document may be long.
+const BEFORE_CARET_CHARS: usize = 4096;
+
 fn refused<E>(_: E) -> HostError {
     HostError::Refused
 }
@@ -560,6 +566,40 @@ impl TsfHost {
             }
         })
     }
+
+    /// The text that is already in the document, just before the caret.
+    ///
+    /// The demonstration asks it whether the document holds a domain header of its own: only the last window
+    /// before the caret is read, because the question is about the piece the demonstration writes into, and
+    /// a document may be long.
+    pub fn text_before_caret(&mut self) -> Option<String> {
+        let ctx = self.context.clone()?;
+        let ctx2 = ctx.clone();
+        run_session(&ctx, self.client_id, SYNC_READ, move |ec| {
+            // SAFETY: `ec` belongs to the running session on `ctx2`.
+            unsafe {
+                let caret = caret_range(&ctx2, ec).map_err(refused)?;
+                let range = caret.Clone().map_err(refused)?;
+                // the window before the caret: the shift stops at the beginning of the document
+                let wanted = -(BEFORE_CARET_CHARS as i32);
+                let mut moved = 0i32;
+                range
+                    .ShiftStart(ec, wanted, &mut moved, std::ptr::null())
+                    .map_err(refused)?;
+                let count = moved.unsigned_abs() as usize;
+                if count == 0 {
+                    return Ok(String::new());
+                }
+                let mut buffer = vec![0u16; count];
+                let mut got = 0u32;
+                range.GetText(ec, 0, &mut buffer, &mut got).map_err(refused)?;
+                let got = (got as usize).min(count);
+                buffer.truncate(got);
+                Ok(String::from_utf16_lossy(&buffer))
+            }
+        })
+        .ok()
+    }
 }
 
 /// Answer a request of an AI agent that came through the bridge window.
@@ -719,6 +759,54 @@ struct Inner {
     /// The window an AI agent sends its requests to. It exists exactly while the text service of this process is
     /// active, so an agent that finds it finds a running input method.
     bridge: Option<Bridge>,
+    /// How many times the demonstration of the laser interface has run (the seed of the places of its mouths).
+    demo_runs: u32,
+}
+
+/// The document the demonstration writes into: the text service of this thread.
+///
+/// It is the only place that talks to the host: the demonstration itself is pure (in `demo`), so that it can
+/// be tested without a document and without a screen.
+struct DemoHost<'a> {
+    /// The text service.
+    inner: &'a mut Inner,
+}
+
+impl crate::demo::DemoHost for DemoHost<'_> {
+    /// A password field is never written into: not one character.
+    fn is_secure_field(&mut self) -> bool {
+        self.inner.controller.host_mut().is_secure_field()
+    }
+
+    /// The text that is already in the document, just before the caret.
+    fn text_at_caret(&mut self) -> Option<String> {
+        self.inner.controller.host_mut().text_before_caret()
+    }
+
+    /// The caret in screen coordinates: the beams fly to it.
+    fn caret_anchor(&mut self) -> Option<Anchor> {
+        self.inner.controller.host_mut().caret_anchor()
+    }
+
+    /// Write the text at the caret and leave the caret after it.
+    fn write(&mut self, text: &str) -> std::result::Result<(), crate::demo::DemoError> {
+        match self.inner.controller.host_mut().commit("", text) {
+            Ok(()) => Ok(()),
+            Err(HostError::Mismatch) => Err(crate::demo::DemoError::Refused(
+                "there is a selection: the text would have replaced it".to_string(),
+            )),
+            Err(HostError::Refused) => Err(crate::demo::DemoError::Refused(
+                "the host refused the write".to_string(),
+            )),
+        }
+    }
+
+    /// The light of the agent: the beam comes out of its mouth and has its colour.
+    fn fire(&mut self, key: &str, label: &str, anchor: Anchor, mouth: (i32, i32)) {
+        if let Ok(mut laser) = self.inner.laser.try_borrow_mut() {
+            laser.fire_for_at(key, label, anchor, mouth.0, mouth.1);
+        }
+    }
 }
 
 /// An action that arrived while the text service was busy.
@@ -786,6 +874,7 @@ fn laser_items(
             label: "外观",
             value: imesettings::skin_label(skin).to_string(),
         },
+        PanelItem::Demo,
         PanelItem::Settings,
     ]
 }
@@ -950,6 +1039,7 @@ impl Inner {
                 self.controller.apply_list_action(ListAction::Take(index));
             }
             LaserEvent::Settings => self.open_settings(),
+            LaserEvent::Demo => self.run_demo(),
             LaserEvent::Switch => {
                 // The mouth of the light is the switch between the input methods.
                 //
@@ -963,6 +1053,40 @@ impl Inner {
                 self.mouth_place = crate::laser::MouthPlace { edge, offset }.to_text();
                 self.save_settings();
             }
+        }
+    }
+
+    /// Run the demonstration of the laser interface: ten agents write their own domain, one after the other.
+    ///
+    /// The demonstration is a one-off: it runs when the user clicks its row of the panel, and it never
+    /// changes the way the ordinary typing works. A password field gets nothing at all.
+    fn run_demo(&mut self) {
+        // The seed is the number of the run: the same seed gives the same picture of the mouths, and the
+        // clock of the machine is never read (the rules of the repository).
+        self.demo_runs += 1;
+        let seed = u64::from(self.demo_runs);
+        let work = self
+            .laser
+            .try_borrow()
+            .map(|laser| laser.work_area())
+            .unwrap_or(Rect::new(0, 0, 0, 0));
+        let report = {
+            let mut host = DemoHost { inner: self };
+            crate::demo::run(&mut host, seed, work)
+        };
+        match &report.error {
+            Some(error) => trace(&format!("the demonstration stopped: {error}")),
+            None => trace(&format!(
+                "the demonstration wrote {} agents",
+                report.agents.len()
+            )),
+        }
+        // The panel says what happened: the user must not be left with the idea that something was written
+        // when nothing was.
+        let status = report.status();
+        if let Ok(mut laser) = self.laser.try_borrow_mut() {
+            laser.set_status(Some(&status));
+            laser.open_panel();
         }
     }
 
@@ -1663,6 +1787,7 @@ impl Tip {
                 laser,
                 laser_hide,
                 bridge,
+                demo_runs: 0,
             });
             // The laser interface comes on the screen with the text service.
             if let Ok(mut slot) = self.inner.try_borrow_mut()
@@ -2095,6 +2220,12 @@ mod tests {
         );
         // the last row is the one that opens the settings window
         assert_eq!(items.last(), Some(&PanelItem::Settings));
+        // and the demonstration is the row just before it (the user asked for it there)
+        assert_eq!(items[items.len() - 2], PanelItem::Demo);
+        assert!(
+            items.iter().any(|item| item.label() == "多 Agent 演示"),
+            "{items:?}"
+        );
         // and the scheme of the keys is one of the rows (the user asked for it to be reachable from the panel)
         assert!(
             items.iter().any(|item| item.label() == "按键方案"),

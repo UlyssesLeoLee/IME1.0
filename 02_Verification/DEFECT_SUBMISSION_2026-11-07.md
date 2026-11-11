@@ -8,8 +8,8 @@
 
 | 类别 | 数量 | 说明 |
 |---|---:|---|
-| 已发生、未经你批准的改动 | 10 项 | §1。每一项都给了回退方式，你可以逐项「保留 / 回退 / 部分保留」 |
-| 待你裁定的缺陷与取舍 | 65 条（D-16 ~ D-89） | §2，按主题分 A~G；D-57 ~ D-65 来自 `tase-executor` / `tase-agent-scheduler`，D-67 ~ D-80 来自 `tase-worker` 与五十个算法，D-81 ~ D-83 是接线时发现的既有落差 |
+| 已发生、未经你批准的改动 | 11 项 | §1。每一项都给了回退方式，你可以逐项「保留 / 回退 / 部分保留」 |
+| 待你裁定的缺陷与取舍 | 67 条（D-16 ~ D-92） | §2，按主题分 A~G；D-57 ~ D-65 来自 `tase-executor` / `tase-agent-scheduler`，D-67 ~ D-80 来自 `tase-worker` 与五十个算法，D-81 ~ D-83 是接线时发现的既有落差，**D-90 ~ D-92 是本轮「多 Agent 演示模式」的 .NEMA 口径** |
 | 需要你给信息才能继续的空白 | 3 条 | §3 |
 | 本单子未覆盖 | 真机验收 | 新 DLL 还没换上（注销/重启后才有），实拍取证都是进程内宿主 |
 
@@ -31,6 +31,7 @@
 | **D-55** | `tase-catalog` 的推荐打分权重由我定：**意图 60 / 约束 15 / 复杂度 10 / 实现 15** | 设计书 §17.4 只说「先硬门禁再评分」，没给数值 | 权重是口味不是对错，影响推荐排序的可解释性 | 你给一组数值，我改（`tase-catalog/src/recommend.rs`） |
 | **D-46 / D-47 / D-48 / D-49** | **没有动**：`ErrorCode` 表面、管道名构造器、logon SID、DACL 掩码都保持原样 | 改它们会动到冻结契约或别的 crate 的文件 | 见 §2 B/D 组 | —— |
 | **第十八轮删除球形彩虹** | 删掉右下角「球形彩虹」悬浮窗整条链路（`paint_logo` / `Role::Logo` / `LOGO_CLASS` 等），**左边缘 26×1 px 淡蓝光缝保留** | **你点名的**（「删掉右下角球形彩虹悬浮窗」） | 右下角不再有球；托盘图标本身仍是彩虹圆盘（通知区图标，不在 TSF 进程内）——见 D-43 | 恢复被删的文件与调用点（git 历史可取回） |
+| **多 Agent 演示模式（本轮新增）** | 面板多一行「多 Agent 演示」；点一下，**10 个 Agent** 各自从**屏幕中间**的随机位置向光标写 **20 个字符**，各自在自己的 .NEMA 领域内；新增 `pime-core/src/nema.rs`（领域规则）与 `pime-tsf/src/demo.rs`（演示本体） | **你点名的**（「增加一个多agent演示模式…」） | ① 面板从 8 行变 9 行（`PANEL_ROWS` 8→9、`PANEL_HEIGHT` 296→326）；② 嘴从**屏幕边缘**改成**屏幕中间随机点**（新增 `floating_mouth` / `obtain_at`）；③ **同一领域被再写一次时修订号递增**（`\tA01 1` → `\tA01 2`）——这是我的口径选择，见 §2 D-92；④ 密码框里**一个字符都不写**、面板底部显示一句话 | 整条链路回退：删掉 `demo.rs` / `nema.rs`、把 `PANEL_ROWS` 改回 8、`PANEL_HEIGHT` 改回 296、去掉 `laser_items()` 里的 `PanelItem::Demo`、去掉 `mouths.rs` 的 `obtain_at`（git 历史可取回）。**③ 单独回退**：`demo.rs` 的 `next_revision()` 恒返回 1 |
 
 ---
 
@@ -107,6 +108,9 @@
 | **D-81** | 低 | ~~`tase-local-hub` 的 clippy 不是干净的~~ | `tase-local-hub/src/session.rs:449` 的 `assert_eq!(LOGON.len() > 0, true)` ⇒ `clippy::len_zero`（接线时实测发现；与 HEAD 逐字相同，**不是接线引入的**） | —— | **已修**：接线时改成了 `assert!(!LOGON.is_empty())`（语义等价的一行风格改写，因为验收标准要求 clippy 零告警）。**这属于未经批准的改动，回退：改回原样**（代价：clippy 门重新变红 2 条） |
 | **D-82** | 低中 | **宿主适配器把「读不到文本」一律映射成 `NotFound`，桥接的错误码丢了**（由宿主门接线时发现） | `crates/tase-executor/src/host.rs` 的 `snapshot`：读失败时 `TaseError::new(ErrorCode::NotFound, "the host did not give the text of the focused window: {code}")`——**桥接的码只留在消息里，TASE 的码一律是 NotFound** | 「输入法不在前台窗口」（`NO_IME`）与「没有文档」（`NO_CONTEXT`）在 TASE 这一层**长得一模一样**（NotFound），调用方分不出「输入法没运行」与「这个位置没有文档」 | 把桥接的码映射成对应的 TASE 码（`NO_IME` → `WorkerUnavailable`、`NO_CONTEXT` → `NotFound`）。**按规矩交你裁定，我没有动** |
 | **D-83** | 低 | **偏移非法时适配器报的是「被拒绝」而不是「报错」**（由宿主门接线时发现） | `crates/tase-executor/src/host.rs` 的 `apply_edits`：编辑套不上文本时返回 `HostEditOutcome::Rejected`；而 `HostEditOutcome::Rejected` 的文档说的是「**编辑器拒绝了这次编辑**」（`apply.rs` 的枚举注释） | 两种读法都说得通（从「写没写成」看是拒绝，从「谁的问题」看是报错），但**枚举的语义是编辑器的拒绝**，而非法偏移是**调用方的错** | 要么改成 `Err(TaseError::invalid_argument(...))`，要么把枚举的文档改成「宿主没有接受这次编辑」。**按规矩交你裁定，我没有动** |
+| **D-90** | 低 | **多 Agent 演示里「没有领域头时补的那一行」我按「说明行」处理，不是「领域头」** | `.NEMA v1.2` 的规范说领域头是 `Tab + 领域ID + 空格 + 正整数修订号`，严格正则 `^\t>?ID REV$`；而 `https://nema-thread.vercel.app/website/download.html` **含 `:` 与 `/`，当领域 ID 不一定合那条正则**（规范里的 ID 形如 `Ttext1` / `Gauth1`） | 我把这一行放在 10 个 Agent 的领域**之前**，作为「这是 .NEMA 的解释器与规则所在」的指针；Agent 自己的领域头仍是合法的 `\tA01 1` | 如果你的口径是**把 URL 当成领域 ID**（`\t<url> 1`），说一声我改（一行的事，模板已做成常量） |
+| **D-91** | 低 | **.NEMA 规范要求「整个文档以连续两个完全空白的物理行结束」（最后正文行后 3 个 LF），而演示写进的是光标所在编辑区的中段** | 规范 §1：「领域之间**无空行**。整个文档以连续两个完全空白的物理行结束（最后正文行后 3 个 LF）」；`crates/pime-tsf/src/demo.rs` 的 `plan()` 每块以**一个** `\n` 结束 | 演示自己产生的那段文本**不是**一份完整的 .nema 文档（末尾少两个空行）；反过来，若补上两个空行，在**文档中间**就会造出空行，违反「领域之间无空行」 | 维持现状（不补）：**空行比缺尾更伤**，且演示是往用户的编辑区里写，不是生成一份 .nema 文件。若你要「演示写完即是一份完整 .nema 文档」，说一声我改成**追加到文档末尾**时补两个空行 |
+| **D-92** | 低 | **同一领域被再写一次时修订号递增**（`\tA01 1` → `\tA01 2`）——这是我的口径选择，规范没写死 | 规范只说修订号是「正整数」，没说同一领域再写时该怎么变；`crates/pime-tsf/src/demo.rs` 的 `next_revision()` 取文本里该领域 ID 的**最高修订号 + 1** | 不改的话，**连点两次演示会在同一文档里留下两个 `\tA01 1`**——同一个领域 ID、同一个修订号出现两次，谁也说不清哪个是新的。改了之后，文档里的领域 ID 与修订号两两不重复 | 维持（推荐）：修订号本来就是用来区分「同一领域的两次写入」的。回退：`next_revision()` 恒返回 1（**一行**）。另有一个更激进的选项：每次演示用**全新的领域 ID**（`A01`…`A10` → `B01`…`B10` → …），那样重复领域名的问题彻底没有，但领域 ID 会一直涨 |
 | **D-84** | 中高 | **store 只存请求的摘要，不存请求本身** ⇒ Hub 重启后恢复出来的作业**没有载荷** | `tase-local-store/src/lib.rs:679`（作业行只有 `request_digest`）；`tase-local-hub/src/server.rs:757` | worker 拿不到 `documents`，**算不出 diff**；本轮的载荷只活在 Hub 的内存里 | 给 store 的作业行加一列请求载荷（或 outbox），并让它随作业一起落盘 |
 | **D-85** | 中 | **Hub 二进制在自己打印的管道名下起不来**（本机会话的 logon SID 是 `S-1-0`） | `tase-local-ipc/src/acl.rs:51`（`pipe_name` 只做字符消毒、不校验）与 `tase-local-ipc/src/transport.rs:293`（`WindowsPipe::pipe_name` 走 `pime-ipc` 的严格校验）不一致；`tase-local-hub/src/bootstrap.rs:676` | 它打印 `\\.\pipe\PIME-IPC-1-S-1-0`，随后自己因「not a plain SID string」失败 ⇒ **打印的管道名它自己开不了** | 让两处用同一套 SID 校验（或让 `acl::pipe_name` 也校验）；在那之前**真命名管道往返只能靠内存管道取证** |
 | **D-86** | 中 | **`consumer::TaskSource` 的接缝承载不了结果**：契约里 `TaskResult::Succeeded` 只有 `result_digest`，没有 diff 载荷 | `tase-worker/src/consumer.rs:53-66`；`tase-worker/src/hub_link.rs:297` | Hub 路径上**没有退避重试**：worker 报 FAILED 即终结作业（二进制直接驱动链接，没有走 `Consumer`/`Worker` 的重试机器） | 给 `TaskResult` 加一列载荷（`Json`），让 Hub 链接走 `Consumer` 的重试路径 |

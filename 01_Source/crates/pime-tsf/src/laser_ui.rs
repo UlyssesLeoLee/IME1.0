@@ -61,19 +61,19 @@ const PANEL_WIDTH: i32 = 268;
 /// How many rows the panel of the laser interface has.
 ///
 /// The panel is the quick way into the settings: the rows are the ones of `tip::laser_items` (the mode, the space
-/// key, the composition, the scheme of the keys, the language, the effort, the skin and the settings). The height
-/// of the panel follows this number, so the two cannot drift apart.
-pub const PANEL_ROWS: usize = 8;
+/// key, the composition, the scheme of the keys, the language, the effort, the skin, the demonstration and the
+/// settings). The height of the panel follows this number, so the two cannot drift apart.
+pub const PANEL_ROWS: usize = 9;
 
-/// How tall the panel is (the header, the eight rows and the room the light needs around them).
-const PANEL_HEIGHT: i32 = 296;
+/// How tall the panel is (the header, the nine rows and the room the light needs around them).
+const PANEL_HEIGHT: i32 = 326;
 
 /// The room under the last row of the panel.
 const PANEL_BOTTOM: i32 = 38;
 
 /// How tall the panel is for the rows it shows.
 ///
-/// The rows decide the height: the settings are eight of them, the list of the candidates is as many as the
+/// The rows decide the height: the settings are nine of them, the list of the candidates is as many as the
 /// page holds (up to nine), and the panel must not be taller than what it shows.
 fn panel_height(rows: usize) -> i32 {
     PANEL_HANDLE + rows as i32 * PANEL_ROW_HEIGHT + PANEL_BOTTOM
@@ -112,6 +112,8 @@ pub enum LaserEvent {
     Menu { key: &'static str },
     /// The settings window was asked for.
     Settings,
+    /// The row of the demonstration was clicked: ten agents write their own domain into the document.
+    Demo,
     /// The mouth of the glow was clicked: the input method switches (the user is in another one and wants to
     /// write code, or wants to go back to the one they came from).
     Switch,
@@ -150,6 +152,8 @@ pub struct LaserUi {
     left_at: Option<u64>,
     /// The rows of the panel (the settings that are used most often).
     items: Vec<PanelItem>,
+    /// The one line the panel shows under its rows (what the last action did).
+    status: Option<String>,
     /// The candidates of the list (the panel shows them instead of the settings while they are there).
     candidates: Vec<PanelCandidate>,
     /// What the panel shows.
@@ -168,7 +172,7 @@ pub struct LaserUi {
 
     /// Whether the picture of the panel has to be drawn again.
     ///
-    /// The panel is the expensive window (268 by 296 pixels and an 18 pixel shadow blur), so its picture is only
+    /// The panel is the expensive window (268 by 326 pixels and an 18 pixel shadow blur), so its picture is only
     /// drawn again when something in it really changed. D-27 measured a whole core of CPU before this.
     panel_dirty: bool,
     /// Whether the picture of the beam has to be drawn again.
@@ -227,6 +231,7 @@ impl LaserUi {
                 on_panel: false,
                 left_at: None,
                 items: Vec::new(),
+                status: None,
                 candidates: Vec::new(),
                 panel_mode: PanelMode::Settings,
                 panel_height: PANEL_HEIGHT,
@@ -339,6 +344,7 @@ impl LaserUi {
             let matches = match item {
                 PanelItem::Toggle { key: k, .. } => *k == key,
                 PanelItem::Menu { key: k, .. } => *k == key,
+                PanelItem::Demo => false,
                 PanelItem::Settings => key == "settings",
                 PanelItem::Candidate(_) => false,
             };
@@ -432,6 +438,28 @@ impl LaserUi {
         let place = self.place.unwrap_or_else(|| MouthPlace::default_in(work));
         // the mouth of the source (it is made here when the source is new)
         let source = self.registry.obtain(source_key, source_label, work, place);
+        self.fire_from(source, anchor);
+    }
+
+    /// Fire the beam of a source whose mouth is at a given point of the screen.
+    ///
+    /// The demonstration puts the mouths of its agents in the middle of the screen: their beams fly across
+    /// it instead of along its border.
+    pub fn fire_for_at(&mut self, source_key: &str, source_label: &str, anchor: Anchor, x: i32, y: i32) {
+        if !self.visible {
+            return;
+        }
+        let work = self.work;
+        let place = self.place.unwrap_or_else(|| MouthPlace::default_in(work));
+        // the mouth of the source, at the point the demonstration chose for it
+        let source = self
+            .registry
+            .obtain_at(source_key, source_label, work, place, x, y);
+        self.fire_from(source, anchor);
+    }
+
+    /// The beam from the mouth of a source to the character it wrote.
+    fn fire_from(&mut self, source: MouthSource, anchor: Anchor) {
         // the windows of the mouths follow the registry
         self.sync_mouths();
         let now = now_ms();
@@ -464,6 +492,24 @@ impl LaserUi {
     /// The mouths of light that are on the screen right now (the human and every agent).
     pub fn mouths(&self) -> Vec<MouthState> {
         self.model.borrow().mouths.clone()
+    }
+
+    /// The work area the interface lives in (the monitor the caret is on).
+    pub fn work_area(&self) -> Rect {
+        self.work
+    }
+
+    /// The one line the panel shows under its rows: what the last action did.
+    ///
+    /// The panel is the only place the text service can speak to the user while it works, so the result of
+    /// the demonstration is told there.
+    pub fn set_status(&mut self, status: Option<&str>) {
+        let status = status.map(|text| text.to_string());
+        if self.status == status {
+            return;
+        }
+        self.status = status;
+        self.refresh_panel_layout();
     }
 
     /// Advance the animation (the timer of the glow window calls this).
@@ -749,6 +795,7 @@ impl LaserUi {
         match action {
             PanelAction::Toggle { key, on } => (self.sink)(LaserEvent::Toggle { key, on }),
             PanelAction::Menu { key } => (self.sink)(LaserEvent::Menu { key }),
+            PanelAction::Demo => (self.sink)(LaserEvent::Demo),
             PanelAction::Settings => (self.sink)(LaserEvent::Settings),
             PanelAction::Candidate { index } => (self.sink)(LaserEvent::Candidate { index }),
         }
@@ -967,9 +1014,10 @@ impl LaserUi {
                 .map(PanelItem::Candidate)
                 .collect(),
         };
-        let layout = PanelLayout::compute(&items, PANEL_ROW_HEIGHT, PANEL_HANDLE, PANEL_WIDTH - 24);
+        let mut layout = PanelLayout::compute(&items, PANEL_ROW_HEIGHT, PANEL_HANDLE, PANEL_WIDTH - 24);
         let height = panel_height(layout.rows.len());
         self.panel_height = height;
+        layout.status = self.status.clone();
         self.model.borrow_mut().panel.layout = layout;
         // the rows changed: the picture of the panel has to be drawn again
         self.panel_dirty = true;
@@ -1333,6 +1381,16 @@ fn paint_panel(surface: &mut LayeredSurface, model: &Model, _key: &str) {
                 );
             }
             let _ = index;
+        }
+        // The status of the panel: the one line under the rows, in the room that is left for it.
+        if let Some(status) = layout.status.as_deref() {
+            let left = layout
+                .rows
+                .first()
+                .map(|(_, rect)| rect.left)
+                .unwrap_or(PANEL_HANDLE);
+            let top = PANEL_HANDLE + layout.rows.len() as i32 * PANEL_ROW_HEIGHT + 4;
+            surface.draw_text(font, LaserTheme::DIM, left, top, status);
         }
     }
 }

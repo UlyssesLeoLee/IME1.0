@@ -20,7 +20,7 @@
 //!
 //! Nothing here talks to Windows: the geometry and the colours are pure, so they can be tested without a screen.
 
-use crate::laser::{Edge, Mouth, MouthPlace, mouth_at};
+use crate::laser::{Edge, Mouth, MouthPlace, floating_mouth, mouth_at};
 use crate::layout::Rect;
 use pime_core::style::{LaserTheme, Rgb, mix};
 
@@ -123,27 +123,75 @@ impl MouthRegistry {
             }
             return self.sources[index].clone();
         }
+        self.make(key, label, work, user_place, None)
+    }
+
+    /// The mouth of a source at a given point of the screen.
+    ///
+    /// The mouths of the agents sit on the edges of the screen; the demonstration puts them in the middle
+    /// of it, so that the beams fly across the screen instead of along its border. The point is kept inside
+    /// the work area and away from its border, so that the lens is never cut off. A source that is already
+    /// known moves to the new point: the demonstration puts its agents somewhere else every time it runs.
+    pub fn obtain_at(
+        &mut self,
+        key: &str,
+        label: &str,
+        work: Rect,
+        user_place: MouthPlace,
+        x: i32,
+        y: i32,
+    ) -> MouthSource {
+        if key == USER_KEY {
+            // The human's mouth is where the human put it: it never follows the demonstration.
+            return self.obtain(key, label, work, user_place);
+        }
+        let mouth = floating_mouth(work, x, y, MOUTH_RADIUS);
+        if let Some(index) = self.sources.iter().position(|source| source.key == key) {
+            self.sources[index].mouth = mouth;
+            return self.sources[index].clone();
+        }
+        self.make(key, label, work, user_place, Some(mouth))
+    }
+
+    /// Make the source of a key that is not in the registry yet.
+    ///
+    /// The colour of an agent is the one of its key, and its place is the place of the edge it takes, unless
+    /// the caller gave one (the demonstration puts its agents in the middle of the screen).
+    fn make(
+        &mut self,
+        key: &str,
+        label: &str,
+        work: Rect,
+        user_place: MouthPlace,
+        at: Option<Mouth>,
+    ) -> MouthSource {
         let is_user = key == USER_KEY;
-        let (colour, halo, place) = if is_user {
+        let (colour, halo, mouth) = if is_user {
             (
                 LaserTheme::MOUTH_SLIT,
                 LaserTheme::MOUTH_HALO,
-                user_place,
+                mouth_at(work, user_place, MOUTH_RADIUS),
             )
         } else {
             let (colour, hue) = agent_colour(key, &self.used_hues);
             self.used_hues.push(hue);
             let halo = mix(colour, LaserTheme::PAGE, 0.35);
-            let place = agent_place(self.agents, work);
-            self.agents += 1;
-            (colour, halo, place)
+            let mouth = match at {
+                Some(mouth) => mouth,
+                None => {
+                    let place = agent_place(self.agents, work);
+                    self.agents += 1;
+                    mouth_at(work, place, MOUTH_RADIUS)
+                }
+            };
+            (colour, halo, mouth)
         };
         let source = MouthSource {
             key: key.to_string(),
             label: label.to_string(),
             colour,
             halo,
-            mouth: mouth_at(work, place, MOUTH_RADIUS),
+            mouth,
             is_user,
         };
         self.sources.push(source.clone());
@@ -480,5 +528,43 @@ mod tests {
         // the same source, the same place: the mouth does not move
         let again = registry.obtain(USER_KEY, USER_LABEL, work(), place);
         assert_eq!(user.mouth, again.mouth);
+    }
+
+    /// A mouth that is put at a point of the screen is in the middle of it, not on its border.
+    #[test]
+    fn a_mouth_that_is_put_at_a_point_is_not_on_the_border() {
+        let mut registry = MouthRegistry::new();
+        let source = registry.obtain_at("agent:demo:01", "demo-01", work(), user_place(), 900, 400);
+        assert_eq!((source.mouth.x, source.mouth.y), (900, 400));
+        assert!(source.mouth.x > work().left + source.mouth.radius);
+        assert!(source.mouth.x < work().right - source.mouth.radius);
+        assert!(source.mouth.y > work().top + source.mouth.radius);
+        assert!(source.mouth.y < work().bottom - source.mouth.radius);
+        // and it is not the human
+        assert!(!source.is_user);
+    }
+
+    /// The same agent keeps its colour when it moves to another point of the screen.
+    #[test]
+    fn a_mouth_that_moves_keeps_its_colour() {
+        let mut registry = MouthRegistry::new();
+        let first = registry.obtain_at("agent:demo:01", "demo-01", work(), user_place(), 900, 400);
+        let again = registry.obtain_at("agent:demo:01", "demo-01", work(), user_place(), 300, 700);
+        assert_eq!(first.colour, again.colour, "the colour must not change");
+        assert_eq!((again.mouth.x, again.mouth.y), (300, 700), "the mouth moved");
+        assert_eq!(registry.sources().len(), 1);
+    }
+
+    /// The mouth of the human never follows the demonstration: it stays where the user put it.
+    #[test]
+    fn the_mouth_of_the_human_does_not_follow_the_demonstration() {
+        let mut registry = MouthRegistry::new();
+        let place = MouthPlace {
+            edge: Edge::Top,
+            offset: 700,
+        };
+        let user = registry.obtain_at(USER_KEY, USER_LABEL, work(), place, 900, 400);
+        assert_eq!(user.mouth.x, 700, "the human's mouth stays where the user put it");
+        assert_eq!(user.mouth.y, work().top + MOUTH_RADIUS);
     }
 }

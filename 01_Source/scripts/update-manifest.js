@@ -201,6 +201,11 @@ const ADDITIONS = [
   // the map of the fifteen TASE crates of this repository
   '01_Source/docs/TASE_CRATES.md',
   '01_Source/docs/TASE_CHAIN.md',
+  // the .NEMA v1.2 rules (an external reference: the interpreter and the syntax of the domains)
+  '01_Source/docs/NEMA_SPEC_v1.2.md',
+  // the rules of the domains (.NEMA) and the demonstration of the laser interface (ten agents)
+  '01_Source/crates/pime-core/src/nema.rs',
+  '01_Source/crates/pime-tsf/src/demo.rs',
   // the cost and the latency benchmark of the product
   '01_Source/scripts/bench-cost.js',
   '01_Source/crates/tase-metrics/examples/cost_bench.rs',

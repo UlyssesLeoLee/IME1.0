@@ -1,4 +1,4 @@
-# IME1.0（编程输入法）— 源码 v0.3.0
+# IME1.0（编程输入法）— 源码 v0.3.1
 
 **状态：VS Code 侧功能完整的编辑器桥接 + 零依赖 Rust 本地核心 + Playwright 用户验收脚本。不是可发布的 Windows 系统输入法。**
 Windows TSF 适配器仍是 v0.1 的未编译源码；命名管道 IPC、Credential Manager、签名安装器没有实现。
@@ -66,6 +66,8 @@ Rust 核心可选接入扩展：构建 `pime-core`，把 `programmingIme.coreExe
 ## 5. Windows TSF 工程
 
 `windows/tsf/` 是 v0.1 的 C++ 实验源码（已被取代，仅作历史参考）。当前的系统输入法是纯 Rust 的 `crates/pime-tsf`（不在主工作区内，用 `tests/run-all.js --tsf` 构建和检查）：按键处理、候选窗、注册代码都已有单元测试；**2026-11-04 已在真实系统上完成一次提权安装并注册**（COM 键、三个语言 profile、三个 category 都写进了真实 HKLM），但**真实宿主里的输入链路仍然没有跑过**（候选选择、Ctrl+F12 切换、语音识别）。要验证 G0 需要一个可丢弃的 Windows 11 虚拟机，步骤见 `docs/TSF_VM_TEST_PLAN.md`。
+
+**多 Agent 演示模式**（2026-11-11）：左侧激光面板多一行「多 Agent 演示」，点一下 10 个 Agent 各自从屏幕中间的随机位置向光标写各 20 个字符。领域规则在 `crates/pime-core/src/nema.rs`（`.NEMA v1.2` 的严格正则 `^\t>?ID REV$`），演示本体在 `crates/pime-tsf/src/demo.rs`（纯逻辑，可离线测试）。**本仓库没有实现 .NEMA 的解释器与无损 Codec**——那是官方发布的参考实现；规范副本在 `docs/NEMA_SPEC_v1.2.md`（外部参考）。
 
 ## 6. 许可
 
