@@ -428,6 +428,11 @@ impl Harness {
         self.press(vk::F1, None, Modifiers { alt: true, ..NONE }, "Alt+F1")
     }
 
+    /// Ctrl+F12: switch between the code input and the natural language input (the key the user asked for).
+    pub fn mode_chord(&mut self) -> bool {
+        self.press(vk::F12, None, Modifiers { ctrl: true, ..NONE }, "Ctrl+F12")
+    }
+
     /// The user (or the host) acts on the candidate list.
     pub fn list_action(&mut self, action: ListAction) {
         self.ctl.apply_list_action(action);

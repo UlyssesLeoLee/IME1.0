@@ -34,7 +34,7 @@ Environment: Windows 11, Node v26.13.0 (installed side by side; the machine defa
 
 ## Design-case coverage (by test-title id)
 
-`test-execution-report.md` lists every UT/IT/ST id. Summary: UT 76 of 77 have passing automated evidence, IT 38 of 48, ST 28 of 43; none
+`test-execution-report.md` lists every UT/IT/ST id. Summary: UT 76 of 77 have passing automated evidence, IT 39 of 48, ST 28 of 43; none
 failed. 15 tests for requirements added after the design baseline (ANN annotations, API provider compatibility) pass. "Evidence" means a passing
 test carries the id; it is a mapping, not a formal sign-off of every step in the design case. The remaining ids are NOT RUN with the reason
 stated per row. The planned count in the design documents (168) is the number of designed cases, not of executed ones. A skipped test is never

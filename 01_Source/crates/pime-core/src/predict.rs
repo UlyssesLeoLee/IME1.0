@@ -483,9 +483,35 @@ mod tests {
         assert!(ids("unknown", "fn").is_empty());
     }
 
+    /// A candidate that does not validate is not offered.
+    ///
+    /// The red-green round found this gap: the filter that drops the candidates whose template does not validate
+    /// was not pinned by any test of the core, so it could have been removed without anybody noticing.
     #[test]
-    fn literal_positions_yield_nothing() {
-        let o = PredictOptions::new("rust", "fn").before("let s = \"abc ");
+    fn a_candidate_that_does_not_validate_is_not_offered() {
+        let mut registry = crate::pack::Registry::builtin().expect("the built-in packs load");
+        let pack = crate::json::parse(
+            r#"{"schema_version":1,"profile_id":"rust","version":"1.0.0","triggers":[{"id":"u.broken","pattern":"zzz","candidates":[{"label":"broken","text":"fn broken( ${cursor}"}]}]}"#,
+            crate::json::Limits::DEFAULT,
+        )
+        .expect("the pack is valid JSON");
+        registry.add_user(&pack, 4096).expect("the user pack is accepted");
+        let engine = Engine::new(registry);
+        let out = engine
+            .predict(&PredictOptions::new("rust", "zzz"))
+            .expect("the engine answers");
+        assert!(
+            !out.iter().any(|c| c.validation == Validation::Invalid),
+            "no invalid candidate is offered: {out:?}"
+        );
+        assert!(
+            !out.iter().any(|c| c.text.as_deref().unwrap_or_default().contains("broken(")),
+            "the broken template is not offered: {out:?}"
+        );
+    }
+
+    #[test]
+    fn literal_positions_yield_nothing() {        let o = PredictOptions::new("rust", "fn").before("let s = \"abc ");
         assert!(engine().predict(&o).unwrap().is_empty());
     }
 

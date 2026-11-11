@@ -4,10 +4,13 @@
 //! there (where Sogou keeps it too) and owns the gestures that must work even when IME1.0 is **not** the input method
 //! that is active:
 //!
-//! * Ctrl+F12 switches between IME1.0 and the input method the user came from. The user is writing in the Japanese
-//!   input method, wants to write code, presses the key, writes code, presses it again and is back in Japanese.
 //! * Ctrl+Alt+V starts the voice input: the microphone is recorded, the speech is recognised and the text is written
 //!   into the program the user is in.
+//!
+//! Ctrl+F12 is **not** a key of the tray any more: it switched between IME1.0 and the input method the user came
+//! from, and it now switches between the **code input** and the **natural language input** inside IME1.0 (the user
+//! decided that on 2026-11-11). A system hot key would swallow it before the text service of the focused
+//! application ever saw it, so the switch of the input method stays in the menu of the tray.
 //!
 //! The tray never takes the focus: the user is typing in another program and the input method must not take the
 //! caret away from it.
@@ -35,8 +38,6 @@ use pime_tsf::settings_window::{SettingsEvent, SettingsSink, SettingsWindow};
 /// The identifier of the icon in the notification area.
 const TRAY_ID: u32 = 1;
 
-/// The hot key that switches the input method.
-const HOTKEY_SWITCH: i32 = 1;
 /// The hot key that starts the voice input.
 const HOTKEY_VOICE: i32 = 2;
 
@@ -88,16 +89,9 @@ unsafe extern "system" fn wnd_proc(
 ) -> LRESULT {
     match message {
         WM_HOTKEY => {
-            match wparam.0 as i32 {
-                HOTKEY_SWITCH => {
-                    // The switch: IME1.0 and the input method the user came from.
-                    pime_tsf::ime_switch::switch_now();
-                }
-                HOTKEY_VOICE => {
-                    // The voice: start it, or stop it and write the text.
-                    start_or_stop_voice(hwnd);
-                }
-                _ => {}
+            // The voice: start it, or stop it and write the text.
+            if wparam.0 as i32 == HOTKEY_VOICE {
+                start_or_stop_voice(hwnd);
             }
             LRESULT(0)
         }
@@ -261,7 +255,7 @@ fn show_menu(hwnd: HWND) {
     // The check box of "start with Windows" shows the state that is really there, not the state the last click left.
     let autostart = autostart::is_enabled();
     let items: [(usize, &str, windows::Win32::UI::WindowsAndMessaging::MENU_ITEM_FLAGS); 5] = [
-        (MENU_SWITCH, "切换输入法\tCtrl+F12", MENU_ITEM_FLAGS(0)),
+        (MENU_SWITCH, "切换输入法", MENU_ITEM_FLAGS(0)),
         (MENU_VOICE, "语音输入\tCtrl+Alt+V", MENU_ITEM_FLAGS(0)),
         (MENU_SETTINGS, "设置…", MENU_ITEM_FLAGS(0)),
         (
@@ -433,8 +427,12 @@ fn main() -> std::process::ExitCode {
     let _tray = tray::Tray::add(window, TRAY_ID, "IME1.0 编程输入法", &icon::icon_resource());
 
     // The keys that must work even when IME1.0 is not the active input method.
+    //
+    // Ctrl+F12 is **not** one of them: it is the key that switches between the code input and the natural language
+    // input (the user decided that on 2026-11-11), and it has to reach the text service of the focused application.
+    // A system hot key would swallow it before the text service ever saw it, so the tray must not take it.
+    // The switch of the input method itself is in the menu of the tray (and in the laser panel).
     // SAFETY: the window is live; the ids are ours.
-    let _ = unsafe { RegisterHotKey(window, HOTKEY_SWITCH, MOD_CONTROL, 0x7B) }; // Ctrl+F12
     let _ = unsafe { RegisterHotKey(window, HOTKEY_VOICE, MOD_CONTROL | MOD_ALT, 0x56) }; // Ctrl+Alt+V
 
     // The loop.
@@ -456,7 +454,6 @@ fn main() -> std::process::ExitCode {
 
     // SAFETY: the hot keys were registered for this window.
     unsafe {
-        let _ = UnregisterHotKey(window, HOTKEY_SWITCH);
         let _ = UnregisterHotKey(window, HOTKEY_VOICE);
         let _ = DestroyWindow(window);
     }

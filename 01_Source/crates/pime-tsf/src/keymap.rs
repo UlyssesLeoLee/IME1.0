@@ -49,6 +49,8 @@ pub mod vk {
     pub const V: u32 = 0x56;
     /// The F2 key.
     pub const F2: u32 = 0x71;
+    /// The F12 key.
+    pub const F12: u32 = 0x7B;
 }
 
 /// Modifier state at the time of a key message.
@@ -130,6 +132,18 @@ pub fn is_compose_chord(code: u32, mods: Modifiers) -> bool {
 /// button.
 pub fn is_input_mode_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::F1 && mods.alt && !mods.ctrl && !mods.shift && !mods.win
+}
+
+/// Ctrl+F12: switch between the **code input** (the direct mode: nothing is eaten) and the **natural language
+/// input** (the input mode: typing opens a composition and the candidate list takes the digits).
+///
+/// The product ships in the code input mode (the user decided that on 2026-11-11); this chord is the way in and out
+/// of the natural language input. It is the same action as Alt+F1, with the key the user asked for.
+///
+/// The key belongs to the input method, not to the tray: the tray must not register it as a system hot key, or it
+/// would swallow it before the text service ever saw it.
+pub fn is_mode_chord(code: u32, mods: Modifiers) -> bool {
+    code == vk::F12 && mods.ctrl && !mods.alt && !mods.shift && !mods.win
 }
 
 /// Alt+F2: walk through the three languages of the product (zh-CN, en-US, ja-JP). The panel of the laser interface
@@ -402,10 +416,30 @@ mod tests {
         assert!(!is_compose_chord(0x41, both));
     }
 
+    /// Ctrl+F12 is the shortcut of the product that switches between the code input and the natural language input.
+    #[test]
+    fn ctrl_f12_is_the_mode_shortcut_and_nothing_else_is() {
+        let ctrl_f12 = Modifiers { ctrl: true, ..NONE };
+        assert!(is_mode_chord(vk::F12, ctrl_f12), "Ctrl+F12 switches the mode");
+        assert!(!is_mode_chord(vk::F12, NONE), "the plain F12 belongs to the editor");
+        assert!(!is_mode_chord(vk::F1, ctrl_f12), "Ctrl+F1 is not ours");
+        assert!(!is_mode_chord(vk::F2, ctrl_f12), "Ctrl+F2 is not ours");
+        for extra in [
+            Modifiers { alt: true, ..ctrl_f12 },
+            Modifiers { shift: true, ..ctrl_f12 },
+            Modifiers { win: true, ..ctrl_f12 },
+        ] {
+            assert!(!is_mode_chord(vk::F12, extra), "{extra:?}");
+        }
+        // and it is a different chord than the two the input method already had
+        let alt_f1 = Modifiers { alt: true, ..NONE };
+        assert!(!is_input_mode_chord(vk::F12, alt_f1));
+        assert!(!is_language_chord(vk::F12, ctrl_f12));
+    }
+
     /// Alt+F2 is the shortcut of the product that walks through the three languages.
     #[test]
-    fn alt_f2_is_the_language_shortcut_and_nothing_else_is() {
-        let alt_f2 = Modifiers { alt: true, ..NONE };
+    fn alt_f2_is_the_language_shortcut_and_nothing_else_is() {        let alt_f2 = Modifiers { alt: true, ..NONE };
         assert!(is_language_chord(vk::F2, alt_f2));
         assert!(!is_language_chord(vk::F1, alt_f2), "Alt+F1 is the input mode");
         assert!(

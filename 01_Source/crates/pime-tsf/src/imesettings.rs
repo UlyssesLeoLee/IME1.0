@@ -22,7 +22,11 @@ use std::path::{Path, PathBuf};
 use pime_core::json::{Json, Limits};
 
 /// The version of the file format. A file with a higher version is still read (the unknown fields are ignored).
-pub const VERSION: i64 = 1;
+///
+/// Version 2: the factory mode became the **code input** (the user decided that on 2026-11-11). A file of version 1
+/// therefore carries the *old* factory value of `inputMode`, not a choice of the user, and it is not read: the
+/// code input is the mode until the user says otherwise in the settings window.
+pub const VERSION: i64 = 2;
 
 /// The language profiles the product ships, in the order the settings window lists them.
 ///
@@ -103,7 +107,8 @@ pub struct LanguageSettings {
     pub keymap_preset: KeymapPreset,
     /// A composition is opened as soon as candidates appear (the Sogou behaviour).
     pub auto_compose: bool,
-    /// The input method starts in input mode (typing opens a composition) instead of direct mode.
+    /// The input method starts in the **code input** (typing goes into the document exactly as it was typed)
+    /// instead of the natural language input.
     pub input_mode: bool,
     /// The laser interface (the blue glow at the left of the screen and the panel on it) is shown while this
     /// profile is active.
@@ -124,8 +129,9 @@ impl Default for LanguageSettings {
             punct_paging: false,
             keymap_preset: KeymapPreset::Programmer,
             auto_compose: false,
-            // The input method starts in input mode (the mainstream behaviour), not in direct mode.
-            input_mode: true,
+            // The code input is the factory mode (the user decided that on 2026-11-11): the natural language input
+            // (typing opens a composition) is one Ctrl+F12 away.
+            input_mode: false,
             laser_ui: true,
         }
     }
@@ -420,6 +426,12 @@ impl ImeSettings {
         let value = pime_core::json::parse(text, Limits::DEFAULT)
             .map_err(|e| format!("不是有效的 JSON：{e}"))?;
         let mut settings = ImeSettings::default();
+        // The version of the file decides how the `inputMode` of a language is read (see `language_settings_of`).
+        let file_version = value
+            .get("version")
+            .and_then(Json::as_f64)
+            .map(|number| number as i64)
+            .unwrap_or(1);
         // The languages section is optional: a file that only carries the global settings still loads.
         match value.get("languages") {
             None => {}
@@ -431,7 +443,7 @@ impl ImeSettings {
                     if !LANGUAGES.contains(&key.as_str()) {
                         continue; // a language the product does not ship: kept in the file, ignored here
                     }
-                    settings.set(key, language_settings_of(entry));
+                    settings.set(key, language_settings_of(entry, file_version));
                 }
             }
         }
@@ -509,7 +521,11 @@ impl ImeSettings {
 }
 
 /// The settings of one language out of a JSON object. A missing or malformed field falls back to its default.
-fn language_settings_of(value: &Json) -> LanguageSettings {
+///
+/// The `inputMode` of a file of **version 1** is not read: that value can only be the factory default of the older
+/// version (the code input became the factory mode in version 2), so it is the old default and not a choice of the
+/// user. From version 2 on, the value in the file is the choice of the user and it is read.
+fn language_settings_of(value: &Json, file_version: i64) -> LanguageSettings {
     let default = LanguageSettings::default();
     let page_size = value
         .get("pageSize")
@@ -549,7 +565,9 @@ fn language_settings_of(value: &Json) -> LanguageSettings {
     if let Some(flag) = value.get("autoCompose").and_then(Json::as_bool) {
         settings.auto_compose = flag;
     }
-    if let Some(flag) = value.get("inputMode").and_then(Json::as_bool) {
+    if file_version >= 2
+        && let Some(flag) = value.get("inputMode").and_then(Json::as_bool)
+    {
         settings.input_mode = flag;
     }
     // The old name of the setting (it showed the floating bar) is read as well: the file of the user may still
@@ -621,11 +639,33 @@ mod tests {
             assert_eq!(value.keymap_preset, KeymapPreset::Programmer);
             assert!(!value.auto_compose);
             assert!(
-                value.input_mode,
-                "the input method starts in input mode (the mainstream behaviour)"
+                !value.input_mode,
+                "the code input is the factory mode (the natural language input is one Ctrl+F12 away)"
             );
             assert!(value.laser_ui);
         }
+    }
+
+    /// A file of version 1 carries the **old factory value** of `inputMode`, not a choice of the user: the code
+    /// input is the mode until the user says otherwise in the settings window.
+    #[test]
+    fn a_file_of_the_old_version_does_not_bring_the_old_input_mode_back() {
+        let old = r#"{"version":1,"languages":{"zh-CN":{"pageSize":5,"inputMode":true},"en-US":{"inputMode":true},"ja-JP":{"inputMode":true}}}"#;
+        let read = ImeSettings::from_text(old).expect("an old file still loads");
+        for language in LANGUAGES {
+            assert!(
+                !read.get(language).input_mode,
+                "the factory mode of {language} is the code input"
+            );
+        }
+        // from version 2 on, the value in the file is the choice of the user and it is read
+        let new = r#"{"version":2,"languages":{"zh-CN":{"inputMode":true}}}"#;
+        let read = ImeSettings::from_text(new).expect("a new file loads");
+        assert!(read.get("zh-CN").input_mode, "the user asked for the natural language input");
+        // and a file that says false keeps the code input
+        let new = r#"{"version":2,"languages":{"zh-CN":{"inputMode":false}}}"#;
+        let read = ImeSettings::from_text(new).expect("a new file loads");
+        assert!(!read.get("zh-CN").input_mode);
     }
 
     #[test]

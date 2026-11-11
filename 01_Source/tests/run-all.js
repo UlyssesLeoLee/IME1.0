@@ -25,6 +25,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const tests = __dirname, src = path.resolve(tests, '..'), root = path.resolve(src, '..');
+const verification = path.join(root, '02_Verification');
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
@@ -38,6 +39,16 @@ const coreExe = process.env.PIME_CORE_EXE || path.join(targetDir, 'debug', 'pime
 const isWin = process.platform === 'win32';
 const npx = isWin ? 'npx.cmd' : 'npx';
 const results = [];
+
+// The raw output of a test run, kept as evidence: the traceability report maps the design case ids by the ids
+// in the test titles, and it reads these files. Without them it would map against a stale run.
+function saveEvidence(name, text) {
+  try {
+    fs.writeFileSync(path.join(verification, `${name}-test-result.txt`), text.replace(/\r\n/g, '\n'), 'utf8');
+  } catch (e) {
+    console.log(`note: the evidence file of ${name} was not written: ${e.message}`);
+  }
+}
 
 function step(name, fn) {
   const t0 = Date.now();
@@ -60,6 +71,7 @@ if (want('rust')) {
     for (let attempt = 1; attempt <= 3; attempt++) { // a freshly linked exe can fail once while Defender scans it
       const r = spawnSync('cargo', ['test', '--workspace'], {cwd: src, encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir}});
       process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
+      saveEvidence('rust', `${r.stdout || ''}${r.stderr || ''}`);
       if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
       if (!/os error 5/.test((r.stdout || '') + (r.stderr || ''))) break;
     }
@@ -73,17 +85,20 @@ if (want('js')) step('JavaScript tests' + (fs.existsSync(coreExe) ? ' (+ engine 
   sh(process.execPath, ['--test', '*.test.js'], {cwd: path.join(tests, 'js'), env: {...process.env, ...(fs.existsSync(coreExe) ? {PIME_CORE_EXE: coreExe} : {})}}));
 if (want('smoke')) step('real pime-core.exe smoke test (JSON Lines)', () => sh(process.execPath, [path.join(tests, 'smoke', 'core-binary-smoke.js')], {env: {...process.env, PIME_CORE_EXE: coreExe}}));
 // cargo in one of the crates that live outside the main workspace; a freshly linked exe can fail once with os error 5
-const cargoRetry = (crate, cargoArgs, extraEnv = {}) => {
+const cargoRetry = (crate, cargoArgs, extraEnv = {}, evidenceName = '') => {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const r = spawnSync('cargo', cargoArgs, {cwd: path.join(src, 'crates', crate), encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir, ...extraEnv}, shell: isWin});
     process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
+    if (evidenceName) saveEvidence(evidenceName, `${r.stdout || ''}${r.stderr || ''}`);
     if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
     if (!/os error 5/.test((r.stdout || '') + (r.stderr || ''))) break;
   }
   return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
 };
 if (want('tsf')) {
-  step('TSF crate (crates/pime-tsf): cargo test (the unit tests, the IME scenario suite and the function ledger)', () => cargoRetry('pime-tsf', ['test']));
+  // the raw output is kept as evidence: the traceability report reads it (the TSF crate is outside the main
+  // workspace, so `cargo test --workspace` never sees it)
+  step('TSF crate (crates/pime-tsf): cargo test (the unit tests, the IME scenario suite and the function ledger)', () => cargoRetry('pime-tsf', ['test'], {}, 'tsf'));
   step('TSF DLL (crates/pime-tsf): builds on the GNU target, x64 PE, only system DLL imports (not registered or loaded)', () => sh(process.execPath, [path.join(tests, 'smoke', 'tsf-dll-check.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
 }
 // The live part drives the real msctf and opens the candidate window of the text service on the desktop: it is

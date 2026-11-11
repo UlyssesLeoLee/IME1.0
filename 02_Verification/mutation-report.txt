@@ -1,0 +1,45 @@
+# The red-green check of 2026-11-11T14:44:26.504Z
+# 30 mutations of the implementation; every one of them is restored right after it is applied.
+
+CAUGHT nema-tab a domain header needs a real tab (a space is not one)
+CAUGHT nema-revision-zero the revision of a domain is a positive integer
+CAUGHT nema-trailing nothing may follow the revision of a domain header
+CAUGHT nema-graph-marker the mark of a graph domain touches its id
+CAUGHT nema-scope a domain reaches up to the header of the next one
+MISSED romaji-a the romaji table: a alone is あ (the file carries い today)  <-- the suite does not notice this
+CAUGHT textrange-surrogate an offset never splits a surrogate pair
+CAUGHT predict-invalid a candidate that does not validate is not offered
+CAUGHT imeswitch-cycle the language key walks through the three languages
+CAUGHT budget-limit the budget of the AI is refused when it is used up
+CAUGHT grants-mismatch a grant is refused when the provider does not match
+
+the run checked 11 mutations: 10 caught, 1 missed, 0 unknown (the suite did not run), 0 stale
+the suite does not notice 1 mutation(s): romaji-a
+CAUGHT keymap-mode-chord Ctrl+F12 switches between the code input and the natural language input
+CAUGHT keymap-alt-f1 Alt+F1 switches the input mode as well
+CAUGHT controller-default-mode the factory mode is the code input
+CAUGHT controller-secure-chord the mode key stays with the host in a password field
+
+the run checked 4 mutations: 4 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+every mutation was caught: the suite really pins these behaviours
+CAUGHT laser-demo-action a click on the row of the demonstration asks for the demonstration
+CAUGHT demo-body-length every agent writes exactly twenty characters
+CAUGHT demo-header-tab the header of a domain starts with a real tab
+CAUGHT demo-note the address of the interpreter is only written when there is no domain header
+CAUGHT demo-revision a domain that is written again gets the next revision
+CAUGHT demo-secure a password field gets nothing at all
+CAUGHT mouths-user-mouth the mouth of the human does not follow the demonstration
+CAUGHT panel-preview-does-not-open the preview of the code input does not open the panel
+
+the run checked 8 mutations: 8 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+every mutation was caught: the suite really pins these behaviours
+CAUGHT js-candidates-risk the weight of the risk note
+CAUGHT js-candidates-segment the weight of the segments
+CAUGHT js-candidates-tie the tie breaker of the ranking
+CAUGHT js-candidates-password the reason the candidates are off in a password field
+CAUGHT js-textrange-surrogate an offset never splits a surrogate pair
+CAUGHT js-transaction-apply a failed syntax check disables the default apply
+CAUGHT js-languages-invalid a candidate that does not validate is not offered
+
+the run checked 7 mutations: 7 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+every mutation was caught: the suite really pins these behaviours

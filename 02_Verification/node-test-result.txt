@@ -1,725 +1,2130 @@
-# JavaScript tests (tests/js, node:test) - raw output, 2026-10-30T22:11:28+08:00, node v26.13.0
-# command: PIME_CORE_EXE=<debug pime-core> node --test --test-reporter=tap *.test.js   (the engine differential tests run because the core exe is set); then node scripts/check-syntax.js
-
 TAP version 13
 # Subtest: PARITY predict fixtures (94 cases) match the JS engine
 ok 1 - PARITY predict fixtures (94 cases) match the JS engine
   ---
-  duration_ms: 37.9527
+  duration_ms: 58.586
   type: 'test'
   ...
 # Subtest: PARITY validate fixtures match the JS validators
 ok 2 - PARITY validate fixtures match the JS validators
   ---
-  duration_ms: 3.0665
+  duration_ms: 4.0013
   type: 'test'
   ...
 # Subtest: PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes)
 ok 3 - PARITY x86 vectors match the JS encoder (and unsupported forms never yield bytes)
   ---
-  duration_ms: 1.5604
+  duration_ms: 1.4571
   type: 'test'
   ...
 # Subtest: PARITY resolve fixtures match the JS language resolver
 ok 4 - PARITY resolve fixtures match the JS language resolver
   ---
-  duration_ms: 1.4093
+  duration_ms: 1.4484
   type: 'test'
   ...
 # Subtest: PARITY secret fixtures match the JS scanner
 ok 5 - PARITY secret fixtures match the JS scanner
   ---
-  duration_ms: 3.0875
+  duration_ms: 3.7178
+  type: 'test'
+  ...
+# Subtest: PARITY plugin language fixtures match the JS resolver and predictor
+ok 6 - PARITY plugin language fixtures match the JS resolver and predictor
+  ---
+  duration_ms: 62.0388
   type: 'test'
   ...
 # Subtest: PARITY fixtures are exactly what the generator produces (no hand edits)
-ok 6 - PARITY fixtures are exactly what the generator produces (no hand edits)
+ok 7 - PARITY fixtures are exactly what the generator produces (no hand edits)
   ---
-  duration_ms: 369.8775
+  duration_ms: 1125.647
   type: 'test'
   ...
 # Subtest: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors
-ok 7 - UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors
+ok 8 - UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors
   ---
-  duration_ms: 9.2348
+  duration_ms: 7.5477
   type: 'test'
   ...
 # Subtest: UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only
-ok 8 - UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only
+ok 9 - UT-032 / IT-017 / ST-016 scenarios are independent and route to the configured provider only
   ---
-  duration_ms: 5.468
+  duration_ms: 5.5423
   type: 'test'
   ...
 # Subtest: UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise
-ok 9 - UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise
+ok 10 - UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise
   ---
-  duration_ms: 2.2162
+  duration_ms: 2.3152
   type: 'test'
   ...
 # Subtest: API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels
-ok 10 - API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels
+ok 11 - API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels
   ---
-  duration_ms: 1.8681
+  duration_ms: 1.6211
   type: 'test'
   ...
 # Subtest: UT-072 / IT-046 a stale capability record is treated as unknown and never sent
-ok 11 - UT-072 / IT-046 a stale capability record is treated as unknown and never sent
+ok 12 - UT-072 / IT-046 a stale capability record is treated as unknown and never sent
   ---
-  duration_ms: 0.3123
+  duration_ms: 0.2445
   type: 'test'
   ...
 # Subtest: UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work
-ok 12 - UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work
+ok 13 - UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work
   ---
-  duration_ms: 11.1503
+  duration_ms: 22.7967
   type: 'test'
   ...
 # Subtest: UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded
-ok 13 - UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded
+ok 14 - UT-035 budget: reserve before sending, settle with real usage, refuse when exceeded
   ---
-  duration_ms: 1.7589
+  duration_ms: 2.1542
   type: 'test'
   ...
 # Subtest: UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI
-ok 14 - UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI
+ok 15 - UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI
   ---
-  duration_ms: 2.6598
+  duration_ms: 2.8835
   type: 'test'
   ...
 # Subtest: UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens
-ok 15 - UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens
+ok 16 - UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens
   ---
-  duration_ms: 98.8538
+  duration_ms: 102.7314
   type: 'test'
   ...
 # Subtest: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only
-ok 16 - UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only
+ok 17 - UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only
   ---
-  duration_ms: 0.8192
+  duration_ms: 1.6656
   type: 'test'
   ...
 # Subtest: UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves
-ok 17 - UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves
+ok 18 - UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves
   ---
-  duration_ms: 0.957
+  duration_ms: 2.0418
   type: 'test'
   ...
 # Subtest: UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed
-ok 18 - UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed
+ok 19 - UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed
   ---
-  duration_ms: 0.5586
+  duration_ms: 1.0028
   type: 'test'
   ...
 # Subtest: IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal
-ok 19 - IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal
+ok 20 - IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal
   ---
-  duration_ms: 3.3197
+  duration_ms: 5.0563
   type: 'test'
   ...
 # Subtest: UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled
-ok 20 - UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled
+ok 21 - UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled
   ---
-  duration_ms: 1.44
+  duration_ms: 2.6002
   type: 'test'
   ...
 # Subtest: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight
-ok 21 - UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight
+ok 22 - UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight
   ---
-  duration_ms: 0.9741
+  duration_ms: 2.007
   type: 'test'
   ...
 # Subtest: UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely
-ok 22 - UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely
+ok 23 - UT-040 / IT-024 / ST-021 AI results never change the buffer; pausing blocks AI entirely
   ---
-  duration_ms: 0.3354
+  duration_ms: 0.7513
+  type: 'test'
+  ...
+# Subtest: ANN-30 scopeAnchors: one entry per line with the line indentation, tabs preserved, a final line break gives a final empty line
+ok 24 - ANN-30 scopeAnchors: one entry per line with the line indentation, tabs preserved, a final line break gives a final empty line
+  ---
+  duration_ms: 4.757
+  type: 'test'
+  ...
+# Subtest: ANN-30a anchors inside strings, raw strings, templates, block comments and here-strings are refused (every language)
+ok 25 - ANN-30a anchors inside strings, raw strings, templates, block comments and here-strings are refused (every language)
+  ---
+  duration_ms: 1.5693
+  type: 'test'
+  ...
+# Subtest: ANN-31 line continuations: the line after a trailing backslash (Python, C, assembly) or backtick (PowerShell) is refused
+ok 26 - ANN-31 line continuations: the line after a trailing backslash (Python, C, assembly) or backtick (PowerShell) is refused
+  ---
+  duration_ms: 0.4947
+  type: 'test'
+  ...
+# Subtest: ANN-31a things that must stay on line 1 or 2 of the file: hashbang and the Python encoding cookie
+ok 27 - ANN-31a things that must stay on line 1 or 2 of the file: hashbang and the Python encoding cookie
+  ---
+  duration_ms: 0.3911
+  type: 'test'
+  ...
+# Subtest: ANN-31b a scope that is a slice of a file: one that starts or ends inside a multi-line literal is not trusted
+ok 28 - ANN-31b a scope that is a slice of a file: one that starts or ends inside a multi-line literal is not trusted
+  ---
+  duration_ms: 3.3552
+  type: 'test'
+  ...
+# Subtest: ANN-31c the file context never shrinks the anchors of a scope that lexes cleanly on its own
+ok 29 - ANN-31c the file context never shrinks the anchors of a scope that lexes cleanly on its own
+  ---
+  duration_ms: 1.6602
+  type: 'test'
+  ...
+# Subtest: ANN-32 JSX (tsx): text and tag markup are refused, {expressions} are code again, TypeScript generics are not JSX
+ok 30 - ANN-32 JSX (tsx): text and tag markup are refused, {expressions} are code again, TypeScript generics are not JSX
+  ---
+  duration_ms: 1.1164
+  type: 'test'
+  ...
+# Subtest: ANN-32a own TypeScript / C lexer: regex literals, template boundaries, apostrophes, C++ raw strings, digit separators
+ok 31 - ANN-32a own TypeScript / C lexer: regex literals, template boundaries, apostrophes, C++ raw strings, digit separators
+  ---
+  duration_ms: 0.501
+  type: 'test'
+  ...
+# Subtest: ANN-33 the scope prompt: data channel, numbered lines, anchorable list, requested flags, GUARD, file text only in the JSON input
+ok 32 - ANN-33 the scope prompt: data channel, numbered lines, anchorable list, requested flags, GUARD, file text only in the JSON input
+  ---
+  duration_ms: 0.9477
+  type: 'test'
+  ...
+# Subtest: ANN-33a prompt variants: graph only, CRLF scopes, dialect, locale, unsupported language
+ok 33 - ANN-33a prompt variants: graph only, CRLF scopes, dialect, locale, unsupported language
+  ---
+  duration_ms: 0.8254
+  type: 'test'
+  ...
+# Subtest: ANN-34 applyScopeReply: a comment goes above its line at that line's indentation; the code is untouched
+ok 34 - ANN-34 applyScopeReply: a comment goes above its line at that line's indentation; the code is untouched
+  ---
+  duration_ms: 3.7174
+  type: 'test'
+  ...
+# Subtest: ANN-34a unusable replies keep the original and say why
+ok 35 - ANN-34a unusable replies keep the original and say why
+  ---
+  duration_ms: 1.5097
+  type: 'test'
+  ...
+# Subtest: ANN-34b duplicates: a second comment for one anchor, or the same words as the comment already above it, are dropped
+ok 36 - ANN-34b duplicates: a second comment for one anchor, or the same words as the comment already above it, are dropped
+  ---
+  duration_ms: 0.5988
+  type: 'test'
+  ...
+# Subtest: ANN-35 line endings and the end of the text are preserved
+ok 37 - ANN-35 line endings and the end of the text are preserved
+  ---
+  duration_ms: 0.4767
+  type: 'test'
+  ...
+# Subtest: ANN-35a rendering of the model text: markers, control characters, tabs, blank lines, trailing characters that would continue a comment
+ok 38 - ANN-35a rendering of the model text: markers, control characters, tabs, blank lines, trailing characters that would continue a comment
+  ---
+  duration_ms: 1.5343
+  type: 'test'
+  ...
+# Subtest: ANN-35b "${" decision: nothing is neutralised, the result is applied as a WorkspaceEdit (text), never as a snippet
+ok 39 - ANN-35b "${" decision: nothing is neutralised, the result is applied as a WorkspaceEdit (text), never as a snippet
+  ---
+  duration_ms: 0.8954
+  type: 'test'
+  ...
+# Subtest: ANN-36 limits: 1500 characters per comment, 40000 in total, min(lines, 200) comments, growth below 60000, a flood of items
+ok 40 - ANN-36 limits: 1500 characters per comment, 40000 in total, min(lines, 200) comments, growth below 60000, a flood of items
+  ---
+  duration_ms: 28.5453
+  type: 'test'
+  ...
+# Subtest: ANN-37 Cypher block: graph only, graph with comments, a first line that is not anchorable, sanitising stays as before
+ok 41 - ANN-37 Cypher block: graph only, graph with comments, a first line that is not anchorable, sanitising stays as before
+  ---
+  duration_ms: 1.3893
+  type: 'test'
+  ...
+# Subtest: ANN-38 invariant (property): with a comment above every anchorable line the code is the original code and the new lines are comments
+ok 42 - ANN-38 invariant (property): with a comment above every anchorable line the code is the original code and the new lines are comments
+  ---
+  duration_ms: 26.9288
+  type: 'test'
+  ...
+# Subtest: ANN-38a invariant (property): seeded random anchors over every sample, random replies never change the code
+ok 43 - ANN-38a invariant (property): seeded random anchors over every sample, random replies never change the code
+  ---
+  duration_ms: 73.1961
+  type: 'test'
+  ...
+# Subtest: ANN-38b the invariant check itself: when the code fingerprint differs the original comes back with invariant-failed (fault injection)
+ok 44 - ANN-38b the invariant check itself: when the code fingerprint differs the original comes back with invariant-failed (fault injection)
+  ---
+  duration_ms: 1.8284
+  type: 'test'
+  ...
+# Subtest: ANN-39 the existing exports and behaviour are unchanged
+ok 45 - ANN-39 the existing exports and behaviour are unchanged
+  ---
+  duration_ms: 0.7873
+  type: 'test'
+  ...
+# Subtest: ANN-39a corpus: this repository's own .rs / .js / .ps1 / .cpp files with seeded random anchors keep their code (and .js still compiles)
+ok 46 - ANN-39a corpus: this repository's own .rs / .js / .ps1 / .cpp files with seeded random anchors keep their code (and .js still compiles)
+  ---
+  duration_ms: 5951.775
+  type: 'test'
+  ...
+# Subtest: ANN-39b Python samples: ast.parse and the AST are identical with a comment above every anchorable line (skipped without py)
+ok 47 - ANN-39b Python samples: ast.parse and the AST are identical with a comment above every anchorable line (skipped without py)
+  ---
+  duration_ms: 543.6609
   type: 'test'
   ...
 # Subtest: ANN-01 maskSource reports comment/string spans without changing its masked output
-ok 23 - ANN-01 maskSource reports comment/string spans without changing its masked output
+ok 48 - ANN-01 maskSource reports comment/string spans without changing its masked output
   ---
-  duration_ms: 2.0424
+  duration_ms: 3.1361
   type: 'test'
   ...
 # Subtest: ANN-02 stripComments removes comments only, in every supported language
-ok 24 - ANN-02 stripComments removes comments only, in every supported language
+ok 49 - ANN-02 stripComments removes comments only, in every supported language
   ---
-  duration_ms: 0.4959
+  duration_ms: 0.8405
   type: 'test'
   ...
 # Subtest: ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected
-ok 25 - ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected
+ok 50 - ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected
   ---
-  duration_ms: 1.7499
+  duration_ms: 2.4296
   type: 'test'
   ...
 # Subtest: ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls
-ok 26 - ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls
+ok 51 - ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls
   ---
-  duration_ms: 0.8713
+  duration_ms: 3.0036
   type: 'test'
   ...
 # Subtest: ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback
-ok 27 - ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback
+ok 52 - ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback
   ---
-  duration_ms: 1.1825
+  duration_ms: 1.5177
   type: 'test'
   ...
 # Subtest: ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled
-ok 28 - ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled
+ok 53 - ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled
   ---
-  duration_ms: 0.424
+  duration_ms: 0.5808
   type: 'test'
   ...
 # Subtest: ANN-06b F1 instructions are extended only when a setting is on and the language has line comments
-ok 29 - ANN-06b F1 instructions are extended only when a setting is on and the language has line comments
+ok 54 - ANN-06b F1 instructions are extended only when a setting is on and the language has line comments
   ---
-  duration_ms: 0.2373
+  duration_ms: 0.3215
   type: 'test'
   ...
 # Subtest: ANN-07 symbol index: names of declarations only, comments and strings ignored, capped
-ok 30 - ANN-07 symbol index: names of declarations only, comments and strings ignored, capped
+ok 55 - ANN-07 symbol index: names of declarations only, comments and strings ignored, capped
   ---
-  duration_ms: 3.1089
+  duration_ms: 3.4023
   type: 'test'
   ...
 # Subtest: UT-025 context level capability lattice
-ok 31 - UT-025 context level capability lattice
+ok 56 - UT-025 context level capability lattice
   ---
-  duration_ms: 3.1312
+  duration_ms: 3.3752
   type: 'test'
   ...
 # Subtest: UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected
-ok 32 - UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected
+ok 57 - UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected
   ---
-  duration_ms: 1.0395
+  duration_ms: 0.9737
   type: 'test'
   ...
 # Subtest: UT-027 nearby excerpt is minimal and wider requests are refused
-ok 33 - UT-027 nearby excerpt is minimal and wider requests are refused
+ok 58 - UT-027 nearby excerpt is minimal and wider requests are refused
   ---
-  duration_ms: 0.4676
+  duration_ms: 0.4967
   type: 'test'
   ...
 # Subtest: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk
-ok 34 - UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk
+ok 59 - UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk
   ---
-  duration_ms: 2.1318
+  duration_ms: 1.5825
   type: 'test'
   ...
 # Subtest: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests
-ok 35 - UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests
+ok 60 - UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests
   ---
-  duration_ms: 6.1261
+  duration_ms: 1.3371
   type: 'test'
   ...
 # Subtest: UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file
-ok 36 - UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file
+ok 61 - UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file
   ---
-  duration_ms: 1.2508
+  duration_ms: 0.8257
   type: 'test'
   ...
 # Subtest: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only
-ok 37 - UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only
+ok 62 - UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only
   ---
-  duration_ms: 1.2204
+  duration_ms: 0.6365
   type: 'test'
   ...
 # Subtest: UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline
-ok 38 - UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline
+ok 63 - UT-045 hunks replay to the exact after-hash, with CRLF and a changed trailing newline
   ---
-  duration_ms: 1.9202
+  duration_ms: 1.1352
   type: 'test'
   ...
 # Subtest: UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range
-ok 39 - UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range
+ok 64 - UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range
   ---
-  duration_ms: 1.2805
+  duration_ms: 1.4891
   type: 'test'
   ...
 # Subtest: UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)
-ok 40 - UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)
+ok 65 - UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)
   ---
-  duration_ms: 0.8351
+  duration_ms: 0.6791
   type: 'test'
   ...
 # Subtest: UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result
-ok 41 - UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result
+ok 66 - UT-048 overlapping edits are rejected; disjoint hunk selections build a reviewable result
   ---
-  duration_ms: 0.4945
+  duration_ms: 0.5101
   type: 'test'
   ...
 # Subtest: UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token
-ok 42 - UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token
+ok 67 - UT-049 / IT-031 / ST-027 a changed version or hash yields STALE_DOCUMENT and no token
   ---
-  duration_ms: 0.4091
+  duration_ms: 0.4707
   type: 'test'
   ...
 # Subtest: UT-050 an apply token works once; replay writes nothing more
-ok 43 - UT-050 an apply token works once; replay writes nothing more
+ok 68 - UT-050 an apply token works once; replay writes nothing more
   ---
-  duration_ms: 0.6895
+  duration_ms: 0.7834
   type: 'test'
   ...
 # Subtest: UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried
-ok 44 - UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried
+ok 69 - UT-051 / IT-033 an unknown apply result is final: EDIT_UNKNOWN, never retried
   ---
-  duration_ms: 95.7519
+  duration_ms: 104.7081
   type: 'test'
   ...
 # Subtest: IT-032 a verified apply can be undone back to the original dirty buffer
-ok 45 - IT-032 a verified apply can be undone back to the original dirty buffer
+ok 70 - IT-032 a verified apply can be undone back to the original dirty buffer
   ---
-  duration_ms: 0.4735
+  duration_ms: 1.0227
   type: 'test'
   ...
 # Subtest: UT-054 / IT-036 / ST-030 only the current file can be changed
-ok 46 - UT-054 / IT-036 / ST-030 only the current file can be changed
+ok 71 - UT-054 / IT-036 / ST-030 only the current file can be changed
   ---
-  duration_ms: 0.2729
+  duration_ms: 0.6037
   type: 'test'
   ...
 # Subtest: UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply
-ok 47 - UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply
+ok 72 - UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply
   ---
-  duration_ms: 0.39
+  duration_ms: 0.6693
   type: 'test'
   ...
 # Subtest: UT-052 a failed syntax check disables the default apply
-ok 48 - UT-052 a failed syntax check disables the default apply
+ok 73 - UT-052 a failed syntax check disables the default apply
   ---
-  duration_ms: 0.1618
+  duration_ms: 0.2891
   type: 'test'
   ...
 # Subtest: IT-029 insert is refused when the cursor moved after the proposal
-ok 49 - IT-029 insert is refused when the cursor moved after the proposal
+ok 74 - IT-029 insert is refused when the cursor moved after the proposal
   ---
-  duration_ms: 0.1548
+  duration_ms: 0.3161
   type: 'test'
   ...
 # Subtest: NFR-502 purge drops expired plans, used tokens and applied source fragments
-ok 50 - NFR-502 purge drops expired plans, used tokens and applied source fragments
+ok 75 - NFR-502 purge drops expired plans, used tokens and applied source fragments
   ---
-  duration_ms: 0.3312
+  duration_ms: 0.6197
   type: 'test'
   ...
 # Subtest: static: the F1 flow writes only through the coordinator
-ok 51 - static: the F1 flow writes only through the coordinator
+ok 76 - static: the F1 flow writes only through the coordinator
   ---
-  duration_ms: 0.509
+  duration_ms: 0.9133
   type: 'test'
   ...
 # Subtest: AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)
-ok 52 - AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)
+ok 77 - AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)
   ---
-  duration_ms: 101.1764
+  duration_ms: 363.8325
   type: 'test'
   ...
 # Subtest: AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036)
-ok 53 - AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036)
+ok 78 - AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036)
   ---
-  duration_ms: 1187.3064
+  duration_ms: 1717.8438
   type: 'test'
   ...
 # Subtest: AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)
-ok 54 - AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)
+ok 79 - AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)
   ---
-  duration_ms: 108.6461
+  duration_ms: 498.147
   type: 'test'
   ...
 # Subtest: AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070)
-ok 55 - AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070)
+ok 80 - AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070)
   ---
-  duration_ms: 233.3979
+  duration_ms: 684.2844
   type: 'test'
   ...
 # Subtest: AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)
-ok 56 - AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)
+ok 81 - AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)
   ---
-  duration_ms: 41.7846
+  duration_ms: 405.9449
   type: 'test'
   ...
 # Subtest: AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)
-ok 57 - AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)
+ok 82 - AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)
   ---
-  duration_ms: 103.8393
+  duration_ms: 336.4691
   type: 'test'
   ...
 # Subtest: AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)
-ok 58 - AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)
+ok 83 - AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)
   ---
-  duration_ms: 57.4235
+  duration_ms: 133.1137
   type: 'test'
   ...
 # Subtest: AI engine: annotations and the symbol index are identical in both engines (ANN-02..07)
-ok 59 - AI engine: annotations and the symbol index are identical in both engines (ANN-02..07)
+ok 84 - AI engine: annotations and the symbol index are identical in both engines (ANN-02..07)
   ---
-  duration_ms: 54.7425
+  duration_ms: 185.7112
   type: 'test'
   ...
 # Subtest: scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)
-ok 60 - scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)
+ok 85 - scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)
   ---
-  duration_ms: 2422.0653
+  duration_ms: 2490.6205
   type: 'test'
   ...
 # Subtest: scheduler: with the core gone nothing is scheduled and nothing throws (the AI path is optional)
-ok 61 - scheduler: with the core gone nothing is scheduled and nothing throws (the AI path is optional)
+ok 86 - scheduler: with the core gone nothing is scheduled and nothing throws (the AI path is optional)
   ---
-  duration_ms: 124.9467
+  duration_ms: 201.4843
   type: 'test'
   ...
 # Subtest: CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056)
-ok 62 - CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056)
+ok 87 - CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056)
   ---
-  duration_ms: 107.2556
+  duration_ms: 397.62
   type: 'test'
   ...
 # Subtest: CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031)
-ok 63 - CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031)
+ok 88 - CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031)
   ---
-  duration_ms: 85.4562
+  duration_ms: 596.4823
   type: 'test'
   ...
 # Subtest: CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046)
-ok 64 - CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046)
+ok 89 - CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046)
   ---
-  duration_ms: 82.2416
+  duration_ms: 710.1643
   type: 'test'
   ...
 # Subtest: CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071)
-ok 65 - CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071)
+ok 90 - CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071)
   ---
-  duration_ms: 56.047
+  duration_ms: 397.2384
   type: 'test'
   ...
 # Subtest: CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)
-ok 66 - CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)
+ok 91 - CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)
   ---
-  duration_ms: 67.5029
+  duration_ms: 472.2132
   type: 'test'
   ...
 # Subtest: CFG engine adapter: the presentation methods answer like the JS engine, and still answer when the core is down
-ok 67 - CFG engine adapter: the presentation methods answer like the JS engine, and still answer when the core is down
+ok 92 - CFG engine adapter: the presentation methods answer like the JS engine, and still answer when the core is down
   ---
-  duration_ms: 56.3143
+  duration_ms: 821.3336
   type: 'test'
   ...
 # Subtest: engine: the Rust engine starts, opens a session and reports itself available
-ok 68 - engine: the Rust engine starts, opens a session and reports itself available
+ok 93 - engine: the Rust engine starts, opens a session and reports itself available
   ---
-  duration_ms: 121.0677
+  duration_ms: 487.9403
   type: 'test'
   ...
 # Subtest: engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine
-ok 69 - engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine
+ok 94 - engine: a missing or dead core switches the Rust engine off with a reason, never to the JS engine
   ---
-  duration_ms: 167.3092
+  duration_ms: 585.108
   type: 'test'
   ...
 # Subtest: engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)
-ok 70 - engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)
+ok 95 - engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)
   ---
-  duration_ms: 79.2329
+  duration_ms: 654.183
   type: 'test'
   ...
 # Subtest: engine: excerpts and insert previews are identical in both engines (UT-027)
-ok 71 - engine: excerpts and insert previews are identical in both engines (UT-027)
+ok 96 - engine: excerpts and insert previews are identical in both engines (UT-027)
   ---
-  duration_ms: 50.138
+  duration_ms: 417.7852
   type: 'test'
   ...
 # Subtest: engine: prepare/apply give the same outcome in both engines (UT-047..052)
-ok 72 - engine: prepare/apply give the same outcome in both engines (UT-047..052)
+ok 97 - engine: prepare/apply give the same outcome in both engines (UT-047..052)
   ---
-  duration_ms: 68.0842
+  duration_ms: 450.514
   type: 'test'
   ...
 # Subtest: engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)
-ok 73 - engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)
+ok 98 - engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)
   ---
-  duration_ms: 86.7221
+  duration_ms: 803.5738
   type: 'test'
   ...
 # Subtest: engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)
-ok 74 - engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)
+ok 99 - engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)
   ---
-  duration_ms: 202.9797
+  duration_ms: 659.1962
   type: 'test'
   ...
 # Subtest: engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation
-ok 75 - engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation
+ok 100 - engine: the realtime gate answers from the last verdict, is primed by authorize and cleared by revocation
   ---
-  duration_ms: 166.0078
+  duration_ms: 234.9523
   type: 'test'
   ...
 # Subtest: engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back
-ok 76 - engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back
+ok 101 - engine: a document of about 1.5 MiB goes through the whole edit path and the Diff text can be read back
   ---
-  duration_ms: 1582.1158
+  duration_ms: 1701.3625
   type: 'test'
   ...
 # Subtest: engine: settings reach the core and scenarios resolve there as in JS
-ok 77 - engine: settings reach the core and scenarios resolve there as in JS
+ok 102 - engine: settings reach the core and scenarios resolve there as in JS
   ---
-  duration_ms: 53.8283
+  duration_ms: 96.2029
+  type: 'test'
+  ...
+# Subtest: ANN-60 no selection: the declaration around the cursor is the scope, the request is the scope numbered plus the whole file, the highlight shows exactly it
+ok 103 - ANN-60 no selection: the declaration around the cursor is the scope, the request is the scope numbered plus the whole file, the highlight shows exactly it
+  ---
+  duration_ms: 50.1424
+  type: 'test'
+  ...
+# Subtest: ANN-61 a selection is the scope: exactly the selected lines (snapped to whole lines), whatever declaration contains it
+ok 104 - ANN-61 a selection is the scope: exactly the selected lines (snapped to whole lines), whatever declaration contains it
+  ---
+  duration_ms: 25.1413
+  type: 'test'
+  ...
+# Subtest: ANN-62 Wider / Narrower walk the chain, reset the tab to idle (no request on their own), move the highlight and disable at the ends
+ok 105 - ANN-62 Wider / Narrower walk the chain, reset the tab to idle (no request on their own), move the highlight and disable at the ends
+  ---
+  duration_ms: 8.9547
+  type: 'test'
+  ...
+# Subtest: ANN-63 Wider stops where the next scope is too large: the entry is shown crossed out with the reason, and it is never selectable
+ok 106 - ANN-63 Wider stops where the next scope is too large: the entry is shown crossed out with the reason, and it is never selectable
+  ---
+  duration_ms: 96.0255
+  type: 'test'
+  ...
+# Subtest: ANN-64 options start from autoComment / graphComment, change for this session only, and say what to enable when both are off
+ok 107 - ANN-64 options start from autoComment / graphComment, change for this session only, and say what to enable when both are off
+  ---
+  duration_ms: 8.5088
+  type: 'test'
+  ...
+# Subtest: ANN-65 consent: the whole file (L3) is asked first; the directory graph adds the symbol NAMES (L4) to the same modal; declining sends nothing
+ok 108 - ANN-65 consent: the whole file (L3) is asked first; the directory graph adds the symbol NAMES (L4) to the same modal; declining sends nothing
+  ---
+  duration_ms: 20.6696
+  type: 'test'
+  ...
+# Subtest: ANN-66 redaction: one redaction of the whole file, the request is built from it, the comments are applied to the ORIGINAL text, markers read <redacted>
+ok 109 - ANN-66 redaction: one redaction of the whole file, the request is built from it, the comments are applied to the ORIGINAL text, markers read <redacted>
+  ---
+  duration_ms: 10.5248
+  type: 'test'
+  ...
+# Subtest: ANN-67 redaction that changes the number of lines is refused before anything is sent
+ok 110 - ANN-67 redaction that changes the number of lines is refused before anything is sent
+  ---
+  duration_ms: 1.7012
+  type: 'test'
+  ...
+# Subtest: ANN-68 a reply with nothing to add is "ready" with a clear message (and why comments were skipped); an unusable reply is an error that can be retried
+ok 111 - ANN-68 a reply with nothing to add is "ready" with a clear message (and why comments were skipped); an unusable reply is an error that can be retried
+  ---
+  duration_ms: 30.4526
+  type: 'test'
+  ...
+# Subtest: ANN-69 Apply writes the selected hunks as ONE WorkspaceEdit through the coordinator: one undo step, code unchanged, highlight cleared
+ok 112 - ANN-69 Apply writes the selected hunks as ONE WorkspaceEdit through the coordinator: one undo step, code unchanged, highlight cleared
+  ---
+  duration_ms: 8.1268
+  type: 'test'
+  ...
+# Subtest: ANN-70 apply with every hunk deselected does nothing; an invalid selection cannot be applied
+ok 113 - ANN-70 apply with every hunk deselected does nothing; an invalid selection cannot be applied
+  ---
+  duration_ms: 6.0255
+  type: 'test'
+  ...
+# Subtest: ANN-71 stale: a change to the document after the proposal disables Apply and drops the highlight; Generate starts over from a fresh snapshot
+ok 114 - ANN-71 stale: a change to the document after the proposal disables Apply and drops the highlight; Generate starts over from a fresh snapshot
+  ---
+  duration_ms: 14.7519
+  type: 'test'
+  ...
+# Subtest: ANN-72 a one-line scope in a CRLF file: the inserted comment uses CRLF too, so the coordinator read-back of the edit holds
+ok 115 - ANN-72 a one-line scope in a CRLF file: the inserted comment uses CRLF too, so the coordinator read-back of the edit holds
+  ---
+  duration_ms: 9.5353
+  type: 'test'
+  ...
+# Subtest: ANN-73 Open Diff shows the document next to the result of the SELECTED blocks, read-only
+ok 116 - ANN-73 Open Diff shows the document next to the result of the SELECTED blocks, read-only
+  ---
+  duration_ms: 4.6983
+  type: 'test'
+  ...
+# Subtest: ANN-74 edit mode is the old F1: opens on the whole-file tab, starts nothing, Generate runs the whole-file and the insert request, the annotate tab stays idle
+ok 117 - ANN-74 edit mode is the old F1: opens on the whole-file tab, starts nothing, Generate runs the whole-file and the insert request, the annotate tab stays idle
+  ---
+  duration_ms: 8.3449
+  type: 'test'
+  ...
+# Subtest: ANN-75 annotate mode: Generate and Enter run the ACTIVE tab only, so one F1 never spends three requests
+ok 118 - ANN-75 annotate mode: Generate and Enter run the ACTIVE tab only, so one F1 never spends three requests
+  ---
+  duration_ms: 6.7501
+  type: 'test'
+  ...
+# Subtest: ANN-76 auto-start only in annotate mode, with f1AnnotateOnOpen, AI available, something to add and a configured provider
+ok 119 - ANN-76 auto-start only in annotate mode, with f1AnnotateOnOpen, AI available, something to add and a configured provider
+  ---
+  duration_ms: 112.0589
+  type: 'test'
+  ...
+# Subtest: ANN-77 the annotate tab is unavailable, with a clear message, wherever it cannot work; no request is sent
+ok 120 - ANN-77 the annotate tab is unavailable, with a clear message, wherever it cannot work; no request is sent
+  ---
+  duration_ms: 193.6882
+  type: 'test'
+  ...
+# Subtest: ANN-78 every supported language: scope + a reply + apply gives comment-only hunks and the same code, on snippets and on real files of this repository
+ok 121 - ANN-78 every supported language: scope + a reply + apply gives comment-only hunks and the same code, on snippets and on real files of this repository
+  ---
+  duration_ms: 61.2325
+  type: 'test'
+  ...
+# Subtest: ANN-79 the highlight is a whole-line decoration in theme colours that follows the scope, never steals the cursor, and is disposed with the session
+ok 122 - ANN-79 the highlight is a whole-line decoration in theme colours that follows the scope, never steals the cursor, and is disposed with the session
+  ---
+  duration_ms: 6.9914
+  type: 'test'
+  ...
+# Subtest: ANN-80 Generate on a stale session reopens with the same tab and the same options; the settings are still untouched
+ok 123 - ANN-80 Generate on a stale session reopens with the same tab and the same options; the settings are still untouched
+  ---
+  duration_ms: 3.9479
+  type: 'test'
+  ...
+# Subtest: ANN-81 helpers: line counting and cutting keep the line breaks, markers become <redacted>, a one-line scope takes the document line break
+ok 124 - ANN-81 helpers: line counting and cutting keep the line breaks, markers become <redacted>, a one-line scope takes the document line break
+  ---
+  duration_ms: 0.8882
+  type: 'test'
+  ...
+# Subtest: ANN-82 the page script: static markup, tab ids, i18n keys in every locale, and the whole-file element ids the existing UAT specs rely on
+ok 125 - ANN-82 the page script: static markup, tab ids, i18n keys in every locale, and the whole-file element ids the existing UAT specs rely on
+  ---
+  duration_ms: 1.273
+  type: 'test'
+  ...
+# Subtest: ANN-83 the page renders the annotate tab from a real session state, posts the right messages, and keeps the whole-file ids
+ok 126 - ANN-83 the page renders the annotate tab from a real session state, posts the right messages, and keeps the whole-file ids
+  ---
+  duration_ms: 10.2614
+  type: 'test'
+  ...
+# Subtest: ANN-84 the page: unavailable tab (message only), edit mode default tab, and the whole-file tab keeps \#cb-h1 \#preview \#validation \#open-diff \#apply-full \#regen-full
+ok 127 - ANN-84 the page: unavailable tab (message only), edit mode default tab, and the whole-file tab keeps \#cb-h1 \#preview \#validation \#open-diff \#apply-full \#regen-full
+  ---
+  duration_ms: 15.0208
+  type: 'test'
+  ...
+# Subtest: ANN-85 the Rust engine: annotate through propose, select, hunkEdits, the coordinator and the redaction of the real core
+ok 128 - ANN-85 the Rust engine: annotate through propose, select, hunkEdits, the coordinator and the redaction of the real core
+  ---
+  duration_ms: 724.5516
+  type: 'test'
+  ...
+# Subtest: PRM-20 routing: code goes to f1Full with the L3 consent and the numbered file; prose goes to f1Insert with the L1 consent and the selection only
+ok 129 - PRM-20 routing: code goes to f1Full with the L3 consent and the numbered file; prose goes to f1Insert with the L1 consent and the selection only
+  ---
+  duration_ms: 68.9318
+  type: 'test'
+  ...
+# Subtest: PRM-21 code review with findings: the clipboard gets the 5W1H prompt with the checked evidence, the notice comes AFTER the copy, one progress with Cancel
+ok 130 - PRM-21 code review with findings: the clipboard gets the 5W1H prompt with the checked evidence, the notice comes AFTER the copy, one progress with Cancel
+  ---
+  duration_ms: 3.7349
+  type: 'test'
+  ...
+# Subtest: PRM-22 prose: the language of the text picks the prompt language (Chinese text -> Chinese headings), a code file with prose in a comment stays prose
+ok 131 - PRM-22 prose: the language of the text picks the prompt language (Chinese text -> Chinese headings), a code file with prose in a comment stays prose
+  ---
+  duration_ms: 14.5938
+  type: 'test'
+  ...
+# Subtest: PRM-23 AI path not available: the UNREVIEWED template is copied, the notice says why, and not a single request is sent
+ok 132 - PRM-23 AI path not available: the UNREVIEWED template is copied, the notice says why, and not a single request is sent
+  ---
+  duration_ms: 107.104
+  type: 'test'
+  ...
+# Subtest: PRM-24 redact: the secret never reaches the provider or the clipboard, the markers stay in the prompt, invented markers are dropped
+ok 133 - PRM-24 redact: the secret never reaches the provider or the clipboard, the markers stay in the prompt, invented markers are dropped
+  ---
+  duration_ms: 11.3873
+  type: 'test'
+  ...
+# Subtest: PRM-25 needsOptimization:false is the genuine "nothing to fix" answer: a notice (own wording for code and prose), the clipboard UNTOUCHED
+ok 134 - PRM-25 needsOptimization:false is the genuine "nothing to fix" answer: a notice (own wording for code and prose), the clipboard UNTOUCHED
+  ---
+  duration_ms: 6.3457
+  type: 'test'
+  ...
+# Subtest: PRM-26 an unusable reply is an ERROR (warning, clipboard untouched), never "no optimisation needed"
+ok 135 - PRM-26 an unusable reply is an ERROR (warning, clipboard untouched), never "no optimisation needed"
+  ---
+  duration_ms: 7.0683
+  type: 'test'
+  ...
+# Subtest: PRM-27 findings the file does not contain are dropped: none left -> nothing copied; some left -> only those
+ok 136 - PRM-27 findings the file does not contain are dropped: none left -> nothing copied; some left -> only those
+  ---
+  duration_ms: 4.2641
+  type: 'test'
+  ...
+# Subtest: PRM-28 a sensitive selection or file is never copied and never sent when the user does not accept it
+ok 137 - PRM-28 a sensitive selection or file is never copied and never sent when the user does not accept it
+  ---
+  duration_ms: 5.8669
+  type: 'test'
+  ...
+# Subtest: PRM-29 a second F2 cancels the first: only the newer answer reaches the clipboard, the older one ends silently
+ok 138 - PRM-29 a second F2 cancels the first: only the newer answer reaches the clipboard, the older one ends silently
+  ---
+  duration_ms: 10.4848
+  type: 'test'
+  ...
+# Subtest: PRM-30 Cancel on the progress notification ends the request silently with the clipboard untouched
+ok 139 - PRM-30 Cancel on the progress notification ends the request silently with the clipboard untouched
+  ---
+  duration_ms: 9.0423
+  type: 'test'
+  ...
+# Subtest: PRM-31 gates: disabled, no selection (palette), blank selection and an over-large selection stop before anything is classified or sent
+ok 140 - PRM-31 gates: disabled, no selection (palette), blank selection and an over-large selection stop before anything is classified or sent
+  ---
+  duration_ms: 18.4582
+  type: 'test'
+  ...
+# Subtest: PRM-32 context keys and manifest: F2 only with enabled + the chosen binding + a language that is not excluded, and only with a selection
+ok 141 - PRM-32 context keys and manifest: F2 only with enabled + the chosen binding + a language that is not excluded, and only with a selection
+  ---
+  duration_ms: 4.1224
+  type: 'test'
+  ...
+# Subtest: PRM-33 diagnostics and error text never carry the selection, the code, the prompt or a secret; one error message per failure
+ok 142 - PRM-33 diagnostics and error text never carry the selection, the code, the prompt or a secret; one error message per failure
+  ---
+  duration_ms: 9.8559
+  type: 'test'
+  ...
+# Subtest: PRM-34 selectionInRedacted: the selection is cut out of the redacted file; a changed edge falls back to whole lines
+ok 143 - PRM-34 selectionInRedacted: the selection is cut out of the redacted file; a changed edge falls back to whole lines
+  ---
+  duration_ms: 2.9674
+  type: 'test'
+  ...
+# Subtest: PRM-35 every f2 text exists in all three locales with the same placeholders; f2.js writes no files and logs nothing
+ok 144 - PRM-35 every f2 text exists in all three locales with the same placeholders; f2.js writes no files and logs nothing
+  ---
+  duration_ms: 3.3004
   type: 'test'
   ...
 # Subtest: UT-006 candidate kind/source/validation round-trip and invalid kind rejected
-ok 78 - UT-006 candidate kind/source/validation round-trip and invalid kind rejected
+ok 145 - UT-006 candidate kind/source/validation round-trip and invalid kind rejected
   ---
-  duration_ms: 2.1549
+  duration_ms: 6.8109
   type: 'test'
   ...
 # Subtest: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
-ok 79 - UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
+ok 146 - UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last
   ---
-  duration_ms: 0.3468
+  duration_ms: 0.9501
   type: 'test'
   ...
 # Subtest: UT-008 de-duplication keeps one row and every source
-ok 80 - UT-008 de-duplication keeps one row and every source
+ok 147 - UT-008 de-duplication keeps one row and every source
   ---
-  duration_ms: 0.2696
+  duration_ms: 0.6792
   type: 'test'
   ...
 # Subtest: UT-010 placeholders become snippet tab stops, or plain text without a bridge
-ok 81 - UT-010 placeholders become snippet tab stops, or plain text without a bridge
+ok 148 - UT-010 placeholders become snippet tab stops, or plain text without a bridge
   ---
-  duration_ms: 0.2165
+  duration_ms: 1.0145
   type: 'test'
   ...
 # Subtest: UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
-ok 82 - UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
+ok 149 - UT-011 / IT-009 seven packs load through one interface; duplicate or corrupt packs are rejected
   ---
-  duration_ms: 18.6114
+  duration_ms: 42.025
   type: 'test'
   ...
 # Subtest: UT-012 bridge languageId beats extension and lexical hints
-ok 83 - UT-012 bridge languageId beats extension and lexical hints
+ok 150 - UT-012 bridge languageId beats extension and lexical hints
   ---
-  duration_ms: 0.4215
+  duration_ms: 0.5996
   type: 'test'
   ...
 # Subtest: UT-013 / IT-010 ambiguous signals keep the current language and only suggest
-ok 84 - UT-013 / IT-010 ambiguous signals keep the current language and only suggest
+ok 151 - UT-013 / IT-010 ambiguous signals keep the current language and only suggest
   ---
-  duration_ms: 0.4362
+  duration_ms: 0.7122
   type: 'test'
   ...
 # Subtest: UT-014 / IT-011 manual lock outranks automatic detection until unlocked
-ok 85 - UT-014 / IT-011 manual lock outranks automatic detection until unlocked
+ok 152 - UT-014 / IT-011 manual lock outranks automatic detection until unlocked
   ---
-  duration_ms: 0.3157
+  duration_ms: 0.5252
   type: 'test'
   ...
 # Subtest: UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
-ok 86 - UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
+ok 153 - UT-015 / IT-008 switching language bumps profile_epoch and invalidates older keys
   ---
-  duration_ms: 0.2777
+  duration_ms: 0.3183
   type: 'test'
   ...
 # Subtest: UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
-ok 87 - UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
+ok 154 - UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged
   ---
-  duration_ms: 1.8908
+  duration_ms: 2.5265
   type: 'test'
   ...
 # Subtest: UT-017 Rust: no semicolon is forced when the position is not provably a statement
-ok 88 - UT-017 Rust: no semicolon is forced when the position is not provably a statement
+ok 155 - UT-017 Rust: no semicolon is forced when the position is not provably a statement
   ---
-  duration_ms: 0.7063
+  duration_ms: 1.2754
   type: 'test'
   ...
 # Subtest: UT-018 Python templates follow the host indentation and EOL without mixing
-ok 89 - UT-018 Python templates follow the host indentation and EOL without mixing
+ok 156 - UT-018 Python templates follow the host indentation and EOL without mixing
+  ---
+  duration_ms: 3.1515
+  type: 'test'
+  ...
+# Subtest: UT-019 TSX: a generic arrow is never offered as a bare <T>
+ok 157 - UT-019 TSX: a generic arrow is never offered as a bare <T>
+  ---
+  duration_ms: 0.8778
+  type: 'test'
+  ...
+# Subtest: UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
+ok 158 - UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
+  ---
+  duration_ms: 3.6372
+  type: 'test'
+  ...
+# Subtest: UT-037 nearby code feeds identifier candidates (no project-wide claims)
+ok 159 - UT-037 nearby code feeds identifier candidates (no project-wide claims)
+  ---
+  duration_ms: 1.1208
+  type: 'test'
+  ...
+# Subtest: UT-041 candidates carry source, language and explanation; unverified AI never looks verified
+ok 160 - UT-041 candidates carry source, language and explanation; unverified AI never looks verified
+  ---
+  duration_ms: 0.8344
+  type: 'test'
+  ...
+# Subtest: UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
+ok 161 - UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
+  ---
+  duration_ms: 1.8428
+  type: 'test'
+  ...
+# Subtest: UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
+ok 162 - UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
+  ---
+  duration_ms: 6.5006
+  type: 'test'
+  ...
+# Subtest: ANN-40 [toast] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item
+ok 163 - ANN-40 [toast] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item
+  ---
+  duration_ms: 10.0011
+  type: 'test'
+  ...
+# Subtest: ANN-40 [statusbar] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item
+ok 164 - ANN-40 [statusbar] every trigger closes the notice with its own reason and leaves no subscription, timer or visible item
+  ---
+  duration_ms: 2.8239
+  type: 'test'
+  ...
+# Subtest: ANN-41 events inside graceMs are ignored (the keypress that produced the notice), events at graceMs close it
+ok 165 - ANN-41 events inside graceMs are ignored (the keypress that produced the notice), events at graceMs close it
+  ---
+  duration_ms: 4.1093
+  type: 'test'
+  ...
+# Subtest: ANN-42 Output-channel documents (rewritten and auto-scrolled by every extension) never dismiss the notice, real editors do
+ok 166 - ANN-42 Output-channel documents (rewritten and auto-scrolled by every extension) never dismiss the notice, real editors do
+  ---
+  duration_ms: 3.2397
+  type: 'test'
+  ...
+# Subtest: ANN-43 WindowState: only an inactive -> active flip counts as activity; losing focus is "focus"; the baseline is read from window.state
+ok 167 - ANN-43 WindowState: only an inactive -> active flip counts as activity; losing focus is "focus"; the baseline is read from window.state
+  ---
+  duration_ms: 1.4623
+  type: 'test'
+  ...
+# Subtest: ANN-44 show() while open closes the old notice as "replaced" first, then opens the new one with a single set of subscriptions
+ok 168 - ANN-44 show() while open closes the old notice as "replaced" first, then opens the new one with a single set of subscriptions
+  ---
+  duration_ms: 1.6861
+  type: 'test'
+  ...
+# Subtest: ANN-45 the timeout closes the notice at timeoutMs and not earlier; invalid options fall back to 20000 / 600
+ok 169 - ANN-45 the timeout closes the notice at timeoutMs and not earlier; invalid options fall back to 20000 / 600
+  ---
+  duration_ms: 2.0574
+  type: 'test'
+  ...
+# Subtest: ANN-46 dismiss() is idempotent: first reason wins, default reason is "api", no notice is a no-op
+ok 170 - ANN-46 dismiss() is idempotent: first reason wins, default reason is "api", no notice is a no-op
+  ---
+  duration_ms: 1.0307
+  type: 'test'
+  ...
+# Subtest: ANN-47 dispose() dismisses with "disposed", unsubscribes everything, and turns later show() into a no-op
+ok 171 - ANN-47 dispose() dismisses with "disposed", unsubscribes everything, and turns later show() into a no-op
+  ---
+  duration_ms: 2.334
+  type: 'test'
+  ...
+# Subtest: ANN-48 repeated show/dismiss cycles (every way of closing) leak no subscription, timer or visible item
+ok 172 - ANN-48 repeated show/dismiss cycles (every way of closing) leak no subscription, timer or visible item
+  ---
+  duration_ms: 7.1318
+  type: 'test'
+  ...
+# Subtest: ANN-49 a throwing VS Code API never escapes: fallback to the other presentation, else nothing
+ok 173 - ANN-49 a throwing VS Code API never escapes: fallback to the other presentation, else nothing
+  ---
+  duration_ms: 3.2522
+  type: 'test'
+  ...
+# Subtest: ANN-50 empty or blank text shows nothing, leaves an open notice alone and returns an already resolved dismissed
+ok 174 - ANN-50 empty or blank text shows nothing, leaves an open notice alone and returns an already resolved dismissed
+  ---
+  duration_ms: 0.8746
+  type: 'test'
+  ...
+# Subtest: ANN-51 presentations: toast = static full-bar Notification progress, status bar = right-aligned item with escaped text and warning colour
+ok 175 - ANN-51 presentations: toast = static full-bar Notification progress, status bar = right-aligned item with escaped text and warning colour
+  ---
+  duration_ms: 1.5341
+  type: 'test'
+  ...
+# Subtest: ANN-52 presentation option: unknown values mean toast; statusbar-first falls back to the toast when creating the item throws
+ok 176 - ANN-52 presentation option: unknown values mean toast; statusbar-first falls back to the toast when creating the item throws
+  ---
+  duration_ms: 0.3265
+  type: 'test'
+  ...
+# Subtest: ANN-53 events that an older VS Code or a reduced host lacks only drop their own trigger
+ok 177 - ANN-53 events that an older VS Code or a reduced host lacks only drop their own trigger
+  ---
+  duration_ms: 0.9377
+  type: 'test'
+  ...
+# Subtest: ANN-54 default wiring (real setTimeout/Date.now) shows and dismisses without leaving a timer or a throw
+ok 178 - ANN-54 default wiring (real setTimeout/Date.now) shows and dismisses without leaving a timer or a throw
+  ---
+  duration_ms: 0.711
+  type: 'test'
+  ...
+# Subtest: ANN-55 the module takes vscode by injection (never requires it) and documents the observability limits
+ok 179 - ANN-55 the module takes vscode by injection (never requires it) and documents the observability limits
+  ---
+  duration_ms: 0.9295
+  type: 'test'
+  ...
+# Subtest: UT-PLG-01 the three shipped plugin packs load next to the seven built-in packs
+ok 180 - UT-PLG-01 the three shipped plugin packs load next to the seven built-in packs
+  ---
+  duration_ms: 9.2453
+  type: 'test'
+  ...
+# Subtest: UT-PLG-02 a plugin profile predicts with its own rules and is validated with its own family
+ok 181 - UT-PLG-02 a plugin profile predicts with its own rules and is validated with its own family
+  ---
+  duration_ms: 9.7942
+  type: 'test'
+  ...
+# Subtest: UT-PLG-03 a disabled plugin profile predicts nothing and cannot be locked
+ok 182 - UT-PLG-03 a disabled plugin profile predicts nothing and cannot be locked
+  ---
+  duration_ms: 10.6065
+  type: 'test'
+  ...
+# Subtest: UT-PLG-04 the enabled set decides what is active
+ok 183 - UT-PLG-04 the enabled set decides what is active
+  ---
+  duration_ms: 10.7698
+  type: 'test'
+  ...
+# Subtest: UT-PLG-05 .sql belongs to PL/SQL by default and becomes ambiguous when T-SQL is on as well
+ok 184 - UT-PLG-05 .sql belongs to PL/SQL by default and becomes ambiguous when T-SQL is on as well
+  ---
+  duration_ms: 5.9467
+  type: 'test'
+  ...
+# Subtest: UT-PLG-06 a user-imported plugin pack adds a whole new language
+ok 185 - UT-PLG-06 a user-imported plugin pack adds a whole new language
+  ---
+  duration_ms: 6.4524
+  type: 'test'
+  ...
+# Subtest: UT-PLG-07 a plugin pack that claims a built-in language id or extension is rejected
+ok 186 - UT-PLG-07 a plugin pack that claims a built-in language id or extension is rejected
+  ---
+  duration_ms: 4.5528
+  type: 'test'
+  ...
+# Subtest: UT-PLG-08 a bad plugin pack is reported and skipped; the previous registry is not degraded
+ok 187 - UT-PLG-08 a bad plugin pack is reported and skipped; the previous registry is not degraded
+  ---
+  duration_ms: 3.442
+  type: 'test'
+  ...
+# Subtest: UT-PLG-09 the SQL validator reports the dialect codes and validates well-formed SQL
+ok 188 - UT-PLG-09 the SQL validator reports the dialect codes and validates well-formed SQL
+  ---
+  duration_ms: 1.2003
+  type: 'test'
+  ...
+# Subtest: UT-PLG-10 the validator family comes from the pack, an unknown family has no validator
+ok 189 - UT-PLG-10 the validator family comes from the pack, an unknown family has no validator
+  ---
+  duration_ms: 2.9476
+  type: 'test'
+  ...
+# Subtest: UT-PLG-11 the built-in profiles behave exactly as before, also with plugins loaded
+ok 190 - UT-PLG-11 the built-in profiles behave exactly as before, also with plugins loaded
+  ---
+  duration_ms: 25.3832
+  type: 'test'
+  ...
+# Subtest: UT-PLG-12 the setting and the commands are declared in the manifest (English, Japanese, Simplified Chinese)
+ok 191 - UT-PLG-12 the setting and the commands are declared in the manifest (English, Japanese, Simplified Chinese)
+  ---
+  duration_ms: 3.5571
+  type: 'test'
+  ...
+# Subtest: PRM-01 detectTextLocale: kana means Japanese, Han without kana means Chinese, the rest English
+ok 192 - PRM-01 detectTextLocale: kana means Japanese, Han without kana means Chinese, the rest English
+  ---
+  duration_ms: 2.5539
+  type: 'test'
+  ...
+# Subtest: PRM-02 classifySelection: prose languages, structured data, shell commands, short selections
+ok 193 - PRM-02 classifySelection: prose languages, structured data, shell commands, short selections
+  ---
+  duration_ms: 15.3504
+  type: 'test'
+  ...
+# Subtest: PRM-02a (dogfood) a selection inside a Markdown fence is code even without the fence lines; without offsets the content decides
+ok 194 - PRM-02a (dogfood) a selection inside a Markdown fence is code even without the fence lines; without offsets the content decides
+  ---
+  duration_ms: 1.6373
+  type: 'test'
+  ...
+# Subtest: PRM-02b (dogfood) identifier fragments are not words: "Json::int(length as i64)" is code although "as" and "i" are stopwords
+ok 195 - PRM-02b (dogfood) identifier fragments are not words: "Json::int(length as i64)" is code although "as" and "i" are stopwords
+  ---
+  duration_ms: 0.5355
+  type: 'test'
+  ...
+# Subtest: PRM-02c (dogfood) short code fragments: struct fields, quoted literals, method chains, trailing commas
+ok 196 - PRM-02c (dogfood) short code fragments: struct fields, quoted literals, method chains, trailing commas
+  ---
+  duration_ms: 1.9795
+  type: 'test'
+  ...
+# Subtest: PRM-02d (dogfood) comment lines and headings: the leaders are furniture, the rest decides
+ok 197 - PRM-02d (dogfood) comment lines and headings: the leaders are furniture, the rest decides
+  ---
+  duration_ms: 0.6762
+  type: 'test'
+  ...
+# Subtest: PRM-02e profile languages: prose only when wholly inside comments/strings AND it reads as sentences
+ok 198 - PRM-02e profile languages: prose only when wholly inside comments/strings AND it reads as sentences
+  ---
+  duration_ms: 4.0893
+  type: 'test'
+  ...
+# Subtest: PRM-03 buildReviewRequest (code): guard, 5W1H, evidence rules, JSON data channel with the file window
+ok 199 - PRM-03 buildReviewRequest (code): guard, 5W1H, evidence rules, JSON data channel with the file window
+  ---
+  duration_ms: 1.9031
+  type: 'test'
+  ...
+# Subtest: PRM-03a the window uses absolute file line numbers, the same line splitter for CRLF, LF and lone CR, and says when it is cut
+ok 200 - PRM-03a the window uses absolute file line numbers, the same line splitter for CRLF, LF and lone CR, and says when it is cut
+  ---
+  duration_ms: 12.5281
+  type: 'test'
+  ...
+# Subtest: PRM-03b a selection longer than 20000 characters is cut in the request with its omission named
+ok 201 - PRM-03b a selection longer than 20000 characters is cut in the request with its omission named
+  ---
+  duration_ms: 1.4781
+  type: 'test'
+  ...
+# Subtest: PRM-04 applyReviewReply: a verified finding and a clean field set pass through; ok does not depend on needsOptimization
+ok 202 - PRM-04 applyReviewReply: a verified finding and a clean field set pass through; ok does not depend on needsOptimization
+  ---
+  duration_ms: 1.5421
+  type: 'test'
+  ...
+# Subtest: PRM-04a invalid or wrongly typed replies are errors (reply-invalid), never "no optimisation needed"
+ok 203 - PRM-04a invalid or wrongly typed replies are errors (reply-invalid), never "no optimisation needed"
+  ---
+  duration_ms: 0.6823
+  type: 'test'
+  ...
+# Subtest: PRM-04b code findings are verified against the file: line in range, evidence on that line or the next two, whitespace-insensitive, case-sensitive
+ok 204 - PRM-04b code findings are verified against the file: line in range, evidence on that line or the next two, whitespace-insensitive, case-sensitive
+  ---
+  duration_ms: 0.5937
+  type: 'test'
+  ...
+# Subtest: PRM-04c severity is normalised, unknown severity is low; text fields of a finding are cleaned
+ok 205 - PRM-04c severity is normalised, unknown severity is low; text fields of a finding are cleaned
+  ---
+  duration_ms: 0.6224
+  type: 'test'
+  ...
+# Subtest: PRM-04d needsOptimization needs the model to say so AND a surviving verified finding; the findings cap and duplicates are counted
+ok 206 - PRM-04d needsOptimization needs the model to say so AND a surviving verified finding; the findings cap and duplicates are counted
+  ---
+  duration_ms: 0.5889
+  type: 'test'
+  ...
+# Subtest: PRM-04e prose findings: the element must be one of the six and the issue non-empty; cap 6
+ok 207 - PRM-04e prose findings: the element must be one of the six and the issue non-empty; cap 6
+  ---
+  duration_ms: 0.5866
+  type: 'test'
+  ...
+# Subtest: PRM-04f fields: trimmed, control and invisible characters removed, 2000 characters at most, missing ones named
+ok 208 - PRM-04f fields: trimmed, control and invisible characters removed, 2000 characters at most, missing ones named
+  ---
+  duration_ms: 0.7207
+  type: 'test'
+  ...
+# Subtest: PRM-04g a reply never changes what WE know: facts and the file are not read from it
+ok 209 - PRM-04g a reply never changes what WE know: facts and the file are not read from it
+  ---
+  duration_ms: 0.2893
+  type: 'test'
+  ...
+# Subtest: PRM-05 renderPrompt: six localised headings in order, material fenced, findings numbered with file lines, constraints and output format
+ok 210 - PRM-05 renderPrompt: six localised headings in order, material fenced, findings numbered with file lines, constraints and output format
+  ---
+  duration_ms: 4.28
+  type: 'test'
+  ...
+# Subtest: PRM-05a "Where" is filled by us from the facts and combined with the model text
+ok 211 - PRM-05a "Where" is filled by us from the facts and combined with the model text
+  ---
+  duration_ms: 1.3988
+  type: 'test'
+  ...
+# Subtest: PRM-05b empty model fields are filled with sensible localised sentences from the facts: never empty, never a placeholder
+ok 212 - PRM-05b empty model fields are filled with sensible localised sentences from the facts: never empty, never a placeholder
+  ---
+  duration_ms: 2.4496
+  type: 'test'
+  ...
+# Subtest: PRM-05c the fence is longer than any backtick run in the content, and survives ``` and ~~~ inside the code
+ok 213 - PRM-05c the fence is longer than any backtick run in the content, and survives ``` and ~~~ inside the code
+  ---
+  duration_ms: 0.829
+  type: 'test'
+  ...
+# Subtest: PRM-05d model text cannot become a heading or a fence of ours, in a section body or in a finding
+ok 214 - PRM-05d model text cannot become a heading or a fence of ours, in a section body or in a finding
+  ---
+  duration_ms: 1.0421
+  type: 'test'
+  ...
+# Subtest: PRM-05i (property-test finding) a field that starts with a tab and a heading must not become a heading once the tab is trimmed
+ok 215 - PRM-05i (property-test finding) a field that starts with a tab and a heading must not become a heading once the tab is trimmed
+  ---
+  duration_ms: 0.4649
+  type: 'test'
+  ...
+# Subtest: PRM-05e a selection over 20000 characters keeps head and tail with an explicit marker and says so
+ok 216 - PRM-05e a selection over 20000 characters keeps head and tail with an explicit marker and says so
+  ---
+  duration_ms: 4.6855
+  type: 'test'
+  ...
+# Subtest: PRM-05f prose prompts: the improved prompt, the original as reference material, the gaps found, no code constraints
+ok 217 - PRM-05f prose prompts: the improved prompt, the original as reference material, the gaps found, no code constraints
+  ---
+  duration_ms: 0.7291
+  type: 'test'
+  ...
+# Subtest: PRM-05g findings outside the selection are marked; the in-selection ones are not
+ok 218 - PRM-05g findings outside the selection are marked; the in-selection ones are not
+  ---
+  duration_ms: 0.4407
+  type: 'test'
+  ...
+# Subtest: PRM-05h (review finding) keys like "constructor" or "__proto__" in model-supplied severity / language / file extension never reach Object.prototype
+ok 219 - PRM-05h (review finding) keys like "constructor" or "__proto__" in model-supplied severity / language / file extension never reach Object.prototype
+  ---
+  duration_ms: 1.3453
+  type: 'test'
+  ...
+# Subtest: PRM-06 localPrompt: an UNREVIEWED template with explicit questions, only local facts, nothing claimed as analysed
+ok 220 - PRM-06 localPrompt: an UNREVIEWED template with explicit questions, only local facts, nothing claimed as analysed
+  ---
+  duration_ms: 2.0228
+  type: 'test'
+  ...
+# Subtest: PRM-07 verify5W1H: order, missing and empty sections; headings inside fences do not count
+ok 221 - PRM-07 verify5W1H: order, missing and empty sections; headings inside fences do not count
+  ---
+  duration_ms: 0.618
+  type: 'test'
+  ...
+# Subtest: PRM-08 property: renderPrompt/localPrompt never throw, always verify, never leak control characters or open a fence
+ok 222 - PRM-08 property: renderPrompt/localPrompt never throw, always verify, never leak control characters or open a fence
+  ---
+  duration_ms: 116.1945
+  type: 'test'
+  ...
+# Subtest: PRM-08a property: applyReviewReply never throws on arbitrary JSON or garbage and always accounts for every finding
+ok 223 - PRM-08a property: applyReviewReply never throws on arbitrary JSON or garbage and always accounts for every finding
+  ---
+  duration_ms: 123.4289
+  type: 'test'
+  ...
+# Subtest: PRM-09 dogfood: Markdown paragraphs/fences, source comments and function bodies of THIS repository classify with at most 3% misses
+ok 224 - PRM-09 dogfood: Markdown paragraphs/fences, source comments and function bodies of THIS repository classify with at most 3% misses
+  ---
+  duration_ms: 4732.1845
+  type: 'test'
+  ...
+# PRM-09 corpus: 5973 selections, 13 misclassified (0.22%, limit 3%)
+# \# UT-068 P95=1.698ms max=12.567ms node=v24.19.0 platform=win32/x64
+# Subtest: UT-043 / IT-026 / ST-023 Ctrl+F1 never steals the key unless enabled, bound and not excluded
+ok 225 - UT-043 / IT-026 / ST-023 Ctrl+F1 never steals the key unless enabled, bound and not excluded
+  ---
+  duration_ms: 4.5557
+  type: 'test'
+  ...
+# Subtest: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
+ok 226 - UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
+  ---
+  duration_ms: 16.9575
+  type: 'test'
+  ...
+# Subtest: UT-057 every candidate row is described by text (source, validation, position, action), not colour
+ok 227 - UT-057 every candidate row is described by text (source, validation, position, action), not colour
+  ---
+  duration_ms: 1.3023
+  type: 'test'
+  ...
+# Subtest: UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
+ok 228 - UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
+  ---
+  duration_ms: 1.6767
+  type: 'test'
+  ...
+# Subtest: UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
+ok 229 - UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
+  ---
+  duration_ms: 1.1856
+  type: 'test'
+  ...
+# Subtest: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
+ok 230 - UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
+  ---
+  duration_ms: 15.0151
+  type: 'test'
+  ...
+# Subtest: UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
+ok 231 - UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
+  ---
+  duration_ms: 3.5684
+  type: 'test'
+  ...
+# Subtest: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
+ok 232 - UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
+  ---
+  duration_ms: 11.5713
+  type: 'test'
+  ...
+# Subtest: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
+ok 233 - UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
+  ---
+  duration_ms: 6.6136
+  type: 'test'
+  ...
+# Subtest: UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
+ok 234 - UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
+  ---
+  duration_ms: 68.3849
+  type: 'test'
+  ...
+# Subtest: UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
+ok 235 - UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
+  ---
+  duration_ms: 1011.3588
+  type: 'test'
+  ...
+# Subtest: UT-074 static: nothing in the source writes a key to settings, files or logs
+ok 236 - UT-074 static: nothing in the source writes a key to settings, files or logs
+  ---
+  duration_ms: 4.7148
+  type: 'test'
+  ...
+# Subtest: FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
+ok 237 - FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
+  ---
+  duration_ms: 0.4876
+  type: 'test'
+  ...
+# Subtest: ANN-20a rust: cursor anywhere in a function (attributes, doc comment, header, body, closing line) resolves to the whole function
+ok 238 - ANN-20a rust: cursor anywhere in a function (attributes, doc comment, header, body, closing line) resolves to the whole function
+  ---
+  duration_ms: 16.5807
+  type: 'test'
+  ...
+# Subtest: ANN-20b rust: an impl block yields to the method inside it, a nested fn to its own body, a closure stays part of its method
+ok 239 - ANN-20b rust: an impl block yields to the method inside it, a nested fn to its own body, a closure stays part of its method
+  ---
+  duration_ms: 9.5057
+  type: 'test'
+  ...
+# Subtest: ANN-20c rust: between items and at top level the paragraph is the block; a blank line uses the nearest paragraph above, else below
+ok 240 - ANN-20c rust: between items and at top level the paragraph is the block; a blank line uses the nearest paragraph above, else below
+  ---
+  duration_ms: 1.2913
+  type: 'test'
+  ...
+# Subtest: ANN-20d rust: items, macros, impl-for, generics and array types in the header are named like symbols.js names them
+ok 241 - ANN-20d rust: items, macros, impl-for, generics and array types in the header are named like symbols.js names them
+  ---
+  duration_ms: 8.7815
+  type: 'test'
+  ...
+# Subtest: ANN-20e rust: braces, keywords and quotes inside strings, raw strings, char literals and comments are ignored
+ok 242 - ANN-20e rust: braces, keywords and quotes inside strings, raw strings, char literals and comments are ignored
+  ---
+  duration_ms: 1.0017
+  type: 'test'
+  ...
+# Subtest: ANN-20f rust: else-if chains, match arms and closures are blocks of their function, never declarations
+ok 243 - ANN-20f rust: else-if chains, match arms and closures are blocks of their function, never declarations
+  ---
+  duration_ms: 0.6234
+  type: 'test'
+  ...
+# Subtest: ANN-21a typescript: classes, constructors, methods, getters; control flow inside a method never becomes a declaration
+ok 244 - ANN-21a typescript: classes, constructors, methods, getters; control flow inside a method never becomes a declaration
+  ---
+  duration_ms: 10.3287
+  type: 'test'
+  ...
+# Subtest: ANN-21b typescript: functions assigned to a name, expression-bodied arrows, property functions and nested functions
+ok 245 - ANN-21b typescript: functions assigned to a name, expression-bodied arrows, property functions and nested functions
+  ---
+  duration_ms: 2.966
+  type: 'test'
+  ...
+# Subtest: ANN-21c typescript: if/else/for/while/switch/try/catch/with and call arguments are not methods
+ok 246 - ANN-21c typescript: if/else/for/while/switch/try/catch/with and call arguments are not methods
+  ---
+  duration_ms: 2.8508
+  type: 'test'
+  ...
+# Subtest: ANN-21d typescript: regex literals with quotes or braces, strings and template literals cannot unbalance the file
+ok 247 - ANN-21d typescript: regex literals with quotes or braces, strings and template literals cannot unbalance the file
+  ---
+  duration_ms: 1.0248
+  type: 'test'
+  ...
+# Subtest: ANN-21g typescript: JSX text with apostrophes and closing tags does not break the structure of the file (TSX / JSX)
+ok 248 - ANN-21g typescript: JSX text with apostrophes and closing tags does not break the structure of the file (TSX / JSX)
+  ---
+  duration_ms: 1.0445
+  type: 'test'
+  ...
+# Subtest: ANN-21e typescript: destructured and defaulted parameters and object types in the header belong to the header
+ok 249 - ANN-21e typescript: destructured and defaulted parameters and object types in the header belong to the header
+  ---
+  duration_ms: 1.2049
+  type: 'test'
+  ...
+# Subtest: ANN-21f typescript: interface, enum, namespace and type alias with a body are declarations
+ok 250 - ANN-21f typescript: interface, enum, namespace and type alias with a body are declarations
+  ---
+  duration_ms: 1.1288
+  type: 'test'
+  ...
+# Subtest: ANN-22a python: def and class end where the indentation falls back; decorators and comments directly above belong to them
+ok 251 - ANN-22a python: def and class end where the indentation falls back; decorators and comments directly above belong to them
+  ---
+  duration_ms: 6.3386
+  type: 'test'
+  ...
+# Subtest: ANN-22b python: lines inside brackets and triple-quoted strings (even `def` and column-0 text) do not end or start a declaration
+ok 252 - ANN-22b python: lines inside brackets and triple-quoted strings (even `def` and column-0 text) do not end or start a declaration
+  ---
+  duration_ms: 1.0212
+  type: 'test'
+  ...
+# Subtest: ANN-22c python: between functions is a block, tabs and CRLF indent the same way, a half-typed header is no declaration
+ok 253 - ANN-22c python: between functions is a block, tabs and CRLF indent the same way, a half-typed header is no declaration
+  ---
+  duration_ms: 0.6184
+  type: 'test'
+  ...
+# Subtest: ANN-23a powershell: function, filter, class and its methods; help comment and [CmdletBinding()] directly above belong to the function
+ok 254 - ANN-23a powershell: function, filter, class and its methods; help comment and [CmdletBinding()] directly above belong to the function
+  ---
+  duration_ms: 9.4233
+  type: 'test'
+  ...
+# Subtest: ANN-23b powershell: a here-string that contains `function` and braces is a string; loops and hash tables are blocks
+ok 255 - ANN-23b powershell: a here-string that contains `function` and braces is a string; loops and hash tables are blocks
+  ---
+  duration_ms: 0.7873
+  type: 'test'
+  ...
+# Subtest: ANN-24a c: function definitions (K&R layout, `if` is no function), struct/enum/typedef, multi-line \#define, prototypes are not declarations
+ok 256 - ANN-24a c: function definitions (K&R layout, `if` is no function), struct/enum/typedef, multi-line \#define, prototypes are not declarations
+  ---
+  duration_ms: 8.6553
+  type: 'test'
+  ...
+# Subtest: ANN-24b c++: namespaces, classes with access labels, inline methods, constructors with initialiser lists, operators, templates
+ok 257 - ANN-24b c++: namespaces, classes with access labels, inline methods, constructors with initialiser lists, operators, templates
+  ---
+  duration_ms: 1.8296
+  type: 'test'
+  ...
+# Subtest: ANN-24c c: __declspec / __attribute__ / [[attributes]] in front of a function do not hide it, headers that continue over lines work
+ok 258 - ANN-24c c: __declspec / __attribute__ / [[attributes]] in front of a function do not hide it, headers that continue over lines work
+  ---
+  duration_ms: 1.4283
+  type: 'test'
+  ...
+# Subtest: ANN-25a assembly: a label owns the lines up to the next label, local labels nest in it, PROC..ENDP is one region
+ok 259 - ANN-25a assembly: a label owns the lines up to the next label, local labels nest in it, PROC..ENDP is one region
+  ---
+  duration_ms: 2.585
+  type: 'test'
+  ...
+# Subtest: ANN-25b assembly: comment characters per assembler, a `;` inside a string is no comment, a label-looking comment is no label
+ok 260 - ANN-25b assembly: comment characters per assembler, a `;` inside a string is no comment, a label-looking comment is no label
+  ---
+  duration_ms: 0.423
+  type: 'test'
+  ...
+# Subtest: ANN-25c machine-code: blocks only, a paragraph is a run of non-blank lines, comment lines belong to it
+ok 261 - ANN-25c machine-code: blocks only, a paragraph is a run of non-blank lines, comment lines belong to it
+  ---
+  duration_ms: 0.3451
+  type: 'test'
+  ...
+# Subtest: ANN-26a selection: snapped to whole lines, a partial first or last line is included, an end at column 0 leaves that line out
+ok 262 - ANN-26a selection: snapped to whole lines, a partial first or last line is included, an end at column 0 leaves that line out
+  ---
+  duration_ms: 0.866
+  type: 'test'
+  ...
+# Subtest: ANN-26b selection: whole-file and whole-function selections, no duplicates in the chain, a selection across two functions widens to the common parent
+ok 263 - ANN-26b selection: whole-file and whole-function selections, no duplicates in the chain, a selection across two functions widens to the common parent
+  ---
+  duration_ms: 0.835
+  type: 'test'
+  ...
+# Subtest: ANN-26c selection: only whitespace or blank lines falls back to the cursor at its start; a cursor needs no selection
+ok 264 - ANN-26c selection: only whitespace or blank lines falls back to the cursor at its start; a cursor needs no selection
+  ---
+  duration_ms: 1.45
+  type: 'test'
+  ...
+# Subtest: ANN-26d chain: widening candidates are strictly nested, innermost first, cut off before the first that exceeds maxChars; tooLarge when the first does
+ok 265 - ANN-26d chain: widening candidates are strictly nested, innermost first, cut off before the first that exceeds maxChars; tooLarge when the first does
+  ---
+  duration_ms: 2.8882
+  type: 'test'
+  ...
+# Subtest: ANN-26e result shape: ok, kind, offsets, lines, label and symbol fields; chain[0] is the result itself; 0-based inclusive lines
+ok 266 - ANN-26e result shape: ok, kind, offsets, lines, label and symbol fields; chain[0] is the result itself; 0-based inclusive lines
+  ---
+  duration_ms: 0.5634
+  type: 'test'
+  ...
+# Subtest: ANN-26f every language: function lines, blank line after it, nesting, selection snapping, chain cut-off, tooLarge, BOM, unbalanced and half-typed code
+ok 267 - ANN-26f every language: function lines, blank line after it, nesting, selection snapping, chain cut-off, tooLarge, BOM, unbalanced and half-typed code
+  ---
+  duration_ms: 61.6243
+  type: 'test'
+  ...
+# Subtest: ANN-27a broken code never throws: an unbalanced brace, a half-typed header or an unterminated comment/string degrade to a block (a stray quote in TypeScript, C and Python ends with its line, like in a tokenizer)
+ok 268 - ANN-27a broken code never throws: an unbalanced brace, a half-typed header or an unterminated comment/string degrade to a block (a stray quote in TypeScript, C and Python ends with its line, like in a tokenizer)
+  ---
+  duration_ms: 1.8378
+  type: 'test'
+  ...
+# Subtest: ANN-27b the same text with CRLF, LF, CR or mixed line ends resolves to the same lines; offsets are UTF-16 code units
+ok 269 - ANN-27b the same text with CRLF, LF, CR or mixed line ends resolves to the same lines; offsets are UTF-16 code units
+  ---
+  duration_ms: 30.4253
+  type: 'test'
+  ...
+# Subtest: ANN-27c a BOM, tabs, odd whitespace and unusual arguments are harmless
+ok 270 - ANN-27c a BOM, tabs, odd whitespace and unusual arguments are harmless
+  ---
+  duration_ms: 2.704
+  type: 'test'
+  ...
+# Subtest: ANN-27d empty or whitespace-only documents and unsupported profiles are reported, not guessed
+ok 271 - ANN-27d empty or whitespace-only documents and unsupported profiles are reported, not guessed
+  ---
+  duration_ms: 1.0481
+  type: 'test'
+  ...
+# Subtest: ANN-27e dogfooding regressions: header braces, one-line functions beside their parent, impl blocks, symbol naming
+ok 272 - ANN-27e dogfooding regressions: header braces, one-line functions beside their parent, impl blocks, symbol naming
+  ---
+  duration_ms: 14.5237
+  type: 'test'
+  ...
+# Subtest: ANN-28a a 2 MiB file resolves quickly and still finds the declaration under the cursor
+ok 273 - ANN-28a a 2 MiB file resolves quickly and still finds the declaration under the cursor
+  ---
+  duration_ms: 222.2563
+  type: 'test'
+  ...
+# Subtest: ANN-28b a text above the cap is analysed through a window of lines around the selection and never as a whole
+ok 274 - ANN-28b a text above the cap is analysed through a window of lines around the selection and never as a whole
+  ---
+  duration_ms: 197.4331
+  type: 'test'
+  ...
+# Subtest: ANN-28c hostile inputs stay cheap: floods of quotes, brackets and headers, unterminated arrows and strings, deep nesting
+ok 275 - ANN-28c hostile inputs stay cheap: floods of quotes, brackets and headers, unterminated arrows and strings, deep nesting
+  ---
+  duration_ms: 1745.5531
+  type: 'test'
+  ...
+# Subtest: ANN-29a property: at every cursor position of the samples (LF, CRLF, with BOM) the result is whole lines, contains the cursor and its chain is nested and bounded
+ok 276 - ANN-29a property: at every cursor position of the samples (LF, CRLF, with BOM) the result is whole lines, contains the cursor and its chain is nested and bounded
+  ---
+  duration_ms: 665.1421
+  type: 'test'
+  ...
+# Subtest: ANN-29b property: selections of every kind and every maxChars keep the same invariants
+ok 277 - ANN-29b property: selections of every kind and every maxChars keep the same invariants
+  ---
+  duration_ms: 217.6045
+  type: 'test'
+  ...
+# Subtest: ANN-29c property: every prefix and every one-character deletion of the samples (code that is being typed) resolves without throwing
+ok 278 - ANN-29c property: every prefix and every one-character deletion of the samples (code that is being typed) resolves without throwing
+  ---
+  duration_ms: 203.165
+  type: 'test'
+  ...
+# Subtest: ANN-29d corpus: every line of this repository's own Rust, JavaScript and C++ sources resolves to whole lines around it, nested and agreeing with symbols.js
+ok 279 - ANN-29d corpus: every line of this repository's own Rust, JavaScript and C++ sources resolves to whole lines around it, nested and agreeing with symbols.js
+  ---
+  duration_ms: 2166.7806
+  type: 'test'
+  ...
+# Subtest: SEC-30 a name that is not secret-class is let through at once: no dialog, no notification, nothing read, nothing recorded
+ok 280 - SEC-30 a name that is not secret-class is let through at once: no dialog, no notification, nothing read, nothing recorded
+  ---
+  duration_ms: 16.3688
+  type: 'test'
+  ...
+# Subtest: SEC-31 interactive: a modal names the file and its kind, says reading is local and sending is asked separately, offers Allow once / Allow for this session; Esc refuses this call and remembers nothing
+ok 281 - SEC-31 interactive: a modal names the file and its kind, says reading is local and sending is asked separately, offers Allow once / Allow for this session; Esc refuses this call and remembers nothing
+  ---
+  duration_ms: 7.5631
+  type: 'test'
+  ...
+# Subtest: SEC-32 "Allow once" is spent by exactly one call; "Allow for this session" stays until it expires
+ok 282 - SEC-32 "Allow once" is spent by exactly one call; "Allow for this session" stays until it expires
+  ---
+  duration_ms: 2.3325
+  type: 'test'
+  ...
+# Subtest: SEC-33 typing path: never a modal; ONE non-modal notification per file and session; Keep off is remembered silently; Allow opens the file
+ok 283 - SEC-33 typing path: never a modal; ONE non-modal notification per file and session; Keep off is remembered silently; Allow opens the file
+  ---
+  duration_ms: 18.2561
+  type: 'test'
+  ...
+# Subtest: SEC-34 the gate fails closed: an error while deciding is "do not read", never "read"
+ok 284 - SEC-34 the gate fails closed: an error while deciding is "do not read", never "read"
+  ---
+  duration_ms: 0.8767
+  type: 'test'
+  ...
+# Subtest: SEC-35 real path: a name that hides a secret file behind a link is judged by where it points; the decision follows the real file; a failing realpath falls back to the plain path
+ok 285 - SEC-35 real path: a name that hides a secret file behind a link is judged by where it points; the decision follows the real file; a failing realpath falls back to the plain path
+  ---
+  duration_ms: 6.812
+  type: 'test'
+  ...
+# Subtest: SEC-36 isLocked / lockInfo are synchronous, open no dialog, read nothing; the real path is cached for a few seconds and shared with ensure
+ok 286 - SEC-36 isLocked / lockInfo are synchronous, open no dialog, read nothing; the real path is cached for a few seconds and shared with ensure
+  ---
+  duration_ms: 2.1755
+  type: 'test'
+  ...
+# Subtest: SEC-37 the setting programmingIme.secretFilePatterns adds patterns (live); the built-in rules cannot be switched off
+ok 287 - SEC-37 the setting programmingIme.secretFilePatterns adds patterns (live); the built-in rules cannot be switched off
+  ---
+  duration_ms: 19.6399
+  type: 'test'
+  ...
+# Subtest: SEC-38 diagnostics carry the rule id and the event only: never a path, a file name or content; a decision is recorded once, not once per keystroke
+ok 288 - SEC-38 diagnostics carry the rule id and the event only: never a path, a file name or content; a decision is recorded once, not once per keystroke
+  ---
+  duration_ms: 4.0829
+  type: 'test'
+  ...
+# Subtest: SEC-39 the command: a QuickPick of the decisions (label, state, expiry, folder) to forget them, and a way to allow the active file explicitly
+ok 289 - SEC-39 the command: a QuickPick of the decisions (label, state, expiry, folder) to forget them, and a way to allow the active file explicitly
+  ---
+  duration_ms: 104.1632
+  type: 'test'
+  ...
+# Subtest: SEC-40 F1: a secret-class file is not read until the user allows it; Esc opens no panel and says why; a non-secret file opens with no dialog
+ok 290 - SEC-40 F1: a secret-class file is not read until the user allows it; Esc opens no panel and says why; a non-secret file opens with no dialog
+  ---
+  duration_ms: 12.9009
+  type: 'test'
+  ...
+# Subtest: SEC-41 F1: a refusal changes nothing - the open session on another file stays, and a stale session that is refused on reopen is not regenerated
+ok 291 - SEC-41 F1: a refusal changes nothing - the open session on another file stays, and a stale session that is refused on reopen is not regenerated
+  ---
+  duration_ms: 2.8059
+  type: 'test'
+  ...
+# Subtest: ANN-86 F1 opens on the Whole file tab when the annotate tab is unavailable only because of the language or an empty document and AI is otherwise available
+ok 292 - ANN-86 F1 opens on the Whole file tab when the annotate tab is unavailable only because of the language or an empty document and AI is otherwise available
+  ---
+  duration_ms: 21.6436
+  type: 'test'
+  ...
+# Subtest: SEC-42 F2: the selection and the file are not read before a secret-class file is allowed; a refusal is a notice and the clipboard is untouched; a non-secret file runs with no dialog
+ok 293 - SEC-42 F2: the selection and the file are not read before a secret-class file is allowed; a refusal is a notice and the clipboard is untouched; a non-secret file runs with no dialog
+  ---
+  duration_ms: 36.8598
+  type: 'test'
+  ...
+# Subtest: SEC-43 annotate insertion: a protected file is not read and the snippet goes in unchanged; no AI configured means no read and no question at all
+ok 294 - SEC-43 annotate insertion: a protected file is not read and the snippet goes in unchanged; no AI configured means no read and no question at all
+  ---
+  duration_ms: 8.2055
+  type: 'test'
+  ...
+# Subtest: SEC-44 directorySymbols: a secret-class sibling is never read (open in the editor or not, any engine answer), a symlink stays excluded, and a folder behind a link is judged by where it really is
+ok 295 - SEC-44 directorySymbols: a secret-class sibling is never read (open in the editor or not, any engine answer), a symlink stays excluded, and a folder behind a link is judged by where it really is
+  ---
+  duration_ms: 25.8452
+  type: 'test'
+  ...
+# Subtest: SEC-45 extension.js: typing and Show Code Candidates read nothing of a protected file; language detection uses the name only; the status shows the lock and its click opens the command; a normal file is not affected
+ok 296 - SEC-45 extension.js: typing and Show Code Candidates read nothing of a protected file; language detection uses the name only; the status shows the lock and its click opens the command; a normal file is not affected
+  ---
+  duration_ms: 50.0503
+  type: 'test'
+  ...
+# Subtest: SEC-46 manifest and texts: the command and the setting exist, every text exists in three locales with the same placeholders, no setting switches the gate off
+ok 297 - SEC-46 manifest and texts: the command and the setting exist, every text exists in three locales with the same placeholders, no setting switches the gate off
+  ---
+  duration_ms: 5.5597
+  type: 'test'
+  ...
+# Subtest: SEC-01 the thinnest slice: .env and its variants are secret, the committed templates are not
+ok 298 - SEC-01 the thinnest slice: .env and its variants are secret, the committed templates are not
+  ---
+  duration_ms: 11.6113
+  type: 'test'
+  ...
+# Subtest: SEC-02 paths are normalised before anything is decided: separators, case, drive, UNC, trailing dots, streams
+ok 299 - SEC-02 paths are normalised before anything is decided: separators, case, drive, UNC, trailing dots, streams
+  ---
+  duration_ms: 1.836
+  type: 'test'
+  ...
+# Subtest: SEC-02a every path segment is normalised, not only the last: `.ssh.\\id_x` is inside `.ssh`; a colon in a POSIX name does not hide its extension
+ok 300 - SEC-02a every path segment is normalised, not only the last: `.ssh.\\id_x` is inside `.ssh`; a colon in a POSIX name does not hide its extension
+  ---
+  duration_ms: 1.3857
+  type: 'test'
+  ...
+# Subtest: SEC-02b never throws, and a non-path is an empty answer; a bare string is taken as the path (a caller bug fails closed)
+ok 301 - SEC-02b never throws, and a non-path is an empty answer; a bare string is taken as the path (a caller bug fails closed)
+  ---
+  duration_ms: 0.6592
+  type: 'test'
+  ...
+# Subtest: SEC-02c the label is what a dialog may show: original spelling, no directories, no control or bidi characters, bounded
+ok 302 - SEC-02c the label is what a dialog may show: original spelling, no directories, no control or bidi characters, bounded
+  ---
+  duration_ms: 6.4871
+  type: 'test'
+  ...
+# Subtest: SEC-03 gate: once is spent by one consume, session lasts until expiry, deny stays a deny
+ok 303 - SEC-03 gate: once is spent by one consume, session lasts until expiry, deny stays a deny
+  ---
+  duration_ms: 1.0241
+  type: 'test'
+  ...
+# Subtest: SEC-03a gate: one canonical key for every spelling of the same file, and only for that file
+ok 304 - SEC-03a gate: one canonical key for every spelling of the same file, and only for that file
+  ---
+  duration_ms: 0.5554
+  type: 'test'
+  ...
+# Subtest: SEC-03b gate: record replaces an earlier answer and makes it the newest; eviction drops the oldest, expired entries go first
+ok 305 - SEC-03b gate: record replaces an earlier answer and makes it the newest; eviction drops the oldest, expired entries go first
+  ---
+  duration_ms: 0.6992
+  type: 'test'
+  ...
+# Subtest: SEC-03c gate: a deny is remembered (no nagging) until revoked or expired; once and session do not outlive their ttl
+ok 306 - SEC-03c gate: a deny is remembered (no nagging) until revoked or expired; once and session do not outlive their ttl
+  ---
+  duration_ms: 0.4182
+  type: 'test'
+  ...
+# Subtest: SEC-03d gate: list() has exactly key, label, state, expiresAt and hands out copies; clear() empties; hostile input changes nothing
+ok 307 - SEC-03d gate: list() has exactly key, label, state, expiresAt and hands out copies; clear() empties; hostile input changes nothing
+  ---
+  duration_ms: 0.6989
+  type: 'test'
+  ...
+# Subtest: SEC-03e gate: a clock that goes backwards or is not a number fails closed; bad options fall back to the defaults
+ok 308 - SEC-03e gate: a clock that goes backwards or is not a number fails closed; bad options fall back to the defaults
   ---
   duration_ms: 0.5209
   type: 'test'
   ...
-# Subtest: UT-019 TSX: a generic arrow is never offered as a bare <T>
-ok 90 - UT-019 TSX: a generic arrow is never offered as a bare <T>
+# Subtest: SEC-04 user patterns add secret-class names (glob, case-insensitive) and never throw on junk
+ok 309 - SEC-04 user patterns add secret-class names (glob, case-insensitive) and never throw on junk
   ---
-  duration_ms: 0.5838
+  duration_ms: 4.8784
   type: 'test'
   ...
-# Subtest: UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
-ok 91 - UT-037 / AT-026 any letter prefix yields valid local candidates without typing the full trigger
+# Subtest: SEC-04a glob: `*` and `?` stay inside a segment, `**` crosses, `**/` also matches no directory, a trailing `/` means everything below
+ok 310 - SEC-04a glob: `*` and `?` stay inside a segment, `**` crosses, `**/` also matches no directory, a trailing `/` means everything below
   ---
-  duration_ms: 0.9281
+  duration_ms: 7.3307
   type: 'test'
   ...
-# Subtest: UT-037 nearby code feeds identifier candidates (no project-wide claims)
-ok 92 - UT-037 nearby code feeds identifier candidates (no project-wide claims)
+# Subtest: SEC-04b glob: no separator = base name only (any case); a separator pattern is matched from any directory unless rooted; backslash is a separator
+ok 311 - SEC-04b glob: no separator = base name only (any case); a separator pattern is matched from any directory unless rooted; backslash is a separator
   ---
-  duration_ms: 0.6533
+  duration_ms: 4.185
   type: 'test'
   ...
-# Subtest: UT-041 candidates carry source, language and explanation; unverified AI never looks verified
-ok 93 - UT-041 candidates carry source, language and explanation; unverified AI never looks verified
+# Subtest: SEC-04c glob: regex metacharacters are literal characters
+ok 312 - SEC-04c glob: regex metacharacters are literal characters
   ---
-  duration_ms: 0.5873
+  duration_ms: 3.5341
   type: 'test'
   ...
-# Subtest: UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
-ok 94 - UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable
+# Subtest: SEC-04d glob: a pathological pattern is linear, and a spent step budget fails closed (the user is asked)
+ok 313 - SEC-04d glob: a pathological pattern is linear, and a spent step budget fails closed (the user is asked)
   ---
-  duration_ms: 1.6619
+  duration_ms: 525.682
   type: 'test'
   ...
-# Subtest: UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
-ok 95 - UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions
+# Subtest: SEC-04d1 a rooted pattern sees the whole path: a long path must not push its root out of view (that would fail open)
+ok 314 - SEC-04d1 a rooted pattern sees the whole path: a long path must not push its root out of view (that would fail open)
   ---
-  duration_ms: 2.4584
+  duration_ms: 4.132
   type: 'test'
   ...
-# \# UT-068 P95=0.715ms max=3.018ms node=v26.13.0 platform=win32/x64
-# Subtest: UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded
-ok 96 - UT-043 / IT-026 / ST-023 F1 never steals the key unless enabled, bound and not excluded
+# Subtest: SEC-04e user pattern limits: at most 200 valid patterns, none longer than 300 characters (skipped, not cut), junk does not count
+ok 315 - SEC-04e user pattern limits: at most 200 valid patterns, none longer than 300 characters (skipped, not cut), junk does not count
   ---
-  duration_ms: 1.401
+  duration_ms: 7.2931
   type: 'test'
   ...
-# Subtest: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
-ok 97 - UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language
+# Subtest: SEC-05 the positive corpus: every secret-class name is found, with the right kind
+ok 316 - SEC-05 the positive corpus: every secret-class name is found, with the right kind
   ---
-  duration_ms: 4.0474
+  duration_ms: 21.5253
   type: 'test'
   ...
-# Subtest: UT-057 every candidate row is described by text (source, validation, position, action), not colour
-ok 98 - UT-057 every candidate row is described by text (source, validation, position, action), not colour
+# Subtest: SEC-06 the negative corpus: source, docs, public keys, templates, ciphertext and tool folders without secrets are never flagged
+ok 317 - SEC-06 the negative corpus: source, docs, public keys, templates, ciphertext and tool folders without secrets are never flagged
   ---
-  duration_ms: 0.3365
+  duration_ms: 401.4537
   type: 'test'
   ...
-# Subtest: UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
-ok 99 - UT-055 overlay placement stays on the caret monitor and hides when it cannot be located
+# Subtest: SEC-06a the result is the same under decoration: Windows or POSIX directories, any case, trailing dot or space, stream suffix
+ok 318 - SEC-06a the result is the same under decoration: Windows or POSIX directories, any case, trailing dot or space, stream suffix
   ---
-  duration_ms: 0.2157
+  duration_ms: 739.8822
   type: 'test'
   ...
-# Subtest: UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
-ok 100 - UT-077 / IT-048 environment check: Windows 11 x64, DPI 100-250%, others are explained
+# Subtest: SEC-07 the table is data: frozen, unique ids, known kinds, one primary form, lower-case, and no rule is shadowed by an earlier one
+ok 319 - SEC-07 the table is data: frozen, unique ids, known kinds, one primary form, lower-case, and no rule is shadowed by an earlier one
   ---
-  duration_ms: 0.4394
+  duration_ms: 34.1874
   type: 'test'
   ...
-# Subtest: UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
-ok 101 - UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules
+# Subtest: SEC-08 the rules are a superset of secrets.js SENSITIVE_FILE; the only names given up are the committed templates
+ok 320 - SEC-08 the rules are a superset of secrets.js SENSITIVE_FILE; the only names given up are the committed templates
   ---
-  duration_ms: 4.035
+  duration_ms: 29.1946
   type: 'test'
   ...
-# Subtest: UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
-ok 102 - UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption
+# Subtest: SEC-08a the template carve-out in full: a template word as the last or an inner part of an env name is not secret, any other word is
+ok 321 - SEC-08a the template carve-out in full: a template word as the last or an inner part of an env name is not secret, any other word is
   ---
-  duration_ms: 3.1806
+  duration_ms: 12.624
   type: 'test'
   ...
-# Subtest: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
-ok 103 - UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working
+# Subtest: SEC-09 hostile names cannot make the rules or the key slow (no backtracking anywhere)
+ok 322 - SEC-09 hostile names cannot make the rules or the key slow (no backtracking anywhere)
   ---
-  duration_ms: 4.037
+  duration_ms: 5731.4681
   type: 'test'
   ...
-# Subtest: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
-ok 104 - UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing
+# Subtest: SEC-10 backup and editor-swap copies of a secret are secret; of a public key or a template are not
+ok 323 - SEC-10 backup and editor-swap copies of a secret are secret; of a public key or a template are not
   ---
-  duration_ms: 4.0238
+  duration_ms: 3.3791
   type: 'test'
   ...
-# Subtest: UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
-ok 105 - UT-066 / IT-044 / ST-038 offline: every network call fails, local candidates and Direct keep working
+# Subtest: SEC-11 a virtualenv folder named `.env` does not make its contents secret; the names inside still count
+ok 324 - SEC-11 a virtualenv folder named `.env` does not make its contents secret; the names inside still count
   ---
-  duration_ms: 25.1936
+  duration_ms: 1.5451
   type: 'test'
   ...
-# Subtest: UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
-ok 106 - UT-068 / IT-022 / ST-039 local candidate computation: P95 of 1000 events <= 20 ms (even with 2000 lines of context)
+# Subtest: SEC-12 dogfood on a real machine: .gnupg agent sockets and lock files are not secrets, its keys are
+ok 325 - SEC-12 dogfood on a real machine: .gnupg agent sockets and lock files are not secrets, its keys are
   ---
-  duration_ms: 427.1589
+  duration_ms: 1.5884
   type: 'test'
   ...
-# Subtest: UT-074 static: nothing in the source writes a key to settings, files or logs
-ok 107 - UT-074 static: nothing in the source writes a key to settings, files or logs
+# Subtest: SEC-12a dogfood: the SQLite sidecars (-journal, -wal, -shm) of a browser credential store are as secret as the store
+ok 326 - SEC-12a dogfood: the SQLite sidecars (-journal, -wal, -shm) of a browser credential store are as secret as the store
   ---
-  duration_ms: 1.3012
+  duration_ms: 3.3333
   type: 'test'
   ...
-# Subtest: FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
-ok 108 - FR-029 / NFR-302 the package exposes provider/model/effort/budget as separate, key-free settings
+# Subtest: SEC-12b dogfood: key files without an extension (adb, sshd host keys); their .pub halves are not secret
+ok 327 - SEC-12b dogfood: key files without an extension (adb, sshd host keys); their .pub halves are not secret
   ---
-  duration_ms: 0.1645
+  duration_ms: 1.1497
+  type: 'test'
+  ...
+# Subtest: SEC-12c dogfood: a login token kept in a file whose name ends in token (no extension); tokens.json, design tokens and code are not
+ok 328 - SEC-12c dogfood: a login token kept in a file whose name ends in token (no extension); tokens.json, design tokens and code are not
+  ---
+  duration_ms: 2.0723
+  type: 'test'
+  ...
+# Subtest: SEC-12d dogfood: auth.json is a login store only inside the folders of the CLIs that keep one (a bare auth.json is a locale file)
+ok 329 - SEC-12d dogfood: auth.json is a login store only inside the folders of the CLIs that keep one (a bare auth.json is a locale file)
+  ---
+  duration_ms: 1.4653
+  type: 'test'
+  ...
+# Subtest: SEC-12e dogfood: password stores by name (SourceTree passwd, Xshell .mpw, KeePass-format safes of an IDE); the similar names that are code are not
+ok 330 - SEC-12e dogfood: password stores by name (SourceTree passwd, Xshell .mpw, KeePass-format safes of an IDE); the similar names that are code are not
+  ---
+  duration_ms: 2.2139
+  type: 'test'
+  ...
+# Subtest: SEC-12f dogfood: names that look like secrets but are this project's own source stay unflagged
+ok 331 - SEC-12f dogfood: names that look like secrets but are this project's own source stay unflagged
+  ---
+  duration_ms: 2.0075
+  type: 'test'
+  ...
+# Subtest: SEC-12g dogfood: a login or license key under a tool folder is a *.key and stays secret (the price of the SENSITIVE_FILE superset)
+ok 332 - SEC-12g dogfood: a login or license key under a tool folder is a *.key and stays secret (the price of the SENSITIVE_FILE superset)
+  ---
+  duration_ms: 0.404
+  type: 'test'
+  ...
+# Subtest: SEC-13 needsConfirmation: secret and not allowed -> needs; deny means skip silently, once is spent by consume
+ok 333 - SEC-13 needsConfirmation: secret and not allowed -> needs; deny means skip silently, once is spent by consume
+  ---
+  duration_ms: 2.1216
+  type: 'test'
+  ...
+# Subtest: SEC-14 properties on random names: never throws, same answer twice, key is stable, separator/case/dot/stream spellings agree
+ok 334 - SEC-14 properties on random names: never throws, same answer twice, key is stable, separator/case/dot/stream spellings agree
+  ---
+  duration_ms: 2312.5834
+  type: 'test'
+  ...
+# Subtest: SEC-15 the module is pure: no require, no fs, no clock or randomness of its own (the gate takes now)
+ok 335 - SEC-15 the module is pure: no require, no fs, no clock or randomness of its own (the gate takes now)
+  ---
+  duration_ms: 1.4753
   type: 'test'
   ...
 # Subtest: SCR-01 the status bar model renders exactly what the extension rendered inline, in every state and locale
-ok 109 - SCR-01 the status bar model renders exactly what the extension rendered inline, in every state and locale
+ok 336 - SCR-01 the status bar model renders exactly what the extension rendered inline, in every state and locale
   ---
-  duration_ms: 12.1493
+  duration_ms: 26.5603
   type: 'test'
   ...
 # Subtest: SCR-01 the status menu lists the actions in order; the AI item names the action and is English in every locale
-ok 110 - SCR-01 the status menu lists the actions in order; the AI item names the action and is English in every locale
+ok 337 - SCR-01 the status menu lists the actions in order; the AI item names the action and is English in every locale
   ---
-  duration_ms: 0.7589
+  duration_ms: 1.0618
+  type: 'test'
+  ...
+# Subtest: PARITY the TASE ranking and the privacy policy match the shared fixture
+ok 338 - PARITY the TASE ranking and the privacy policy match the shared fixture
+  ---
+  duration_ms: 10.9314
+  type: 'test'
+  ...
+# Subtest: PARITY a broken candidate is refused with the same code and the same message
+ok 339 - PARITY a broken candidate is refused with the same code and the same message
+  ---
+  duration_ms: 1.3639
+  type: 'test'
+  ...
+# Subtest: the mirror knows the kinds, the reasons and the weights of the design
+ok 340 - the mirror knows the kinds, the reasons and the weights of the design
+  ---
+  duration_ms: 0.2792
+  type: 'test'
+  ...
+# Subtest: the words of a text are the runs of alphanumeric characters, in lower case
+ok 341 - the words of a text are the runs of alphanumeric characters, in lower case
+  ---
+  duration_ms: 0.229
+  type: 'test'
+  ...
+# Subtest: the order is total and stable: the same input always gives the same order
+ok 342 - the order is total and stable: the same input always gives the same order
+  ---
+  duration_ms: 0.4608
+  type: 'test'
+  ...
+# Subtest: the generation decides whether the candidates are stale, and it never wraps
+ok 343 - the generation decides whether the candidates are stale, and it never wraps
+  ---
+  duration_ms: 0.321
+  type: 'test'
+  ...
+# Subtest: the asset cards of the window keep the order of the input method, the other candidates keep theirs
+ok 344 - the asset cards of the window keep the order of the input method, the other candidates keep theirs
+  ---
+  duration_ms: 0.5054
+  type: 'test'
+  ...
+# Subtest: a protected context is refused whatever the permissions are
+ok 345 - a protected context is refused whatever the permissions are
+  ---
+  duration_ms: 0.2571
   type: 'test'
   ...
 # Subtest: UT-020 PowerShell candidates are plain text only (never executed)
-ok 111 - UT-020 PowerShell candidates are plain text only (never executed)
+ok 346 - UT-020 PowerShell candidates are plain text only (never executed)
   ---
-  duration_ms: 4.8443
+  duration_ms: 16.3788
   type: 'test'
   ...
 # Subtest: UT-021 C declarations and standard versions
-ok 112 - UT-021 C declarations and standard versions
+ok 347 - UT-021 C declarations and standard versions
   ---
-  duration_ms: 0.5121
+  duration_ms: 1.4082
   type: 'test'
   ...
 # Subtest: UT-022 assembly dialect: Intel and AT&T are never silently mixed
-ok 113 - UT-022 assembly dialect: Intel and AT&T are never silently mixed
+ok 348 - UT-022 assembly dialect: Intel and AT&T are never silently mixed
   ---
-  duration_ms: 1.5528
+  duration_ms: 3.2947
   type: 'test'
   ...
 # Subtest: UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
-ok 114 - UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
+ok 349 - UT-023 machine code hex: valid round-trip, incomplete/invalid rejected
   ---
-  duration_ms: 1.1029
+  duration_ms: 2.3307
   type: 'test'
   ...
 # Subtest: UT-024 / ST-043 unresolved symbols never produce bytes
-ok 115 - UT-024 / ST-043 unresolved symbols never produce bytes
+ok 350 - UT-024 / ST-043 unresolved symbols never produce bytes
   ---
-  duration_ms: 10.6923
+  duration_ms: 18.3937
   type: 'test'
   ...
 # Subtest: ST-043 independent golden vectors for the verified x86-64 forms
-ok 116 - ST-043 independent golden vectors for the verified x86-64 forms
+ok 351 - ST-043 independent golden vectors for the verified x86-64 forms
   ---
-  duration_ms: 2.2558
+  duration_ms: 2.9077
   type: 'test'
   ...
 # Subtest: UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
-ok 117 - UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
+ok 352 - UT-052 / IT-034 structural validation catches incomplete blocks and bad indentation
   ---
-  duration_ms: 1.1437
+  duration_ms: 1.6487
   type: 'test'
   ...
 # Subtest: UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
-ok 118 - UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
+ok 353 - UT-065 / UT-020 / UT-076 static: pure modules cannot execute anything
   ---
-  duration_ms: 4.3592
+  duration_ms: 7.185
   type: 'test'
   ...
-1..118
-# tests 118
+1..353
+# tests 353
 # suites 0
-# pass 118
+# pass 353
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 4620.9572
-
-# ---- syntax check
-syntax check: 55/55 files OK
+# duration_ms 10942.5946

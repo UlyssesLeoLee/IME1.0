@@ -63,6 +63,9 @@ pub enum MenuAction {
     SetKeymapPreset(crate::imesettings::KeymapPreset),
     /// Switch the input language to this profile ("zh-CN", "en-US", "ja-JP").
     SwitchLanguage(String),
+    /// Write this text into the document at the caret (a symbol of the table, the text of the clipboard, the
+    /// date and the time).
+    InsertText(String),
     /// Open the settings window.
     OpenSettings,
 }

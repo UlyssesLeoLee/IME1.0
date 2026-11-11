@@ -33,7 +33,7 @@ use pime_core::pack::render_plain;
 
 use crate::keymap::{
     Modifiers, ShiftTapDetector, breaks_context, is_compose_chord, is_input_mode_chord,
-    is_language_chord, is_vertical_chord, translate,
+    is_language_chord, is_mode_chord, is_vertical_chord, translate,
 };
 use crate::ui::{Anchor, CandidateRow, CandidateUi, CandidateView, ListAction};
 
@@ -89,9 +89,9 @@ pub struct TipConfig {
     /// confirms too (the Sogou behaviour). Needs a host that grants the composition; without it `candidate_capture`
     /// still works.
     pub auto_compose: bool,
-    /// OFF by default (direct mode: the input method never eats a code character). ON: input mode, the behaviour of
-    /// the mainstream input methods: typing opens a composition and the candidate list takes the digits, the Tab key
-    /// and the arrows. Alt+F1 and the button of the floating window switch it.
+    /// OFF by default (the code input: the input method never eats a code character). ON: the natural language
+    /// input, the behaviour of the mainstream input methods: typing opens a composition and the candidate list
+    /// takes the digits, the Tab key and the arrows. Ctrl+F12 and Alt+F1 switch it.
     pub input_mode: bool,
     /// Language profile of the prediction engine.
     pub language: String,
@@ -108,10 +108,11 @@ impl Default for TipConfig {
             keymap: KeyMap::default(),
             candidate_capture: false,
             auto_compose: false,
-            // Input mode is the default: the mainstream behaviour (typing opens a composition, the candidate list
-            // takes the arrows, Tab, Space and Enter). Direct mode - nothing is ever eaten - is the mode for code
-            // that must not be touched, and Alt+F1 switches to it.
-            input_mode: true,
+            // The code input is the factory mode (the user decided that on 2026-11-11): the input method never
+            // eats a code character, so the code goes into the document exactly as it was typed. The natural
+            // language input (typing opens a composition, the candidate list takes the arrows, Tab, Space and
+            // Enter) is one Ctrl+F12 away - and Alt+F1 does the same.
+            input_mode: false,
             language: "rust".to_string(),
             vertical: false,
         }
@@ -252,6 +253,11 @@ pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPred
     /// The hook cannot touch the state of the text service: the controller has it borrowed while the key is handled,
     /// so the request travels through the queue of the actions of the text service instead.
     language_hook: Option<Rc<dyn Fn()>>,
+    /// Told that the input mode changed (Ctrl+F12 or Alt+F1).
+    ///
+    /// The hook cannot touch the state of the text service either (the controller has it borrowed while the key is
+    /// handled), so the request travels through the queue of the actions of the text service instead.
+    mode_hook: Option<Rc<dyn Fn()>>,
     /// The writer of the columns of the vertical writing mode.
     vertical: crate::vertical::VerticalWriter,
     now_ms: u64,
@@ -276,6 +282,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             probed: None,
             commit_hook: None,
             language_hook: None,
+            mode_hook: None,
             vertical: crate::vertical::VerticalWriter::new(),
             now_ms: 0,
         }
@@ -380,8 +387,11 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         self.config.input_mode
     }
 
-    /// Switch between direct mode and input mode. This is what Alt+F1 and the button of the floating window do.
+    /// Switch between the code input and the natural language input.
+    ///
+    /// This is what Ctrl+F12 and Alt+F1 do, and what the row of the panel does.
     pub fn set_input_mode(&mut self, on: bool) {
+        let changed = self.config.input_mode != on;
         self.guarded((), |c| {
             c.config.input_mode = on;
             c.machine
@@ -391,6 +401,13 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
                 c.reset();
             }
         });
+        // The panel has to know: in the code input the list of candidates is only a preview and does not open the
+        // panel, in the natural language input it is the list and it does.
+        if changed
+            && let Some(hook) = self.mode_hook.clone()
+        {
+            hook();
+        }
     }
 
     /// Whether the vertical writing mode is on (the text that is written stands as a column).
@@ -482,6 +499,11 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         self.language_hook = Some(hook);
     }
 
+    /// The hook that is told that the input mode changed (Ctrl+F12 or Alt+F1).
+    pub fn set_mode_hook(&mut self, hook: Rc<dyn Fn()>) {
+        self.mode_hook = Some(hook);
+    }
+
     /// `OnKeyUp`: the same as [`TipController::on_test_key_up`] (a repeated report of one release is harmless).
     pub fn on_key_up(&mut self, key: KeyInput) -> bool {
         self.guarded(false, |c| c.key_up(key))
@@ -530,8 +552,9 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             return false;
         }
         self.refresh_secure(stamp, key.now_ms);
-        if is_input_mode_chord(key.code, key.mods) {
-            // Alt+F1 switches between direct mode and input mode (the floating window offers the same as a button)
+        if is_input_mode_chord(key.code, key.mods) || is_mode_chord(key.code, key.mods) {
+            // Ctrl+F12 (the key the user asked for) and Alt+F1 switch between the code input and the natural
+            // language input; the panel offers the same as a row.
             self.seen = None;
             if self.secure {
                 return false; // nothing is collected in a secure field: the key stays with the host
@@ -1014,8 +1037,8 @@ mod tests {
             Rig::with(sogou())
         }
 
-        /// The direct configuration: the input method never eats a code character. This is the mode for code that
-        /// must not be touched, and it is **not** the shipped default any more (the input mode is).
+        /// The direct configuration: the input method never eats a code character. This is the **factory mode**
+        /// (the code input, the user decided that on 2026-11-11).
         fn direct() -> Rig {
             Rig::with(TipConfig {
                 candidate_capture: false,
@@ -1029,9 +1052,21 @@ mod tests {
             })
         }
 
-        /// The shipped defaults: the input mode (the mainstream behaviour).
+        /// The shipped defaults: the **code input** (nothing is eaten; the natural language input is one
+        /// Ctrl+F12 away).
         fn shipped() -> Rig {
             Rig::with(TipConfig::default())
+        }
+
+        /// The natural language input: typing opens a composition and the candidate list takes the digits, the
+        /// Tab key, Space and Enter.
+        fn natural_language() -> Rig {
+            Rig::with(TipConfig {
+                candidate_capture: true,
+                auto_compose: true,
+                input_mode: true,
+                ..TipConfig::default()
+            })
         }
 
         /// The Ctrl+Alt+Space chord; returns whether it was eaten.
@@ -1158,6 +1193,19 @@ mod tests {
         ctl.on_test_key_down(down) && ctl.on_key_down(down)
     }
 
+    /// One key press with modifiers, the way the host drives the text service. Returns whether the key was eaten.
+    fn press_mods_into(
+        ctl: &mut TipController<RecordingUi, FakeHost, crate::predictor::PluginPredictor>,
+        code: u32,
+        ch: Option<char>,
+        mods: Modifiers,
+        clock: &mut u64,
+    ) -> bool {
+        *clock += 1;
+        let down = input(code, ch, mods, *clock);
+        ctl.on_test_key_down(down) && ctl.on_key_down(down)
+    }
+
     /// The text of the rows of the list that is on screen.
     fn rows_on_screen(
         ctl: &TipController<RecordingUi, FakeHost, crate::predictor::PluginPredictor>,
@@ -1180,6 +1228,14 @@ mod tests {
         let _guard = crate::predictor::engine_lock();
         let mut ctl = real_controller("zh-CN");
         let mut clock = 0;
+        // The factory mode is the code input: the natural language input (the one with the dictionary) is one
+        // Ctrl+F12 away.
+        let ctrl = Modifiers { ctrl: true, ..NONE };
+        assert!(
+            press_mods_into(&mut ctl, vk::F12, None, ctrl, &mut clock),
+            "Ctrl+F12 is ours"
+        );
+        assert!(ctl.input_mode(), "the natural language input is on");
         type_into(&mut ctl, "ni", &mut clock);
         let rows = rows_on_screen(&ctl);
         assert!(
@@ -1214,6 +1270,13 @@ mod tests {
         let _guard = crate::predictor::engine_lock();
         let mut ctl = real_controller("ja-JP");
         let mut clock = 0;
+        // the natural language input is one Ctrl+F12 away from the factory mode (the code input)
+        let ctrl = Modifiers { ctrl: true, ..NONE };
+        assert!(
+            press_mods_into(&mut ctl, vk::F12, None, ctrl, &mut clock),
+            "Ctrl+F12 is ours"
+        );
+        assert!(ctl.input_mode(), "the natural language input is on");
         type_into(&mut ctl, "nihon", &mut clock);
         let rows = rows_on_screen(&ctl);
         assert!(
@@ -1420,6 +1483,33 @@ mod tests {
         rig.ctl.host_mut().secure = true;
         assert!(!rig.press(vk::F2, None, alt_f2, Host::Contract));
         assert_eq!(*asked.borrow(), 0);
+    }
+
+    /// A secure field collects nothing: the mode key (Ctrl+F12 or Alt+F1) stays with the host and the mode does
+    /// not change.
+    ///
+    /// The red-green round found this gap: the mutation that let the key through in a password field was **not**
+    /// noticed by any test.
+    #[test]
+    fn the_mode_key_stays_with_the_host_in_a_secure_field() {
+        for (name, code, mods) in [
+            ("Ctrl+F12", vk::F12, Modifiers { ctrl: true, ..NONE }),
+            ("Alt+F1", vk::F1, Modifiers { alt: true, ..NONE }),
+        ] {
+            let mut rig = Rig::new();
+            let told = Rc::new(RefCell::new(0));
+            {
+                let told = told.clone();
+                rig.ctl.set_mode_hook(Rc::new(move || {
+                    *told.borrow_mut() += 1;
+                }));
+            }
+            rig.ctl.host_mut().secure = true;
+            let before = rig.ctl.input_mode();
+            assert!(!rig.press(code, None, mods, Host::Contract), "{name}: the key is the host's");
+            assert_eq!(*told.borrow(), 0, "{name}: nobody was told");
+            assert_eq!(rig.ctl.input_mode(), before, "{name}: the mode did not change");
+        }
     }
 
     #[test]
@@ -2593,9 +2683,27 @@ mod tests {
         assert_eq!(c.keymap, KeyMap::default());
         assert_eq!(c.language, "rust");
         assert!(
-            c.input_mode,
-            "the shipped default is the input mode: the candidate list takes the arrows, Tab, Space and Enter"
+            !c.input_mode,
+            "the shipped default is the code input: the natural language input is one Ctrl+F12 away"
         );
+    }
+
+    /// The code input is the one that never eats a code character: it is the factory mode (the user decided that
+    /// on 2026-11-11), not something that has to be asked for.
+    #[test]
+    fn the_code_input_is_the_one_that_eats_nothing_and_it_is_the_default() {
+        let c = TipConfig::default();
+        assert!(
+            !c.candidate_capture && !c.auto_compose && !c.input_mode,
+            "the factory mode is the code input"
+        );
+        let explicit = TipConfig {
+            candidate_capture: false,
+            auto_compose: false,
+            input_mode: false,
+            ..TipConfig::default()
+        };
+        assert!(!explicit.candidate_capture && !explicit.auto_compose && !explicit.input_mode);
     }
 
     /// The direct mode is the one that never eats a code character: it is opt-in (Alt+F1), not the default.
@@ -2610,13 +2718,31 @@ mod tests {
         assert!(!c.candidate_capture && !c.auto_compose && !c.input_mode);
     }
 
-    /// The shipped default is the input mode: while the list is on screen, the arrows and Tab walk it, and
-    /// Space and Enter take the highlighted candidate. This is the behaviour the user asked for (2026-11-04: Tab
-    /// is the selection key, the programmer habit).
+    /// The shipped default is the **code input**: while the list is on screen (it is a preview), the keys stay
+    /// with the host and nothing is committed.
     #[test]
-    fn the_shipped_default_takes_a_candidate_with_the_mainstream_keys() {
+    fn the_shipped_default_leaves_the_keys_to_the_host() {
         for (name, code, ch) in [("Space", vk::SPACE, Some(' ')), ("Enter", vk::RETURN, None)] {
             let mut rig = Rig::shipped();
+            rig.type_text("fn", Host::Contract);
+            assert!(rig.ctl.ui().visible, "{name}: the list is a preview");
+            let eaten = rig.press(code, ch, NONE, Host::Contract);
+            assert!(!eaten, "{name}: the key belongs to the host");
+            assert_eq!(
+                rig.ctl.host().commits.len(),
+                0,
+                "{name}: nothing was written by the input method"
+            );
+        }
+    }
+
+    /// The natural language input (one Ctrl+F12 away): while the list is on screen, the arrows and Tab walk it,
+    /// and Space and Enter take the highlighted candidate. This is the behaviour the user asked for (2026-11-04:
+    /// Tab is the selection key, the programmer habit).
+    #[test]
+    fn the_natural_language_input_takes_a_candidate_with_the_mainstream_keys() {
+        for (name, code, ch) in [("Space", vk::SPACE, Some(' ')), ("Enter", vk::RETURN, None)] {
+            let mut rig = Rig::natural_language();
             rig.type_text("fn", Host::Contract);
             assert!(rig.ctl.ui().visible, "{name}: the list is on screen");
             let eaten = rig.press(code, ch, NONE, Host::Contract);
@@ -2628,7 +2754,7 @@ mod tests {
             );
         }
         // Tab is the selection key: it walks the list and writes nothing
-        let mut rig = Rig::shipped();
+        let mut rig = Rig::natural_language();
         rig.type_text("fn", Host::Contract);
         assert!(rig.ctl.ui().visible, "the list is on screen");
         assert!(rig.press(vk::TAB, None, NONE, Host::Contract));
@@ -2640,10 +2766,10 @@ mod tests {
         );
     }
 
-    /// The arrows walk the list in the shipped default too.
+    /// The arrows walk the list in the natural language input.
     #[test]
-    fn the_shipped_default_walks_the_list_with_the_arrows() {
-        let mut rig = Rig::shipped();
+    fn the_natural_language_input_walks_the_list_with_the_arrows() {
+        let mut rig = Rig::natural_language();
         rig.type_text("fn", Host::Contract);
         assert!(rig.ctl.ui().visible, "the list is on screen");
         assert!(rig.plain(vk::DOWN), "the arrow belongs to the candidate list");
@@ -2652,6 +2778,25 @@ mod tests {
             rig.ctl.ui().visible,
             "the list is still on screen after the move"
         );
+    }
+
+    /// Ctrl+F12 is the key the user asked for: it switches between the code input and the natural language input.
+    #[test]
+    fn ctrl_f12_switches_between_the_code_input_and_the_natural_language_input() {
+        let ctrl = Modifiers { ctrl: true, ..NONE };
+        let mut rig = Rig::shipped();
+        assert!(!rig.ctl.input_mode(), "the factory mode is the code input");
+        assert!(
+            rig.press(vk::F12, None, ctrl, Host::Contract),
+            "Ctrl+F12 is ours"
+        );
+        assert!(rig.ctl.input_mode(), "the natural language input is on");
+        // and the other way round
+        assert!(rig.press(vk::F12, None, ctrl, Host::Contract));
+        assert!(!rig.ctl.input_mode(), "the code input is back");
+        // a plain F12 belongs to the host
+        assert!(!rig.press(vk::F12, None, NONE, Host::Contract));
+        assert!(!rig.ctl.input_mode(), "the mode did not change");
     }
 
     /// Every character of ordinary code, typed in the direct mode, reaches the host and nothing is committed,

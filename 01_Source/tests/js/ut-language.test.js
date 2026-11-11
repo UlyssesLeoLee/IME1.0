@@ -207,8 +207,21 @@ test('UT-042 / IT-025 without full context a whole-file or cross-file proposal i
   assert.equal(onlyOther.proposedText, undefined);
 });
 
-test('UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions', () => {
-  const base = {schema_version: 1, profile_id: 'rust', version: '1.0.0', triggers: [{id: 'u.x', pattern: 'abc', candidates: [{label: 'l', text: 'abc ${cursor}'}]}]};
+test('a candidate that does not validate is not offered', () => {
+  // The red-green round found this gap: the filter that drops the candidates whose template does not validate
+  // was not pinned by any test of the mirror, so it could have been removed without anybody noticing.
+  const reg = L.loadRegistry();
+  const pack = {
+    schema_version: 1, profile_id: 'rust', version: '1.0.0',
+    triggers: [{id: 'u.broken', pattern: 'zzz', candidates: [{label: 'broken', text: 'fn broken( ${cursor}'}]}],
+  };
+  reg.addUser(pack);
+  const out = L.predict({profile: 'rust', prefix: 'zzz', before: ''}, reg);
+  assert.ok(!out.some(c => c.validation === 'invalid'), `no invalid candidate is offered: ${JSON.stringify(out)}`);
+  assert.ok(!out.some(c => (c.text || '').includes('broken(')), 'the broken template is not offered');
+});
+
+test('UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions', () => {  const base = {schema_version: 1, profile_id: 'rust', version: '1.0.0', triggers: [{id: 'u.x', pattern: 'abc', candidates: [{label: 'l', text: 'abc ${cursor}'}]}]};
   assert.doesNotThrow(() => L.validatePack(base, {builtin: false}));
   const bad = (mutate, re) => { const p = JSON.parse(JSON.stringify(base)); mutate(p); assert.throws(() => L.validatePack(p, {builtin: false}), e => e.code === 'RULEPACK_INVALID' && (!re || re.test(e.message))); };
   bad(p => { p.triggers[0].candidates[0].shell = 'exec'; }, /unknown field/);

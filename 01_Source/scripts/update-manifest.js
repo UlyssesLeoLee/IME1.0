@@ -206,6 +206,13 @@ const ADDITIONS = [
   // the rules of the domains (.NEMA) and the demonstration of the laser interface (ten agents)
   '01_Source/crates/pime-core/src/nema.rs',
   '01_Source/crates/pime-tsf/src/demo.rs',
+  // the symbol table of the panel and the clipboard of Windows (the local tools of the floating window)
+  '01_Source/crates/pime-core/src/symbol_table.rs',
+  '01_Source/crates/pime-tsf/src/clipboard.rs',
+  // the red-green check: the mutations of the implementation and the report of the round
+  '01_Source/scripts/mutation-check.js',
+  '01_Source/scripts/mutation-cases.js',
+  '02_Verification/mutation-report.txt',
   // the cost and the latency benchmark of the product
   '01_Source/scripts/bench-cost.js',
   '01_Source/crates/tase-metrics/examples/cost_bench.rs',

@@ -706,6 +706,18 @@ fn answer_the_request(inner: &mut Inner, request: &BridgeRequest) -> BridgeReply
     }
 }
 
+/// The date and the time of the machine, as they are written into the document.
+///
+/// The local time of Windows, not the clock of the machine in UTC: what the user reads is what is written.
+fn now_text() -> String {
+    // SAFETY: the call fills the structure it returns; nothing is passed in.
+    let time = unsafe { windows::Win32::System::SystemInformation::GetLocalTime() };
+    format!(
+        "{}-{:02}-{:02} {:02}:{:02}",
+        time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute
+    )
+}
+
 /// The menus of the product: the ones the panel of the laser interface opens.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum MenuKind {
@@ -717,6 +729,12 @@ enum MenuKind {
     Skin,
     /// The scheme of the keys (the programmer habit, Microsoft, Sogou, ATOK).
     Keymap,
+    /// The symbol table: the symbols of the core, written into the document by a click.
+    Symbols,
+    /// The text that is on the clipboard.
+    Clipboard,
+    /// The date and the time of the machine.
+    DateTime,
 }
 
 /// Everything that exists between `Activate` and `Deactivate`.
@@ -821,6 +839,8 @@ enum Pending {
     Laser(LaserEvent),
     /// The user pressed Alt+F2: walk to the next language of the product.
     SwitchLanguage,
+    /// The input mode changed (Ctrl+F12 or Alt+F1): the panel has to be told.
+    ModeChanged,
 }
 
 /// The rows of the laser panel: the settings that are used most often, in the order they are drawn.
@@ -874,6 +894,22 @@ fn laser_items(
             label: "外观",
             value: imesettings::skin_label(skin).to_string(),
         },
+        // the three local tools of the Sogou-style bar: the symbol table, the date and the time, the clipboard
+        PanelItem::Menu {
+            key: "symbols",
+            label: "符号表",
+            value: String::new(),
+        },
+        PanelItem::Menu {
+            key: "datetime",
+            label: "日期时间",
+            value: String::new(),
+        },
+        PanelItem::Menu {
+            key: "clipboard",
+            label: "剪贴板",
+            value: String::new(),
+        },
         PanelItem::Demo,
         PanelItem::Settings,
     ]
@@ -892,6 +928,7 @@ impl Inner {
                     Pending::Menu(action) => self.apply_menu_action(action),
                     Pending::ReloadSettings => self.reload_settings(),
                     Pending::Laser(event) => self.apply_laser_event(event),
+                    Pending::ModeChanged => self.sync_laser(),
                     Pending::SwitchLanguage => self.switch_to_next_language(),
                 }
             }
@@ -947,6 +984,26 @@ impl Inner {
                     )
                 })
                 .collect(),
+            MenuKind::Symbols => pime_core::symbol_table::symbol_pairs()
+                .into_iter()
+                .map(|(text, name)| {
+                    MenuItem::new(
+                        &format!("{text}  {name}"),
+                        MenuAction::InsertText(text.to_string()),
+                    )
+                })
+                .collect(),
+            MenuKind::Clipboard => crate::clipboard::entries()
+                .into_iter()
+                .map(|text| {
+                    let label: String = text.chars().take(40).collect();
+                    MenuItem::new(&label, MenuAction::InsertText(text))
+                })
+                .collect(),
+            MenuKind::DateTime => {
+                let now = now_text();
+                vec![MenuItem::new(&now, MenuAction::InsertText(now.clone()))]
+            }
             MenuKind::Keymap => imesettings::KeymapPreset::ALL
                 .iter()
                 .map(|preset| {
@@ -982,6 +1039,11 @@ impl Inner {
             }
             MenuAction::SwitchLanguage(language) => {
                 self.switch_language(&language);
+            }
+            MenuAction::InsertText(text) => {
+                // The text goes into the document at the caret, exactly as the agent's write does: the same path,
+                // the same safety rules (a password field takes nothing).
+                self.insert_text(&text);
             }
             MenuAction::SetKeymapPreset(preset) => {
                 // The scheme changes the keys at once: that is the point of the schemes.
@@ -1090,13 +1152,40 @@ impl Inner {
         }
     }
 
+    /// Write a text into the document at the caret: a symbol of the table, the text of the clipboard, the date and
+    /// the time.
+    ///
+    /// It is the same path as the write of an agent, with the same safety rules: a password field takes nothing,
+    /// and the panel says why.
+    fn insert_text(&mut self, text: &str) {
+        if text.is_empty() {
+            return;
+        }
+        if crate::agent_bridge::may_write(self.controller.host_mut().is_secure_field()).is_err() {
+            if let Ok(mut laser) = self.laser.try_borrow_mut() {
+                laser.set_status(Some("密码框：一个字符也没有写入"));
+            }
+            return;
+        }
+        // Where the text lands: the caret before the write is the place the character appears at.
+        let anchor = self.controller.host_mut().caret_anchor();
+        if self.controller.host_mut().commit("", text).is_ok()
+            && let Some(anchor) = anchor
+            && let Ok(mut laser) = self.laser.try_borrow_mut()
+        {
+            laser.fire_for(crate::mouths::USER_KEY, crate::mouths::USER_LABEL, anchor);
+        }
+    }
+
     /// Open one of the lists of the laser panel under the row the user clicked.
-    fn open_laser_menu(&mut self, key: &str) {
-        let which = match key {
+    fn open_laser_menu(&mut self, key: &str) {        let which = match key {
             "language" => MenuKind::Language,
             "effort" => MenuKind::Effort,
             "skin" => MenuKind::Skin,
             "keymap" => MenuKind::Keymap,
+            "symbols" => MenuKind::Symbols,
+            "clipboard" => MenuKind::Clipboard,
+            "datetime" => MenuKind::DateTime,
             _ => return,
         };
         let anchor = self
@@ -1193,6 +1282,9 @@ impl Inner {
             return;
         };
         laser.set_items(items);
+        // In the code input the list of candidates is only a preview: it does not open the panel. In the natural
+        // language input it is the list, and it opens the panel.
+        laser.set_list_takes_keys(self.controller.input_mode());
         laser.set_place(
             crate::laser::MouthPlace::from_text(&self.mouth_place),
         );
@@ -1744,6 +1836,14 @@ impl Tip {
                     pending.borrow_mut().push(Pending::SwitchLanguage);
                 }));
             }
+            // The same for the input mode (Ctrl+F12 or Alt+F1): the panel has to learn whether the list of
+            // candidates takes the keys (the natural language input) or is only a preview (the code input).
+            {
+                let pending = pending_actions.clone();
+                controller.set_mode_hook(Rc::new(move || {
+                    pending.borrow_mut().push(Pending::ModeChanged);
+                }));
+            }
             controller.activate(is_secure_mode(flags));
             // The bridge window: how an AI agent asks this input method to write into the document of the host. It is
             // created with the text service and dies with it, so an agent that finds it finds a running input method.
@@ -1812,6 +1912,16 @@ impl Tip {
         self.with(false, |inner| {
             inner.controller.host_mut().set_context(pic);
             let input = key_input(wparam, lparam, inner.started, kind.is_down());
+            // The user is working in the application again: the panel of the settings has no business on the
+            // screen any more (the user asked for that on 2026-11-11). The click somewhere else is not ours to
+            // see, but the typing that follows it is.
+            if kind == KeyKind::Down
+                && input.code != 0
+                && input.ch.is_some()
+                && let Ok(mut laser) = inner.laser.try_borrow_mut()
+            {
+                laser.close_panel_unless_list();
+            }
             let eaten = match kind {
                 KeyKind::TestDown => inner.controller.on_test_key_down(input),
                 KeyKind::Down => inner.controller.on_key_down(input),
@@ -1912,7 +2022,7 @@ fn language_of_profile(profile: GUID) -> Option<&'static str> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum KeyKind {
     TestDown,
     Down,

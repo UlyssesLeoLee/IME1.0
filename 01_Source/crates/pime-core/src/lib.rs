@@ -35,6 +35,7 @@ pub mod services;
 pub mod settings;
 pub mod sha256;
 pub mod style;
+pub mod symbol_table;
 pub mod textrange;
 pub mod util;
 pub mod validators;

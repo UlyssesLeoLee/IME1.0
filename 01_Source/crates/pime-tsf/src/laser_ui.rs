@@ -61,12 +61,13 @@ const PANEL_WIDTH: i32 = 268;
 /// How many rows the panel of the laser interface has.
 ///
 /// The panel is the quick way into the settings: the rows are the ones of `tip::laser_items` (the mode, the space
-/// key, the composition, the scheme of the keys, the language, the effort, the skin, the demonstration and the
-/// settings). The height of the panel follows this number, so the two cannot drift apart.
-pub const PANEL_ROWS: usize = 9;
+/// key, the composition, the scheme of the keys, the language, the effort, the skin, the symbol table, the date and
+/// the time, the clipboard, the demonstration and the settings). The height of the panel follows this number, so
+/// the two cannot drift apart.
+pub const PANEL_ROWS: usize = 12;
 
-/// How tall the panel is (the header, the nine rows and the room the light needs around them).
-const PANEL_HEIGHT: i32 = 326;
+/// How tall the panel is (the header, the twelve rows and the room the light needs around them).
+const PANEL_HEIGHT: i32 = 416;
 
 /// The room under the last row of the panel.
 const PANEL_BOTTOM: i32 = 38;
@@ -148,6 +149,9 @@ pub struct LaserUi {
     on_mouth: bool,
     /// Whether the mouse is on the panel right now.
     on_panel: bool,
+    /// Whether the list of candidates **takes the keys** (the natural language input). In the code input it is
+    /// only a preview, and then it does not open the panel.
+    list_takes_keys: bool,
     /// When the mouse left the panel (it closes after `HOVER_CLOSE_MS`).
     left_at: Option<u64>,
     /// The rows of the panel (the settings that are used most often).
@@ -229,6 +233,7 @@ impl LaserUi {
                 hover_since: None,
                 on_mouth: false,
                 on_panel: false,
+                list_takes_keys: false,
                 left_at: None,
                 items: Vec::new(),
                 status: None,
@@ -259,15 +264,42 @@ impl LaserUi {
         self.candidates.clone()
     }
 
+    /// Whether the list of candidates takes the keys (the natural language input) or is only a preview (the code
+    /// input). The owner of the interface tells it when the mode changes.
+    pub fn set_list_takes_keys(&mut self, takes_keys: bool) {
+        self.list_takes_keys = takes_keys;
+    }
+
+    /// Whether the panel is on the screen right now.
+    pub fn panel_is_open(&self) -> bool {
+        self.model.borrow().panel.open
+    }
+
+    /// Close the panel unless it is the list of candidates.
+    ///
+    /// This is what the user asked for on 2026-11-11: the floating window goes away when he clicks somewhere
+    /// else. The click itself is not ours to see (it belongs to the window under the panel), but the next thing
+    /// the user does with the keyboard is: the panel is then in the way of the code, so it goes.
+    pub fn close_panel_unless_list(&mut self) {
+        if self.panel_mode == PanelMode::Candidates {
+            return;
+        }
+        if self.model.borrow().panel.open {
+            self.close_panel();
+        }
+    }
+
     /// Show the candidates of the list in the panel.
     ///
-    /// The panel is the list now: it opens by itself (the user is typing, the list is there) and it stays open
-    /// until the list is gone. The Sogou-style window next to the caret is not used any more.
+    /// The panel is the list when the list **takes the keys** (the natural language input: the numbers, the Tab key
+    /// and Space take a candidate). In the code input the list is only a preview, and then it does **not** open the
+    /// panel: the panel belongs to the light (it opens when the mouse rests on the mouth) and the user asked for
+    /// the floating window to stay away unless he asks for it.
     pub fn set_candidates(&mut self, candidates: Vec<PanelCandidate>) {
         self.candidates = candidates;
         self.panel_mode = PanelMode::Candidates;
         self.refresh_panel_layout();
-        if self.panel.is_some() {
+        if self.panel.is_some() && self.list_takes_keys {
             self.open_panel();
         }
     }
@@ -1537,5 +1569,68 @@ mod tests {
         for (_, rect) in &layout.rows {
             assert!(rect.bottom <= PANEL_HEIGHT, "{rect:?}");
         }
+    }
+
+    /// An interface on the screen (the windows are real: the panel needs them to be able to open).
+    fn on_screen() -> Rc<RefCell<LaserUi>> {
+        let ui = LaserUi::create(Rc::new(|_: LaserEvent| {}));
+        ui.borrow_mut().show(Rect::new(0, 0, 1920, 1040));
+        ui
+    }
+
+    /// A row of the list.
+    fn row() -> PanelCandidate {
+        PanelCandidate {
+            label: "1".to_string(),
+            text: "fn".to_string(),
+            detail: "rule".to_string(),
+            selected: true,
+        }
+    }
+
+    /// The list of the **code input** is only a preview: it does not open the panel (the user asked for that on
+    /// 2026-11-11: the floating window stays away unless he asks for it).
+    #[test]
+    fn the_preview_of_the_code_input_does_not_open_the_panel() {
+        let ui = on_screen();
+        ui.borrow_mut().set_list_takes_keys(false);
+        ui.borrow_mut().set_candidates(vec![row()]);
+        assert!(!ui.borrow().panel_is_open(), "the panel stays away in the code input");
+    }
+
+    /// The list of the **natural language input** is the list: it opens the panel, because the numbers, the Tab key
+    /// and Space take a candidate there.
+    #[test]
+    fn the_list_of_the_natural_language_input_opens_the_panel() {
+        let ui = on_screen();
+        ui.borrow_mut().set_list_takes_keys(true);
+        ui.borrow_mut().set_candidates(vec![row()]);
+        assert!(ui.borrow().panel_is_open(), "the panel is the list");
+    }
+
+    /// The panel is closed by default: it opens when the mouse rests on the mouth or when the light around it is
+    /// clicked, and not before that.
+    #[test]
+    fn the_panel_is_closed_until_the_user_asks_for_it() {
+        let ui = on_screen();
+        assert!(!ui.borrow().panel_is_open(), "the panel does not show itself");
+    }
+
+    /// The user works in the application again (he clicked somewhere else and types): the panel of the settings goes
+    /// away. The list of candidates stays, because it is the list.
+    #[test]
+    fn the_panel_goes_away_when_the_user_works_in_the_application_again() {
+        let ui = on_screen();
+        ui.borrow_mut().open_panel();
+        assert!(ui.borrow().panel_is_open(), "the panel is open");
+        ui.borrow_mut().close_panel_unless_list();
+        assert!(!ui.borrow().panel_is_open(), "the panel went away");
+        // the list is the panel: it stays
+        let ui = on_screen();
+        ui.borrow_mut().set_list_takes_keys(true);
+        ui.borrow_mut().set_candidates(vec![row()]);
+        assert!(ui.borrow().panel_is_open());
+        ui.borrow_mut().close_panel_unless_list();
+        assert!(ui.borrow().panel_is_open(), "the list stays");
     }
 }

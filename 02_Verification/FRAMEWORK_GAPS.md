@@ -1242,3 +1242,83 @@ Hub 的 `next_job` 以前**只在测试里被调用**——作业进了队列就
 1. **资产上传要用 `uploads.github.com`，不是 `api.github.com`**：拿 API 主机发 `POST /releases/{id}/assets` 会得到 **404**（发布本身已经建成，只是文件没上去）。资产要用专门的脚本发。
 2. **文档追加不要用 PowerShell 的双引号 here-string**（反引号被当转义符，会把 Markdown 里的代码标记、`\t` 全毁掉，见 §5.22 那段被返工过一次）——用 `write` 工具写独立文件，再让 Node 脚本按 marker 截断拼接。
 
+
+### 5.24 第二十八轮（2026-11-11）：出厂代码输入 + Ctrl+F12 切模式 + 面板规则 + 三个本地工具 + 红绿（变异）测试轮
+
+这一轮是**你连着提的四件事**：① 出厂模式改成「代码输入」，Ctrl+F12 切「自然语言输入」；② 悬浮窗默认不显示，
+只有悬停激光口才显示，点区域外要消失；③ 浮动界面要一个 **AI 指令窗口**（聊天记录 + 并行下达命令）与**搜狗拼音那套功能**，
+托盘图标点开要有那些菜单；④ **做一轮全面的红绿测试**。另外还有一个我自己的发现：**追溯报告是 11 月 2 日的旧货**，
+而且有两处系统性缺口。
+
+#### 5.24.1 键与模式（你的裁定，已落地）
+
+| 东西 | 落点 | 证据 |
+|---|---|---|
+| 出厂 = **代码输入** | `pime-tsf/src/controller.rs`（`TipConfig::default().input_mode = false`）、`pime-tsf/src/imesettings.rs`（`LanguageSettings::default()`） | `controller.rs::the_code_input_is_the_one_that_eats_nothing_and_it_is_the_default`、`imesettings.rs::a_file_of_the_old_version_does_not_bring_the_old_input_mode_back` |
+| **Ctrl+F12** 切模式 | `keymap.rs::is_mode_chord` → `controller.rs::set_input_mode` | `keymap.rs::ctrl_f12_is_the_mode_shortcut_and_nothing_else_is`、`controller.rs::ctrl_f12_switches_between_the_code_input_and_the_natural_language_input`、`tests/tsf/ime_selection.rs::ctrl_f12_switches_the_mode_and_the_keys_follow`、场景 `IME-S06B` |
+| 托盘**释放** Ctrl+F12 | `pime-tray/src/main.rs`（没有 `RegisterHotKey(HOTKEY_SWITCH…)` 了） | 键位档案 `docs/HOTKEYS.md` §2 / §3.1（**本文与代码不一致时以本文为准**，所以先改了档案） |
+| 设置文件 v1 → v2 | `imesettings.rs::language_settings_of(value, file_version)`：v1 的 `inputMode=true` 视为旧出厂值 | `imesettings.rs::a_file_of_the_old_version_does_not_bring_the_old_input_mode_back` |
+
+#### 5.24.2 悬浮窗的三条规则
+
+| 规则 | 落点 | 证据 |
+|---|---|---|
+| 默认**不显示** | 面板窗口创建时是隐藏的；只有悬停激光口（`HOVER_OPEN_MS`）或点它周围的光才 `open_panel()` | `laser_ui.rs::the_panel_is_closed_until_the_user_asks_for_it` |
+| 代码输入时打字**不弹**面板 | `laser_ui.rs::set_candidates` 只在 `list_takes_keys`（自然语言输入）时开面板；模式变了由 `Pending::ModeChanged` 通知 | `laser_ui.rs::the_preview_of_the_code_input_does_not_open_the_panel`、`the_list_of_the_natural_language_input_opens_the_panel` |
+| 用户在文档里干活时它**收工** | `tip.rs::key()`：有字符的按键 → `laser.close_panel_unless_list()`（列表本身不走这条） | `laser_ui.rs::the_panel_goes_away_when_the_user_works_in_the_application_again` |
+
+> **据实说明**：**点**在区域外的那个点击我们**收不到**（它属于面板下面的那个窗口），所以实现是「**下一次按键**时它消失」。
+> 要做到「点一下立刻消失」需要一个全局鼠标钩子（`WH_MOUSE_LL`），那是对整个系统挂钩子——**没有做，也没有偷偷做**。
+
+#### 5.24.3 三个本地工具（搜狗拼音那一套的本地版）
+
+| 行 | 干什么 | 落点 | 证据 |
+|---|---|---|---|
+| **符号表** | 约 60 个符号（箭头 / 数学 / 逻辑 / 希腊字母），带读屏用的名字，点一个写进文档 | `pime-core/src/symbol_table.rs`、`tip.rs`（`MenuKind::Symbols` + `MenuAction::InsertText`） | `symbol_table.rs` 的两项单测 |
+| **日期时间** | 把机器的**本地时间**写进文档 | `tip.rs::now_text()`（`GetLocalTime`） | 走 `insert_text` 的同一条路 |
+| **剪贴板** | 读**剪贴板当前的文本**（按需读，不监听、不写） | `pime-tsf/src/clipboard.rs`（`OpenClipboard` / `GetClipboardData(CF_UNICODETEXT)`） | `clipboard.rs` 的两项单测 |
+
+> **两个坑记在这里**：① 剪贴板是**进程级资源**，两个线程同时开它会让 Windows 崩（堆损坏 0xC0000374）⇒ 必须有互斥锁
+> （`static CLIPBOARD: Mutex<()>`）；② `pime-core` **已经有**一个 `symbols` 模块（代码符号索引），新模块只能叫 `symbol_table.rs`。
+
+#### 5.24.4 红绿（变异）测试轮
+
+**新工具**：`01_Source/scripts/mutation-check.js`（跑）+ `scripts/mutation-cases.js`（用例）。
+它把实现**改坏**，问对应的测试套件「你发现了吗」，**每改一处立刻还原**，**跑完逐字节核对还原**（还原不是靠信任）。
+证据：`02_Verification/mutation-report.txt`。**没被发现的变异 = 测试套件的洞**，登记在缺陷单里（D-99 / D-100）。
+
+**这一轮的结果：30 个变异，29 个被抓住，1 个漏。**
+
+| 抓到了（29） | 没抓到（1） |
+|---|---|
+| .NEMA 领域头（真 Tab / 正整数修订号 / 后面不许有东西 / 图领域的 `>`）与领域范围、UTF-16 不切代理对、**无效候选不给出**（Rust 与 JS 两侧）、语言档循环、AI 预算上限、授权的 provider 不匹配、**Ctrl+F12 与 Alt+F1**、**出厂 = 代码输入**、**模式键在密码框里留给宿主**、面板那一行的点击、多 Agent 演示的 20 字符 / 领域头 / 补链接的条件 / 修订号递增 / 密码框不写、**人的嘴不跟着演示跑**、**代码输入的预览不弹面板**、JS 镜像的排序权重 / 平局 / 密码原因 / UTF-16 / 校验失败禁用 Apply / 无效候选 | **日文罗马音的 `a`**（`romaji-a`）：表里写着 `a:い`，把它改成 `a:あ` **整个套件仍然全绿** ⇒ 没有任何测试钉住这一个键。**这就是 D-93 那个笔误能活到今天的原因**（证据：`mutation-report.txt` 的 `MISSED romaji-a`） |
+
+> **工具自己也踩过坑，记在这里**：第一版把「非零退出」当成「测试抓到了」——**构建失败、锁冲突、测试二进制崩溃都会被算成通过**。
+> 现在只有**断言真的失败**（`test result: FAILED` / `not ok`）才算抓到；套件**没跑起来**单独记为 ERROR（结果未知），不算抓到。
+
+#### 5.24.5 追溯报告的两处系统性缺口（我自己的发现）
+
+1. **TSF 的 341 项证据根本没进报告**：`traceability-report.js` 只读主 workspace 的输出，而 `pime-tsf` **不在主 workspace**。
+   ⇒ 门禁现在把两份原始输出都留证（`rust-test-result.txt` / `tsf-test-result.txt`），报告两份都读。
+2. **一批用例「有实现有测试，只是标题里没带用例号」**，报告却记成「未执行」⇒ 报告现在认 `it_/st_/at_` 前缀；
+   `docs/IPC.md` 里那句「mapper 一旦扩展到 `it_NNN`，必须排除 `crates/pime-ipc`」已按其警告加了护栏
+   （`pime-ipc` 的 `it_003`/`it_004` **只是那两条用例里能单机跑的部分**，不能让整条用例看起来过了）。
+
+**四个子代理逐条审了 26 个「未执行」用例**（读设计书的判定基準 + 找真断言）：
+
+| 判定 | 用例 |
+|---|---|
+| **完整覆盖**（判定基准被完整证明） | ST-011（方言与架构切换）、ST-022（无完整上下文禁止虚构跨文件） |
+| **部分覆盖**（缺哪一面都点名了） | IT-037 / IT-038 / IT-042 / IT-043 / UT-060、ST-004 / ST-005 / ST-008 / ST-009 / ST-026 / ST-029 / ST-031 / ST-035 |
+| **确实没有证据** | ST-001 / ST-002 / ST-003（要真 Windows 11 VM 激活三个语言档）、ST-034（插件隔离 P1：本仓库的插件是**纯数据**，没有宿主进程）、ST-040（现有基准测的是**本地候选路径**，不是 F1 的首个候选 P95≤15s） |
+
+#### 5.24.6 这一轮**没有**验证的地方（不虚报）
+
+* **真机**：新 DLL 还没换上（要注销/重启）。面板的三条规则、Ctrl+F12、三个工具的**手感**都只过了**代码层与单元测试**。
+* **剪贴板历史**：没有监听器，只有当前内容（D-97）。
+* **AI 指令窗口**：**没有做**（D-98）——它要一个带输入框与聊天记录的新窗口、一条命令投递与回收的链、以及「并行」的语义；
+  问卷（**超时自动选的推荐项**，不是你的选择）指向「复用现有 TASE 队列」，但那也只是**方向**，不是实现。
+* **托盘与面板的联动**：托盘点不动面板的行（D-96）。
+* **本机的一次环境抖动**：门禁第二轮里 JS 差分测试曾偶发 4 项失败（同代码单独重跑 exit 0）——实测本机页面文件
+  8 GB **100% 占满**、可用虚拟内存只剩 1.44 GB、360 个进程提交了 18.6 GB ⇒ 子进程起不来。
+  **关门禁的办法**：先跑「写干净日志」那一轮，再跑「读干净日志并校验 claims」那一轮。

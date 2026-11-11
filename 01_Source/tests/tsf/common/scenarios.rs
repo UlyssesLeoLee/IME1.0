@@ -613,6 +613,9 @@ pub static SCENARIOS: &[Scenario] = &[
         function: "F-SELECT",
         title: "Enter takes the candidate that Tab highlighted",
         body: |h| {
+            // The factory mode is the code input: the natural language input (the one whose list takes the
+            // keys) is one Ctrl+F12 away.
+            assert!(h.mode_chord(), "Ctrl+F12 is ours");
             h.type_text("fn");
             h.tab();
             h.enter();
@@ -621,8 +624,8 @@ pub static SCENARIOS: &[Scenario] = &[
             assert_eq!(t.commits, ["c1:fn"], "{t:?}");
             assert_eq!(
                 t.eaten,
-                ["Tab", "Enter"],
-                "both keys belonged to the candidate window"
+                ["Ctrl+F12", "Tab", "Enter"],
+                "the chord and both keys belonged to the input method"
             );
         },
     },

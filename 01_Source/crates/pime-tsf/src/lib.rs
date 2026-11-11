@@ -26,6 +26,7 @@ use windows::core::{GUID, HRESULT, IUnknown, Interface, Result, implement};
 
 pub mod agent_bridge;
 pub mod candidate_skin;
+pub mod clipboard;
 pub mod controller;
 pub mod demo;
 pub mod glass;
