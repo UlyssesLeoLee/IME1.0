@@ -187,5 +187,8 @@ tests/e2e/
 
 - `.ps1` 一律 **ASCII**（与仓库其它脚本一致）：Windows PowerShell 5.1 在非 UTF-8 代码页上会把无 BOM 的 UTF-8 读坏。
   中文只出现在本 README 和生成的结果文件里。
+- **控制台上的中文标题会显示成乱码**（GBK/932 代码页的宿主）：运行器在运行时从设计书里取用例标题，
+  而控制台按自己的代码页渲染。**这不影响判定**——判定读的是 `tests/e2e/results/` 里的 UTF-8 结果文件；
+  脚本自己的日志串全是 ASCII。
 - 结果文件写在 `tests/e2e/results/`；`02_Verification/` 由交付负责人维护，本目录不写。
 - 跑完请还原 guest 的快照。
