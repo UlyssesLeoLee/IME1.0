@@ -149,9 +149,6 @@ pub struct LaserUi {
     on_mouth: bool,
     /// Whether the mouse is on the panel right now.
     on_panel: bool,
-    /// Whether the list of candidates **takes the keys** (the natural language input). In the code input it is
-    /// only a preview, and then it does not open the panel.
-    list_takes_keys: bool,
     /// When the mouse left the panel (it closes after `HOVER_CLOSE_MS`).
     left_at: Option<u64>,
     /// The rows of the panel (the settings that are used most often).
@@ -233,7 +230,6 @@ impl LaserUi {
                 hover_since: None,
                 on_mouth: false,
                 on_panel: false,
-                list_takes_keys: false,
                 left_at: None,
                 items: Vec::new(),
                 status: None,
@@ -264,12 +260,6 @@ impl LaserUi {
         self.candidates.clone()
     }
 
-    /// Whether the list of candidates takes the keys (the natural language input) or is only a preview (the code
-    /// input). The owner of the interface tells it when the mode changes.
-    pub fn set_list_takes_keys(&mut self, takes_keys: bool) {
-        self.list_takes_keys = takes_keys;
-    }
-
     /// Whether the panel is on the screen right now.
     pub fn panel_is_open(&self) -> bool {
         self.model.borrow().panel.open
@@ -291,15 +281,15 @@ impl LaserUi {
 
     /// Show the candidates of the list in the panel.
     ///
-    /// The panel is the list when the list **takes the keys** (the natural language input: the numbers, the Tab key
-    /// and Space take a candidate). In the code input the list is only a preview, and then it does **not** open the
-    /// panel: the panel belongs to the light (it opens when the mouse rests on the mouth) and the user asked for
-    /// the floating window to stay away unless he asks for it.
+    /// The panel is the list: it opens by itself while there are candidates (the user asked for the options to
+    /// show in the code input too — 2026-11-12: 「代码输入模式现在不显示备选选项」). **What decides whether the
+    /// list takes the keys is the mode** (the natural language input takes the digits, the Tab key and Space; the
+    /// code input leaves them to the editor), not whether the panel is open.
     pub fn set_candidates(&mut self, candidates: Vec<PanelCandidate>) {
         self.candidates = candidates;
         self.panel_mode = PanelMode::Candidates;
         self.refresh_panel_layout();
-        if self.panel.is_some() && self.list_takes_keys {
+        if self.panel.is_some() {
             self.open_panel();
         }
     }
@@ -760,7 +750,7 @@ impl LaserUi {
                 let Some(mouth) = self.mouth_of(key) else {
                     return;
                 };
-                let on = mouth.contains(origin.0 + x, origin.1 + y);
+                let on = crate::laser::mouth_hit(&mouth, origin.0 + x, origin.1 + y);
                 if on && !self.on_mouth {
                     self.on_mouth = true;
                     self.hover_since = Some(now_ms());
@@ -1186,8 +1176,10 @@ fn draw_glow(
     let slit = mouth_slit(&mouth);
     // The line is put on the centre of a pixel: a line of light that falls between two pixels would light two of them
     // and the light would be twice as wide as it should be.
-    let centre_x = (mouth.x - origin.left) as f64 + 0.5;
-    let centre_y = (mouth.y - origin.top) as f64 + 0.5;
+    // The slit lies **on the edge of the screen** (the user asked for it on 2026-11-12), so the place of the light
+    // inside the picture is the place of the edge, not the centre of the mouth.
+    let centre_x = (slit.x - origin.left) as f64 + 0.5;
+    let centre_y = (slit.y - origin.top) as f64 + 0.5;
     let half = slit.length as f64 / 2.0;
     let halo = slit.halo as f64;
     // The light breathes: it is there, but it does not demand the eye.
@@ -1475,8 +1467,12 @@ mod tests {
                 LaserTheme::MOUTH_HALO,
             );
         }
-        // the middle of the picture is the middle of the slit: it must be lit there
-        let middle = ((GLOW_SIZE / 2) * GLOW_SIZE + GLOW_SIZE / 2) as usize * 4;
+        // the light is at the edge of the screen (2026-11-12), so inside the picture it is at the edge of the
+        // window: the pixel of the line is the one of the slit, not the middle of the picture
+        let slit = crate::laser::mouth_slit(&mouth);
+        let local_x = (slit.x - origin.left) as usize;
+        let local_y = (slit.y - origin.top) as usize;
+        let middle = (local_y * GLOW_SIZE as usize + local_x) * 4;
         let alpha = pixels[middle + 3];
         assert!(alpha > 90, "the line of light must be lit, it was {alpha}");
         // the light is blue: the blue channel is the strongest one (this picture is red first)
@@ -1486,8 +1482,12 @@ mod tests {
             pixels[middle + 2],
             pixels[middle]
         );
-        // and it is thin: the pixel above the line is much fainter than the line itself
-        let above = middle - (GLOW_SIZE as usize) * 4;
+        // and it is thin: the pixel next to the line (across it, not along it) is much fainter than the line itself
+        let above = if slit.vertical {
+            middle - 4
+        } else {
+            middle - (GLOW_SIZE as usize) * 4
+        };
         assert!(
             pixels[above + 3] * 2 < alpha,
             "the light must be a hairline: the line is {alpha}, the pixel above it is {}",
@@ -1529,7 +1529,12 @@ mod tests {
                 .expect("the picture of the window fits into the buffer");
             draw_glow(&mut canvas, mouth, origin, 0, colour, colour);
         }
-        let middle = ((GLOW_SIZE / 2) * GLOW_SIZE + GLOW_SIZE / 2) as usize * 4;
+        // the light is at the edge of the screen (2026-11-12), so inside the picture it is at the edge of the
+        // window, not at its middle
+        let slit = crate::laser::mouth_slit(&mouth);
+        let local_x = (slit.x - origin.left) as usize;
+        let local_y = (slit.y - origin.top) as usize;
+        let middle = (local_y * GLOW_SIZE as usize + local_x) * 4;
         assert!(pixels[middle + 3] > 90, "the slit of light must be lit");
         // the light is in the colour of the agent: the red channel is the strongest one (this picture is red first)
         assert!(
@@ -1588,22 +1593,11 @@ mod tests {
         }
     }
 
-    /// The list of the **code input** is only a preview: it does not open the panel (the user asked for that on
-    /// 2026-11-11: the floating window stays away unless he asks for it).
+    /// The list of candidates opens the panel: the options are shown while the user types (the user asked for
+    /// that in the code input too — 2026-11-12: 「代码输入模式现在不显示备选选项」).
     #[test]
-    fn the_preview_of_the_code_input_does_not_open_the_panel() {
+    fn the_list_of_candidates_opens_the_panel() {
         let ui = on_screen();
-        ui.borrow_mut().set_list_takes_keys(false);
-        ui.borrow_mut().set_candidates(vec![row()]);
-        assert!(!ui.borrow().panel_is_open(), "the panel stays away in the code input");
-    }
-
-    /// The list of the **natural language input** is the list: it opens the panel, because the numbers, the Tab key
-    /// and Space take a candidate there.
-    #[test]
-    fn the_list_of_the_natural_language_input_opens_the_panel() {
-        let ui = on_screen();
-        ui.borrow_mut().set_list_takes_keys(true);
         ui.borrow_mut().set_candidates(vec![row()]);
         assert!(ui.borrow().panel_is_open(), "the panel is the list");
     }
@@ -1627,7 +1621,6 @@ mod tests {
         assert!(!ui.borrow().panel_is_open(), "the panel went away");
         // the list is the panel: it stays
         let ui = on_screen();
-        ui.borrow_mut().set_list_takes_keys(true);
         ui.borrow_mut().set_candidates(vec![row()]);
         assert!(ui.borrow().panel_is_open());
         ui.borrow_mut().close_panel_unless_list();

@@ -110,7 +110,7 @@ test('UT-015 / IT-008 switching language bumps profile_epoch and invalidates old
   assert.equal(s.setLanguage('python'), false);
 });
 
-test('UT-016 / IT-012 dialects: rules of another standard are not offered, invalid syntax is flagged', () => {
+test('UT-016 / IT-012 / ST-011 dialects: rules of another standard are not offered, invalid syntax is flagged', () => {
   assert.ok(ids(predict('c', 'constexpr', '', {std: 'c23'})).includes('c.constexpr.23#0'));
   assert.deepEqual(predict('c', 'constexpr', '', {std: 'c17'}), []);
   assert.ok(ids(predict('c', 'static', '', {std: 'c11'})).includes('c.static_assert.11#0'));
@@ -197,7 +197,7 @@ test('UT-041 candidates carry source, language and explanation; unverified AI ne
   assert.equal(missing.validation, 'context_missing'); assert.equal(missing.text, null);
 });
 
-test('UT-042 / IT-025 without full context a whole-file or cross-file proposal is not applicable', () => {
+test('UT-042 / IT-025 / ST-022 without full context a whole-file or cross-file proposal is not applicable', () => {
   const l1 = ctxMod.makeSnapshot({uri: 'file:///a.rs', version: 1, text: 'fn a() {}\n', level: 'L1'});
   assert.throws(() => ctxMod.assertFullFileWritable(l1), e => e.code === 'FULL_CONTEXT_REQUIRED');
   const raw = JSON.stringify({files: [{path: 'a.rs', content: 'fn a() { 1 }\n'}, {path: '../other.rs', content: 'pwn'}, {uri: 'file:///elsewhere/b.rs', content: 'x'}], explanation: 'e'});

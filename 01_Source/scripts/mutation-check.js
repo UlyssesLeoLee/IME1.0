@@ -16,6 +16,7 @@
 // the suite that has to notice.
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -45,6 +46,23 @@ const RUST_ENV = {
 };
 
 function runSuite(suite) {
+  // A run that is killed by the machine (the file of the DLL is locked by the scanner, the cargo cannot get the
+  // lock, the memory is gone) is not a result: it is retried, like the gate does with its own cargo runs.
+  let last = {status: 0, out: ''};
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    last = runSuiteOnce(suite);
+    const broke = last.status !== 0 && !/test result: FAILED/.test(last.out) && !/^not ok \d+/m.test(last.out);
+    if (!broke) return last;
+    if (attempt < 3) {
+      const wait = attempt * 2000;
+      const until = Date.now() + wait;
+      while (Date.now() < until) {} // the file lock needs a moment
+    }
+  }
+  return last;
+}
+
+function runSuiteOnce(suite) {
   if (suite.kind === 'js') {
     const file = path.join(root, '01_Source', 'tests', 'js', suite.file);
     const result = spawnSync(process.execPath, ['--test', '--test-reporter=tap', suite.file], {
@@ -82,8 +100,45 @@ if (list) {
   process.exit(0);
 }
 
-// The run writes its own report from the start: the file is the evidence of the round. `--append` adds to the
-// report of the round instead of replacing it (the round is run in chunks when the machine is tight on memory).
+// The files this run breaks are backed up outside the repository: a run that is killed (the machine runs out of
+// memory now and then) must not leave a broken implementation in the working tree. The next run puts the files
+// back before it touches anything.
+const BACKUP_DIR = path.join(os.tmpdir(), 'ime-mutation-backups');
+const backupName = relative => relative.split('/').join('__');
+
+function restoreLeftovers() {
+  if (!fs.existsSync(BACKUP_DIR)) return 0;
+  let restored = 0;
+  for (const name of fs.readdirSync(BACKUP_DIR)) {
+    const backup = path.join(BACKUP_DIR, name);
+    const target = path.join(root, name.split('__').join('/'));
+    try {
+      fs.copyFileSync(backup, target);
+      fs.unlinkSync(backup);
+      restored++;
+    } catch {
+      // a file that cannot be restored is reported by the restore check at the end of the run
+    }
+  }
+  return restored;
+}
+
+function backup(relative, bytes) {
+  fs.mkdirSync(BACKUP_DIR, {recursive: true});
+  fs.writeFileSync(path.join(BACKUP_DIR, backupName(relative)), bytes);
+}
+
+function undoBackup(relative) {
+  const file = path.join(BACKUP_DIR, backupName(relative));
+  if (!fs.existsSync(file)) return;
+  fs.copyFileSync(file, path.join(root, relative));
+  fs.unlinkSync(file);
+}
+
+const restoredAtStart = restoreLeftovers();
+if (restoredAtStart) {
+  console.log(`note: ${restoredAtStart} file(s) of a killed run were put back before this run started`);
+}
 if (!args.includes('--append')) {
   fs.writeFileSync(REPORT, `# The red-green check of ${new Date().toISOString()}\n# ${cases.length} mutations of the implementation; every one of them is restored right after it is applied.\n\n`, 'utf8');
 }
@@ -118,6 +173,7 @@ for (const item of selected) {
     continue;
   }
   fs.writeFileSync(file, mutated, 'utf8');
+  backup(item.file, Buffer.from(original, 'utf8'));
   let status = 0;
   let out = '';
   try {
@@ -130,6 +186,7 @@ for (const item of selected) {
   } finally {
     // the original file comes back whatever happened
     fs.writeFileSync(file, original, 'utf8');
+    undoBackup(item.file);
   }
   // The suite has to **fail on an assertion**, not merely to stop: a build that does not compile, a test binary
   // that crashes or a cargo that cannot get the lock are all "the suite did not run", not "the suite noticed".

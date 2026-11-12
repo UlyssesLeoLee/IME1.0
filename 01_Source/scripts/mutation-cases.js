@@ -198,11 +198,19 @@ module.exports = [
     suite: TSF,
   },
   {
-    id: 'panel-preview-does-not-open',
-    what: 'the preview of the code input does not open the panel',
+    id: 'panel-list-opens-the-panel',
+    what: 'the list of candidates opens the panel (the options are shown while typing)',
     file: '01_Source/crates/pime-tsf/src/laser_ui.rs',
-    from: 'if self.panel.is_some() && self.list_takes_keys {',
-    to: 'if self.panel.is_some() {',
+    from: '        if self.panel.is_some() {\n            self.open_panel();',
+    to: '        if false {\n            self.open_panel();',
+    suite: TSF,
+  },
+  {
+    id: 'laser-slit-on-the-edge',
+    what: 'the light of the mouth lies on the edge of the screen (no gap)',
+    file: '01_Source/crates/pime-tsf/src/laser.rs',
+    from: '        Edge::Left => (mouth.x - mouth.radius, mouth.y),',
+    to: '        Edge::Left => (mouth.x, mouth.y),',
     suite: TSF,
   },
 

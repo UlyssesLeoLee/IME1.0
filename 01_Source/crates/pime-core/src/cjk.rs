@@ -475,6 +475,70 @@ mod tests {
         assert_eq!(romaji_to_kana("kyou"), "きょう");
     }
 
+    /// **Every** key of the table gives its kana.
+    ///
+    /// The table is data, and a typo in it is invisible to the tests that only type whole words: the red-green
+    /// round showed that `a` could map to 「い」 and the whole suite would still be green (the user typed 「我」,
+    /// took the first candidate and got `w1o`). So every key of the basic syllables is pinned here.
+    #[test]
+    fn every_key_of_the_table_gives_its_kana() {
+        for (romaji, kana) in [
+            ("a", "あ"),
+            ("i", "い"),
+            ("u", "う"),
+            ("e", "え"),
+            ("o", "お"),
+            ("ka", "か"),
+            ("ki", "き"),
+            ("ku", "く"),
+            ("ke", "け"),
+            ("ko", "こ"),
+            ("sa", "さ"),
+            ("si", "し"),
+            ("shi", "し"),
+            ("su", "す"),
+            ("se", "せ"),
+            ("so", "そ"),
+            ("ta", "た"),
+            ("ti", "ち"),
+            ("chi", "ち"),
+            ("tu", "つ"),
+            ("tsu", "つ"),
+            ("te", "て"),
+            ("to", "と"),
+            ("na", "な"),
+            ("ni", "に"),
+            ("nu", "ぬ"),
+            ("ne", "ね"),
+            ("no", "の"),
+            ("ha", "は"),
+            ("hi", "ひ"),
+            ("hu", "ふ"),
+            ("fu", "ふ"),
+            ("he", "へ"),
+            ("ho", "ほ"),
+            ("ma", "ま"),
+            ("mi", "み"),
+            ("mu", "む"),
+            ("me", "め"),
+            ("mo", "も"),
+            ("ya", "や"),
+            ("yu", "ゆ"),
+            ("yo", "よ"),
+            ("ra", "ら"),
+            ("ri", "り"),
+            ("ru", "る"),
+            ("re", "れ"),
+            ("ro", "ろ"),
+            ("wa", "わ"),
+            ("wo", "を"),
+            ("n", "ん"),
+            ("m", "ん"),
+        ] {
+            assert_eq!(romaji_to_kana(romaji), kana, "the romaji {romaji} gives {kana}");
+        }
+    }
+
     #[test]
     fn the_japanese_words_come_with_their_kanji() {
         let candidates = japanese_candidates("nihon");

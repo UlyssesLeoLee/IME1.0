@@ -516,7 +516,7 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_dialect_is_explained_not_guessed() {
+    fn st_011_unsupported_dialect_is_explained_not_guessed() {
         let o = PredictOptions::new("machine-code", "nop").dialect("isa", "arm64");
         let r = engine().predict(&o).unwrap();
         assert_eq!(r.len(), 1);

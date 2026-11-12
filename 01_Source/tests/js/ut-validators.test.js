@@ -28,7 +28,7 @@ test('UT-021 C declarations and standard versions', () => {
   assert.equal(V.validateSource('c', 'int f() { /* nullptr */ return 0; }', {std: 'c11'}).ok, true, 'keywords inside comments are not code');
 });
 
-test('UT-022 assembly dialect: Intel and AT&T are never silently mixed', () => {
+test('UT-022 / ST-011 assembly dialect: Intel and AT&T are never silently mixed', () => {
   assert.equal(V.validateSource('assembly', 'mov rax, rbx\npush rbp\nret\n', {syntax: 'intel'}).ok, true);
   assert.equal(V.validateSource('assembly', 'movq %rbx, %rax\n', {syntax: 'intel'}).ok, false);
   assert.equal(V.validateSource('assembly', 'movq %rbx, %rax\n', {syntax: 'att', assembler: 'gas'}).ok, true);

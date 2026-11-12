@@ -1316,7 +1316,7 @@ mod tests {
     }
 
     #[test]
-    fn crlf_is_restored_and_cross_file_plans_keep_only_the_current_file() {
+    fn st_022_crlf_is_restored_and_cross_file_plans_keep_only_the_current_file() {
         let r = parse_model_result(r#"{"fullFile":"a\nb\n"}"#, "full", "a\r\nb\r\n", "").unwrap();
         assert_eq!(r.proposed_text.as_deref(), Some("a\r\nb\r\n"));
         assert_eq!(r.assumptions.len(), 1);

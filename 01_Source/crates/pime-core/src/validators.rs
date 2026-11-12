@@ -1327,7 +1327,7 @@ mod tests {
     }
 
     #[test]
-    fn dialect_gated_features() {
+    fn st_011_dialect_gated_features() {
         assert_eq!(
             codes("powershell", "$a ?? 1", &[("version", "5.1")]),
             vec!["PS7_NULL_COALESCING"]

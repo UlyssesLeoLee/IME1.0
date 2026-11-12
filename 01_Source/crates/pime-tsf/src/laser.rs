@@ -192,16 +192,41 @@ pub struct MouthSlit {
 /// The slit of light of a mouth.
 ///
 /// It follows the edge the mouth sits on: a vertical slit on the left and the right edge, a horizontal one on the top.
+///
+/// The slit lies **on the edge of the screen** (the user asked for it on 2026-11-12: 「激光口贴紧屏幕边缘，不要留空隙」).
+/// The centre of the mouth is one radius away from the edge, so the edge is exactly one radius away from the centre.
 pub fn mouth_slit(mouth: &Mouth) -> MouthSlit {
+    let (x, y) = match mouth.edge {
+        Edge::Left => (mouth.x - mouth.radius, mouth.y),
+        Edge::Right => (mouth.x + mouth.radius, mouth.y),
+        Edge::Top => (mouth.x, mouth.y - mouth.radius),
+    };
     MouthSlit {
-        x: mouth.x,
-        y: mouth.y,
+        x,
+        y,
         length: SLIT_LENGTH,
         width: SLIT_WIDTH,
         halo: SLIT_HALO,
         vertical: !matches!(mouth.edge, Edge::Top),
     }
 }
+
+/// Whether a point of the screen is on the light of a mouth.
+///
+/// The light is the slit **on the edge of the screen**, so the hit area is that slit (the mouse has to be on the
+/// light the user sees) and not the circle of the mouth, which sits one radius away from the edge.
+pub fn mouth_hit(mouth: &Mouth, screen_x: i32, screen_y: i32) -> bool {
+    let slit = mouth_slit(mouth);
+    let (across, along) = if slit.vertical {
+        ((screen_x - slit.x).abs(), (screen_y - slit.y).abs())
+    } else {
+        ((screen_y - slit.y).abs(), (screen_x - slit.x).abs())
+    };
+    across <= MOUTH_HIT_WIDTH && along <= slit.length / 2 + MOUTH_HIT_WIDTH
+}
+
+/// How wide the band around the light counts as "on the mouth" (in pixels).
+pub const MOUTH_HIT_WIDTH: i32 = 6;
 
 /// The place of a mouth that was dropped at the point `(x, y)`.
 ///
@@ -545,7 +570,10 @@ mod tests {
         );
         let slit = mouth_slit(&left);
         assert!(slit.vertical, "the mouth is on the left edge: the slit runs from top to bottom");
-        assert_eq!((slit.x, slit.y), (left.x, left.y));
+        // The light lies **on** the edge of the screen (the user asked for it on 2026-11-12): the mouth's centre is
+        // one radius away from the edge, so the light is exactly one radius further out.
+        assert_eq!((slit.x, slit.y), (left.x - left.radius, left.y));
+        assert_eq!(slit.x, 0, "the light of the left edge is at the edge of the screen: no gap");
         assert_eq!(slit.width, SLIT_WIDTH, "a hairline, not a bar");
         assert_eq!(slit.length, SLIT_LENGTH, "a small piece of light");
         let right = mouth_at(

@@ -1282,9 +1282,6 @@ impl Inner {
             return;
         };
         laser.set_items(items);
-        // In the code input the list of candidates is only a preview: it does not open the panel. In the natural
-        // language input it is the list, and it opens the panel.
-        laser.set_list_takes_keys(self.controller.input_mode());
         laser.set_place(
             crate::laser::MouthPlace::from_text(&self.mouth_place),
         );

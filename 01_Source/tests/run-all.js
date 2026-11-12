@@ -29,9 +29,9 @@ const verification = path.join(root, '02_Verification');
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|bench|installer|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|bench|mutation|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'installer'];
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -187,6 +187,11 @@ if (want('bench')) {
     sh(process.execPath, [path.join(src, 'scripts', 'bench-cost.js')]));
 }
 if (want('ipc')) step('IPC (crates/pime-ipc): unit + loopback tests on real named pipes', () => sh(process.execPath, [path.join(tests, 'smoke', 'ipc-smoke.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
+// The red-green check: the implementation is broken on purpose, one place at a time, and the matching suite has to
+// notice it. It is slow (every mutation rebuilds its crate), so it runs after the other steps. The report is
+// 02_Verification/mutation-report.txt.
+if (want('mutation')) step('red-green check: the implementation is broken on purpose and the suite has to notice it', () =>
+  sh(process.execPath, [path.join(src, 'scripts', 'mutation-check.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
 if (want('setup')) step('Installer (crates/pime-setup): cargo test (temp-folder integration tests only)', () => cargoRetry('pime-setup', ['test']));
 if (want('installer')) step('framework matrix: the quoted numbers match the built installer and the cited logs', () => sh(process.execPath, [path.join(tests, 'smoke', 'installer-claims-check.js')]));
 if (want('installer')) step('UAT claims: the quoted UAT numbers match the Playwright report in 02_Verification/uat', () => sh(process.execPath, [path.join(tests, 'smoke', 'uat-claims-check.js')]));
