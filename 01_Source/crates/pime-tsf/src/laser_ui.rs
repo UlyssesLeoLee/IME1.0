@@ -279,6 +279,19 @@ impl LaserUi {
         }
     }
 
+    /// The panel and the list go away; the light stays.
+    ///
+    /// This is what a switch of the **language** does (the user reported on 2026-11-12: 「切换语言和输入法也没有
+    /// 正确随之消失」): the candidates of the old language must not stay on the screen, but the input method is
+    /// still the one the user is in, so the mouth of the light stays.
+    pub fn close_panel_and_list(&mut self) {
+        self.candidates.clear();
+        self.panel_mode = PanelMode::Settings;
+        self.refresh_panel_layout();
+        self.close_panel();
+        self.repaint_all();
+    }
+
     /// Show the candidates of the list in the panel.
     ///
     /// The panel is the list: it opens by itself while there are candidates (the user asked for the options to
@@ -1600,6 +1613,18 @@ mod tests {
         let ui = on_screen();
         ui.borrow_mut().set_candidates(vec![row()]);
         assert!(ui.borrow().panel_is_open(), "the panel is the list");
+    }
+
+    /// A switch of the language takes the panel and the list away (the user reported it on 2026-11-12): the
+    /// candidates of the old language must not stay on the screen.
+    #[test]
+    fn a_switch_of_the_language_takes_the_panel_and_the_list_away() {
+        let ui = on_screen();
+        ui.borrow_mut().set_candidates(vec![row()]);
+        assert!(ui.borrow().panel_is_open());
+        ui.borrow_mut().close_panel_and_list();
+        assert!(!ui.borrow().panel_is_open(), "the panel went away");
+        assert!(ui.borrow().candidate_rows().is_empty(), "the list of the old language went away");
     }
 
     /// The panel is closed by default: it opens when the mouse rests on the mouth or when the light around it is

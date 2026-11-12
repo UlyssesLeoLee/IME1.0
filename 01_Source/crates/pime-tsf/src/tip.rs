@@ -1217,6 +1217,11 @@ impl Inner {
         // The windows that belong to the document go off the screen before the switch: TSF changes the profile
         // inside that very call, and the state is borrowed at that moment.
         self.hide_caret();
+        // The panel and the list go away as well (the user reported it on 2026-11-12): the candidates of the old
+        // language must not stay on the screen. The mouth of the light stays: the input method is still ours.
+        if let Ok(mut laser) = self.laser.try_borrow_mut() {
+            laser.close_panel_and_list();
+        }
         if !activate_profile(langid, &profile) {
             trace(&format!("the profile of {language} could not be activated"));
             return;
