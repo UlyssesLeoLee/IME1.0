@@ -1513,6 +1513,8 @@ Hub 的 `next_job` 以前**只在测试里被调用**——作业进了队列就
 | **ST-031**（下拉列出七种语言） | `languages.js` 的 `LANGUAGES` 少一种 | PASS | **FAIL**（`the drop-down must offer machine-code`） | **钉住了** |
 | **ST-029**（AI 输出里的语法错误被标出来） | `validators.js` 的校验结论永远判「合法」 | PASS | **FAIL**（`#validation` 的 `data-level` 不再是 `bad`） | **钉住了** |
 | **ST-026**（在光标处插入/替换 Unicode，UTF-16 与 CRLF 正确） | `textrange.js` 的**代理对边界检查**被关掉 | PASS | **仍然 PASS** | **没钉住** ⇒ **D-136**：这条 e2e 的选区从不落在代理对内部，标题里「UTF-16 正确」那一半它自己没证明（该行为由红绿轮的 `js-textrange-surrogate` 用例钉着） |
+| **IT-037**（200% 下的几何：留在工作区内、光标下方没地方就翻到上方） | crates/pime-tsf/src/layout.rs 的 place() 不再翻到光标上方 | PASS | **FAIL**（the_window_goes_above_the_caret 与 the_candidates_stay_inside_the_work_area_at_two_hundred_percent 都 FAILED） | **钉住了** |
+| **IT-042**（Core 不应答：按键不被打断、请求被隔离） | pime-core/src/input.rs 的 CORE_REQUEST_TIMEOUT_MS 从 250 ms 改成 250 s | PASS | **FAIL**（the_core_isolates_a_request_that_never_gets_an_answer FAILED） | **钉住了** |
 
 三次的源文件都**逐字节还原**（还原用「写内容 + 把 mtime 推到当前」，**不用 `copyFileSync`**——它保留旧 mtime，会让 cargo
 继续用被改坏的二进制，那正是 D-133）。
