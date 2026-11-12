@@ -1499,6 +1499,22 @@ Hub 的 `next_job` 以前**只在测试里被调用**——作业进了队列就
 1. **新 UAT 场景的编号撞车**：代理把新场景编成 UAT-40 ~ UAT-46，而既有 `f2-prompt.spec.js` **已经用了** UAT-40 ~ UAT-45 ⇒ 重号 7 个。已重编为 **UAT-56 ~ UAT-62**（现最大是 55），全量 51 个场景**零重号**。
 2. **UAT 证据没写出来**：我第一次跑全量 UAT 时加了 `--reporter=list`，**它把 `playwright.config.js` 里的 json reporter 覆盖掉了** ⇒ `uat-results.json` 根本没被更新（仓库的 `FRAMEWORK_GAPS.md` §5.7 里早就写着这条坑：「**不要用 `--reporter=list` 覆盖掉 json reporter**」）。去掉该参数重跑，证据才落盘；claims 与正文同步到 **59 / 58 / 1 / 0**，三道 claims 校验全绿。
 
+#### 这批新 e2e **咬不咬得住**？（变异验证，2026-11-13）
+
+「测试通过」和「测试钉住了行为」是两回事：把实现改坏，测试**必须变红**，否则这条测试是摆设。于是对三个新用例各做了一次变异
+（**改坏 → 跑新测试 → 看它会不会红 → 还原并逐字节核对**）：
+
+| 用例 | 改坏的地方 | 基线 | 改坏后 | 结论 |
+|---|---|---|---|---|
+| **IT-005**（安全框什么都不收集） | `controller.rs` 的安全判定（`may_collect(...) && false`：主机仍被问一次，但结论被忽略） | PASS | **FAIL**（`it_005_a_secure_field_sends_no_context_asks_no_ai_and_caches_no_text` FAILED） | **钉住了** |
+| **IT-002**（安装/切换/卸载不破坏别家输入法） | `register.rs` 的注册计划里多写一条**别家**的子树 | PASS | **FAIL**（`the installation changed something that does not belong to this product`） | **钉住了** |
+| **ST-008**（按语言的语法上下文） | `editor-bridges/vscode/src/core/languages.js` 的 TSX 判定 | PASS | **FAIL**（`expect(tsxLabels).toMatch(/TSX/)`） | **钉住了** |
+
+三次的源文件都**逐字节还原**（还原用「写内容 + 把 mtime 推到当前」，**不用 `copyFileSync`**——它保留旧 mtime，会让 cargo
+继续用被改坏的二进制，那正是 D-133）。
+
+⇒ 结论：**Rust 侧与 JS 侧的新端到端测试都是承重的**，不是凑数的。
+
 #### 代理报上来的实现缺陷（**没有改**，全部进了台账）
 
 | 严重度 | 缺陷 | 编号 |
