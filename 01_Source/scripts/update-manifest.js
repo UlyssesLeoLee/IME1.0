@@ -226,6 +226,8 @@ const ADDITIONS = [
   '01_Source/crates/pime-tsf/src/laser_ui/hit.rs',
   // the coverage report and its 90% gate (the per feature area view of the design cases)
   '01_Source/scripts/coverage-report.js',
+  // the check that the numbers the documents quote still agree with the artefacts
+  '01_Source/scripts/delivery-numbers-check.js',
   // the end-to-end tests of the third round: the Windows 11 guest runner, the text service scenarios and the
   // user-acceptance specs of the new design cases
   '01_Source/tests/tsf/ime_registration.rs',

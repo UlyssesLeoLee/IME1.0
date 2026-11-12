@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，850 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，851 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -524,7 +524,7 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 
 33. **按重构后的代码重出安装包**：磁盘上的旧包建于 **13:14:58**，**早于重构提交（13:33 / 14:29）**
     ⇒ 包里**没有**重构后的二进制。新包 **10,394,410 B / sha256 `502a1053…`**；
-    claims、清单同步刷新（清单 **850 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。
+    claims、清单同步刷新（清单 **851 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。
 
 34. **抓到两个「证据说谎」的坑**（都是我自己发现的）：
     ① **共享 target 目录里的陈旧产物**伪造了一次 `grants` 失败（D-123；`cargo clean -p pime-tsf` 重建后全绿，
@@ -553,6 +553,10 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
    * **追溯报告（`02_Verification/test-execution-report.*`）的四路证据都是本轮跑的**：JS 327/327、Rust 458/458、
      TSF 367/367、UAT 58/58 ⇒ **UT 76/77、IT 43/48、ST 35/43，0 失败**，覆盖率 **154/168 = 91.7%**。
 
+   * **新加一道数字自洽检查**：`01_Source/scripts/delivery-numbers-check.js` —— 交付说明、台账、框架矩阵与重构计划里
+     引用的**覆盖率、清单条目数、缺陷条数、各套件测试数**，必须与 `02_Verification/` 里的实物一致，不一致就 **exit 1**
+     （本轮实测 12 项全过；它上线十分钟就抓到了一次漂移：清单加了新文件变成 851 条而文档还写着 850）。
+     **它还没有挂进门禁**（`tests/run-all.js` 是你的文件，我没有动）；要挂进去说一声。
 37. **这一轮没有验证的**（不虚报）：**真机**（0.3.2 的包还没装，要注销/重启）；
     **Windows 11 VM 上的六条用例**（脚本通、结果空）；面板手感与 Ctrl+F12 的真实体感；
     **圆角尖角 D-106**（仍然缺你一张照片）。
