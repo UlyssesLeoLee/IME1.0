@@ -213,6 +213,8 @@ const ADDITIONS = [
   '01_Source/scripts/mutation-check.js',
   '01_Source/scripts/mutation-cases.js',
   '02_Verification/mutation-report.txt',
+  // the plan of the refactor and the checkable bar of "commercial grade"
+  '01_Source/docs/REFACTOR_PLAN.md',
   // the cost and the latency benchmark of the product
   '01_Source/scripts/bench-cost.js',
   '01_Source/crates/tase-metrics/examples/cost_bench.rs',
