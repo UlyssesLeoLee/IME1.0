@@ -233,6 +233,9 @@ const ADDITIONS = [
   '01_Source/tests/tsf/ime_registration.rs',
   '01_Source/tests/tsf/ime_context_security.rs',
   '01_Source/tests/tsf/ime_resilience.rs',
+  // IT-013: written and compiling, but not wired as a test target (the scanner of the machine
+  // this round was built on quarantines a freshly linked test binary - see D-138)
+  '01_Source/tests/tsf/ime_permission_levels.rs',
   '01_Source/tests/tsf/ime_dpi_language.rs',
   '01_Source/tests/uat/tests/08-candidates-context.spec.js',
   '01_Source/tests/uat/tests/08-safety-ai.spec.js',

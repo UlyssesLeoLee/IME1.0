@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，851 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，852 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -524,7 +524,7 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 
 33. **按重构后的代码重出安装包**：磁盘上的旧包建于 **13:14:58**，**早于重构提交（13:33 / 14:29）**
     ⇒ 包里**没有**重构后的二进制。新包 **10,394,410 B / sha256 `502a1053…`**；
-    claims、清单同步刷新（清单 **851 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。
+    claims、清单同步刷新（清单 **852 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。
 
 34. **抓到两个「证据说谎」的坑**（都是我自己发现的）：
     ① **共享 target 目录里的陈旧产物**伪造了一次 `grants` 失败（D-123；`cargo clean -p pime-tsf` 重建后全绿，
@@ -549,6 +549,11 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
     * **NFR 跨组件**（ST-040）要**基准机长跑**测 F1 的 P95 延迟；
     * **DD-01 TSF/COM** 的 ST-001 ~ ST-005 要**一台真的 Windows 11 机器**激活三个语言档
       ⇒ 这一轮交付的是**跑它的脚本**（`01_Source/tests/e2e/`），**不是它的结果**。
+
+   * **IT-013（TSF 的 L1 与 Bridge 的 L3）的测试写好了**（`01_Source/tests/tsf/ime_permission_levels.rs`，能编译）：
+     两半都在 Rust 核心里证（TSF 只持有邻近的输入前缀、上下文有界 2000 字；授权代理 L1 不能顶 L3、L3 才放行写入）。
+     **但它故意没有挂 `[[test]]`** ⇒ 本机的扫描器会隔离新链接的测试二进制（D-138），挂上会让门禁在这一步红。
+     在能执行新二进制的机器上挂上即可，追溯报告会自动把它算作已覆盖。
 
    * **追溯报告（`02_Verification/test-execution-report.*`）的四路证据都是本轮跑的**：JS 327/327、Rust 458/458、
      TSF 367/367、UAT 58/58 ⇒ **UT 76/77、IT 43/48、ST 35/43，0 失败**，覆盖率 **154/168 = 91.7%**。
