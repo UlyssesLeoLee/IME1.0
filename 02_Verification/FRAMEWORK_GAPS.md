@@ -1509,6 +1509,10 @@ Hub 的 `next_job` 以前**只在测试里被调用**——作业进了队列就
 | **IT-005**（安全框什么都不收集） | `controller.rs` 的安全判定（`may_collect(...) && false`：主机仍被问一次，但结论被忽略） | PASS | **FAIL**（`it_005_a_secure_field_sends_no_context_asks_no_ai_and_caches_no_text` FAILED） | **钉住了** |
 | **IT-002**（安装/切换/卸载不破坏别家输入法） | `register.rs` 的注册计划里多写一条**别家**的子树 | PASS | **FAIL**（`the installation changed something that does not belong to this product`） | **钉住了** |
 | **ST-008**（按语言的语法上下文） | `editor-bridges/vscode/src/core/languages.js` 的 TSX 判定 | PASS | **FAIL**（`expect(tsxLabels).toMatch(/TSX/)`） | **钉住了** |
+| **IT-006**（规则候选上行到候选面板） | `extension.js` 的候选管道（`candidates: languages.predict(request)` → `[]`） | PASS | **FAIL**（面板超时） | **钉住了** |
+| **ST-031**（下拉列出七种语言） | `languages.js` 的 `LANGUAGES` 少一种 | PASS | **FAIL**（`the drop-down must offer machine-code`） | **钉住了** |
+| **ST-029**（AI 输出里的语法错误被标出来） | `validators.js` 的校验结论永远判「合法」 | PASS | **FAIL**（`#validation` 的 `data-level` 不再是 `bad`） | **钉住了** |
+| **ST-026**（在光标处插入/替换 Unicode，UTF-16 与 CRLF 正确） | `textrange.js` 的**代理对边界检查**被关掉 | PASS | **仍然 PASS** | **没钉住** ⇒ **D-136**：这条 e2e 的选区从不落在代理对内部，标题里「UTF-16 正确」那一半它自己没证明（该行为由红绿轮的 `js-textrange-surrogate` 用例钉着） |
 
 三次的源文件都**逐字节还原**（还原用「写内容 + 把 mtime 推到当前」，**不用 `copyFileSync`**——它保留旧 mtime，会让 cargo
 继续用被改坏的二进制，那正是 D-133）。
