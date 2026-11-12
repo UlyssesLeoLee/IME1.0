@@ -547,9 +547,8 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
     * **DD-01 TSF/COM** 的 ST-001 ~ ST-005 要**一台真的 Windows 11 机器**激活三个语言档
       ⇒ 这一轮交付的是**跑它的脚本**（`01_Source/tests/e2e/`），**不是它的结果**。
 
-   * **追溯报告（`02_Verification/test-execution-report.*`）的证据来源**：**TSF 与 UAT 是本轮新跑的**；
-     **JavaScript 那一半取自 `node-test-result.txt`（2026-11-11 那一轮）**——因为**本轮 JS 测试文件一行没改**，
-     而机器被另一会话占满时重跑一次 JS 套件要 40 分钟以上（两次都撞了超时）。
+   * **追溯报告（`02_Verification/test-execution-report.*`）的四路证据都是本轮跑的**：JS 327/327、Rust 458/458、
+     TSF 367/367、UAT 58/58 ⇒ **UT 76/77、IT 43/48、ST 35/43，0 失败**，覆盖率 **154/168 = 91.7%**。
 
 37. **这一轮没有验证的**（不虚报）：**真机**（0.3.2 的包还没装，要注销/重启）；
     **Windows 11 VM 上的六条用例**（脚本通、结果空）；面板手感与 Ctrl+F12 的真实体感；
