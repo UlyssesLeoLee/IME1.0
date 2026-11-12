@@ -1,22 +1,22 @@
 {
  "summary": {
-  "generated": "2026-11-11T15:22:15.191Z",
+  "generated": "2026-11-12T15:20:50.950Z",
   "node": "v24.19.0",
   "js": {
-   "total": 354,
-   "pass": 354
+   "total": 353,
+   "pass": 353
   },
   "rust": {
-   "total": 457,
-   "pass": 457
+   "total": 458,
+   "pass": 458
   },
   "tsf": {
-   "total": 354,
-   "pass": 354
+   "total": 367,
+   "pass": 367
   },
   "uat": {
-   "total": 51,
-   "pass": 51
+   "total": 58,
+   "pass": 58
   },
   "cases": {
    "UT": {
@@ -27,20 +27,16 @@
    },
    "IT": {
     "total": 48,
-    "pass": 39,
+    "pass": 43,
     "fail": 0,
-    "notRun": 9
+    "notRun": 5
    },
    "ST": {
     "total": 43,
-    "pass": 28,
+    "pass": 35,
     "fail": 0,
-    "notRun": 15
+    "notRun": 8
    }
-  },
-  "extras": {
-   "total": 250,
-   "pass": 250
   }
  },
  "rows": [
@@ -159,10 +155,10 @@
    "tests": [
     "js: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
     "UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
-    "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
-    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
     "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
-    "candidate::tests::ut_007_usage_breaks_ties_before_weight"
+    "candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
+    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable"
    ],
    "failed": [],
    "reason": ""
@@ -1379,11 +1375,13 @@
   {
    "id": "IT-002",
    "title": "系统切换不破坏其它 IME",
-   "status": "NOT RUN",
-   "via": [],
+   "status": "PASS",
+   "via": [
+    "tsf"
+   ],
    "tests": [],
    "failed": [],
-   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+   "reason": ""
   },
   {
    "id": "IT-003",
@@ -1411,20 +1409,27 @@
   {
    "id": "IT-005",
    "title": "安全框禁止 Context/AI",
-   "status": "NOT RUN",
-   "via": [],
+   "status": "PASS",
+   "via": [
+    "tsf"
+   ],
    "tests": [],
    "failed": [],
-   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+   "reason": ""
   },
   {
    "id": "IT-006",
    "title": "规则候选到悬浮窗展示",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-56",
+    "UAT-56"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "IT-007",
@@ -1993,11 +1998,16 @@
   {
    "id": "IT-043",
    "title": "Assembly 与 Machine Code 输出不执行",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-59",
+    "UAT-59"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "IT-044",
@@ -2145,20 +2155,30 @@
   {
    "id": "ST-008",
    "title": "Rust/TypeScript/Python 语法上下文",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-57",
+    "UAT-57"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "ST-009",
    "title": "PowerShell 与机器码不执行",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-60",
+    "UAT-60"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "ST-010",
@@ -2179,11 +2199,18 @@
   {
    "id": "ST-011",
    "title": "方言和架构切换",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: predict::tests::st_011_unsupported_dialect_is_explained_not_guessed",
+    "predict::tests::st_011_unsupported_dialect_is_explained_not_guessed",
+    "rust: validators::tests::st_011_dialect_gated_features",
+    "validators::tests::st_011_dialect_gated_features"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "ST-012",
@@ -2342,11 +2369,16 @@
   {
    "id": "ST-022",
    "title": "无完整上下文禁止虚构跨文件",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "rust"
+   ],
+   "tests": [
+    "rust: ai::tests::st_022_crlf_is_restored_and_cross_file_plans_keep_only_the_current_file",
+    "ai::tests::st_022_crlf_is_restored_and_cross_file_plans_keep_only_the_current_file"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "ST-023",
@@ -2396,11 +2428,16 @@
   {
    "id": "ST-026",
    "title": "当前位置插入/替换 Unicode",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-61",
+    "UAT-61"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "ST-027",
@@ -2436,11 +2473,16 @@
   {
    "id": "ST-029",
    "title": "语法错误醒目标示且不上机执行",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-62",
+    "UAT-62"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "ST-030",
@@ -2459,11 +2501,16 @@
   {
    "id": "ST-031",
    "title": "悬浮下拉七语言 UI",
-   "status": "NOT RUN",
-   "via": [],
-   "tests": [],
+   "status": "PASS",
+   "via": [
+    "uat"
+   ],
+   "tests": [
+    "uat: UAT-58",
+    "UAT-58"
+   ],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "ST-032",
@@ -2630,1508 +2677,6 @@
    ],
    "failed": [],
    "reason": ""
-  }
- ],
- "extras": [
-  {
-   "id": "ANN-01",
-   "kind": "JS",
-   "title": "ANN-01 maskSource reports comment/string spans without changing its masked output",
-   "ok": true
-  },
-  {
-   "id": "ANN-02",
-   "kind": "JS",
-   "title": "ANN-02 stripComments removes comments only, in every supported language",
-   "ok": true
-  },
-  {
-   "id": "ANN-02",
-   "kind": "JS",
-   "title": "AI engine: annotations and the symbol index are identical in both engines (ANN-02..07)",
-   "ok": true
-  },
-  {
-   "id": "ANN-03",
-   "kind": "JS",
-   "title": "ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected",
-   "ok": true
-  },
-  {
-   "id": "ANN-04",
-   "kind": "JS",
-   "title": "ANN-04 Cypher lines are re-rendered by us as comments: statements only, no control characters, no destructive or procedure calls",
-   "ok": true
-  },
-  {
-   "id": "ANN-05",
-   "kind": "JS",
-   "title": "ANN-05 applyAnnotateReply: comments + Cypher are applied, unsafe parts are dropped with a note, the original is the fallback",
-   "ok": true
-  },
-  {
-   "id": "ANN-06",
-   "kind": "JS",
-   "title": "ANN-06 the annotate prompt keeps file text in the data channel and asks for what was enabled",
-   "ok": true
-  },
-  {
-   "id": "ANN-06b",
-   "kind": "JS",
-   "title": "ANN-06b F1 instructions are extended only when a setting is on and the language has line comments",
-   "ok": true
-  },
-  {
-   "id": "ANN-07",
-   "kind": "JS",
-   "title": "ANN-07 symbol index: names of declarations only, comments and strings ignored, capped",
-   "ok": true
-  },
-  {
-   "id": "ANN-10",
-   "kind": "UAT",
-   "title": "ANN-10 with AI off nothing is asked, nothing is sent: the candidate is inserted unchanged (autoComment on by default)",
-   "ok": true
-  },
-  {
-   "id": "ANN-11",
-   "kind": "UAT",
-   "title": "ANN-11 default settings + AI configured: the whole file is sent after consent and the snippet comes back with detailed comments, code unchanged",
-   "ok": true
-  },
-  {
-   "id": "ANN-12",
-   "kind": "UAT",
-   "title": "ANN-12 if the AI changes the code, its comments are discarded and the original snippet is inserted",
-   "ok": true
-  },
-  {
-   "id": "ANN-13",
-   "kind": "UAT",
-   "title": "ANN-13 refusing the consent, or turning autoComment off, inserts the snippet unchanged with zero requests",
-   "ok": true
-  },
-  {
-   "id": "ANN-14",
-   "kind": "UAT",
-   "title": "ANN-14 a file with secrets is never sent for annotation",
-   "ok": true
-  },
-  {
-   "id": "ANN-15",
-   "kind": "UAT",
-   "title": "ANN-15 graph comment: Cypher block above the snippet, built from symbol NAMES of the folder (never their code), destructive statements dropped",
-   "ok": true
-  },
-  {
-   "id": "ANN-20a",
-   "kind": "JS",
-   "title": "ANN-20a rust: cursor anywhere in a function (attributes, doc comment, header, body, closing line) resolves to the whole function",
-   "ok": true
-  },
-  {
-   "id": "ANN-20b",
-   "kind": "JS",
-   "title": "ANN-20b rust: an impl block yields to the method inside it, a nested fn to its own body, a closure stays part of its method",
-   "ok": true
-  },
-  {
-   "id": "ANN-20c",
-   "kind": "JS",
-   "title": "ANN-20c rust: between items and at top level the paragraph is the block; a blank line uses the nearest paragraph above, else below",
-   "ok": true
-  },
-  {
-   "id": "ANN-20d",
-   "kind": "JS",
-   "title": "ANN-20d rust: items, macros, impl-for, generics and array types in the header are named like symbols.js names them",
-   "ok": true
-  },
-  {
-   "id": "ANN-20e",
-   "kind": "JS",
-   "title": "ANN-20e rust: braces, keywords and quotes inside strings, raw strings, char literals and comments are ignored",
-   "ok": true
-  },
-  {
-   "id": "ANN-20f",
-   "kind": "JS",
-   "title": "ANN-20f rust: else-if chains, match arms and closures are blocks of their function, never declarations",
-   "ok": true
-  },
-  {
-   "id": "ANN-21a",
-   "kind": "JS",
-   "title": "ANN-21a typescript: classes, constructors, methods, getters; control flow inside a method never becomes a declaration",
-   "ok": true
-  },
-  {
-   "id": "ANN-21b",
-   "kind": "JS",
-   "title": "ANN-21b typescript: functions assigned to a name, expression-bodied arrows, property functions and nested functions",
-   "ok": true
-  },
-  {
-   "id": "ANN-21c",
-   "kind": "JS",
-   "title": "ANN-21c typescript: if/else/for/while/switch/try/catch/with and call arguments are not methods",
-   "ok": true
-  },
-  {
-   "id": "ANN-21d",
-   "kind": "JS",
-   "title": "ANN-21d typescript: regex literals with quotes or braces, strings and template literals cannot unbalance the file",
-   "ok": true
-  },
-  {
-   "id": "ANN-21e",
-   "kind": "JS",
-   "title": "ANN-21e typescript: destructured and defaulted parameters and object types in the header belong to the header",
-   "ok": true
-  },
-  {
-   "id": "ANN-21f",
-   "kind": "JS",
-   "title": "ANN-21f typescript: interface, enum, namespace and type alias with a body are declarations",
-   "ok": true
-  },
-  {
-   "id": "ANN-21g",
-   "kind": "JS",
-   "title": "ANN-21g typescript: JSX text with apostrophes and closing tags does not break the structure of the file (TSX / JSX)",
-   "ok": true
-  },
-  {
-   "id": "ANN-22a",
-   "kind": "JS",
-   "title": "ANN-22a python: def and class end where the indentation falls back; decorators and comments directly above belong to them",
-   "ok": true
-  },
-  {
-   "id": "ANN-22b",
-   "kind": "JS",
-   "title": "ANN-22b python: lines inside brackets and triple-quoted strings (even `def` and column-0 text) do not end or start a declaration",
-   "ok": true
-  },
-  {
-   "id": "ANN-22c",
-   "kind": "JS",
-   "title": "ANN-22c python: between functions is a block, tabs and CRLF indent the same way, a half-typed header is no declaration",
-   "ok": true
-  },
-  {
-   "id": "ANN-23a",
-   "kind": "JS",
-   "title": "ANN-23a powershell: function, filter, class and its methods; help comment and",
-   "ok": true
-  },
-  {
-   "id": "ANN-23b",
-   "kind": "JS",
-   "title": "ANN-23b powershell: a here-string that contains `function` and braces is a string; loops and hash tables are blocks",
-   "ok": true
-  },
-  {
-   "id": "ANN-24a",
-   "kind": "JS",
-   "title": "ANN-24a c: function definitions (K&R layout, `if` is no function), struct/enum/typedef, multi-line \\#define, prototypes are not declarations",
-   "ok": true
-  },
-  {
-   "id": "ANN-24b",
-   "kind": "JS",
-   "title": "ANN-24b c++: namespaces, classes with access labels, inline methods, constructors with initialiser lists, operators, templates",
-   "ok": true
-  },
-  {
-   "id": "ANN-24c",
-   "kind": "JS",
-   "title": "ANN-24c c: __declspec / __attribute__ /",
-   "ok": true
-  },
-  {
-   "id": "ANN-25a",
-   "kind": "JS",
-   "title": "ANN-25a assembly: a label owns the lines up to the next label, local labels nest in it, PROC..ENDP is one region",
-   "ok": true
-  },
-  {
-   "id": "ANN-25b",
-   "kind": "JS",
-   "title": "ANN-25b assembly: comment characters per assembler, a `;` inside a string is no comment, a label-looking comment is no label",
-   "ok": true
-  },
-  {
-   "id": "ANN-25c",
-   "kind": "JS",
-   "title": "ANN-25c machine-code: blocks only, a paragraph is a run of non-blank lines, comment lines belong to it",
-   "ok": true
-  },
-  {
-   "id": "ANN-26a",
-   "kind": "JS",
-   "title": "ANN-26a selection: snapped to whole lines, a partial first or last line is included, an end at column 0 leaves that line out",
-   "ok": true
-  },
-  {
-   "id": "ANN-26b",
-   "kind": "JS",
-   "title": "ANN-26b selection: whole-file and whole-function selections, no duplicates in the chain, a selection across two functions widens to the common parent",
-   "ok": true
-  },
-  {
-   "id": "ANN-26c",
-   "kind": "JS",
-   "title": "ANN-26c selection: only whitespace or blank lines falls back to the cursor at its start; a cursor needs no selection",
-   "ok": true
-  },
-  {
-   "id": "ANN-26d",
-   "kind": "JS",
-   "title": "ANN-26d chain: widening candidates are strictly nested, innermost first, cut off before the first that exceeds maxChars; tooLarge when the first does",
-   "ok": true
-  },
-  {
-   "id": "ANN-26e",
-   "kind": "JS",
-   "title": "ANN-26e result shape: ok, kind, offsets, lines, label and symbol fields; chain",
-   "ok": true
-  },
-  {
-   "id": "ANN-26f",
-   "kind": "JS",
-   "title": "ANN-26f every language: function lines, blank line after it, nesting, selection snapping, chain cut-off, tooLarge, BOM, unbalanced and half-typed code",
-   "ok": true
-  },
-  {
-   "id": "ANN-27a",
-   "kind": "JS",
-   "title": "ANN-27a broken code never throws: an unbalanced brace, a half-typed header or an unterminated comment/string degrade to a block (a stray quote in TypeScript, C and Python ends with its line, like in a tokenizer)",
-   "ok": true
-  },
-  {
-   "id": "ANN-27b",
-   "kind": "JS",
-   "title": "ANN-27b the same text with CRLF, LF, CR or mixed line ends resolves to the same lines; offsets are UTF-16 code units",
-   "ok": true
-  },
-  {
-   "id": "ANN-27c",
-   "kind": "JS",
-   "title": "ANN-27c a BOM, tabs, odd whitespace and unusual arguments are harmless",
-   "ok": true
-  },
-  {
-   "id": "ANN-27d",
-   "kind": "JS",
-   "title": "ANN-27d empty or whitespace-only documents and unsupported profiles are reported, not guessed",
-   "ok": true
-  },
-  {
-   "id": "ANN-27e",
-   "kind": "JS",
-   "title": "ANN-27e dogfooding regressions: header braces, one-line functions beside their parent, impl blocks, symbol naming",
-   "ok": true
-  },
-  {
-   "id": "ANN-28a",
-   "kind": "JS",
-   "title": "ANN-28a a 2 MiB file resolves quickly and still finds the declaration under the cursor",
-   "ok": true
-  },
-  {
-   "id": "ANN-28b",
-   "kind": "JS",
-   "title": "ANN-28b a text above the cap is analysed through a window of lines around the selection and never as a whole",
-   "ok": true
-  },
-  {
-   "id": "ANN-28c",
-   "kind": "JS",
-   "title": "ANN-28c hostile inputs stay cheap: floods of quotes, brackets and headers, unterminated arrows and strings, deep nesting",
-   "ok": true
-  },
-  {
-   "id": "ANN-29a",
-   "kind": "JS",
-   "title": "ANN-29a property: at every cursor position of the samples (LF, CRLF, with BOM) the result is whole lines, contains the cursor and its chain is nested and bounded",
-   "ok": true
-  },
-  {
-   "id": "ANN-29b",
-   "kind": "JS",
-   "title": "ANN-29b property: selections of every kind and every maxChars keep the same invariants",
-   "ok": true
-  },
-  {
-   "id": "ANN-29c",
-   "kind": "JS",
-   "title": "ANN-29c property: every prefix and every one-character deletion of the samples (code that is being typed) resolves without throwing",
-   "ok": true
-  },
-  {
-   "id": "ANN-29d",
-   "kind": "JS",
-   "title": "ANN-29d corpus: every line of this repository's own Rust, JavaScript and C++ sources resolves to whole lines around it, nested and agreeing with symbols.js",
-   "ok": true
-  },
-  {
-   "id": "ANN-30",
-   "kind": "JS",
-   "title": "ANN-30 scopeAnchors: one entry per line with the line indentation, tabs preserved, a final line break gives a final empty line",
-   "ok": true
-  },
-  {
-   "id": "ANN-30a",
-   "kind": "JS",
-   "title": "ANN-30a anchors inside strings, raw strings, templates, block comments and here-strings are refused (every language)",
-   "ok": true
-  },
-  {
-   "id": "ANN-31",
-   "kind": "JS",
-   "title": "ANN-31 line continuations: the line after a trailing backslash (Python, C, assembly) or backtick (PowerShell) is refused",
-   "ok": true
-  },
-  {
-   "id": "ANN-31a",
-   "kind": "JS",
-   "title": "ANN-31a things that must stay on line 1 or 2 of the file: hashbang and the Python encoding cookie",
-   "ok": true
-  },
-  {
-   "id": "ANN-31b",
-   "kind": "JS",
-   "title": "ANN-31b a scope that is a slice of a file: one that starts or ends inside a multi-line literal is not trusted",
-   "ok": true
-  },
-  {
-   "id": "ANN-31c",
-   "kind": "JS",
-   "title": "ANN-31c the file context never shrinks the anchors of a scope that lexes cleanly on its own",
-   "ok": true
-  },
-  {
-   "id": "ANN-32",
-   "kind": "JS",
-   "title": "ANN-32 JSX (tsx): text and tag markup are refused, {expressions} are code again, TypeScript generics are not JSX",
-   "ok": true
-  },
-  {
-   "id": "ANN-32a",
-   "kind": "JS",
-   "title": "ANN-32a own TypeScript / C lexer: regex literals, template boundaries, apostrophes, C++ raw strings, digit separators",
-   "ok": true
-  },
-  {
-   "id": "ANN-33",
-   "kind": "JS",
-   "title": "ANN-33 the scope prompt: data channel, numbered lines, anchorable list, requested flags, GUARD, file text only in the JSON input",
-   "ok": true
-  },
-  {
-   "id": "ANN-33a",
-   "kind": "JS",
-   "title": "ANN-33a prompt variants: graph only, CRLF scopes, dialect, locale, unsupported language",
-   "ok": true
-  },
-  {
-   "id": "ANN-34",
-   "kind": "JS",
-   "title": "ANN-34 applyScopeReply: a comment goes above its line at that line's indentation; the code is untouched",
-   "ok": true
-  },
-  {
-   "id": "ANN-34a",
-   "kind": "JS",
-   "title": "ANN-34a unusable replies keep the original and say why",
-   "ok": true
-  },
-  {
-   "id": "ANN-34b",
-   "kind": "JS",
-   "title": "ANN-34b duplicates: a second comment for one anchor, or the same words as the comment already above it, are dropped",
-   "ok": true
-  },
-  {
-   "id": "ANN-35",
-   "kind": "JS",
-   "title": "ANN-35 line endings and the end of the text are preserved",
-   "ok": true
-  },
-  {
-   "id": "ANN-35a",
-   "kind": "JS",
-   "title": "ANN-35a rendering of the model text: markers, control characters, tabs, blank lines, trailing characters that would continue a comment",
-   "ok": true
-  },
-  {
-   "id": "ANN-35b",
-   "kind": "JS",
-   "title": "ANN-35b \"${\" decision: nothing is neutralised, the result is applied as a WorkspaceEdit (text), never as a snippet",
-   "ok": true
-  },
-  {
-   "id": "ANN-36",
-   "kind": "JS",
-   "title": "ANN-36 limits: 1500 characters per comment, 40000 in total, min(lines, 200) comments, growth below 60000, a flood of items",
-   "ok": true
-  },
-  {
-   "id": "ANN-37",
-   "kind": "JS",
-   "title": "ANN-37 Cypher block: graph only, graph with comments, a first line that is not anchorable, sanitising stays as before",
-   "ok": true
-  },
-  {
-   "id": "ANN-38",
-   "kind": "JS",
-   "title": "ANN-38 invariant (property): with a comment above every anchorable line the code is the original code and the new lines are comments",
-   "ok": true
-  },
-  {
-   "id": "ANN-38a",
-   "kind": "JS",
-   "title": "ANN-38a invariant (property): seeded random anchors over every sample, random replies never change the code",
-   "ok": true
-  },
-  {
-   "id": "ANN-38b",
-   "kind": "JS",
-   "title": "ANN-38b the invariant check itself: when the code fingerprint differs the original comes back with invariant-failed (fault injection)",
-   "ok": true
-  },
-  {
-   "id": "ANN-39",
-   "kind": "JS",
-   "title": "ANN-39 the existing exports and behaviour are unchanged",
-   "ok": true
-  },
-  {
-   "id": "ANN-39a",
-   "kind": "JS",
-   "title": "ANN-39a corpus: this repository's own .rs / .js / .ps1 / .cpp files with seeded random anchors keep their code (and .js still compiles)",
-   "ok": true
-  },
-  {
-   "id": "ANN-39b",
-   "kind": "JS",
-   "title": "ANN-39b Python samples: ast.parse and the AST are identical with a comment above every anchorable line (skipped without py)",
-   "ok": true
-  },
-  {
-   "id": "ANN-40",
-   "kind": "JS",
-   "title": "ANN-40",
-   "ok": true
-  },
-  {
-   "id": "ANN-40",
-   "kind": "JS",
-   "title": "ANN-40",
-   "ok": true
-  },
-  {
-   "id": "ANN-41",
-   "kind": "JS",
-   "title": "ANN-41 events inside graceMs are ignored (the keypress that produced the notice), events at graceMs close it",
-   "ok": true
-  },
-  {
-   "id": "ANN-42",
-   "kind": "JS",
-   "title": "ANN-42 Output-channel documents (rewritten and auto-scrolled by every extension) never dismiss the notice, real editors do",
-   "ok": true
-  },
-  {
-   "id": "ANN-43",
-   "kind": "JS",
-   "title": "ANN-43 WindowState: only an inactive -> active flip counts as activity; losing focus is \"focus\"; the baseline is read from window.state",
-   "ok": true
-  },
-  {
-   "id": "ANN-44",
-   "kind": "JS",
-   "title": "ANN-44 show() while open closes the old notice as \"replaced\" first, then opens the new one with a single set of subscriptions",
-   "ok": true
-  },
-  {
-   "id": "ANN-45",
-   "kind": "JS",
-   "title": "ANN-45 the timeout closes the notice at timeoutMs and not earlier; invalid options fall back to 20000 / 600",
-   "ok": true
-  },
-  {
-   "id": "ANN-46",
-   "kind": "JS",
-   "title": "ANN-46 dismiss() is idempotent: first reason wins, default reason is \"api\", no notice is a no-op",
-   "ok": true
-  },
-  {
-   "id": "ANN-47",
-   "kind": "JS",
-   "title": "ANN-47 dispose() dismisses with \"disposed\", unsubscribes everything, and turns later show() into a no-op",
-   "ok": true
-  },
-  {
-   "id": "ANN-48",
-   "kind": "JS",
-   "title": "ANN-48 repeated show/dismiss cycles (every way of closing) leak no subscription, timer or visible item",
-   "ok": true
-  },
-  {
-   "id": "ANN-49",
-   "kind": "JS",
-   "title": "ANN-49 a throwing VS Code API never escapes: fallback to the other presentation, else nothing",
-   "ok": true
-  },
-  {
-   "id": "ANN-50",
-   "kind": "JS",
-   "title": "ANN-50 empty or blank text shows nothing, leaves an open notice alone and returns an already resolved dismissed",
-   "ok": true
-  },
-  {
-   "id": "ANN-51",
-   "kind": "JS",
-   "title": "ANN-51 presentations: toast = static full-bar Notification progress, status bar = right-aligned item with escaped text and warning colour",
-   "ok": true
-  },
-  {
-   "id": "ANN-52",
-   "kind": "JS",
-   "title": "ANN-52 presentation option: unknown values mean toast; statusbar-first falls back to the toast when creating the item throws",
-   "ok": true
-  },
-  {
-   "id": "ANN-53",
-   "kind": "JS",
-   "title": "ANN-53 events that an older VS Code or a reduced host lacks only drop their own trigger",
-   "ok": true
-  },
-  {
-   "id": "ANN-54",
-   "kind": "JS",
-   "title": "ANN-54 default wiring (real setTimeout/Date.now) shows and dismisses without leaving a timer or a throw",
-   "ok": true
-  },
-  {
-   "id": "ANN-55",
-   "kind": "JS",
-   "title": "ANN-55 the module takes vscode by injection (never requires it) and documents the observability limits",
-   "ok": true
-  },
-  {
-   "id": "ANN-60",
-   "kind": "JS",
-   "title": "ANN-60 no selection: the declaration around the cursor is the scope, the request is the scope numbered plus the whole file, the highlight shows exactly it",
-   "ok": true
-  },
-  {
-   "id": "ANN-60",
-   "kind": "UAT",
-   "title": "UAT-43",
-   "ok": true
-  },
-  {
-   "id": "ANN-61",
-   "kind": "JS",
-   "title": "ANN-61 a selection is the scope: exactly the selected lines (snapped to whole lines), whatever declaration contains it",
-   "ok": true
-  },
-  {
-   "id": "ANN-61",
-   "kind": "UAT",
-   "title": "UAT-44",
-   "ok": true
-  },
-  {
-   "id": "ANN-62",
-   "kind": "JS",
-   "title": "ANN-62 Wider / Narrower walk the chain, reset the tab to idle (no request on their own), move the highlight and disable at the ends",
-   "ok": true
-  },
-  {
-   "id": "ANN-62",
-   "kind": "UAT",
-   "title": "UAT-45",
-   "ok": true
-  },
-  {
-   "id": "ANN-63",
-   "kind": "JS",
-   "title": "ANN-63 Wider stops where the next scope is too large: the entry is shown crossed out with the reason, and it is never selectable",
-   "ok": true
-  },
-  {
-   "id": "ANN-64",
-   "kind": "JS",
-   "title": "ANN-64 options start from autoComment / graphComment, change for this session only, and say what to enable when both are off",
-   "ok": true
-  },
-  {
-   "id": "ANN-65",
-   "kind": "JS",
-   "title": "ANN-65 consent: the whole file (L3) is asked first; the directory graph adds the symbol NAMES (L4) to the same modal; declining sends nothing",
-   "ok": true
-  },
-  {
-   "id": "ANN-65",
-   "kind": "UAT",
-   "title": "UAT-47",
-   "ok": true
-  },
-  {
-   "id": "ANN-66",
-   "kind": "JS",
-   "title": "ANN-66 redaction: one redaction of the whole file, the request is built from it, the comments are applied to the ORIGINAL text, markers read <redacted>",
-   "ok": true
-  },
-  {
-   "id": "ANN-66",
-   "kind": "UAT",
-   "title": "UAT-48",
-   "ok": true
-  },
-  {
-   "id": "ANN-67",
-   "kind": "JS",
-   "title": "ANN-67 redaction that changes the number of lines is refused before anything is sent",
-   "ok": true
-  },
-  {
-   "id": "ANN-68",
-   "kind": "JS",
-   "title": "ANN-68 a reply with nothing to add is \"ready\" with a clear message (and why comments were skipped); an unusable reply is an error that can be retried",
-   "ok": true
-  },
-  {
-   "id": "ANN-69",
-   "kind": "JS",
-   "title": "ANN-69 Apply writes the selected hunks as ONE WorkspaceEdit through the coordinator: one undo step, code unchanged, highlight cleared",
-   "ok": true
-  },
-  {
-   "id": "ANN-69",
-   "kind": "UAT",
-   "title": "UAT-46",
-   "ok": true
-  },
-  {
-   "id": "ANN-70",
-   "kind": "JS",
-   "title": "ANN-70 apply with every hunk deselected does nothing; an invalid selection cannot be applied",
-   "ok": true
-  },
-  {
-   "id": "ANN-71",
-   "kind": "JS",
-   "title": "ANN-71 stale: a change to the document after the proposal disables Apply and drops the highlight; Generate starts over from a fresh snapshot",
-   "ok": true
-  },
-  {
-   "id": "ANN-72",
-   "kind": "JS",
-   "title": "ANN-72 a one-line scope in a CRLF file: the inserted comment uses CRLF too, so the coordinator read-back of the edit holds",
-   "ok": true
-  },
-  {
-   "id": "ANN-73",
-   "kind": "JS",
-   "title": "ANN-73 Open Diff shows the document next to the result of the SELECTED blocks, read-only",
-   "ok": true
-  },
-  {
-   "id": "ANN-74",
-   "kind": "JS",
-   "title": "ANN-74 edit mode is the old F1: opens on the whole-file tab, starts nothing, Generate runs the whole-file and the insert request, the annotate tab stays idle",
-   "ok": true
-  },
-  {
-   "id": "ANN-74",
-   "kind": "UAT",
-   "title": "UAT-49",
-   "ok": true
-  },
-  {
-   "id": "ANN-75",
-   "kind": "JS",
-   "title": "ANN-75 annotate mode: Generate and Enter run the ACTIVE tab only, so one F1 never spends three requests",
-   "ok": true
-  },
-  {
-   "id": "ANN-76",
-   "kind": "JS",
-   "title": "ANN-76 auto-start only in annotate mode, with f1AnnotateOnOpen, AI available, something to add and a configured provider",
-   "ok": true
-  },
-  {
-   "id": "ANN-77",
-   "kind": "JS",
-   "title": "ANN-77 the annotate tab is unavailable, with a clear message, wherever it cannot work; no request is sent",
-   "ok": true
-  },
-  {
-   "id": "ANN-77",
-   "kind": "UAT",
-   "title": "UAT-42",
-   "ok": true
-  },
-  {
-   "id": "ANN-78",
-   "kind": "JS",
-   "title": "ANN-78 every supported language: scope + a reply + apply gives comment-only hunks and the same code, on snippets and on real files of this repository",
-   "ok": true
-  },
-  {
-   "id": "ANN-79",
-   "kind": "JS",
-   "title": "ANN-79 the highlight is a whole-line decoration in theme colours that follows the scope, never steals the cursor, and is disposed with the session",
-   "ok": true
-  },
-  {
-   "id": "ANN-80",
-   "kind": "JS",
-   "title": "ANN-80 Generate on a stale session reopens with the same tab and the same options; the settings are still untouched",
-   "ok": true
-  },
-  {
-   "id": "ANN-81",
-   "kind": "JS",
-   "title": "ANN-81 helpers: line counting and cutting keep the line breaks, markers become <redacted>, a one-line scope takes the document line break",
-   "ok": true
-  },
-  {
-   "id": "ANN-82",
-   "kind": "JS",
-   "title": "ANN-82 the page script: static markup, tab ids, i18n keys in every locale, and the whole-file element ids the existing UAT specs rely on",
-   "ok": true
-  },
-  {
-   "id": "ANN-83",
-   "kind": "JS",
-   "title": "ANN-83 the page renders the annotate tab from a real session state, posts the right messages, and keeps the whole-file ids",
-   "ok": true
-  },
-  {
-   "id": "ANN-84",
-   "kind": "JS",
-   "title": "ANN-84 the page: unavailable tab (message only), edit mode default tab, and the whole-file tab keeps \\#cb-h1 \\#preview \\#validation \\#open-diff \\#apply-full \\#regen-full",
-   "ok": true
-  },
-  {
-   "id": "ANN-85",
-   "kind": "JS",
-   "title": "ANN-85 the Rust engine: annotate through propose, select, hunkEdits, the coordinator and the redaction of the real core",
-   "ok": true
-  },
-  {
-   "id": "ANN-86",
-   "kind": "JS",
-   "title": "ANN-86 F1 opens on the Whole file tab when the annotate tab is unavailable only because of the language or an empty document and AI is otherwise available",
-   "ok": true
-  },
-  {
-   "id": "API-01",
-   "kind": "JS",
-   "title": "API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels",
-   "ok": true
-  },
-  {
-   "id": "API-01",
-   "kind": "JS",
-   "title": "AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)",
-   "ok": true
-  },
-  {
-   "id": "PRM-01",
-   "kind": "JS",
-   "title": "PRM-01 detectTextLocale: kana means Japanese, Han without kana means Chinese, the rest English",
-   "ok": true
-  },
-  {
-   "id": "PRM-02",
-   "kind": "JS",
-   "title": "PRM-02 classifySelection: prose languages, structured data, shell commands, short selections",
-   "ok": true
-  },
-  {
-   "id": "PRM-02a",
-   "kind": "JS",
-   "title": "PRM-02a (dogfood) a selection inside a Markdown fence is code even without the fence lines; without offsets the content decides",
-   "ok": true
-  },
-  {
-   "id": "PRM-02b",
-   "kind": "JS",
-   "title": "PRM-02b (dogfood) identifier fragments are not words: \"Json::int(length as i64)\" is code although \"as\" and \"i\" are stopwords",
-   "ok": true
-  },
-  {
-   "id": "PRM-02c",
-   "kind": "JS",
-   "title": "PRM-02c (dogfood) short code fragments: struct fields, quoted literals, method chains, trailing commas",
-   "ok": true
-  },
-  {
-   "id": "PRM-02d",
-   "kind": "JS",
-   "title": "PRM-02d (dogfood) comment lines and headings: the leaders are furniture, the rest decides",
-   "ok": true
-  },
-  {
-   "id": "PRM-02e",
-   "kind": "JS",
-   "title": "PRM-02e profile languages: prose only when wholly inside comments/strings AND it reads as sentences",
-   "ok": true
-  },
-  {
-   "id": "PRM-03",
-   "kind": "JS",
-   "title": "PRM-03 buildReviewRequest (code): guard, 5W1H, evidence rules, JSON data channel with the file window",
-   "ok": true
-  },
-  {
-   "id": "PRM-03a",
-   "kind": "JS",
-   "title": "PRM-03a the window uses absolute file line numbers, the same line splitter for CRLF, LF and lone CR, and says when it is cut",
-   "ok": true
-  },
-  {
-   "id": "PRM-03b",
-   "kind": "JS",
-   "title": "PRM-03b a selection longer than 20000 characters is cut in the request with its omission named",
-   "ok": true
-  },
-  {
-   "id": "PRM-04",
-   "kind": "JS",
-   "title": "PRM-04 applyReviewReply: a verified finding and a clean field set pass through; ok does not depend on needsOptimization",
-   "ok": true
-  },
-  {
-   "id": "PRM-04a",
-   "kind": "JS",
-   "title": "PRM-04a invalid or wrongly typed replies are errors (reply-invalid), never \"no optimisation needed\"",
-   "ok": true
-  },
-  {
-   "id": "PRM-04b",
-   "kind": "JS",
-   "title": "PRM-04b code findings are verified against the file: line in range, evidence on that line or the next two, whitespace-insensitive, case-sensitive",
-   "ok": true
-  },
-  {
-   "id": "PRM-04c",
-   "kind": "JS",
-   "title": "PRM-04c severity is normalised, unknown severity is low; text fields of a finding are cleaned",
-   "ok": true
-  },
-  {
-   "id": "PRM-04d",
-   "kind": "JS",
-   "title": "PRM-04d needsOptimization needs the model to say so AND a surviving verified finding; the findings cap and duplicates are counted",
-   "ok": true
-  },
-  {
-   "id": "PRM-04e",
-   "kind": "JS",
-   "title": "PRM-04e prose findings: the element must be one of the six and the issue non-empty; cap 6",
-   "ok": true
-  },
-  {
-   "id": "PRM-04f",
-   "kind": "JS",
-   "title": "PRM-04f fields: trimmed, control and invisible characters removed, 2000 characters at most, missing ones named",
-   "ok": true
-  },
-  {
-   "id": "PRM-04g",
-   "kind": "JS",
-   "title": "PRM-04g a reply never changes what WE know: facts and the file are not read from it",
-   "ok": true
-  },
-  {
-   "id": "PRM-05",
-   "kind": "JS",
-   "title": "PRM-05 renderPrompt: six localised headings in order, material fenced, findings numbered with file lines, constraints and output format",
-   "ok": true
-  },
-  {
-   "id": "PRM-05a",
-   "kind": "JS",
-   "title": "PRM-05a \"Where\" is filled by us from the facts and combined with the model text",
-   "ok": true
-  },
-  {
-   "id": "PRM-05b",
-   "kind": "JS",
-   "title": "PRM-05b empty model fields are filled with sensible localised sentences from the facts: never empty, never a placeholder",
-   "ok": true
-  },
-  {
-   "id": "PRM-05c",
-   "kind": "JS",
-   "title": "PRM-05c the fence is longer than any backtick run in the content, and survives ``` and ~~~ inside the code",
-   "ok": true
-  },
-  {
-   "id": "PRM-05d",
-   "kind": "JS",
-   "title": "PRM-05d model text cannot become a heading or a fence of ours, in a section body or in a finding",
-   "ok": true
-  },
-  {
-   "id": "PRM-05e",
-   "kind": "JS",
-   "title": "PRM-05e a selection over 20000 characters keeps head and tail with an explicit marker and says so",
-   "ok": true
-  },
-  {
-   "id": "PRM-05f",
-   "kind": "JS",
-   "title": "PRM-05f prose prompts: the improved prompt, the original as reference material, the gaps found, no code constraints",
-   "ok": true
-  },
-  {
-   "id": "PRM-05g",
-   "kind": "JS",
-   "title": "PRM-05g findings outside the selection are marked; the in-selection ones are not",
-   "ok": true
-  },
-  {
-   "id": "PRM-05h",
-   "kind": "JS",
-   "title": "PRM-05h (review finding) keys like \"constructor\" or \"__proto__\" in model-supplied severity / language / file extension never reach Object.prototype",
-   "ok": true
-  },
-  {
-   "id": "PRM-05i",
-   "kind": "JS",
-   "title": "PRM-05i (property-test finding) a field that starts with a tab and a heading must not become a heading once the tab is trimmed",
-   "ok": true
-  },
-  {
-   "id": "PRM-06",
-   "kind": "JS",
-   "title": "PRM-06 localPrompt: an UNREVIEWED template with explicit questions, only local facts, nothing claimed as analysed",
-   "ok": true
-  },
-  {
-   "id": "PRM-07",
-   "kind": "JS",
-   "title": "PRM-07 verify5W1H: order, missing and empty sections; headings inside fences do not count",
-   "ok": true
-  },
-  {
-   "id": "PRM-08",
-   "kind": "JS",
-   "title": "PRM-08 property: renderPrompt/localPrompt never throw, always verify, never leak control characters or open a fence",
-   "ok": true
-  },
-  {
-   "id": "PRM-08a",
-   "kind": "JS",
-   "title": "PRM-08a property: applyReviewReply never throws on arbitrary JSON or garbage and always accounts for every finding",
-   "ok": true
-  },
-  {
-   "id": "PRM-09",
-   "kind": "JS",
-   "title": "PRM-09 dogfood: Markdown paragraphs/fences, source comments and function bodies of THIS repository classify with at most 3% misses",
-   "ok": true
-  },
-  {
-   "id": "PRM-20",
-   "kind": "JS",
-   "title": "PRM-20 routing: code goes to f1Full with the L3 consent and the numbered file; prose goes to f1Insert with the L1 consent and the selection only",
-   "ok": true
-  },
-  {
-   "id": "PRM-21",
-   "kind": "JS",
-   "title": "PRM-21 code review with findings: the clipboard gets the 5W1H prompt with the checked evidence, the notice comes AFTER the copy, one progress with Cancel",
-   "ok": true
-  },
-  {
-   "id": "PRM-22",
-   "kind": "JS",
-   "title": "PRM-22 prose: the language of the text picks the prompt language (Chinese text -> Chinese headings), a code file with prose in a comment stays prose",
-   "ok": true
-  },
-  {
-   "id": "PRM-23",
-   "kind": "JS",
-   "title": "PRM-23 AI path not available: the UNREVIEWED template is copied, the notice says why, and not a single request is sent",
-   "ok": true
-  },
-  {
-   "id": "PRM-24",
-   "kind": "JS",
-   "title": "PRM-24 redact: the secret never reaches the provider or the clipboard, the markers stay in the prompt, invented markers are dropped",
-   "ok": true
-  },
-  {
-   "id": "PRM-25",
-   "kind": "JS",
-   "title": "PRM-25 needsOptimization:false is the genuine \"nothing to fix\" answer: a notice (own wording for code and prose), the clipboard UNTOUCHED",
-   "ok": true
-  },
-  {
-   "id": "PRM-26",
-   "kind": "JS",
-   "title": "PRM-26 an unusable reply is an ERROR (warning, clipboard untouched), never \"no optimisation needed\"",
-   "ok": true
-  },
-  {
-   "id": "PRM-27",
-   "kind": "JS",
-   "title": "PRM-27 findings the file does not contain are dropped: none left -> nothing copied; some left -> only those",
-   "ok": true
-  },
-  {
-   "id": "PRM-28",
-   "kind": "JS",
-   "title": "PRM-28 a sensitive selection or file is never copied and never sent when the user does not accept it",
-   "ok": true
-  },
-  {
-   "id": "PRM-29",
-   "kind": "JS",
-   "title": "PRM-29 a second F2 cancels the first: only the newer answer reaches the clipboard, the older one ends silently",
-   "ok": true
-  },
-  {
-   "id": "PRM-30",
-   "kind": "JS",
-   "title": "PRM-30 Cancel on the progress notification ends the request silently with the clipboard untouched",
-   "ok": true
-  },
-  {
-   "id": "PRM-31",
-   "kind": "JS",
-   "title": "PRM-31 gates: disabled, no selection (palette), blank selection and an over-large selection stop before anything is classified or sent",
-   "ok": true
-  },
-  {
-   "id": "PRM-32",
-   "kind": "JS",
-   "title": "PRM-32 context keys and manifest: F2 only with enabled + the chosen binding + a language that is not excluded, and only with a selection",
-   "ok": true
-  },
-  {
-   "id": "PRM-33",
-   "kind": "JS",
-   "title": "PRM-33 diagnostics and error text never carry the selection, the code, the prompt or a secret; one error message per failure",
-   "ok": true
-  },
-  {
-   "id": "PRM-34",
-   "kind": "JS",
-   "title": "PRM-34 selectionInRedacted: the selection is cut out of the redacted file; a changed edge falls back to whole lines",
-   "ok": true
-  },
-  {
-   "id": "PRM-35",
-   "kind": "JS",
-   "title": "PRM-35 every f2 text exists in all three locales with the same placeholders; f2.js writes no files and logs nothing",
-   "ok": true
-  },
-  {
-   "id": "PRM-40",
-   "kind": "UAT",
-   "title": "UAT-36",
-   "ok": true
-  },
-  {
-   "id": "PRM-41",
-   "kind": "UAT",
-   "title": "UAT-37",
-   "ok": true
-  },
-  {
-   "id": "PRM-42",
-   "kind": "UAT",
-   "title": "UAT-38",
-   "ok": true
-  },
-  {
-   "id": "PRM-43",
-   "kind": "UAT",
-   "title": "UAT-39",
-   "ok": true
-  },
-  {
-   "id": "PRM-44",
-   "kind": "UAT",
-   "title": "UAT-40",
-   "ok": true
-  },
-  {
-   "id": "PRM-45",
-   "kind": "UAT",
-   "title": "UAT-41",
-   "ok": true
-  },
-  {
-   "id": "SEC-01",
-   "kind": "JS",
-   "title": "SEC-01 the thinnest slice: .env and its variants are secret, the committed templates are not",
-   "ok": true
-  },
-  {
-   "id": "SEC-02",
-   "kind": "JS",
-   "title": "SEC-02 paths are normalised before anything is decided: separators, case, drive, UNC, trailing dots, streams",
-   "ok": true
-  },
-  {
-   "id": "SEC-02a",
-   "kind": "JS",
-   "title": "SEC-02a every path segment is normalised, not only the last: `.ssh.\\\\id_x` is inside `.ssh`; a colon in a POSIX name does not hide its extension",
-   "ok": true
-  },
-  {
-   "id": "SEC-02b",
-   "kind": "JS",
-   "title": "SEC-02b never throws, and a non-path is an empty answer; a bare string is taken as the path (a caller bug fails closed)",
-   "ok": true
-  },
-  {
-   "id": "SEC-02c",
-   "kind": "JS",
-   "title": "SEC-02c the label is what a dialog may show: original spelling, no directories, no control or bidi characters, bounded",
-   "ok": true
-  },
-  {
-   "id": "SEC-03",
-   "kind": "JS",
-   "title": "SEC-03 gate: once is spent by one consume, session lasts until expiry, deny stays a deny",
-   "ok": true
-  },
-  {
-   "id": "SEC-03a",
-   "kind": "JS",
-   "title": "SEC-03a gate: one canonical key for every spelling of the same file, and only for that file",
-   "ok": true
-  },
-  {
-   "id": "SEC-03b",
-   "kind": "JS",
-   "title": "SEC-03b gate: record replaces an earlier answer and makes it the newest; eviction drops the oldest, expired entries go first",
-   "ok": true
-  },
-  {
-   "id": "SEC-03c",
-   "kind": "JS",
-   "title": "SEC-03c gate: a deny is remembered (no nagging) until revoked or expired; once and session do not outlive their ttl",
-   "ok": true
-  },
-  {
-   "id": "SEC-03d",
-   "kind": "JS",
-   "title": "SEC-03d gate: list() has exactly key, label, state, expiresAt and hands out copies; clear() empties; hostile input changes nothing",
-   "ok": true
-  },
-  {
-   "id": "SEC-03e",
-   "kind": "JS",
-   "title": "SEC-03e gate: a clock that goes backwards or is not a number fails closed; bad options fall back to the defaults",
-   "ok": true
-  },
-  {
-   "id": "SEC-04",
-   "kind": "JS",
-   "title": "SEC-04 user patterns add secret-class names (glob, case-insensitive) and never throw on junk",
-   "ok": true
-  },
-  {
-   "id": "SEC-04a",
-   "kind": "JS",
-   "title": "SEC-04a glob: `*` and `?` stay inside a segment, `**` crosses, `**/` also matches no directory, a trailing `/` means everything below",
-   "ok": true
-  },
-  {
-   "id": "SEC-04b",
-   "kind": "JS",
-   "title": "SEC-04b glob: no separator = base name only (any case); a separator pattern is matched from any directory unless rooted; backslash is a separator",
-   "ok": true
-  },
-  {
-   "id": "SEC-04c",
-   "kind": "JS",
-   "title": "SEC-04c glob: regex metacharacters are literal characters",
-   "ok": true
-  },
-  {
-   "id": "SEC-04d",
-   "kind": "JS",
-   "title": "SEC-04d glob: a pathological pattern is linear, and a spent step budget fails closed (the user is asked)",
-   "ok": true
-  },
-  {
-   "id": "SEC-04e",
-   "kind": "JS",
-   "title": "SEC-04e user pattern limits: at most 200 valid patterns, none longer than 300 characters (skipped, not cut), junk does not count",
-   "ok": true
-  },
-  {
-   "id": "SEC-05",
-   "kind": "JS",
-   "title": "SEC-05 the positive corpus: every secret-class name is found, with the right kind",
-   "ok": true
-  },
-  {
-   "id": "SEC-06",
-   "kind": "JS",
-   "title": "SEC-06 the negative corpus: source, docs, public keys, templates, ciphertext and tool folders without secrets are never flagged",
-   "ok": true
-  },
-  {
-   "id": "SEC-06a",
-   "kind": "JS",
-   "title": "SEC-06a the result is the same under decoration: Windows or POSIX directories, any case, trailing dot or space, stream suffix",
-   "ok": true
-  },
-  {
-   "id": "SEC-07",
-   "kind": "JS",
-   "title": "SEC-07 the table is data: frozen, unique ids, known kinds, one primary form, lower-case, and no rule is shadowed by an earlier one",
-   "ok": true
-  },
-  {
-   "id": "SEC-08",
-   "kind": "JS",
-   "title": "SEC-08 the rules are a superset of secrets.js SENSITIVE_FILE; the only names given up are the committed templates",
-   "ok": true
-  },
-  {
-   "id": "SEC-08a",
-   "kind": "JS",
-   "title": "SEC-08a the template carve-out in full: a template word as the last or an inner part of an env name is not secret, any other word is",
-   "ok": true
-  },
-  {
-   "id": "SEC-09",
-   "kind": "JS",
-   "title": "SEC-09 hostile names cannot make the rules or the key slow (no backtracking anywhere)",
-   "ok": true
-  },
-  {
-   "id": "SEC-10",
-   "kind": "JS",
-   "title": "SEC-10 backup and editor-swap copies of a secret are secret; of a public key or a template are not",
-   "ok": true
-  },
-  {
-   "id": "SEC-11",
-   "kind": "JS",
-   "title": "SEC-11 a virtualenv folder named `.env` does not make its contents secret; the names inside still count",
-   "ok": true
-  },
-  {
-   "id": "SEC-12",
-   "kind": "JS",
-   "title": "SEC-12 dogfood on a real machine: .gnupg agent sockets and lock files are not secrets, its keys are",
-   "ok": true
-  },
-  {
-   "id": "SEC-12a",
-   "kind": "JS",
-   "title": "SEC-12a dogfood: the SQLite sidecars (-journal, -wal, -shm) of a browser credential store are as secret as the store",
-   "ok": true
-  },
-  {
-   "id": "SEC-12b",
-   "kind": "JS",
-   "title": "SEC-12b dogfood: key files without an extension (adb, sshd host keys); their .pub halves are not secret",
-   "ok": true
-  },
-  {
-   "id": "SEC-12c",
-   "kind": "JS",
-   "title": "SEC-12c dogfood: a login token kept in a file whose name ends in token (no extension); tokens.json, design tokens and code are not",
-   "ok": true
-  },
-  {
-   "id": "SEC-12d",
-   "kind": "JS",
-   "title": "SEC-12d dogfood: auth.json is a login store only inside the folders of the CLIs that keep one (a bare auth.json is a locale file)",
-   "ok": true
-  },
-  {
-   "id": "SEC-12e",
-   "kind": "JS",
-   "title": "SEC-12e dogfood: password stores by name (SourceTree passwd, Xshell .mpw, KeePass-format safes of an IDE); the similar names that are code are not",
-   "ok": true
-  },
-  {
-   "id": "SEC-12f",
-   "kind": "JS",
-   "title": "SEC-12f dogfood: names that look like secrets but are this project's own source stay unflagged",
-   "ok": true
-  },
-  {
-   "id": "SEC-12g",
-   "kind": "JS",
-   "title": "SEC-12g dogfood: a login or license key under a tool folder is a *.key and stays secret (the price of the SENSITIVE_FILE superset)",
-   "ok": true
-  },
-  {
-   "id": "SEC-13",
-   "kind": "JS",
-   "title": "SEC-13 needsConfirmation: secret and not allowed -> needs; deny means skip silently, once is spent by consume",
-   "ok": true
-  },
-  {
-   "id": "SEC-14",
-   "kind": "JS",
-   "title": "SEC-14 properties on random names: never throws, same answer twice, key is stable, separator/case/dot/stream spellings agree",
-   "ok": true
-  },
-  {
-   "id": "SEC-15",
-   "kind": "JS",
-   "title": "SEC-15 the module is pure: no require, no fs, no clock or randomness of its own (the gate takes now)",
-   "ok": true
-  },
-  {
-   "id": "SEC-30",
-   "kind": "JS",
-   "title": "SEC-30 a name that is not secret-class is let through at once: no dialog, no notification, nothing read, nothing recorded",
-   "ok": true
-  },
-  {
-   "id": "SEC-30",
-   "kind": "UAT",
-   "title": "UAT-55",
-   "ok": true
-  },
-  {
-   "id": "SEC-31",
-   "kind": "JS",
-   "title": "SEC-31 interactive: a modal names the file and its kind, says reading is local and sending is asked separately, offers Allow once / Allow for this session; Esc refuses this call and remembers nothing",
-   "ok": true
-  },
-  {
-   "id": "SEC-32",
-   "kind": "JS",
-   "title": "SEC-32 \"Allow once\" is spent by exactly one call; \"Allow for this session\" stays until it expires",
-   "ok": true
-  },
-  {
-   "id": "SEC-33",
-   "kind": "JS",
-   "title": "SEC-33 typing path: never a modal; ONE non-modal notification per file and session; Keep off is remembered silently; Allow opens the file",
-   "ok": true
-  },
-  {
-   "id": "SEC-33",
-   "kind": "UAT",
-   "title": "UAT-50",
-   "ok": true
-  },
-  {
-   "id": "SEC-34",
-   "kind": "JS",
-   "title": "SEC-34 the gate fails closed: an error while deciding is \"do not read\", never \"read\"",
-   "ok": true
-  },
-  {
-   "id": "SEC-35",
-   "kind": "JS",
-   "title": "SEC-35 real path: a name that hides a secret file behind a link is judged by where it points; the decision follows the real file; a failing realpath falls back to the plain path",
-   "ok": true
-  },
-  {
-   "id": "SEC-36",
-   "kind": "JS",
-   "title": "SEC-36 isLocked / lockInfo are synchronous, open no dialog, read nothing; the real path is cached for a few seconds and shared with ensure",
-   "ok": true
-  },
-  {
-   "id": "SEC-37",
-   "kind": "JS",
-   "title": "SEC-37 the setting programmingIme.secretFilePatterns adds patterns (live); the built-in rules cannot be switched off",
-   "ok": true
-  },
-  {
-   "id": "SEC-37",
-   "kind": "UAT",
-   "title": "UAT-54",
-   "ok": true
-  },
-  {
-   "id": "SEC-38",
-   "kind": "JS",
-   "title": "SEC-38 diagnostics carry the rule id and the event only: never a path, a file name or content; a decision is recorded once, not once per keystroke",
-   "ok": true
-  },
-  {
-   "id": "SEC-39",
-   "kind": "JS",
-   "title": "SEC-39 the command: a QuickPick of the decisions (label, state, expiry, folder) to forget them, and a way to allow the active file explicitly",
-   "ok": true
-  },
-  {
-   "id": "SEC-39",
-   "kind": "UAT",
-   "title": "UAT-53",
-   "ok": true
-  },
-  {
-   "id": "SEC-40",
-   "kind": "JS",
-   "title": "SEC-40 F1: a secret-class file is not read until the user allows it; Esc opens no panel and says why; a non-secret file opens with no dialog",
-   "ok": true
-  },
-  {
-   "id": "SEC-40",
-   "kind": "UAT",
-   "title": "UAT-51",
-   "ok": true
-  },
-  {
-   "id": "SEC-41",
-   "kind": "JS",
-   "title": "SEC-41 F1: a refusal changes nothing - the open session on another file stays, and a stale session that is refused on reopen is not regenerated",
-   "ok": true
-  },
-  {
-   "id": "SEC-42",
-   "kind": "JS",
-   "title": "SEC-42 F2: the selection and the file are not read before a secret-class file is allowed; a refusal is a notice and the clipboard is untouched; a non-secret file runs with no dialog",
-   "ok": true
-  },
-  {
-   "id": "SEC-42",
-   "kind": "UAT",
-   "title": "UAT-52",
-   "ok": true
-  },
-  {
-   "id": "SEC-43",
-   "kind": "JS",
-   "title": "SEC-43 annotate insertion: a protected file is not read and the snippet goes in unchanged; no AI configured means no read and no question at all",
-   "ok": true
-  },
-  {
-   "id": "SEC-44",
-   "kind": "JS",
-   "title": "SEC-44 directorySymbols: a secret-class sibling is never read (open in the editor or not, any engine answer), a symlink stays excluded, and a folder behind a link is judged by where it really is",
-   "ok": true
-  },
-  {
-   "id": "SEC-45",
-   "kind": "JS",
-   "title": "SEC-45 extension.js: typing and Show Code Candidates read nothing of a protected file; language detection uses the name only; the status shows the lock and its click opens the command; a normal file is not affected",
-   "ok": true
-  },
-  {
-   "id": "SEC-46",
-   "kind": "JS",
-   "title": "SEC-46 manifest and texts: the command and the setting exist, every text exists in three locales with the same placeholders, no setting switches the gate off",
-   "ok": true
   }
  ]
 }

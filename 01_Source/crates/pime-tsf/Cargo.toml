@@ -35,6 +35,22 @@ path = "../../tests/tsf/ime_host.rs"
 name = "ime_selection"
 path = "../../tests/tsf/ime_selection.rs"
 
+[[test]]
+name = "ime_registration"
+path = "../../tests/tsf/ime_registration.rs"
+
+[[test]]
+name = "ime_context_security"
+path = "../../tests/tsf/ime_context_security.rs"
+
+[[test]]
+name = "ime_resilience"
+path = "../../tests/tsf/ime_resilience.rs"
+
+[[test]]
+name = "ime_dpi_language"
+path = "../../tests/tsf/ime_dpi_language.rs"
+
 [dependencies]
 pime-core = { path = "../pime-core" }
 # The privacy and the safety rules of TASE are shared: the text service asks the same policy the extension and the

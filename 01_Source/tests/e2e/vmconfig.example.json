@@ -1,0 +1,32 @@
+{
+  "$comment": [
+    "Copy this file to vmconfig.json (do not commit it: it names a real machine) and fill it in.",
+    "The keys the runner needs: transport, host, username, interactiveUser, workDirectory, installer.",
+    "The password of the WinRM account comes from the environment variable named in passwordEnvironmentVariable.",
+    "With the transport 'ssh' the account needs a key (BatchMode=yes: no interactive password)."
+  ],
+  "transport": "winrm",
+  "host": "192.168.56.101",
+  "port": 5985,
+  "useSsl": false,
+  "username": "pime-e2e",
+  "passwordEnvironmentVariable": "PIME_E2E_PASSWORD",
+  "interactiveUser": "pime-e2e",
+  "workDirectory": "C:\\pime-e2e",
+  "installer": "E:\\IME1.0\\01_Source\\dist\\ProgrammingIME-0.3.2-win-x64-setup.exe",
+  "olderInstaller": "",
+  "expectedVersion": "0.3.2",
+  "composition": {
+    "$comment": "The keys of the product: Ctrl+Alt+Space enters the composition, Enter commits it (docs/TSF_VM_TEST_PLAN.md, section 8).",
+    "keys": ["ctrl+alt+space"],
+    "commitKey": "enter"
+  },
+  "restart": {
+    "enabled": true,
+    "timeoutSeconds": 300
+  },
+  "timeouts": {
+    "commandSeconds": 300,
+    "interactiveSeconds": 180
+  }
+}

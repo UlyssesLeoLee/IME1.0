@@ -290,6 +290,7 @@
 |---|---|---|---|
 | G-16 | **构建日志不与产物绑定** ⇒ 证据链可以指向一个已经不在的产物，而所有门禁照样绿 | 已做：重新构建让日志落盘 + 新增 `evidence-cross-check.js` 常驻门禁（挂进 `run-all.js`）。**已生效，无需再裁定** | 删掉 `01_Source/tests/smoke/evidence-cross-check.js` 与 `run-all.js` 里那一行即可；但那样"日志陈旧"就又只能靠人眼发现 |
 
+
 ## 4. 建议的批次（供你调整）
 
 | 批次 | 内容 | 理由 |
@@ -422,7 +423,7 @@
 
 Playwright 1.64.1 + **真实 VS Code 1.143.0**（`D:\Microsoft VS Code\Code.exe`），扩展从源码目录 `--extensionDevelopmentPath` 加载，用一次性用户目录，不碰你自己的设置、扩展与密钥。
 
-**52 个场景：51 通过 / 1 按设计跳过 / 0 失败**（跳过的是 ENG-02，它要 `PIME_CORE_EXE`，属于 rust 引擎那一轮）。
+**59 个场景：58 通过 / 1 按设计跳过 / 0 失败**（跳过的是 ENG-02，它要 `PIME_CORE_EXE`，属于 rust 引擎那一轮）。
 
 | 组 | 场景 | 证明了什么 |
 |---|---|---|
@@ -1369,3 +1370,143 @@ Hub 的 `next_job` 以前**只在测试里被调用**——作业进了队列就
   验收步骤在 `02_Verification/REAL_MACHINE_CHECKLIST.md` 的「四之二」「四之三」两节。
 * **安装包自己的 dry-run**：仍是 `--skip-dry-run`（360 会「执行即隔离」未签名的安装包）；其余自检全过（x64 PE、只导入系统 DLL、载荷 10 条的页脚哈希）。
 * **0.3.2 还没发到 GitHub Release**（包已就绪，等你说一声）。
+
+### 5.26 第三十轮（2026-11-12）：两轴审查（Standards / Spec）+ 缺陷登记 D-108 ~ D-122
+
+这一轮是 `/mattpocock-code-review`：**基准 `v0.3.1`（`dfeb0ac`）→ HEAD（`28174ea`）**，7 个提交、88 个文件、+9298 / −4105 行。
+两轴**分开**跑，不合并、不重排：
+
+* **Standards 轴** = 仓库自己写下的规范（`01_Source/docs/HOTKEYS.md`、`01_Source/tests/README.md`、`01_Source/docs/REFACTOR_PLAN.md` §0 的 7 条可检查判据）
+  \+ Fowler《重构》第 3 章的坏味道基线（基线只作**判断题**，仓库规范优先，工具已经管的不报）。
+* **Spec 轴** = 你的裁定与 `02_Verification/DEFECT_SUBMISSION_2026-11-07.md`（D-93 ~ D-107）+ `README_交付说明.md` 里的你的原话。
+
+**过程说明（不藏）**：这一轮**没有派子代理**。前六次两轴审查代理（`bg_ae3b77f8` / `bg_823a3666` / `bg_3cd2457e` / `bg_a1b3b528` 等）**连续被机器内存杀掉**
+（可用虚拟内存一度只剩 1.5 GB，`os error 1455` / `Thread failed to start`）⇒ 改成在主会话里逐轴自己跑，并用一次性脚本做机械核验；**核验脚本已全部移出仓库**，工作区干净。
+
+#### 5.26.1 Standards 轴：硬违规（6 条）
+
+| # | 缺陷 | 证据 | 影响 |
+|---|---|---|---|
+| **D-108** | `keymap.rs` 一个测试的函数签名与首行语句被粘成一行 | `crates/pime-tsf/src/keymap.rs:442`：`fn alt_f2_is_the_language_shortcut_and_nothing_else_is() {        let alt_f2 = Modifiers { alt: true, ..NONE };`；**回溯到 v0.3.1 该行格式正常** ⇒ 本轮引入 | 不影响行为（TSF 354 项全过），但 `cargo fmt --check` 会红 |
+| **D-109** | 同一型格式回归的第二处（与 D-108 同一批编辑：把测试改名成 `st_011_*` / `st_022_*` 时） | `crates/pime-core/src/predict.rs:514`：`fn literal_positions_yield_nothing() {        let o = PredictOptions::new("rust", "fn").before("let s = \"abc ");`；v0.3.1 时格式正常 | 同上 |
+| **D-110** | `clipboard.rs` 的注释把缺陷号引错了（剪贴板历史是 **D-97**，D-96 是托盘菜单那一条） | `crates/pime-tsf/src/clipboard.rs:57`："That is registered as a gap (D-96) and not hidden." | 违反 `REFACTOR_PLAN.md` §0 判据 7「注释说的是真话」——指错条目会让将来的追溯找错地方 |
+| **D-111** | 红绿轮的 `romaji-a` 用例**方向写反**（施加的是修复不是破坏），锚点文本已随 D-93 的修复消失 ⇒ **永久 STALE**；而工具的退出码**不看 stale** | `scripts/mutation-cases.js`：`what: '…（the file carries い today）'`、`from: 'a:い\n'`、`to: 'a:あ\n'`；而 `cjk/romaji-kana.txt` 第 1 行自 `e0af32a` 起就是 `a:あ`；机械核验：**31 条用例里只有它一条 STALE**（其余 30 条锚点都在）；`scripts/mutation-check.js:220-232` 只有 `errors → 3`、`missed → 1`。**实况印证（2026-11-12 门禁第 1 轮）**：变异步当场打出 `STALE  romaji-a the romaji table: a alone is あ (the file carries い today): the text to break is not in the file any more`，而收尾行照旧写「every mutation was caught: the suite really pins these behaviours」 | 这一格覆盖**静默失效**：报告会打 `STALE romaji-a` 而门禁仍然全绿 ⇒ **门禁说谎** |
+| **D-119** | 同一条红绿轮的用例数在四个地方写了四个数 | `scripts/mutation-cases.js` 在 HEAD 是 **31** 条；`README_交付说明.md` 第二十八轮第 28 条写「31 处」、第二十九轮第 24 条写「30 处」；`REFACTOR_PLAN.md` §0 判据 1 写「30 个变异全部 CAUGHT」；`02_Verification/mutation-report.txt` 表头写「30 mutations」 | 加上 D-111 那条永久 STALE，**真正能跑的只有 30 条**，报告口径已经对不上自己的用例表 |
+| **D-121 / D-122** | 台账与交付说明里两处过期/自相矛盾的数字 | D-100 仍写「**还开着的一个**：③ 日文罗马音的 `a`」——而 D-93 同轮已修、`cjk.rs::every_key_of_the_table_gives_its_kana` 同轮已加；`README_交付说明.md` 第二十八轮第 29 条写「TSF 那 **341** 项」、第 30 条写「**351 项 TSF + 454 项 core**」 | 台账说「还开着」而实际已闭；读者不知道该信哪个数 |
+
+#### 5.26.2 Standards 轴：判断题（4 条，基线只作判断题）
+
+| # | 坏味道 | 证据 | 建议 |
+|---|---|---|---|
+| **D-112** | **Speculative Generality** | `crates/pime-tsf/src/clipboard.rs:53-64`：`entries()` 返回 `Vec<String>` 但永远只装 0~1 项；文档自己承认「真正的历史要一个监听器……这个构建没有」 | 改名 `current_text()` 返回 `Option<String>`，或把文档写明「这是历史的占位」 |
+| **D-113** | **永不可能失败的断言** | `crates/pime-tsf/src/clipboard.rs:66-85`：`assert!(entries.len() <= 1)` 由构造保证、`assert!(!entry.is_empty())` 由 `text()` 自己的过滤保证 | 加一条真能钉住行为的测试（剪贴板为空时 `text()` 是 `None`；读到的文本要去掉尾部 NUL 与首尾空白） |
+| **D-114** | **Duplicated Code** | `crates/pime-tsf/src/controller.rs:255` 与 `:260`（两个字段）、`:498-505`（两个 setter）、`:596` 与 `:407`（两个调用点）；`crates/pime-tsf/src/tip/lifecycle.rs:208-221`（两个几乎一样的闭包） | 合并成一个带载荷的 `change_hook`；**这是结构性改动**，要不要做由你定 |
+| **D-115** | **位置小疵** | `crates/pime-tsf/src/laser.rs:218-229`：`MOUTH_HIT_WIDTH` 声明在用它**之后** | 挪到常量区（**不动数值**） |
+
+#### 5.26.3 Spec 轴（7 条）
+
+| # | 类别 | 缺陷 | 证据 |
+|---|---|---|---|
+| **D-116** | 缺失 | **重构两个提交之后，仓库里没有任何一份证据文件被更新过** ⇒ `REFACTOR_PLAN.md` §0 的验收表在 HEAD 上**无法取证** | 重构 = `1374e77` + `28174ea`；五个证据文件的最后提交全部更早：`run-all-2026-11-04.log` → `e0af32a`、`mutation-report.txt` → `e0af32a`、`tsf-test-result.txt` → `e0af32a`、`rust-test-result.txt` → `dcfa7db`、`test-execution-report.md` → `289dc70` |
+| **D-117** | 缺失 | **仓库里唯一的红绿证据是一次 FAIL**：日志末尾红绿步是 **FAIL exit 3**（25 caught / 0 missed / **4 unknown** / **1 stale**）；而 `mutation-report.txt` 只存了 **4 条**（一次 `--only` 的碎片），表头却写「30 mutations」 | `02_Verification/run-all-2026-11-04.log` 末两段；`02_Verification/mutation-report.txt` 全文 10 行 |
+| **D-118** | 实现与文档冲突 | `README_交付说明.md` 第二十九轮第 25 条写「红绿轮的 30 个变异**全部被抓住**（`MISSED` 归零）」，而唯一的证据是一次 exit 3、4 条结果未知的 FAIL | 交付说明 vs `run-all-2026-11-04.log` 末段 ⇒ **文档比证据乐观** |
+| **D-120** | 部分实现 | 「剪贴板**历史**」只做了一半：实现只给「当前文本」，没有 `AddClipboardFormatListener` | `crates/pime-tsf/src/clipboard.rs:53-64`；D-97 已如实登记（**公开的半成品，不是隐瞒**） |
+| **D-123** | 证据与代码对不上 | **已提交的 `02_Verification/rust-test-result.txt` 记着一次不可复现的失败**（`grants` 那个用例 FAILED），而同一份源码**重新编译后通过** ⇒ 根因是共享 target 目录里的**陈旧产物**（`C:\cargo-target-ime\debug\deps\pime_core-02a4e0526770daa7.exe`，10:59 编译，7,885,303 B），cargo 误判它为 fresh 直接复用（重编后 7,885,130 B，通过） | 该文件提交于 `dcfa7db`，尾部是 `test result: FAILED. 325 passed; 1 failed`；而 `grants.rs` 与 `ids.rs` 自 2026-10-30 起**未改动**；本轮**已强制重编**，该测试当场通过（整套 lib 326 项也全绿） |
+| **D-124** | 产物与文档对不上 | **claims 与清单都停在重构之前**：门禁的 `installer-claims-check.js` 与 `evidence-cross-check.js` 当场抓到 9 条 FAIL（安装包字节数与 sha256、`pime-tray.exe` 载荷大小、清单条目 **812 != 813**） | 磁盘上的 `ProgrammingIME-0.3.2-win-x64-setup.exe` 建于 **13:14:58**，而重构提交在 **13:33 / 14:29** ⇒ **包里没有重构后的二进制**；claims 写的又是更早一版（10,393,898 B / `7a31e2c0…`）；重构新增的 7 个模块文件**不在 `MANIFEST_SHA256.txt` 里**（`update-manifest.js --check` 报 2 stale） |
+| **（越界）** | 未发现 | **本轮没有规格之外的行为改动**：`REFACTOR_PLAN.md` §3「这一期不做」的清单（行为变更、新功能、改键位契约、改协议、动 `pime-core` 公共 API）除已单独登记的 D-93 / 102 / 103 / 104 / 107 外没有被夹带 | 逐文件比对 `v0.3.1...HEAD` 的改动面 |
+| **D-122** | 文档过期 | 见 §5.26.1 | — |
+
+#### 5.26.4 机械核验过的「通过」项（不在缺陷表里）
+
+| 判据 | 结果 | 怎么验的 |
+|---|---|---|
+| **clippy 零新增告警**（`REFACTOR_PLAN.md` §0 判据 3） | ✅ `pime-core` **8 条** + `pime-tsf` **2 条** = 登记过的「既有 8 + 2」 | `cargo clippy --all-targets --message-format=short` 跑两个 crate；tsf 那条 `let_and_return` 用 `dcfa7db:tip.rs:1927-1933` ↔ `HEAD:tip/keys.rs:111-117` 证明是**同一段代码搬家**，不是新增 |
+| **无半成品**（判据 6） | ✅ 全仓 `crates/` 搜不到 `todo!()` / `unimplemented!()` / `unreachable!()` / `#[ignore]` | `grep` |
+| **热键档案与代码一致** | ✅ `HOTKEYS.md` §2 承诺的 **13 个测试名全部存在**（含 `IME-S06B` 场景号）；`Ctrl+F12` 托盘已彻底释放（`RegisterHotKey` 已删、托盘菜单文案已去掉 `Ctrl+F12`）；`is_mode_chord` 对 Ctrl+F1/F2/Alt/Shift/Win 全部互斥 | 逐个名字回查源码 |
+| **「重构只搬不改」**（判据 1 的前半） | ✅ `tip.rs` 拆分是**逐字搬运**：**128 个函数，0 个函数体被改、0 个丢失**；`laser_ui.rs` 的 8 个函数改为委派给新 `hit::` 助手（`on_the_lens` = `mouth.contains`、`on_the_light` = `mouth_hit`、`row_under` / `action_under` / `row_rect` = 原内联代码），**逐行语义等价** | 一次性脚本：解析旧文件的每个函数体（去注释、折叠空白）后在新文件里找同串；再对 `dcfa7db...HEAD` 的重构段单独跑一遍 |
+| **规格被满足的部分** | ✅ 出厂代码输入 + `Ctrl+F12` 切模式 + `Alt+F1` 第二条路；面板三规则；D-103 光缝贴屏边且命中区跟光缝（绘制与命中两侧都改到位）；D-104 代码输入看得见备选选项、键仍归编辑器；D-107 切语言面板与旧列表退场而光缝保留；三个本地工具（符号表 ~60 项 / 日期时间 / 剪贴板当前文本） | 逐条对源码与单测 |
+
+#### 5.26.5 这一轮**没有**验证的地方（不虚报）
+
+* **门禁（重构后）**：本轮**重跑了两轮**，第 1 轮（带 `--mutation`）**exit 0、全绿**：Rust 458 / TSF 354 / TASE 1055 / agent 85，红绿 **30 caught, 0 missed, 0 unknown, 1 stale**（那 1 条 stale 就是 D-111 的 `romaji-a`）。第 2 轮（FAST 集合 + installer + 三道 claims）的结果见本节末尾的补记。
+  ⇒ 判据 1 的**「行为没变」**这一半现在有证据了（重构后红绿全抓住）；**「30 个变异全部 CAUGHT」这句本身仍不成立**——实数是 31 条用例、30 条跑了、1 条永久 stale（D-111 / D-119），所以 `REFACTOR_PLAN.md` §0 判据 1 的**数字要跟着改**（改法交你裁定）。
+* **真机**：0.3.2 的包还没装（要注销/重启），面板手感、Ctrl+F12、三个工具、圆角尖角（D-106）都**没有**在真机上验过。
+* **本轮没有改任何既有实现**：D-108 ~ D-122 全部**只登记**、不修复（按你的规矩：缺陷交你裁定）。只有两件「文档/清单层面的登记与补齐」我直接做了：① 缺陷提交单的摘要表头（条数与范围改成实数）；② `MANIFEST_SHA256.txt` 重建（它停在重构前，`update-manifest.js --check` 原本是 exit 1，7 个新模块文件一个都不在清单里）。
+* **D-106 仍然缺一张照片**：圆角尖角要靠图定位，仓库里有采集脚本 `01_Source/tests/smoke/ime-ui-capture.ps1`。
+
+### 5.26.6 端到端覆盖（三个子代理 + 我亲自复跑）
+
+这一轮是你点的：「**e2e 测试脚本开子代理制作最新的，确保每一个功能是否完善都能覆盖到 90% 以上**」。
+
+三个子代理，**文件所有权互不重叠**（并行不会打架，最后谁也没碰别人的文件）：
+
+| 子代理 | 独占的路径 | 产出 |
+|---|---|---|
+| A | `01_Source/tests/uat/tests/08-*.spec.js` + `helpers/08-support.js` | **7 个新 UAT 场景**（UAT-56 ~ UAT-62）：IT-006 / ST-008 / ST-031 / IT-043 / ST-009 / ST-026 / ST-029 |
+| B | `01_Source/tests/tsf/` + `crates/pime-tsf/Cargo.toml`（只加 `[[test]]` 条目） | **4 个新的 TSF 端到端测试二进制**：IT-002（安装/切换/卸载不破坏别家输入法）、IT-005（安全框什么都不收集）、IT-037 与 IT-042（**只部分覆盖，故意不挂用例号**） |
+| C | `01_Source/scripts/coverage-report.js` + `01_Source/tests/e2e/` | **覆盖门禁脚本**（按功能域算覆盖率，低于 90% 就非零退出）+ **Windows 11 VM runner**（23 个文件） |
+
+**我独立复跑的结果**（不是只听代理自报）：
+
+| 东西 | 我复跑的结果 |
+|---|---|
+| 7 个新 UAT 场景 | **7/7 通过**（1.9 分钟） |
+| 全量 UAT | **59 个场景：58 通过 / 1 按设计跳过 / 0 失败**（9.5 分钟） |
+| TSF crate | `cargo clean -p pime-tsf` 之后重建：**367 项全过**（337 单元 + 4 个新二进制的 17 项 + 既有集成 13 项） |
+| VM runner | `-PlanOnly` 走通，**6 个用例全部列出，exit 0**；19 个 `.ps1` 全部通过 PowerShell 语法解析 |
+| 覆盖门禁 | `node scripts/coverage-report.js` 可跑；**有功能域低于 90% 时 exit 1** |
+
+#### 覆盖率是**怎么**算的
+
+「功能域」不是章节——设计书把 168 条用例全放在同一个 `## 3.` 章节里。所以**功能域取详细设计里的模块 DD-01 ~ DD-10**：从用例的「设计对象」行取模块；没有就取「追踪要件」行的 FR → DD 映射；只挂 NFR 的用例归到跨组件的 NFR 域。
+
+每条用例算「有没有**带着它的编号并且通过了**的自动化测试」——和 `scripts/traceability-report.js` **同一套口径**（按测试标题里的编号映射，不按文件名）。所以新写的测试**必须把用例号写进标题**才算数；而**只证明了一半判定基准的用例，代理故意不挂号**（例如 IT-037 / IT-042）——挂上去会让报告说谎。
+
+#### 基线（这一轮之前）
+
+**143 / 168 = 85.1%**，**7 个功能域低于 90%**：DD-01（52.6%）、DD-09（57.1%）、DD-08（80.0%）、NFR（80.0%）、DD-03（88.0%）、DD-02（88.9%）、DD-10（77.8%）。
+
+**补完这一轮之后**：****154 / 168 = 91.7%**（0 失败 / 14 未跑）——这一轮之前是 143 / 168 = 85.1%**，**只剩 4 个功能域低于 90%**：
+
+| 功能域 | 用例 | 覆盖 | 覆盖率 | 还差 |
+|---|---|---|---|---|
+| DD-02 输入状态机 | 9 | 9 | **100%** | — |
+| DD-06 实时预测与调度 | 17 | 17 | **100%** | — |
+| DD-03 七语言包 | 25 | 25 | **100%** | — |
+| DD-05 BYOK / Provider | 21 | 21 | **100%** | — |
+| DD-07 F1 事务 | 30 | 30 | **100%** | — |
+| DD-04 权限上下文 / Bridge | 16 | 15 | 93.8% | 1 条（IT-013） |
+| DD-08 画面 / 无障碍 | 10 | 9 | 90.0% | 1 条（IT-037） |
+| DD-10 安装 / 迁移 / 安全 | 9 | 8 | 88.9% | 1 条（ST-035） |
+| NFR 跨组件 | 5 | 4 | 80.0% | 1 条（ST-040） |
+| DD-01 TSF / COM | 19 | 12 | 63.2% | 6 条 |
+| DD-09 规则库 | 7 | 4 | 57.1% | 3 条 |
+
+这一轮**新覆盖**的用例：**IT-002、IT-005**（TSF 端到端）、**IT-006、IT-043、ST-008、ST-009、ST-026、ST-029、ST-031**（UAT）。
+
+#### 三个域**够不到 90%**，原因不是「还没写测试」（诚实记下来）
+
+| 域 | 缺口 | 为什么够不到 |
+|---|---|---|
+| **DD-09 规则库** | 3 条（UT-060 / IT-038 / ST-034） | 全部卡在**P1 插件宿主没有实现**——那是**产品功能缺口**，不是测试缺口 |
+| **NFR 跨组件** | 1 条（ST-040） | 要**基准机长跑**测 F1 的 P95 延迟与进度反馈 |
+| **DD-01 TSF/COM** | ST-001 ~ ST-005 | 要**真的 Windows 11 机器**激活三个语言档 ⇒ 这一轮交付的是**跑它的脚本**（`tests/e2e/`），**不是它的结果** |
+
+⇒ 「每个功能都到 90% 以上」这个目标，**在现有产品形态下不是「再写几个测试」能到的**：DD-09 与 NFR 要**先做产品 / 备一台基准机**，DD-01 的五条要**一台 Windows 11 机器**。这一轮把这三样缺的**工具**都交付了（门禁脚本 + VM runner），但**结果**不在这一轮。
+
+#### 这一轮**顺手抓到并修掉的**两件事（我自己发现的，不是代理）
+
+1. **新 UAT 场景的编号撞车**：代理把新场景编成 UAT-40 ~ UAT-46，而既有 `f2-prompt.spec.js` **已经用了** UAT-40 ~ UAT-45 ⇒ 重号 7 个。已重编为 **UAT-56 ~ UAT-62**（现最大是 55），全量 51 个场景**零重号**。
+2. **UAT 证据没写出来**：我第一次跑全量 UAT 时加了 `--reporter=list`，**它把 `playwright.config.js` 里的 json reporter 覆盖掉了** ⇒ `uat-results.json` 根本没被更新（仓库的 `FRAMEWORK_GAPS.md` §5.7 里早就写着这条坑：「**不要用 `--reporter=list` 覆盖掉 json reporter**」）。去掉该参数重跑，证据才落盘；claims 与正文同步到 **59 / 58 / 1 / 0**，三道 claims 校验全绿。
+
+#### 代理报上来的实现缺陷（**没有改**，全部进了台账）
+
+| 严重度 | 缺陷 | 编号 |
+|---|---|---|
+| 高 | **看门狗 `InputMachine::tick` 从来没被调用**，而且 Core 是同步调用 ⇒ Core 真挂起会卡死按键事件（FR-051 / NFR-102 不成立） | D-125 |
+| 高 | **安装包没有签名** ⇒ ST-035 的判定基准（签名安装）无法满足 | D-128 |
+| 中 | **TSF↔Core 没走带 Hello / 身份认证的 IPC**（设计要求有，实现是进程内直连）⇒ IT-003 的认证面在 TSF 路径上不存在 | D-126 |
+| 中 | CLSID / 语言档案 GUID 是**自声明的原型值**，却要写进 HKLM 全机 | D-129 |
+| 低（隐患） | `register.rs` 的 `cfg!(test)` 守卫对集成测试无效 ⇒ 集成测试若调到 `RealBackend::open()` 会**写真机注册表** | D-127 |
+| 低 | 安装器没有独立的「修复」模式，ARP 条目是 `NoModify/NoRepair` | D-130 |
+| 低（未验证） | `Ctrl+F12` 在文档里同时是「跨输入法切换」和「模式切换」 | D-131 |

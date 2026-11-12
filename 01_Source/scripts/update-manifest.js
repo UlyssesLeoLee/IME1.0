@@ -55,6 +55,7 @@ const ADDITION_DIRECTORIES = [
   '01_Source/crates/tase-agent-scheduler',
   '01_Source/crates/tase-worker',
   '01_Source/crates/tase-impls',
+  '01_Source/tests/e2e',
 ];
 
 // The files of a directory, in the order the walk finds them.
@@ -215,6 +216,25 @@ const ADDITIONS = [
   '02_Verification/mutation-report.txt',
   // the plan of the refactor and the checkable bar of "commercial grade"
   '01_Source/docs/REFACTOR_PLAN.md',
+  // the modules of the first refactor phase: the two god-files of the text service were split into these
+  '01_Source/crates/pime-tsf/src/tip/keys.rs',
+  '01_Source/crates/pime-tsf/src/tip/panel.rs',
+  '01_Source/crates/pime-tsf/src/tip/bridge.rs',
+  '01_Source/crates/pime-tsf/src/tip/settings.rs',
+  '01_Source/crates/pime-tsf/src/tip/lifecycle.rs',
+  '01_Source/crates/pime-tsf/src/laser_ui/paint.rs',
+  '01_Source/crates/pime-tsf/src/laser_ui/hit.rs',
+  // the coverage report and its 90% gate (the per feature area view of the design cases)
+  '01_Source/scripts/coverage-report.js',
+  // the end-to-end tests of the third round: the Windows 11 guest runner, the text service scenarios and the
+  // user-acceptance specs of the new design cases
+  '01_Source/tests/tsf/ime_registration.rs',
+  '01_Source/tests/tsf/ime_context_security.rs',
+  '01_Source/tests/tsf/ime_resilience.rs',
+  '01_Source/tests/tsf/ime_dpi_language.rs',
+  '01_Source/tests/uat/tests/08-candidates-context.spec.js',
+  '01_Source/tests/uat/tests/08-safety-ai.spec.js',
+  '01_Source/tests/uat/helpers/08-support.js',
   // the cost and the latency benchmark of the product
   '01_Source/scripts/bench-cost.js',
   '01_Source/crates/tase-metrics/examples/cost_bench.rs',
