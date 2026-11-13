@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-12T18:01:54.845Z",
+  "generated": "2026-11-13T01:51:19.590Z",
   "node": "v24.19.0",
   "js": {
    "total": 327,
@@ -11,8 +11,8 @@
    "pass": 458
   },
   "tsf": {
-   "total": 367,
-   "pass": 367
+   "total": 369,
+   "pass": 369
   },
   "uat": {
    "total": 58,
@@ -27,9 +27,9 @@
    },
    "IT": {
     "total": 48,
-    "pass": 43,
+    "pass": 44,
     "fail": 0,
-    "notRun": 5
+    "notRun": 4
    },
    "ST": {
     "total": 43,
@@ -1492,11 +1492,13 @@
   {
    "id": "IT-013",
    "title": "TSF L1 与 Bridge L3 权限区别",
-   "status": "NOT RUN",
-   "via": [],
+   "status": "PASS",
+   "via": [
+    "tsf"
+   ],
    "tests": [],
    "failed": [],
-   "reason": "no automated test mapped to this id in this delivery"
+   "reason": ""
   },
   {
    "id": "IT-014",

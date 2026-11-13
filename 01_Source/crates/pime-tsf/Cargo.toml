@@ -51,6 +51,10 @@ path = "../../tests/tsf/ime_resilience.rs"
 name = "ime_dpi_language"
 path = "../../tests/tsf/ime_dpi_language.rs"
 
+[[test]]
+name = "ime_permission_levels"
+path = "../../tests/tsf/ime_permission_levels.rs"
+
 [dependencies]
 pime-core = { path = "../pime-core" }
 # The privacy and the safety rules of TASE are shared: the text service asks the same policy the extension and the

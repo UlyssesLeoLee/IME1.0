@@ -52,6 +52,14 @@ powershell tests/e2e/Invoke-E2E.ps1 -Config tests/e2e/vmconfig.json   # the end-
   covers it; `tests/tsf/ime_functions.rs` looks the named tests up in the source, so a renamed or deleted test turns the ledger red instead of
   letting it rot silently. See `01_Source/docs/IME_TEST_MATRIX.md`.
 - Requirements: Node 22.22+ / 24.15+ / 26 (tested with 26.13.0), Rust stable, VS Code and OpenSSL for the UAT (see `tests/uat/README.md`).
+- A **new Rust test target** may be blocked **once** by the security scanner of the machine: a freshly linked test binary is quarantined
+  ("could not execute process ... (never executed)", and the file is gone afterwards), and the gate's cargo retry only knows `os error 5`,
+  so it reports the step as failed instead of retrying. Run the new target once by hand (`cargo test --test <name>`) before the gate, or on a
+  machine without that scanner. See D-138.
+- After a gate run that includes the **red-green (mutation) step**, clean the build cache before the next run: the restore puts the backup's
+  mtime back on the source, the artefact built from the broken source is the newer one, so cargo does not rebuild it and the next run tests the
+  **broken** binaries (the JS engine differential test then fails on the grant broker and never exits). `cargo clean -p pime-core` in `01_Source`
+  and `cargo clean -p pime-tsf` in `01_Source/crates/pime-tsf` (that crate has its own workspace). See D-133.
 
 ## Adding a test
 

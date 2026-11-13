@@ -200,7 +200,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 | 检查 | 结果 | 证据 |
 |---|---|---|
 | Rust 核心 `cargo test --workspace` | **458 / 458 通过**（本轮新增**AI 代理的线上契约** `pime-core/src/agent_proto.rs`：请求 / 回答 / 6 个操作 / 8 个错误码 / 载荷上限 / 消息码 / 窗口类名与标题前缀，10 项往返单测） | `run-all-2026-11-04.log` |
-| Rust TSF `cargo test` | **367 / 367 通过**（本轮新增 **DLL 侧的 AI 桥接**：`agent_bridge.rs`（隐藏桥接窗口 + `WM_COPYDATA` 收发 + 密码框不写 + 结构体布局）与 `tip.rs` 的接线（写入光标处 / 替换选区 / 读选区 / 切语言 / 状态）；另修掉一个**真缺陷**：桥接窗口**第二次就打不开**（类注册结果记在局部变量里，`Once` 的闭包只执行一次 ⇒ 切走再切回来，AI 就再也叫不动输入法），并补了**真机跨进程往返**测试） | `run-all-2026-11-04.log` |
+| Rust TSF `cargo test` | **369 / 369 通过**（本轮新增 **DLL 侧的 AI 桥接**：`agent_bridge.rs`（隐藏桥接窗口 + `WM_COPYDATA` 收发 + 密码框不写 + 结构体布局）与 `tip.rs` 的接线（写入光标处 / 替换选区 / 读选区 / 切语言 / 状态）；另修掉一个**真缺陷**：桥接窗口**第二次就打不开**（类注册结果记在局部变量里，`Once` 的闭包只执行一次 ⇒ 切走再切回来，AI 就再也叫不动输入法），并补了**真机跨进程往返**测试） | `run-all-2026-11-04.log` |
 | Rust agent `cargo test` | **85 / 85 通过**（本轮新增 `crates/pime-agent`：**MCP 服务端**（7 个工具）、**CLI**（12 个操作）、**本地服务**（命名管道 `\\.\pipe\pime-agent-v1` + HTTP 127.0.0.1 + 令牌）；含一条**真机 `WM_COPYDATA` 往返**与一条「桥接不回答时按时放弃」的保护） | `run-all-2026-11-04.log` |
 | 安装器 `cargo test`（单元 105 + 真实文件系统 13 + 真实链接 5） | **123 / 123 通过**（本轮载荷 8 → **10** 条：新增 `pime-mcp.exe` 与 `pime-ime.exe`；安装计划、清单、步骤数与期望值全部同步） | `setup-tests-2026-11-04.log` |
 | JavaScript 单元 / 集成 + 引擎差分 | **354 / 354 通过**（0 失败 0 跳过） | `run-all-2026-11-04.log` |
@@ -415,7 +415,7 @@ payload_pime_mcp_exe_bytes = 1013760
 payload_pime_ime_exe_bytes = 850944
 payload_meta_json_bytes = 87
 rust_core_tests = 458
-rust_tsf_tests = 367
+rust_tsf_tests = 369
 rust_agent_tests = 85
 rust_tase_tests = 1055
 js_tests = 354
