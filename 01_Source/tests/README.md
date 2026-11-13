@@ -75,3 +75,6 @@ the new text-service binaries (`ime_dpi_language.rs`, `ime_resilience.rs`) are w
 know. `scripts/mutation-check.js` does it for the whole implementation; for a single new test, change the code, run that test, and put the
 file back (write the content back and push its mtime to now - `fs.copyFileSync` keeps the old mtime and cargo would then keep using the
 broken binary, see D-133).
+- The F1 doubles (the fake document, editor, dialogs and webview panel, the runtime and the fixtures) live in `tests/js/f1rig.js`: the
+  annotate tests and the ST-040 latency measurement use the same ones. The lines were moved there byte for byte, so the behaviour is the
+  same - after such a move the JS suite has to report exactly the same number of tests.

@@ -78,6 +78,9 @@ const ADDITIONS = [
   // the tool that regenerates the evidence log of the gate (it writes the log while the gate runs, so the claims
   // checks inside the gate read the round that is running - see D-134)
   '01_Source/scripts/gate-log.js',
+  // the F1 rig, shared by the annotate tests and the ST-040 latency measurement
+  '01_Source/tests/js/f1rig.js',
+  '01_Source/tests/js/st-f1-latency.test.js',
   '01_Source/crates/pime-setup/assets/ime1.0.ico',
   '01_Source/crates/pime-setup/build.rs',
   '01_Source/crates/pime-setup/src/paint.rs',

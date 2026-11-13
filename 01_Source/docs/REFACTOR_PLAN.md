@@ -8,7 +8,7 @@
 | # | 判据 | 怎么验 |
 |---|---|---|
 | 1 | **行为没变** | `node tests/run-all.js`（含 `--mutation` 那一步）**exit 0**、日志零 FAIL 行；红绿报告里**每一个用例都真的跑到**（**stale 也算失败**——用例写错或锚点失效就是没验到，见 D-111）**且全部 CAUGHT**（不是 28、不是「29 抓 1 漏」） |
-| 2 | **单元与集成测试全绿** | Rust 核心 458 项、TSF 369 项（含这一轮新增的 4 个端到端二进制与 IT-013 的权限目标）、TASE 1055 项、agent 85 项、JS 354 项，一个不少 |
+| 2 | **单元与集成测试全绿** | Rust 核心 458 项、TSF 369 项（含这一轮新增的 4 个端到端二进制与 IT-013 的权限目标）、TASE 1055 项、agent 85 项、JS 357 项，一个不少 |
 | 3 | **零新增告警** | `cargo clippy --all-targets` 不出现**新**的告警（既有的 8 + 2 条是登记过的） |
 | 4 | **追溯报告不说谎** | `scripts/traceability-report.js` 的 UT/IT/ST 数字**不下降**；新增的测试要带设计用例号（`ut_NNN_` / `it_NNN_` / `st_NNN_` / 标题里的 `UT-NNN`） |
 | 5 | **清单与数字对得上** | `node scripts/update-manifest.js --check` 通过；claims（安装包字节数 / sha256 / 各套件测试数）与 `02_Verification/` 里的实物一致 |

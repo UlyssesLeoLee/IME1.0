@@ -1,4 +1,4 @@
-# The red-green check of 2026-11-13T11:28:55.606Z
+# The red-green check of 2026-11-13T13:07:46.794Z
 # 31 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab a domain header needs a real tab (a space is not one)
