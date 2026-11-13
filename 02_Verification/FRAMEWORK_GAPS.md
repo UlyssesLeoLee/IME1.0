@@ -1626,3 +1626,26 @@ crate 目录里，pime-tsf 被排除在根 workspace 之外）⇒ 该文件 **10
 「grant broker 同行为」那条**假失败**（正是 `grants-mismatch` 那条变异去掉的 provider 检查），而且**整个测试进程挂死**。
 清掉 `pime-core` 与 `pime-tsf` 两个 crate 的产物后重建 ⇒ 那条文件 **10/10 全过、3.5 秒**。
 ⇒ 已在 `01_Source/tests/README.md` 写明「**跑完带红绿步的门禁，下一轮开跑前先清缓存**」。
+
+#### 补上那个**仓库里从来没有过**的工具：证据日志的生成器（D-146）
+
+这一轮还发现：**仓库里没有任何工具能重新生成 `02_Verification/run-all-2026-11-04.log`**。它是提交进仓的证据，
+三道 claims 校验都读它，交付说明的数字也引它——但生成它只能靠**仓库外**的临时脚本（前几轮一直放在
+`D:\tmp-pime-wiz\`）。⇒ 证据**不可复现**，而且那种「跑完才写盘」的临时脚本正是 D-134 的成因。
+
+新增 **`01_Source/scripts/gate-log.js`**（**新增工具，未改任何既有实现**）：
+
+```
+node scripts/gate-log.js            # 跑门禁，并把证据日志边跑边写（跑之前先清空）
+node scripts/gate-log.js --all      # + 两轮 UAT
+node scripts/gate-log.js --tsf --rust
+node scripts/gate-log.js --no-clean # 不先清构建缓存
+```
+
+- **边跑边写**：门禁内的三道 claims 校验因此读到**当前这一轮**的数字、也看不到旧的 FAIL 行 ⇒ **D-134 的自指死锁
+  从工具层面解开了**（这一轮的门禁日志零 FAIL 行，三道校验在门禁内部就通过）；
+- **默认先清 `pime-core` / `pime-tsf` 的产物**（D-133：红绿步会把改坏的二进制留在共享 target 目录里，
+  `pime-tsf` 有自己的 workspace，所以要在它自己的 crate 目录清）；
+- GNU 工具链的 PATH 用法指到 `docs/IME_TEST_MATRIX.md` 与 `docs/TASE_CRATES.md`。
+
+**门禁脚本 `tests/run-all.js` 一个字没改** —— 要不要把这套搬进门禁本体，仍待你裁定（D-134）。

@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，852 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，853 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -524,7 +524,7 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 
 33. **按重构后的代码重出安装包**：磁盘上的旧包建于 **13:14:58**，**早于重构提交（13:33 / 14:29）**
     ⇒ 包里**没有**重构后的二进制。新包 **10,394,410 B / sha256 `502a1053…`**；
-    claims、清单同步刷新（清单 **852 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。
+    claims、清单同步刷新（清单 **853 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。
 
 34. **抓到两个「证据说谎」的坑**（都是我自己发现的）：
     ① **共享 target 目录里的陈旧产物**伪造了一次 `grants` 失败（D-123；`cargo clean -p pime-tsf` 重建后全绿，
@@ -573,6 +573,12 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
      **三道 claims 校验（框架矩阵 / UAT / 证据交叉）这次是在门禁内部就通过的**——之前它们互相卡死（D-134：校验读的是
      上一轮那份日志，日志一旦脏过就永远红）；这一轮我用**仓库外**的日志生成器把日志**边跑边写**，校验就能读到当前这一轮。
      **门禁脚本本身我没有动**（D-134 仍待你裁定）。
+
+   * **补上了一个仓库里从来没有过的工具：证据日志的生成器**（`01_Source/scripts/gate-log.js`，**D-146**）。
+     以前 `run-all-2026-11-04.log` 只能靠**仓库外**的临时脚本重出（不可复现，而且那种写法正是 D-134 的成因）；
+     现在 `node scripts/gate-log.js` 就能重出：跑门禁时**边跑边写**日志 ⇒ 门禁内的 claims 校验读到**当前这一轮**；
+     默认先清 `pime-core` / `pime-tsf` 的产物 ⇒ 不会重蹈 D-133「跑的是被改坏的二进制」的覆辙。
+     **新增工具，未改任何既有实现**（`tests/run-all.js` 一个字没动）。
 
 37. **这一轮没有验证的**（不虚报）：**真机**（0.3.2 的包还没装，要注销/重启）；
     **Windows 11 VM 上的六条用例**（脚本通、结果空）；面板手感与 Ctrl+F12 的真实体感；

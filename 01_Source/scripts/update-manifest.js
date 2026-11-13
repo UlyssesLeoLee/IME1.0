@@ -75,6 +75,9 @@ function filesUnder(directory) {
 // The files that this round added to the repository.
 const ADDITIONS = [
 
+  // the tool that regenerates the evidence log of the gate (it writes the log while the gate runs, so the claims
+  // checks inside the gate read the round that is running - see D-134)
+  '01_Source/scripts/gate-log.js',
   '01_Source/crates/pime-setup/assets/ime1.0.ico',
   '01_Source/crates/pime-setup/build.rs',
   '01_Source/crates/pime-setup/src/paint.rs',

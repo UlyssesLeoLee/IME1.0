@@ -36,6 +36,7 @@ node tests/run-all.js --ipc              # crates/pime-ipc: unit + loopback test
 node tests/run-all.js --setup            # crates/pime-setup: unit + temp-folder integration tests (never touches Program Files, HKLM or regsvr32)
 node tests/run-all.js --uat --only-uat "UAT-23"
 node tests/run-all.js --report           # explicit: rewrite 02_Verification/test-execution-report.* from the last results
+node scripts/gate-log.js                  # regenerate the evidence log 02_Verification/run-all-2026-11-04.log: it runs the gate and writes the log WHILE the gate runs, so the claims checks inside the gate read this round (D-134); it cleans the pime-core / pime-tsf artefacts first, because the red-green step leaves the broken binary in the cache (D-133)
 powershell tests/e2e/Invoke-E2E.ps1 -PlanOnly   # what the Windows 11 guest runner would do, without a guest
 powershell tests/e2e/Invoke-E2E.ps1 -Config tests/e2e/vmconfig.json   # the end-to-end cases ST-001..005 and ST-035 (needs a guest)
 ```

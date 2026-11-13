@@ -1,6 +1,6 @@
 {
   "schema_version": "tase.cost-benchmark.v1",
-  "measured_at": "2026-11-13T10:37:06.975Z",
+  "measured_at": "2026-11-13T11:28:55.495Z",
   "machine": "SEIKOIST002",
   "budget": {
     "rule": "the local candidate path stays inside its budget (DD-IME 20.2)",
@@ -10,10 +10,10 @@
   "latency": {
     "samples": 1200,
     "candidates_seen": 9800,
-    "p50_us": 0.6,
-    "p95_us": 32.2,
-    "max_us": 77.1,
-    "p95_ns": 32200,
+    "p50_us": 1.2,
+    "p95_us": 38.3,
+    "max_us": 132.9,
+    "p95_ns": 38300,
     "budget_us": 50000,
     "within_budget": true
   },
