@@ -1607,6 +1607,7 @@ crate 目录里，pime-tsf 被排除在根 workspace 之外）⇒ 该文件 **10
 | Rust 核心 `cargo test --workspace` | PASS，**458 项** |
 | JavaScript 套件（含引擎差分） | PASS，**357 项** |
 | 真机 core.exe 冒烟 | PASS |
+| **UAT（真 VS Code）** | PASS：**60 场景、59 通过 / 1 按设计跳过 / 0 失败**（9.0 分钟）——D-137 起它在 FAST 集合里，**排在机器还空闲的时候**（在重步之前），失败还会再跑一次（D-148） |
 | **TSF crate `cargo test`** | PASS，**370 项**（含新挂载的 IT-013 目标 2 项） |
 | TSF DLL（GNU 目标、x64 PE、只导入系统 DLL） | PASS |
 | TASE crates | PASS，15 个 crate、**1055 项** |
