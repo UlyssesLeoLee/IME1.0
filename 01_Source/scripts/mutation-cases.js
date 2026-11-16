@@ -271,4 +271,64 @@ module.exports = [
     to: 'const kept = out;',
     suite: JS('ut-language.test.js'),
   },
+  // ---- the F1 panel: the progress, the first candidate, the cancellation -------------------------------------
+  {
+    id: 'f1-progress',
+    what: 'the tab says that it is working while the provider thinks',
+    file: '01_Source/editor-bridges/vscode/src/f1.js',
+    from: "s.tabs[r.name].status = 'loading';",
+    to: "s.tabs[r.name].status = 'idle';",
+    suite: JS('st-f1-latency.test.js'),
+  },
+  {
+    id: 'f1-first-candidate',
+    what: 'the first candidate of the F1 path becomes ready',
+    file: '01_Source/editor-bridges/vscode/src/f1.js',
+    from: "tab.status = 'ready'; tab.message = L('f1.ann.summary', kinds.join(', '));",
+    to: "tab.status = 'idle'; tab.message = L('f1.ann.summary', kinds.join(', '));",
+    suite: JS('st-f1-latency.test.js'),
+  },
+  {
+    id: 'f1-cancel',
+    what: 'a cancelled F1 request leaves the tab idle, not in error',
+    file: '01_Source/editor-bridges/vscode/src/f1.js',
+    from: "if (codeOf(err) === 'AI_CANCELLED') { tab.status = 'idle'; tab.message = errorText(err); }",
+    to: "if (codeOf(err) === 'AI_CANCELLED') { tab.status = 'error'; tab.message = errorText(err); }",
+    suite: JS('st-f1-latency.test.js'),
+  },
+  // ---- the IT-013 test: the nearby window, the collection, the state, the scope -----------------------------
+  // The suite is the text-service crate: these behaviours are watched through the IT-013 target, so that a hole in
+  // that test shows up here instead of hiding behind the unit tests of the core.
+  {
+    id: 'ime-context-window',
+    what: 'the text service keeps a window of what was typed, not all of it',
+    file: '01_Source/crates/pime-core/src/input.rs',
+    from: 'if excess > 0 {',
+    to: 'if excess > 0 && false {',
+    suite: TSF,
+  },
+  {
+    id: 'ime-context-collect',
+    what: 'the text service collects the characters the user typed',
+    file: '01_Source/crates/pime-core/src/input.rs',
+    from: 'Key::Char(c) => self.context.push(c),',
+    to: 'Key::Char(_c) => {},',
+    suite: TSF,
+  },
+  {
+    id: 'ime-direct-observing',
+    what: 'the host that grants the nearby range switches the machine to observing',
+    file: '01_Source/crates/pime-core/src/input.rs',
+    from: '(State::Direct, true) => self.state = State::Observing,',
+    to: '(State::Direct, true) => {},',
+    suite: TSF,
+  },
+  {
+    id: 'grants-scope',
+    what: 'a grant of one level does not stand in for another one',
+    file: '01_Source/crates/pime-core/src/grants.rs',
+    from: 'if g.scope != c.scope {',
+    to: 'if g.scope == c.scope {',
+    suite: TSF,
+  },
 ];

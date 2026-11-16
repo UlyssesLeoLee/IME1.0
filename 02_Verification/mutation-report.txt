@@ -1,5 +1,5 @@
-# The red-green check of 2026-11-13T13:07:46.794Z
-# 31 mutations of the implementation; every one of them is restored right after it is applied.
+# The red-green check of 2026-11-16T01:13:00.517Z
+# 38 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero the revision of a domain is a positive integer
@@ -32,6 +32,13 @@ CAUGHT js-candidates-password the reason the candidates are off in a password fi
 CAUGHT js-textrange-surrogate an offset never splits a surrogate pair
 CAUGHT js-transaction-apply a failed syntax check disables the default apply
 CAUGHT js-languages-invalid a candidate that does not validate is not offered
+CAUGHT f1-progress the tab says that it is working while the provider thinks
+CAUGHT f1-first-candidate the first candidate of the F1 path becomes ready
+CAUGHT f1-cancel a cancelled F1 request leaves the tab idle, not in error
+CAUGHT ime-context-window the text service keeps a window of what was typed, not all of it
+CAUGHT ime-context-collect the text service collects the characters the user typed
+CAUGHT ime-direct-observing the host that grants the nearby range switches the machine to observing
+CAUGHT grants-scope a grant of one level does not stand in for another one
 
-the run checked 30 mutations: 30 caught, 0 missed, 0 unknown (the suite did not run), 1 stale
+the run checked 37 mutations: 37 caught, 0 missed, 0 unknown (the suite did not run), 1 stale
 every mutation was caught: the suite really pins these behaviours
