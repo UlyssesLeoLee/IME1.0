@@ -6,6 +6,12 @@
 // so when the text is not there any more), `to` is the broken version. The cases are the behaviours the product
 // cannot be wrong about: the rules of the domains, the keys, the modes, the safety, the ranking.
 //
+// Every case carries the design entry it protects in its `req` field: a requirement of the SRS (FR-xxx), a case of
+// the test design (UT/IT/ST-xxx), a non-functional requirement (NFR-xxx) - or the ruling of the user when the
+// feature is not in the design documents at all (the .NEMA demo, the romaji table, the mode key, the clipboard).
+// The anchor is what the report quotes, so the evidence of the round is about requirements and not about the lines
+// of code it happens to break.
+//
 // A case that is MISSED is a hole in the test suite: it is reported, it is not hidden.
 const CORE = {kind: 'rust', crate: 'pime-core'};
 const TSF = {kind: 'rust', crate: 'pime-tsf'};
@@ -16,6 +22,7 @@ module.exports = [
   {
     id: 'nema-tab',
     what: 'a domain header needs a real tab (a space is not one)',
+    req: 'D-90~D-92（多 Agent 演示的 .NEMA 口径）',
     file: '01_Source/crates/pime-core/src/nema.rs',
     from: 'let rest = line.strip_prefix(HEADER_TAB)?;',
     to: "let rest = line.strip_prefix(' ')?;",
@@ -24,6 +31,7 @@ module.exports = [
   {
     id: 'nema-revision-zero',
     what: 'the revision of a domain is a positive integer',
+    req: 'D-92（修订号）',
     file: '01_Source/crates/pime-core/src/nema.rs',
     from: 'if revision == 0 {',
     to: 'if revision == u32::MAX {',
@@ -32,6 +40,7 @@ module.exports = [
   {
     id: 'nema-trailing',
     what: 'nothing may follow the revision of a domain header',
+    req: 'D-90~D-92（多 Agent 演示的 .NEMA 口径）',
     file: '01_Source/crates/pime-core/src/nema.rs',
     from: 'if revision.is_empty() || !revision.bytes().all(|byte| byte.is_ascii_digit()) {',
     to: 'if revision.is_empty() {',
@@ -40,6 +49,7 @@ module.exports = [
   {
     id: 'nema-graph-marker',
     what: 'the mark of a graph domain touches its id',
+    req: 'D-90~D-92（多 Agent 演示的 .NEMA 口径）',
     file: '01_Source/crates/pime-core/src/nema.rs',
     from: "let rest = rest.strip_prefix('>').unwrap_or(rest);",
     to: "let rest = rest.strip_prefix(' ').unwrap_or(rest);",
@@ -48,6 +58,7 @@ module.exports = [
   {
     id: 'nema-scope',
     what: 'a domain reaches up to the header of the next one',
+    req: 'D-90~D-92（多 Agent 演示的 .NEMA 口径）',
     file: '01_Source/crates/pime-core/src/nema.rs',
     from: '.map(|(line_start, ..)| *line_start)',
     to: '.map(|(line_start, ..)| *line_start + 1)',
@@ -55,10 +66,11 @@ module.exports = [
   },
   {
     id: 'romaji-a',
-    what: 'the romaji table: a alone is あ (the file carries い today)',
+    what: 'the romaji table: a alone is あ (breaking it puts い back)',
+    req: 'D-93（日文罗马音表）',
     file: '01_Source/crates/pime-core/src/cjk/romaji-kana.txt',
-    from: 'a:い\n',
-    to: 'a:あ\n',
+    from: 'a:あ\n',
+    to: 'a:い\n',
     suite: CORE,
   },
 
@@ -66,6 +78,7 @@ module.exports = [
   {
     id: 'textrange-surrogate',
     what: 'an offset never splits a surrogate pair',
+    req: 'UT-026 / FR-013',
     file: '01_Source/crates/pime-core/src/textrange.rs',
     from: 'if !boundary_u(t, offset) {',
     to: 'if false {',
@@ -74,6 +87,7 @@ module.exports = [
   {
     id: 'predict-invalid',
     what: 'a candidate that does not validate is not offered',
+    req: 'UT-006 / FR-026',
     file: '01_Source/crates/pime-core/src/predict.rs',
     from: 'out.retain(|c| c.validation != Validation::Invalid);',
     to: 'out.retain(|c| true);',
@@ -82,6 +96,7 @@ module.exports = [
   {
     id: 'imeswitch-cycle',
     what: 'the language key walks through the three languages',
+    req: 'FR-001 / UT-011',
     file: '01_Source/crates/pime-core/src/imeswitch.rs',
     from: 'Some(index) => LANGUAGES[(index + 1) % LANGUAGES.len()],',
     to: 'Some(index) => LANGUAGES[index % LANGUAGES.len()],',
@@ -90,6 +105,7 @@ module.exports = [
   {
     id: 'budget-limit',
     what: 'the budget of the AI is refused when it is used up',
+    req: 'UT-035 / FR-023',
     file: '01_Source/crates/pime-core/src/budget.rs',
     from: 'if self.max_requests.is_some_and(|m| self.requests + 1 > m)',
     to: 'if self.max_requests.is_some_and(|m| false)',
@@ -98,6 +114,7 @@ module.exports = [
   {
     id: 'grants-mismatch',
     what: 'a grant is refused when the provider does not match',
+    req: 'UT-029 / FR-016',
     file: '01_Source/crates/pime-core/src/grants.rs',
     from: 'if g.provider_id != c.provider_id {',
     to: 'if false {',
@@ -108,6 +125,7 @@ module.exports = [
   {
     id: 'keymap-mode-chord',
     what: 'Ctrl+F12 switches between the code input and the natural language input',
+    req: 'D-95（Ctrl+F12 = 模式切换）',
     file: '01_Source/crates/pime-tsf/src/keymap.rs',
     from: 'code == vk::F12 && mods.ctrl && !mods.alt && !mods.shift && !mods.win',
     to: 'code == vk::F12 && mods.ctrl && !mods.alt && !mods.shift && mods.win',
@@ -116,6 +134,7 @@ module.exports = [
   {
     id: 'keymap-alt-f1',
     what: 'Alt+F1 switches the input mode as well',
+    req: 'D-95（Ctrl+F12 = 模式切换）',
     file: '01_Source/crates/pime-tsf/src/keymap.rs',
     from: 'code == vk::F1 && mods.alt && !mods.ctrl && !mods.shift && !mods.win',
     to: 'code == vk::F1 && mods.alt && !mods.ctrl && !mods.shift && mods.win',
@@ -124,6 +143,7 @@ module.exports = [
   {
     id: 'controller-default-mode',
     what: 'the factory mode is the code input',
+    req: 'FR-005 / UT-003',
     file: '01_Source/crates/pime-tsf/src/controller.rs',
     from: '            // The code input is the factory mode (the user decided that on 2026-11-11): the input method never\n            // eats a code character, so the code goes into the document exactly as it was typed. The natural\n            // language input (typing opens a composition, the candidate list takes the arrows, Tab, Space and\n            // Enter) is one Ctrl+F12 away - and Alt+F1 does the same.\n            input_mode: false,',
     to: '            // The code input is the factory mode (the user decided that on 2026-11-11): the input method never\n            // eats a code character, so the code goes into the document exactly as it was typed. The natural\n            // language input (typing opens a composition, the candidate list takes the arrows, Tab, Space and\n            // Enter) is one Ctrl+F12 away - and Alt+F1 does the same.\n            input_mode: true,',
@@ -132,6 +152,7 @@ module.exports = [
   {
     id: 'controller-secure-chord',
     what: 'the mode key stays with the host in a password field',
+    req: 'FR-004 / UT-005',
     file: '01_Source/crates/pime-tsf/src/controller.rs',
     from: '        if is_input_mode_chord(key.code, key.mods) || is_mode_chord(key.code, key.mods) {\n            // Ctrl+F12 (the key the user asked for) and Alt+F1 switch between the code input and the natural\n            // language input; the panel offers the same as a row.\n            self.seen = None;\n            if self.secure {',
     to: '        if is_input_mode_chord(key.code, key.mods) || is_mode_chord(key.code, key.mods) {\n            // Ctrl+F12 (the key the user asked for) and Alt+F1 switch between the code input and the natural\n            // language input; the panel offers the same as a row.\n            self.seen = None;\n            if false {',
@@ -142,6 +163,7 @@ module.exports = [
   {
     id: 'laser-demo-action',
     what: 'a click on the row of the demonstration asks for the demonstration',
+    req: 'D-90~D-92（多 Agent 演示）',
     file: '01_Source/crates/pime-tsf/src/laser.rs',
     from: 'PanelItem::Demo => Some(PanelAction::Demo),',
     to: 'PanelItem::Demo => Some(PanelAction::Settings),',
@@ -150,6 +172,7 @@ module.exports = [
   {
     id: 'demo-body-length',
     what: 'every agent writes exactly twenty characters',
+    req: 'D-90~D-92（多 Agent 演示）',
     file: '01_Source/crates/pime-tsf/src/demo.rs',
     from: 'let body = format!("agent{number:02}_runs_nema_ok");',
     to: 'let body = format!("agent{number:02}_runs_nema_ok!");',
@@ -158,6 +181,7 @@ module.exports = [
   {
     id: 'demo-header-tab',
     what: 'the header of a domain starts with a real tab',
+    req: 'D-90~D-92（多 Agent 演示）',
     file: '01_Source/crates/pime-tsf/src/demo.rs',
     from: 'format!("\\t{} {}", self.domain_id, self.revision)',
     to: 'format!(" {} {}", self.domain_id, self.revision)',
@@ -166,6 +190,7 @@ module.exports = [
   {
     id: 'demo-note',
     what: 'the address of the interpreter is only written when there is no domain header',
+    req: 'D-90（没有领域头时补的那一行是说明行）',
     file: '01_Source/crates/pime-tsf/src/demo.rs',
     from: 'add_note: !nema::has_domain_header(text),',
     to: 'add_note: true,',
@@ -174,6 +199,7 @@ module.exports = [
   {
     id: 'demo-revision',
     what: 'a domain that is written again gets the next revision',
+    req: 'D-92（同一领域再写一次时修订号递增）',
     file: '01_Source/crates/pime-tsf/src/demo.rs',
     from: '.map_or(1, |highest| highest.saturating_add(1))',
     to: '.map_or(1, |_highest| 1)',
@@ -182,6 +208,7 @@ module.exports = [
   {
     id: 'demo-secure',
     what: 'a password field gets nothing at all',
+    req: 'FR-004 / UT-005',
     file: '01_Source/crates/pime-tsf/src/demo.rs',
     from: 'if host.is_secure_field() {',
     to: 'if false {',
@@ -190,6 +217,7 @@ module.exports = [
   {
     id: 'mouths-user-mouth',
     what: 'the mouth of the human does not follow the demonstration',
+    req: 'D-90~D-92（多 Agent 演示）',
     file: '01_Source/crates/pime-tsf/src/mouths.rs',
     // The place of the human's mouth is decided in `make` (the user always keeps the place he put the mouth at),
     // so this is the place where the behaviour really lives.
@@ -200,6 +228,7 @@ module.exports = [
   {
     id: 'panel-list-opens-the-panel',
     what: 'the list of candidates opens the panel (the options are shown while typing)',
+    req: 'FR-041 / UT-055',
     file: '01_Source/crates/pime-tsf/src/laser_ui.rs',
     from: '        if self.panel.is_some() {\n            self.open_panel();',
     to: '        if false {\n            self.open_panel();',
@@ -208,6 +237,7 @@ module.exports = [
   {
     id: 'laser-slit-on-the-edge',
     what: 'the light of the mouth lies on the edge of the screen (no gap)',
+    req: 'D-90~D-92（多 Agent 演示）',
     file: '01_Source/crates/pime-tsf/src/laser.rs',
     from: '        Edge::Left => (mouth.x - mouth.radius, mouth.y),',
     to: '        Edge::Left => (mouth.x, mouth.y),',
@@ -218,6 +248,7 @@ module.exports = [
   {
     id: 'js-candidates-risk',
     what: 'the weight of the risk note',
+    req: 'UT-007 / FR-026',
     file: '01_Source/editor-bridges/vscode/src/core/candidates.js',
     from: 'const RISK_PENALTY_NOTED = -0.1;',
     to: 'const RISK_PENALTY_NOTED = -0.2;',
@@ -226,6 +257,7 @@ module.exports = [
   {
     id: 'js-candidates-segment',
     what: 'the weight of the segments',
+    req: 'UT-007 / FR-026',
     file: '01_Source/editor-bridges/vscode/src/core/candidates.js',
     from: 'const APPLICABILITY_SEGMENT_WEIGHT = 0.6;',
     to: 'const APPLICABILITY_SEGMENT_WEIGHT = 0.7;',
@@ -234,6 +266,7 @@ module.exports = [
   {
     id: 'js-candidates-tie',
     what: 'the tie breaker of the ranking',
+    req: 'UT-007 / FR-026',
     file: '01_Source/editor-bridges/vscode/src/core/candidates.js',
     from: 'return compareIds(a.candidate.candidate_id, b.candidate.candidate_id);',
     to: 'return compareIds(b.candidate.candidate_id, a.candidate.candidate_id);',
@@ -242,6 +275,7 @@ module.exports = [
   {
     id: 'js-candidates-password',
     what: 'the reason the candidates are off in a password field',
+    req: 'FR-004 / UT-005',
     file: '01_Source/editor-bridges/vscode/src/core/candidates.js',
     from: "const REASON_PASSWORD = 'password: the candidates are disabled in a password control';",
     to: "const REASON_PASSWORD = 'password: the candidates are off';",
@@ -250,6 +284,7 @@ module.exports = [
   {
     id: 'js-textrange-surrogate',
     what: 'an offset never splits a surrogate pair',
+    req: 'UT-026 / FR-013',
     file: '01_Source/editor-bridges/vscode/src/core/textrange.js',
     from: "if (!isBoundary(text, offset)) throw fail('TARGET_RANGE_INVALID', 'position splits a surrogate pair');",
     to: "if (false) throw fail('TARGET_RANGE_INVALID', 'position splits a surrogate pair');",
@@ -258,6 +293,7 @@ module.exports = [
   {
     id: 'js-transaction-apply',
     what: 'a failed syntax check disables the default apply',
+    req: 'UT-052 / FR-038',
     file: '01_Source/editor-bridges/vscode/src/core/transaction.js',
     from: "if (validationOk === false) throw fail('VALIDATION_FAILED', 'syntax check failed; default apply is disabled');",
     to: "if (false) throw fail('VALIDATION_FAILED', 'syntax check failed; default apply is disabled');",
@@ -266,6 +302,7 @@ module.exports = [
   {
     id: 'js-languages-invalid',
     what: 'a candidate that does not validate is not offered',
+    req: 'UT-006 / FR-026',
     file: '01_Source/editor-bridges/vscode/src/core/languages.js',
     from: "const kept = out.filter(c => c.validation !== 'invalid');",
     to: 'const kept = out;',
@@ -275,6 +312,7 @@ module.exports = [
   {
     id: 'f1-progress',
     what: 'the tab says that it is working while the provider thinks',
+    req: 'NFR-203 / ST-040',
     file: '01_Source/editor-bridges/vscode/src/f1.js',
     from: "s.tabs[r.name].status = 'loading';",
     to: "s.tabs[r.name].status = 'idle';",
@@ -283,6 +321,7 @@ module.exports = [
   {
     id: 'f1-first-candidate',
     what: 'the first candidate of the F1 path becomes ready',
+    req: 'NFR-203 / ST-040',
     file: '01_Source/editor-bridges/vscode/src/f1.js',
     from: "tab.status = 'ready'; tab.message = L('f1.ann.summary', kinds.join(', '));",
     to: "tab.status = 'idle'; tab.message = L('f1.ann.summary', kinds.join(', '));",
@@ -291,6 +330,7 @@ module.exports = [
   {
     id: 'f1-cancel',
     what: 'a cancelled F1 request leaves the tab idle, not in error',
+    req: 'UT-070 / NFR-203',
     file: '01_Source/editor-bridges/vscode/src/f1.js',
     from: "if (codeOf(err) === 'AI_CANCELLED') { tab.status = 'idle'; tab.message = errorText(err); }",
     to: "if (codeOf(err) === 'AI_CANCELLED') { tab.status = 'error'; tab.message = errorText(err); }",
@@ -302,6 +342,7 @@ module.exports = [
   {
     id: 'ime-context-window',
     what: 'the text service keeps a window of what was typed, not all of it',
+    req: 'IT-013 / FR-013',
     file: '01_Source/crates/pime-core/src/input.rs',
     from: 'if excess > 0 {',
     to: 'if excess > 0 && false {',
@@ -310,6 +351,7 @@ module.exports = [
   {
     id: 'ime-context-collect',
     what: 'the text service collects the characters the user typed',
+    req: 'IT-013 / FR-013',
     file: '01_Source/crates/pime-core/src/input.rs',
     from: 'Key::Char(c) => self.context.push(c),',
     to: 'Key::Char(_c) => {},',
@@ -318,6 +360,7 @@ module.exports = [
   {
     id: 'ime-direct-observing',
     what: 'the host that grants the nearby range switches the machine to observing',
+    req: 'IT-013 / FR-015',
     file: '01_Source/crates/pime-core/src/input.rs',
     from: '(State::Direct, true) => self.state = State::Observing,',
     to: '(State::Direct, true) => {},',
@@ -326,9 +369,20 @@ module.exports = [
   {
     id: 'grants-scope',
     what: 'a grant of one level does not stand in for another one',
+    req: 'IT-013 / UT-029',
     file: '01_Source/crates/pime-core/src/grants.rs',
     from: 'if g.scope != c.scope {',
     to: 'if g.scope == c.scope {',
+    suite: TSF,
+  },
+  // ---- the clipboard: the text the user copied --------------------------------------------------------------
+  {
+    id: 'clipboard-clean',
+    what: 'the text of the clipboard is trimmed: no NUL at the end of the buffer, no spaces around it',
+    req: 'D-97 / D-120（剪贴板）',
+    file: '01_Source/crates/pime-tsf/src/clipboard.rs',
+    from: "    let text = raw.trim_end_matches('\\0').trim();",
+    to: "    let text = raw.trim_end_matches('\\0');",
     suite: TSF,
   },
 ];

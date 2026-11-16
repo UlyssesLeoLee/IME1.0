@@ -147,6 +147,32 @@ test('UAT-61 [ST-026] inserting/replacing Unicode at the caret: only the selecti
   await app.screenshot('st-026-unicode-replace');
 });
 
+// A lone surrogate: a high one without a low one after it, or a low one without a high one before it.
+const loneSurrogate = text => /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(text);
+
+test('UAT-63 [ST-026] the caret inside a surrogate pair: the pair is never split', async () => {
+  behaviour = ({task, input}) => task === 'full' ? {json: {fullFile: input.currentFile}} : {json: {insertCandidates: ['let x = 1;']}};
+  await app.openFile('uni.rs');
+  // line 3 is `let s = "😀";`: the emoji is the UTF-16 pair at the characters 9 and 10, so the column 11 puts the
+  // caret INSIDE the pair - a position that is not a character boundary
+  await app.goto(3, 11);
+  const before = await app.editorText();
+  expect(before.split('\n')[2]).toContain('\u{1F600}');
+  await configureAI();
+  await generatePanel();
+  // the insert either refuses (the position is not a character boundary) or lands on a legal boundary
+  await app.waitPanelStatus('insert', /ready|error|idle/);
+  // the file on disk is the evidence: whatever happened, the pair is whole
+  await app.page.locator('.tab', {hasText: 'uni.rs'}).first().click();
+  await sleep(400);
+  await app.save();
+  await sleep(600);
+  const onDisk = app.readUser('uni.rs');
+  expect(loneSurrogate(onDisk), `the file carries half a surrogate pair: ${JSON.stringify(onDisk)}`).toBe(false);
+  expect(onDisk).toContain('\u{1F600}');
+  await app.screenshot('st-026-surrogate-inside');
+});
+
 test('UAT-62 [ST-029] a syntax error in the AI output is marked, the direct Apply is disabled and nothing is executed', async () => {
   const BAD = 'fn a() {}\nfn main() {\n    let x = ;\n';   // the brace is never closed
   behaviour = ({task}) => task === 'full' ? {json: {fullFile: BAD}} : {json: {insertCandidates: ['ok']}};

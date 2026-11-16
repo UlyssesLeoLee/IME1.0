@@ -14,6 +14,16 @@ use windows::Win32::System::Ole::CF_UNICODETEXT;
 /// The clipboard belongs to the whole machine: only one thread at a time may hold it open.
 static CLIPBOARD: Mutex<()> = Mutex::new(());
 
+/// The text of the clipboard as the user copied it: the NUL at the end of the Windows buffer and the spaces around
+/// the text are not part of it, and a text that is only spaces is no text at all.
+///
+/// It is a pure function of the raw text, so that the rule can be tested without touching the clipboard of the
+/// machine (the read itself is not a function of its arguments - the clipboard is the machine's).
+fn clean(raw: &str) -> Option<String> {
+    let text = raw.trim_end_matches('\0').trim();
+    if text.is_empty() { None } else { Some(text.to_string()) }
+}
+
 /// The text on the clipboard right now.
 ///
 /// `None` when the clipboard is empty, when it holds something else than text, or when Windows does not let the
@@ -40,12 +50,12 @@ pub fn text() -> Option<String> {
             let units = size / 2;
             let text = String::from_utf16_lossy(std::slice::from_raw_parts(pointer.cast::<u16>(), units));
             let _ = GlobalUnlock(handle);
-            Some(text.trim_end_matches('\0').trim().to_string())
+            Some(text) // the raw text of the buffer; `clean` says what the user copied
         });
         let _ = CloseClipboard();
         match text {
-            Some(text) if text.is_empty() => None,
-            other => other,
+            Some(raw) => clean(&raw),
+            None => None,
         }
     }
 }
@@ -54,7 +64,7 @@ pub fn text() -> Option<String> {
 ///
 /// The history of a real clipboard needs a listener (a window that hears every change of the clipboard); this
 /// build has none, so the history is what the text service has seen itself. That is registered as a gap
-/// (D-96) and not hidden.
+/// (D-97) and not hidden.
 pub fn entries() -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     if let Some(text) = text() {
@@ -74,6 +84,21 @@ mod tests {
         let _ = entries();
     }
 
+    /// The text of the clipboard is the text the user copied: no NUL at the end of the buffer, no spaces around it.
+    ///
+    /// This is the rule the red-green round watches: it is a pure function of the raw text, so it can be broken on
+    /// purpose and the test notices (before this, the two tests of this module could not fail at all - D-113).
+    #[test]
+    fn the_text_of_the_clipboard_is_the_text_the_user_copied() {
+        assert_eq!(clean("hello"), Some("hello".to_string()));
+        assert_eq!(clean("hello\0\0"), Some("hello".to_string()), "the NUL of the buffer is not text");
+        assert_eq!(clean("  hello  "), Some("hello".to_string()), "the spaces around it are not text");
+        assert_eq!(clean("hello\r\n"), Some("hello".to_string()));
+        assert_eq!(clean("   "), None, "spaces are no text");
+        assert_eq!(clean("\0"), None, "a NUL is no text");
+        assert_eq!(clean(""), None);
+    }
+
     /// The entries are the text of the clipboard, and there is at least none when the clipboard is empty.
     #[test]
     fn the_entries_are_the_text_of_the_clipboard() {
@@ -81,6 +106,7 @@ mod tests {
         assert!(entries.len() <= 1, "without a listener there is only the current text");
         for entry in &entries {
             assert!(!entry.is_empty(), "an empty text is not an entry");
+            assert_eq!(Some(entry.clone()), clean(entry), "an entry is the cleaned text of the clipboard");
         }
     }
 }

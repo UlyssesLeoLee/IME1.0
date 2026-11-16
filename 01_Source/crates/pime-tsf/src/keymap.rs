@@ -439,7 +439,8 @@ mod tests {
 
     /// Alt+F2 is the shortcut of the product that walks through the three languages.
     #[test]
-    fn alt_f2_is_the_language_shortcut_and_nothing_else_is() {        let alt_f2 = Modifiers { alt: true, ..NONE };
+    fn alt_f2_is_the_language_shortcut_and_nothing_else_is() {
+        let alt_f2 = Modifiers { alt: true, ..NONE };
         assert!(is_language_chord(vk::F2, alt_f2));
         assert!(!is_language_chord(vk::F1, alt_f2), "Alt+F1 is the input mode");
         assert!(

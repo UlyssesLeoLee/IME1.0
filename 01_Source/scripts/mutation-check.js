@@ -115,12 +115,23 @@ function restoreLeftovers() {
     try {
       fs.copyFileSync(backup, target);
       fs.unlinkSync(backup);
+      touch(target);
       restored++;
     } catch {
       // a file that cannot be restored is reported by the restore check at the end of the run
     }
   }
   return restored;
+}
+
+// The mtime of a restored file has to move FORWARD.
+//
+// Cargo decides by the mtime whether an artefact is out of date, and the artefact that was built from the broken
+// source is the newer one: if the restore leaves the old timestamp, cargo keeps the broken binary and the next run
+// tests the broken code (D-133). Writing the bytes back is not enough - the timestamp has to follow.
+function touch(file) {
+  const now = new Date();
+  try { fs.utimesSync(file, now, now); } catch { /* a file that cannot be touched is reported by the restore check */ }
 }
 
 function backup(relative, bytes) {
@@ -149,7 +160,33 @@ if (wanted.length && selected.length !== cases.length) {
   console.log(`note: ${selected.length} of the ${cases.length} cases are selected`);
 }
 
+// Every mutation rebuilds a crate, so the run needs room on the disk of the target directory. When the disk is
+// (nearly) full the builds fail and every case would end as "the suite did not run": say it before the round
+// instead of after it (D-135).
+try {
+  const drive = path.parse(process.env.CARGO_TARGET_DIR || path.join(root, 'target')).root;
+  const free = fs.statfsSync ? fs.statfsSync(drive).bavail * fs.statfsSync(drive).bsize : null;
+  if (free !== null && free < 2 * 1024 * 1024 * 1024) {
+    console.log(`note: only ${(free / 1024 / 1024 / 1024).toFixed(1)} GB are free on ${drive}: the mutations rebuild crates, and a full disk makes every case end as "the suite did not run"`);
+  }
+} catch { /* the disk space cannot be read: the round simply runs */ }
+
 let caught = 0;
+
+// The design entry a case protects: a requirement of the SRS, a case of the test design, or the ruling of the user
+// when the feature is not in the design documents at all. The report quotes it, so the evidence of the round is
+// about requirements and not about the lines of code it happens to break.
+const anchor = item => (item.req ? '[' + item.req + '] ' : '');
+// The cases per design entry: what the round says about each requirement.
+const byAnchor = new Map();
+const noteAnchor = (item, kind) => {
+  const key = item.req || '(no design entry)';
+  if (!byAnchor.has(key)) byAnchor.set(key, {caught: 0, missed: 0, unknown: 0, stale: 0, ids: []});
+  const entry = byAnchor.get(key);
+  entry[kind]++;
+  entry.ids.push(item.id);
+};
+
 let missed = 0;
 let stale = 0;
 const misses = [];
@@ -160,14 +197,16 @@ for (const item of selected) {
   const file = path.join(root, item.file);
   const original = fs.readFileSync(file, 'utf8');
   if (!original.includes(item.from)) {
-    write(`STALE  ${item.id} ${item.what}: the text to break is not in the file any more`);
+    write(`STALE  ${item.id} ${anchor(item)}${item.what}: the text to break is not in the file any more`);
+    noteAnchor(item, 'stale');
     stale++;
     stales.push(item.id);
     continue;
   }
   const mutated = original.replace(item.from, item.to);
   if (mutated === original) {
-    write(`STALE  ${item.id} ${item.what}: the replacement changed nothing`);
+    write(`STALE  ${item.id} ${anchor(item)}${item.what}: the replacement changed nothing`);
+    noteAnchor(item, 'stale');
     stale++;
     stales.push(item.id);
     continue;
@@ -187,6 +226,7 @@ for (const item of selected) {
     // the original file comes back whatever happened
     fs.writeFileSync(file, original, 'utf8');
     undoBackup(item.file);
+    touch(file); // the artefact of the broken source is the newer one: cargo has to rebuild it (D-133)
   }
   // The suite has to **fail on an assertion**, not merely to stop: a build that does not compile, a test binary
   // that crashes or a cargo that cannot get the lock are all "the suite did not run", not "the suite noticed".
@@ -199,14 +239,22 @@ for (const item of selected) {
   if (status === 0) {
     missed++;
     misses.push(item.id);
-    write(`MISSED ${item.id} ${item.what}  <-- the suite does not notice this`);
+    write(`MISSED ${item.id} ${anchor(item)}${item.what}  <-- the suite does not notice this`);
+    noteAnchor(item, 'missed');
   } else if (failedAssertion) {
     caught++;
-    write(`CAUGHT ${item.id} ${item.what}`);
+    write(`CAUGHT ${item.id} ${anchor(item)}${item.what}`);
+    noteAnchor(item, 'caught');
   } else {
     errors.push(item.id);
-    write(`ERROR ${item.id} ${item.what}  <-- the suite did not run (exit ${status}): the result is unknown`);
-    const lines = out.split(/\r?\n/).filter(line => /error|warning: unused/.test(line)).slice(0, 3);
+    // the reason matters: "the suite did not run" is what the report says, but the reader has to know whether the
+    // machine was the reason (a full disk, a cargo that is not on the PATH) or the code (D-135, D-147)
+    const diskFull = /no space left on device|os error 112|disk full/i.test(out);
+    const noCargo = /is not recognized|not found/i.test(out) && /cargo/i.test(out);
+    const cause = diskFull ? 'the disk was full' : noCargo ? 'cargo was not on the PATH' : '';
+    write(`ERROR ${item.id} ${anchor(item)}${item.what}  <-- the suite did not run (exit ${status}): the result is unknown${cause ? ' (' + cause + ')' : ''}`);
+    noteAnchor(item, 'unknown');
+    const lines = out.split(/\r?\n/).filter(line => /error|warning: unused|no space left|os error 1\d\d|is not recognized/i.test(line)).slice(0, 3);
     for (const line of lines) console.log(`         ${line}`);
   }
 }
@@ -217,7 +265,7 @@ for (const [file, state] of before) {
   if (digest(file) !== state.digest) damaged.push(path.relative(root, file));
 }
 write('');
-write(`the run checked ${caught + missed + errors} mutations: ${caught} caught, ${missed} missed, ${errors.length} unknown (the suite did not run), ${stale} stale`);
+write(`the run checked ${caught + missed + errors.length} mutations: ${caught} caught, ${missed} missed, ${errors.length} unknown (the suite did not run), ${stale} stale`);
 if (damaged.length) {
   write(`FAIL: these files were not restored: ${damaged.join(', ')}`);
   process.exit(2);
@@ -229,5 +277,15 @@ if (errors.length) {
 if (missed) {
   write(`the suite does not notice ${missed} mutation(s): ${misses.join(', ')}`);
   process.exit(1);
+}
+write('');
+write('by the design entry (what the round says about each requirement):');
+for (const [key, entry] of [...byAnchor.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+  const parts = [];
+  if (entry.caught) parts.push(entry.caught + ' caught');
+  if (entry.missed) parts.push(entry.missed + ' missed');
+  if (entry.unknown) parts.push(entry.unknown + ' unknown');
+  if (entry.stale) parts.push(entry.stale + ' stale');
+  write(`  ${key}: ${parts.join(', ')}`);
 }
 write('every mutation was caught: the suite really pins these behaviours');

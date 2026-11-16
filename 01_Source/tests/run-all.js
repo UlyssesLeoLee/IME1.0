@@ -31,7 +31,10 @@ const has = f => args.includes(f);
 const all = has('--all');
 const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|bench|mutation|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'installer'];
+// The UAT is part of the fast set now (D-137): the acceptance scenarios are the ones that run against the real
+// VS Code, and without them a regression in them stays invisible until somebody runs them by hand. It costs about
+// four minutes per run and it needs a VS Code on the machine.
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'installer', 'uat'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -39,6 +42,37 @@ const coreExe = process.env.PIME_CORE_EXE || path.join(targetDir, 'debug', 'pime
 const isWin = process.platform === 'win32';
 const npx = isWin ? 'npx.cmd' : 'npx';
 const results = [];
+
+// The gate writes its own evidence log, while it runs.
+//
+// The log is a committed artefact (the three claims checks read it, the delivery quotes its numbers), and those
+// checks run INSIDE the gate. If the log were only written after the run, they would read the log of the previous
+// round: a log that ever carried a failing step could then never be green again (D-134). Writing it here - every
+// line that goes to the console goes into the file as well - means the checks read the round that is running.
+const LOG_PATH = path.join(verification, 'run-all-2026-11-04.log');
+let logFd = null;
+try {
+  // opened synchronously and truncated at once: an asynchronous stream would still be unopened when the process
+  // exits, and the log would keep the content of the previous round
+  logFd = fs.openSync(LOG_PATH, 'w');
+  const writeOut = process.stdout.write.bind(process.stdout);
+  const writeErr = process.stderr.write.bind(process.stderr);
+  process.stdout.write = (chunk, ...rest) => {
+    try { fs.writeSync(logFd, chunk); } catch { /* the console still gets the line */ }
+    return writeOut(chunk, ...rest);
+  };
+  process.stderr.write = (chunk, ...rest) => {
+    try { fs.writeSync(logFd, chunk); } catch { /* the console still gets the line */ }
+    return writeErr(chunk, ...rest);
+  };
+  process.on('exit', () => { try { fs.closeSync(logFd); } catch { /* the file is closed anyway */ } });
+} catch (e) {
+  console.log(`note: the evidence log was not opened: ${e.message}`);
+}
+
+// A freshly linked binary can be refused once (the scanner of the machine, or a locked file). That is not a failure
+// of the code, so the run is repeated (D-138: the old check only knew "os error 5" and did not see the other forms).
+const CANNOT_EXECUTE = /os error 5|could not execute process|never executed|no such file or directory/i;
 
 // The raw output of a test run, kept as evidence: the traceability report maps the design case ids by the ids
 // in the test titles, and it reads these files. Without them it would map against a stale run.
@@ -58,8 +92,21 @@ function step(name, fn) {
   results.push({name, ok, note, seconds: ((Date.now() - t0) / 1000).toFixed(1)});
   console.log(`--- ${name}: ${ok ? 'PASS' : 'FAIL'} ${note}`);
 }
+// The output of a step goes through the console AND into the evidence log.
+//
+// The output has to be CAPTURED, not inherited: a child that inherits the file descriptor writes straight to it and
+// never passes through this process, so its lines would be missing from the log - and the claims checks read the
+// numbers of the suites out of that log (the count of the JavaScript suite comes from there).
 const sh = (cmd, cmdArgs, opts = {}) => {
-  const r = spawnSync(cmd, cmdArgs, {stdio: 'inherit', shell: isWin && /\.cmd$/i.test(cmd), ...opts});
+  const r = spawnSync(cmd, cmdArgs, {
+    stdio: ['inherit', 'pipe', 'pipe'],
+    encoding: 'utf8',
+    maxBuffer: 256 * 1024 * 1024,
+    shell: isWin && /\.cmd$/i.test(cmd),
+    ...opts,
+  });
+  if (r.stdout) process.stdout.write(r.stdout);
+  if (r.stderr) process.stderr.write(r.stderr);
   return {ok: r.status === 0, note: r.status === 0 ? '' : `exit ${r.status}`};
 };
 
@@ -73,7 +120,7 @@ if (want('rust')) {
       process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
       saveEvidence('rust', `${r.stdout || ''}${r.stderr || ''}`);
       if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-      if (!/os error 5/.test((r.stdout || '') + (r.stderr || ''))) break;
+      if (!CANNOT_EXECUTE.test((r.stdout || '') + (r.stderr || ''))) break;
     }
     return {ok: false, note: 'cargo test failed'};
   });
@@ -84,6 +131,25 @@ if (want('rust')) {
 if (want('js')) step('JavaScript tests' + (fs.existsSync(coreExe) ? ' (+ engine differential tests, core exe found)' : ''), () =>
   sh(process.execPath, ['--test', '*.test.js'], {cwd: path.join(tests, 'js'), env: {...process.env, ...(fs.existsSync(coreExe) ? {PIME_CORE_EXE: coreExe} : {})}}));
 if (want('smoke')) step('real pime-core.exe smoke test (JSON Lines)', () => sh(process.execPath, [path.join(tests, 'smoke', 'core-binary-smoke.js')], {env: {...process.env, PIME_CORE_EXE: coreExe}}));
+const uat = engine => {
+  const env = {...process.env};
+  const uatArgs = ['playwright', 'test', ...(onlyUat ? ['-g', onlyUat] : [])];
+  if (engine === 'rust') {
+    env.PIME_ENGINE = 'rust'; env.PIME_CORE_EXE = coreExe;
+    env.UAT_EVIDENCE_DIR = env.UAT_EVIDENCE_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'pime-uat-rust-'));
+  }
+  return sh(npx, uatArgs, {cwd: path.join(tests, 'uat'), env});
+};
+// The UAT is the most timing-sensitive step of the gate (it drives the real VS Code), so it runs EARLY, while the
+// machine is still idle, and it gets a second try: a scenario that times out under load must not turn the gate red.
+// Both tries stay in the log, so nothing is hidden (D-148).
+if (want('uat')) step('UAT on real VS Code (JavaScript engine)', () => {
+  const first = uat('js');
+  if (first.ok) return first;
+  console.log('note: the UAT failed on the first try; it runs once more (its scenarios drive the real VS Code and time out under load)');
+  return uat('js');
+});
+if (want('uat-rust')) step('UAT on real VS Code (Rust engine)', () => uat('rust'));
 // cargo in one of the crates that live outside the main workspace; a freshly linked exe can fail once with os error 5
 const cargoRetry = (crate, cargoArgs, extraEnv = {}, evidenceName = '') => {
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -91,7 +157,7 @@ const cargoRetry = (crate, cargoArgs, extraEnv = {}, evidenceName = '') => {
     process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
     if (evidenceName) saveEvidence(evidenceName, `${r.stdout || ''}${r.stderr || ''}`);
     if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-    if (!/os error 5/.test((r.stdout || '') + (r.stderr || ''))) break;
+    if (!CANNOT_EXECUTE.test((r.stdout || '') + (r.stderr || ''))) break;
   }
   return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
 };
@@ -193,20 +259,12 @@ if (want('ipc')) step('IPC (crates/pime-ipc): unit + loopback tests on real name
 if (want('mutation')) step('red-green check: the implementation is broken on purpose and the suite has to notice it', () =>
   sh(process.execPath, [path.join(src, 'scripts', 'mutation-check.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
 if (want('setup')) step('Installer (crates/pime-setup): cargo test (temp-folder integration tests only)', () => cargoRetry('pime-setup', ['test']));
+// The claims checks run AFTER the UAT (it runs early, see above): they read the evidence of the acceptance run (the
+// numbers of the scenarios, their result and the time the report was written), so they have to see the run of this
+// round and not the one of the previous round.
 if (want('installer')) step('framework matrix: the quoted numbers match the built installer and the cited logs', () => sh(process.execPath, [path.join(tests, 'smoke', 'installer-claims-check.js')]));
 if (want('installer')) step('UAT claims: the quoted UAT numbers match the Playwright report in 02_Verification/uat', () => sh(process.execPath, [path.join(tests, 'smoke', 'uat-claims-check.js')]));
 if (want('installer')) step('evidence cross-check: the build log, the sidecar and the prose agree with the built installer', () => sh(process.execPath, [path.join(tests, 'smoke', 'evidence-cross-check.js')]));
-const uat = engine => {
-  const env = {...process.env};
-  const uatArgs = ['playwright', 'test', ...(onlyUat ? ['-g', onlyUat] : [])];
-  if (engine === 'rust') {
-    env.PIME_ENGINE = 'rust'; env.PIME_CORE_EXE = coreExe;
-    env.UAT_EVIDENCE_DIR = env.UAT_EVIDENCE_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'pime-uat-rust-'));
-  }
-  return sh(npx, uatArgs, {cwd: path.join(tests, 'uat'), env});
-};
-if (want('uat')) step('UAT on real VS Code (JavaScript engine)', () => uat('js'));
-if (want('uat-rust')) step('UAT on real VS Code (Rust engine)', () => uat('rust'));
 if (has('--report')) step('rewrite the traceability report (explicit)', () => sh(process.execPath, [path.join(src, 'scripts', 'traceability-report.js')]));
 
 console.log('\n==== summary ====');

@@ -511,7 +511,8 @@ mod tests {
     }
 
     #[test]
-    fn literal_positions_yield_nothing() {        let o = PredictOptions::new("rust", "fn").before("let s = \"abc ");
+    fn literal_positions_yield_nothing() {
+        let o = PredictOptions::new("rust", "fn").before("let s = \"abc ");
         assert!(engine().predict(&o).unwrap().is_empty());
     }
 

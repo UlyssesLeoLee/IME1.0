@@ -169,6 +169,9 @@ pub const SLIT_WIDTH: i32 = 1;
 /// How far the soft light around the slit reaches (in pixels).
 pub const SLIT_HALO: i32 = 5;
 
+/// How wide the band around the light counts as "on the mouth" (in pixels).
+pub const MOUTH_HIT_WIDTH: i32 = 6;
+
 /// The visible part of the mouth: a thin slit of light along the edge of the screen.
 ///
 /// The geometry is pure, so that "what the mouth looks like" can be tested without a screen: the painter only has
@@ -224,9 +227,6 @@ pub fn mouth_hit(mouth: &Mouth, screen_x: i32, screen_y: i32) -> bool {
     };
     across <= MOUTH_HIT_WIDTH && along <= slit.length / 2 + MOUTH_HIT_WIDTH
 }
-
-/// How wide the band around the light counts as "on the mouth" (in pixels).
-pub const MOUTH_HIT_WIDTH: i32 = 6;
 
 /// The place of a mouth that was dropped at the point `(x, y)`.
 ///

@@ -59,7 +59,7 @@
 
 ## 验证事实（2026-10-30，详见 `02_Verification/STATUS.md`）
 
-- JavaScript **357 / 357** 通过；Rust 核心 **458 / 458** 通过；Rust TSF crate **369 / 369** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **85 / 85** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **357 / 357** 通过；Rust 核心 **458 / 458** 通过；Rust TSF crate **370 / 370** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **85 / 85** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 39/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
   **报告现在也读 TSF 那 354 项的证据**（以前只读主 workspace，TSF 的用例整段没进去）；四个子代理逐条审了 26 个「未执行」用例：
@@ -557,7 +557,7 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
    * **IT-013（TSF 的 L1 与 Bridge 的 L3）现在正式挂上了**（`01_Source/tests/tsf/ime_permission_levels.rs`，
      `crates/pime-tsf/Cargo.toml` 的 `[[test]] ime_permission_levels`）：两半都在 Rust 核心里证
      （TSF 只持有敲过的字符、且只保留邻近的一段窗口；授权代理 L1 不能顶 L3、L3 才放行写入）。
-     **它现在是有证据的**：TSF **369 项全过**、追溯报告里 IT-013 = **PASS**、DD-04（权限上下文、VS Code Bridge）补到 **100%**。
+     **它现在是有证据的**：TSF **370 项全过**、追溯报告里 IT-013 = **PASS**、DD-04（权限上下文、VS Code Bridge）补到 **100%**。
      **而且我把它改坏、验过它会不会红**（4 条变异：窗口无界 / 不收集上下文 / 不迁移 Observing / 不校验 scope）
      ⇒ **4 条全部变红**，源文件**逐字节还原** ⇒ 它真的钉住了行为。
      （上一轮它**故意没挂**，因为本机的扫描器会隔离新链接的测试二进制 —— D-138；本轮这个二进制已链接并跑过，扫描器放行；
@@ -573,14 +573,14 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
      ⇒ **NFR 域补到 100%**，总体 **156/168 = 92.9%**，低于 90% 的功能域从 4 个减到 **3 个**。
 
    * **追溯报告（`02_Verification/test-execution-report.*`）的四路证据都是本轮跑的**：JS 327/327、Rust 458/458、
-     TSF 369/369、UAT 58/58 ⇒ **UT 76/77、IT 44/48、ST 36/43，0 失败**，覆盖率 **156/168 = 92.9%**。
+     TSF 370/370、UAT 59/59 ⇒ **UT 76/77、IT 44/48、ST 36/43，0 失败**，覆盖率 **156/168 = 92.9%**。
 
    * **新加一道数字自洽检查**：`01_Source/scripts/delivery-numbers-check.js` —— 交付说明、台账、框架矩阵与重构计划里
      引用的**覆盖率、清单条目数、缺陷条数、各套件测试数**，必须与 `02_Verification/` 里的实物一致，不一致就 **exit 1**
      （本轮实测 12 项全过；它上线十分钟就抓到了一次漂移：清单加了新文件变成 851 条而文档还写着 850）。
      **它还没有挂进门禁**（`tests/run-all.js` 是你的文件，我没有动）；要挂进去说一声。
    * **门禁这一轮是全绿的（16 步 / 16 步）**：`02_Verification/run-all-2026-11-04.log` 是本轮跑的、**零 FAIL 行**
-     （核心 458 项、TSF crate 369 项、TASE 1055 项、agent 85 项、JS 357 项；红绿步 **38 条用例、37 条 CAUGHT**
+     （核心 458 项、TSF crate 370 项、TASE 1055 项、agent 85 项、JS 357 项；红绿步 **39 条用例、38 条 CAUGHT**（没有 stale 了）
 （另 1 条是 D-111 那条写反的用例，永久 stale），
      另 1 条是 D-111 那个写反的永久 stale）。
      **三道 claims 校验（框架矩阵 / UAT / 证据交叉）这次是在门禁内部就通过的**——之前它们互相卡死（D-134：校验读的是
