@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-13T12:47:20.877Z",
+  "generated": "2026-11-17T12:05:47.018Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -11,12 +11,12 @@
    "pass": 458
   },
   "tsf": {
-   "total": 369,
-   "pass": 369
+   "total": 370,
+   "pass": 370
   },
   "uat": {
-   "total": 58,
-   "pass": 58
+   "total": 59,
+   "pass": 59
   },
   "cases": {
    "UT": {
@@ -54,10 +54,10 @@
    "tests": [
     "rust: profiles::tests::ut_001_duplicate_guid_is_rejected",
     "profiles::tests::ut_001_duplicate_guid_is_rejected",
-    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
-    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
     "rust: profiles::tests::ut_001_other_invalid_sets_are_rejected",
-    "profiles::tests::ut_001_other_invalid_sets_are_rejected"
+    "profiles::tests::ut_001_other_invalid_sets_are_rejected",
+    "rust: profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids",
+    "profiles::tests::ut_001_three_profiles_with_expected_langids_one_clsid_distinct_guids"
    ],
    "failed": [],
    "reason": ""
@@ -159,10 +159,10 @@
    "tests": [
     "js: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
     "UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
-    "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
-    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
     "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
-    "candidate::tests::ut_007_usage_breaks_ties_before_weight"
+    "candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
+    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable"
    ],
    "failed": [],
    "reason": ""
@@ -475,10 +475,10 @@
     "engine: excerpts and insert previews are identical in both engines (UT-027)",
     "rust: context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
-    "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
-    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
+    "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
+    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
     "scope::tests::ut_027_wider_requests_are_refused_not_trimmed"
    ],
@@ -2448,7 +2448,9 @@
    ],
    "tests": [
     "uat: UAT-61",
-    "UAT-61"
+    "UAT-61",
+    "uat: UAT-63",
+    "UAT-63"
    ],
    "failed": [],
    "reason": ""
