@@ -1734,6 +1734,21 @@ D-148 补上这组量化数据（选项 A~E 在台账 §3.2）。
   **`unwrap()` 分布与重构第一期的提交（`28174ea`）逐文件完全相同**（`register.rs` 16、`uielement_com.rs` 21、`tip.rs` 8、
   `controller.rs` 2、`imesettings.rs` 3、`keymap.rs` 3、`layout.rs` 2、`menus.rs` 2、`demo.rs` 1、`uielement.rs` 1、`tip/lifecycle.rs` 1）
   ⇒ **第一期以来没有新增任何一个 `unwrap()`**，更没有落在宿主输入上。
+
+- **判据 7「注释说的是真话」——不通过**：这一轮做了一次**只读审查**（Rust 247 个文件 + 桥接侧 JS 9 个文件；
+  机械核对了注释里 **108 个反引号标识符**与**约 75 条文件路径** ⇒ **0 个失效**；
+  再把约 150 条带判定词的注释逐条对着代码读）⇒ **查出 12 处注释与代码矛盾**（**3 高 / 4 中 / 5 低**）：
+  ① `pime-core/src/uimodel.rs:4-7` 说状态栏与菜单「不在这里」，而本文件就定义着 `status_model` / `menu_model`；
+  ② `pime-tsf/src/imesettings.rs:95` 说 `space_confirms`「默认关」，而 `Default` 里是 `true`（紧挨着的行内注释还说了反话）；
+  ③ `pime-tsf/src/controller.rs:2709` 说直接模式「可选（Alt+F1）、不是默认」，而默认就是直接模式、Alt+F1 切的是另一边；
+  ④ `pime-core/src/symbols.rs:16` 说 60 是「最大」，真上限是 `LIMIT_MAX = 1000`；
+  ⑤ `pime-core/src/protocol.rs:5-6` 说只有五个批量操作，`ops.rs` 的 `BULK_OPS` 实有七个；
+  ⑥ 桥接侧 `f2.js:4` 说最多 400 行，`promptcraft.js` 的 `maxLines` 是 800；
+  ⑦ `tase-ime-core/src/lib.rs:6-7` 说 TSF 适配器在 `tase-ime-tsf`，而仓库里没有这个 crate（是 `pime-tsf`）；
+  ⑧~⑫ 另有 5 条低severity（默认位置是「屏幕中间」实为工作区中间、协议版本 `PIME-IPC/1.0` 实为 `PIME-IPC/1`、
+  `makeCandidate` 实为 `Candidate::new`、`default_keyboard` 的清理范围漏了「只删自己的」、模块注释说「空格就是空格」）。
+  ⇒ **登记为 D-152 ~ D-163**：**12 处全是注释文字**，但按「缺陷先交你裁定、我才动既有实现」的规矩，**本轮一处都没改**
+  （台账 §3.1 的**第 ⑦ 组**，你回一句「⑦ 照你说的做」我就逐条改）。
 - **顺手抓到一处会误导人的文档漂移（已登记 D-151，已改）**：`02_Verification/REAL_MACHINE_CHECKLIST.md` 的标题是「真机验收清单（0.3.2）」，
   但「怎么换上新 DLL」那两步让人跑 **`ProgrammingIME-0.3.1-win-x64-setup.exe`**、并写「装新的 0.3.1」——
   而同一份文件的 §六 又写着「装的是**未签名的 0.3.2 安装包**」⇒ **同一文档自相矛盾**。
