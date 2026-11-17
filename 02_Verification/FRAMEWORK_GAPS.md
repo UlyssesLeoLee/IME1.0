@@ -1649,7 +1649,12 @@ node scripts/gate-log.js --no-clean # 不先清构建缓存
   `pime-tsf` 有自己的 workspace，所以要在它自己的 crate 目录清）；
 - GNU 工具链的 PATH 用法指到 `docs/IME_TEST_MATRIX.md` 与 `docs/TASE_CRATES.md`。
 
-**门禁脚本 `tests/run-all.js` 一个字没改** —— 要不要把这套搬进门禁本体，仍待你裁定（D-134）。
+**门禁脚本 `tests/run-all.js` 本轮按你的裁定动了**（D-134 / D-137 等，见台账 I 组）。
+
+#### 这一轮还量了两件事：告警与格式
+
+- **判据 3「零新增告警」实测通过**：`cargo clippy --all-targets` ⇒ 主 workspace **8 条**（与登记的基线一致）、pime-tsf **3 条**（基线记的是 2 条，多出来的那条在 `tests/tsf/ime_resilience.rs:85`——上一轮新增的**测试文件**里，**不在产品代码中**）⇒ **本轮没有引入任何新告警**；计划里的基线已改成 8 + 3。
+- **仓库整体不是 rustfmt-clean**：主 workspace 与 pime-tsf 的 `cargo fmt --check` 都有 diff（`laser.rs` 一个文件就有 21 处）⇒ **不能**直接给门禁加一道「格式」步（会立刻红）⇒ 登记为 **D-149**。**本轮只把本轮改到的文件弄干净**（`clipboard.rs` 过了 `rustfmt --check`，其余文件的 diff 都是既有的）。
 
 ### 5.28 第三十二轮（2026-11-13）：ST-040 测出来了 —— NFR 域补到 100%
 

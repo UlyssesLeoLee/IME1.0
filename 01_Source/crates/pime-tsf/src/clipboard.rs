@@ -21,7 +21,11 @@ static CLIPBOARD: Mutex<()> = Mutex::new(());
 /// machine (the read itself is not a function of its arguments - the clipboard is the machine's).
 fn clean(raw: &str) -> Option<String> {
     let text = raw.trim_end_matches('\0').trim();
-    if text.is_empty() { None } else { Some(text.to_string()) }
+    if text.is_empty() {
+        None
+    } else {
+        Some(text.to_string())
+    }
 }
 
 /// The text on the clipboard right now.
@@ -37,21 +41,26 @@ pub fn text() -> Option<String> {
         if OpenClipboard(HWND::default()).is_err() {
             return None;
         }
-        let text = GetClipboardData(CF_UNICODETEXT.0 as u32).ok().and_then(|handle| {
-            let handle = HGLOBAL(handle.0);
-            let size = GlobalSize(handle);
-            if size == 0 {
-                return None;
-            }
-            let pointer = GlobalLock(handle);
-            if pointer.is_null() {
-                return None;
-            }
-            let units = size / 2;
-            let text = String::from_utf16_lossy(std::slice::from_raw_parts(pointer.cast::<u16>(), units));
-            let _ = GlobalUnlock(handle);
-            Some(text) // the raw text of the buffer; `clean` says what the user copied
-        });
+        let text = GetClipboardData(CF_UNICODETEXT.0 as u32)
+            .ok()
+            .and_then(|handle| {
+                let handle = HGLOBAL(handle.0);
+                let size = GlobalSize(handle);
+                if size == 0 {
+                    return None;
+                }
+                let pointer = GlobalLock(handle);
+                if pointer.is_null() {
+                    return None;
+                }
+                let units = size / 2;
+                let text = String::from_utf16_lossy(std::slice::from_raw_parts(
+                    pointer.cast::<u16>(),
+                    units,
+                ));
+                let _ = GlobalUnlock(handle);
+                Some(text) // the raw text of the buffer; `clean` says what the user copied
+            });
         let _ = CloseClipboard();
         match text {
             Some(raw) => clean(&raw),
@@ -91,8 +100,16 @@ mod tests {
     #[test]
     fn the_text_of_the_clipboard_is_the_text_the_user_copied() {
         assert_eq!(clean("hello"), Some("hello".to_string()));
-        assert_eq!(clean("hello\0\0"), Some("hello".to_string()), "the NUL of the buffer is not text");
-        assert_eq!(clean("  hello  "), Some("hello".to_string()), "the spaces around it are not text");
+        assert_eq!(
+            clean("hello\0\0"),
+            Some("hello".to_string()),
+            "the NUL of the buffer is not text"
+        );
+        assert_eq!(
+            clean("  hello  "),
+            Some("hello".to_string()),
+            "the spaces around it are not text"
+        );
         assert_eq!(clean("hello\r\n"), Some("hello".to_string()));
         assert_eq!(clean("   "), None, "spaces are no text");
         assert_eq!(clean("\0"), None, "a NUL is no text");
@@ -103,10 +120,17 @@ mod tests {
     #[test]
     fn the_entries_are_the_text_of_the_clipboard() {
         let entries = entries();
-        assert!(entries.len() <= 1, "without a listener there is only the current text");
+        assert!(
+            entries.len() <= 1,
+            "without a listener there is only the current text"
+        );
         for entry in &entries {
             assert!(!entry.is_empty(), "an empty text is not an entry");
-            assert_eq!(Some(entry.clone()), clean(entry), "an entry is the cleaned text of the clipboard");
+            assert_eq!(
+                Some(entry.clone()),
+                clean(entry),
+                "an entry is the cleaned text of the clipboard"
+            );
         }
     }
 }

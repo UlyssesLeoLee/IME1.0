@@ -84,14 +84,6 @@ function saveEvidence(name, text) {
   }
 }
 
-function step(name, fn) {
-  const t0 = Date.now();
-  console.log(`\n=== ${name} ===`);
-  let ok = false, note = '';
-  try { const r = fn(); ok = r.ok; note = r.note || ''; } catch (e) { note = String(e.message || e); }
-  results.push({name, ok, note, seconds: ((Date.now() - t0) / 1000).toFixed(1)});
-  console.log(`--- ${name}: ${ok ? 'PASS' : 'FAIL'} ${note}`);
-}
 // The output of a step goes through the console AND into the evidence log.
 //
 // The output has to be CAPTURED, not inherited: a child that inherits the file descriptor writes straight to it and
@@ -107,8 +99,31 @@ const sh = (cmd, cmdArgs, opts = {}) => {
   });
   if (r.stdout) process.stdout.write(r.stdout);
   if (r.stderr) process.stderr.write(r.stderr);
-  return {ok: r.status === 0, note: r.status === 0 ? '' : `exit ${r.status}`};
+  return {ok: r.status === 0, note: r.status === 0 ? '' : `exit ${r.status}`, out: `${r.stdout || ''}${r.stderr || ''}`};
 };
+
+// A freshly linked binary can be refused by the scanner of the machine for a moment ("could not execute process").
+// The run is repeated then - and the retries WAIT a little: without the pause the scanner catches every new binary
+// as well, because the three attempts follow each other within seconds (D-138).
+const RETRY_PAUSE_MS = 20000;
+const sleepSync = ms => { try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch { /* the pause is a nicety */ } };
+
+// A step is tried again when its binary could not be executed: the scanner of the machine quarantines a freshly
+// linked binary for a moment, and a step that builds one (the cost benchmark, the DLL check) has no retry of its own.
+function step(name, fn) {
+  const t0 = Date.now();
+  console.log(`\n=== ${name} ===`);
+  let ok = false, note = '', out = '';
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try { const r = fn(); ok = r.ok; note = r.note || ''; out = r.out || ''; } catch (e) { note = String(e.message || e); }
+    if (ok) break;
+    if (!CANNOT_EXECUTE.test(out) || attempt === 3) break;
+    console.log(`note: the step could not execute its binary (the scanner of the machine?); it is tried again in ${RETRY_PAUSE_MS / 1000} s`);
+    sleepSync(RETRY_PAUSE_MS);
+  }
+  results.push({name, ok, note, seconds: ((Date.now() - t0) / 1000).toFixed(1)});
+  console.log(`--- ${name}: ${ok ? 'PASS' : 'FAIL'} ${note}`);
+}
 
 if (want('syntax')) step('syntax check (extension sources + all test scripts)', () => sh(process.execPath, [path.join(src, 'editor-bridges', 'vscode', 'scripts', 'check-syntax.js')]));
 if (want('fixtures')) step('golden fixtures are unchanged (compare only)', () => sh(process.execPath, [path.join(tests, 'gen-fixtures.js')]));
@@ -121,6 +136,7 @@ if (want('rust')) {
       saveEvidence('rust', `${r.stdout || ''}${r.stderr || ''}`);
       if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
       if (!CANNOT_EXECUTE.test((r.stdout || '') + (r.stderr || ''))) break;
+      if (attempt < 3) sleepSync(RETRY_PAUSE_MS);
     }
     return {ok: false, note: 'cargo test failed'};
   });
@@ -158,6 +174,7 @@ const cargoRetry = (crate, cargoArgs, extraEnv = {}, evidenceName = '') => {
     if (evidenceName) saveEvidence(evidenceName, `${r.stdout || ''}${r.stderr || ''}`);
     if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
     if (!CANNOT_EXECUTE.test((r.stdout || '') + (r.stderr || ''))) break;
+    if (attempt < 3) sleepSync(RETRY_PAUSE_MS);
   }
   return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
 };
