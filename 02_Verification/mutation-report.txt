@@ -1,5 +1,5 @@
-# The red-green check of 2026-11-18T02:25:09.475Z
-# 44 mutations of the implementation; every one of them is restored right after it is applied.
+# The red-green check of 2026-11-18T06:08:40.762Z
+# 48 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -45,8 +45,12 @@ CAUGHT hit-row-under-the-mouse [FR-041 / UT-055（悬浮框与它的行）] the 
 CAUGHT hit-action-under-the-mouse [FR-041 / UT-055（悬浮框与它的行）] the action of a click is the action of the row under the mouse
 CAUGHT hit-row-rect-is-on-the-screen [FR-041 / UT-055（悬浮框与它的行）] the rectangle of a row is in the coordinates of the screen, not of the panel
 CAUGHT paint-the-core-is-the-colour-of-its-source [D-90~D-92（多 Agent 演示：光口是它自己的颜色）/ FR-041] the core of the light is the colour of its source (the agent); the halo is the soft light around it
+CAUGHT panel-switch-shows-the-real-state [FR-041（悬浮框显示的就是产品现在的状态）] a switch of the panel shows the setting that is really in force
+CAUGHT panel-language-row-shows-the-name [FR-042 / FR-041（从悬浮下拉选择语言）] the row of the language shows the name of the language, not its key
+CAUGHT panel-effort-row-shows-the-label [FR-041（悬浮框里的 Effort 入口）] the row of the effort shows the label of the effort, not its key
+CAUGHT panel-local-tool-keeps-its-key [FR-041 / D-97（D-120）（剪贴板工具的那一行）] a local tool of the bar keeps the key its click uses
 
-the run checked 44 mutations: 44 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+the run checked 48 mutations: 48 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
 
 by the design entry (what the round says about each requirement):
   D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
@@ -62,8 +66,12 @@ by the design entry (what the round says about each requirement):
   FR-001 / UT-011: 1 caught
   FR-004 / UT-005: 3 caught
   FR-005 / UT-003: 1 caught
+  FR-041 / D-97（D-120）（剪贴板工具的那一行）: 1 caught
   FR-041 / UT-055: 1 caught
   FR-041 / UT-055（悬浮框与它的行）: 3 caught
+  FR-041（悬浮框里的 Effort 入口）: 1 caught
+  FR-041（悬浮框显示的就是产品现在的状态）: 1 caught
+  FR-042 / FR-041（从悬浮下拉选择语言）: 1 caught
   IT-013 / FR-013: 2 caught
   IT-013 / FR-015: 1 caught
   IT-013 / UT-029: 1 caught

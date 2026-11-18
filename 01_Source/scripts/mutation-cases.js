@@ -433,4 +433,43 @@ module.exports = [
     to: 'canvas.blend(x, y, halo_colour, core_cover * 0.78 * breathe * ends);',
     suite: TSF,
   },
+  // ---- the rows of the laser panel (the module the refactor split out) ----------------------------------------
+  // The panel is the way into most of the settings: a switch that shows the wrong state, or a menu that shows the
+  // key instead of the name, misleads the user about the product itself. The suite is the text-service crate.
+  {
+    id: 'panel-switch-shows-the-real-state',
+    what: 'a switch of the panel shows the setting that is really in force',
+    req: 'FR-041（悬浮框显示的就是产品现在的状态）',
+    file: '01_Source/crates/pime-tsf/src/tip/panel.rs',
+    from: '            on: settings.space_confirms,',
+    to: '            on: false,',
+    suite: TSF,
+  },
+  {
+    id: 'panel-language-row-shows-the-name',
+    what: 'the row of the language shows the name of the language, not its key',
+    req: 'FR-042 / FR-041（从悬浮下拉选择语言）',
+    file: '01_Source/crates/pime-tsf/src/tip/panel.rs',
+    from: '            value: imesettings::display_name(language).to_string(),',
+    to: '            value: language.to_string(),',
+    suite: TSF,
+  },
+  {
+    id: 'panel-effort-row-shows-the-label',
+    what: 'the row of the effort shows the label of the effort, not its key',
+    req: 'FR-041（悬浮框里的 Effort 入口）',
+    file: '01_Source/crates/pime-tsf/src/tip/panel.rs',
+    from: '            value: imesettings::effort_label(effort).to_string(),',
+    to: '            value: effort.to_string(),',
+    suite: TSF,
+  },
+  {
+    id: 'panel-local-tool-keeps-its-key',
+    what: 'a local tool of the bar keeps the key its click uses',
+    req: 'FR-041 / D-97（D-120）（剪贴板工具的那一行）',
+    file: '01_Source/crates/pime-tsf/src/tip/panel.rs',
+    from: '            key: "clipboard",',
+    to: '            key: "clipboard_text",',
+    suite: TSF,
+  },
 ];

@@ -495,4 +495,84 @@ mod tests {
             "{items:?}"
         );
     }
+
+    /// The rows of the panel carry the state of the product: a switch shows the switch that is really on, and a menu
+    /// shows the **name** of the thing, not its key.
+    ///
+    /// The rows are the only way into most of the settings, so a panel that shows a switch in the wrong state, or a
+    /// menu that shows "zh-CN" where it should show "中文", misleads the user about the product itself.
+    #[test]
+    fn the_rows_of_the_panel_show_the_state_of_the_product() {
+        let mut settings = LanguageSettings::default();
+        settings.space_confirms = false; // the space does not confirm in this setup
+        settings.auto_compose = true; // the composition opens on its own in this setup
+        let items = laser_items("zh-CN", &settings, "auto", "laser", true);
+
+        // the first row is the switch of the input mode, and it shows the mode that is on
+        assert!(items[0].is_toggle(), "the first row is a switch: {items:?}");
+        assert_eq!(items[0].label(), "输入模式");
+        assert_eq!(items[0].value(), "开", "the input mode is on: {items:?}");
+
+        // a switch shows the setting that is really in force - and that holds in both states
+        for (space_confirms, expected) in [(true, "开"), (false, "关")] {
+            let mut settings = LanguageSettings::default();
+            settings.space_confirms = space_confirms;
+            let items = laser_items("zh-CN", &settings, "auto", "laser", true);
+            let space = items
+                .iter()
+                .find(|item| item.label() == "空格上屏")
+                .expect("the row of the space");
+            assert_eq!(
+                space.value(),
+                expected,
+                "the switch of the space follows the setting: {items:?}"
+            );
+        }
+
+        // the switch of the composition shows its own setting
+        let mut settings = LanguageSettings::default();
+        settings.auto_compose = true; // the composition opens on its own in this setup
+        let items = laser_items("zh-CN", &settings, "auto", "laser", true);
+        let compose = items
+            .iter()
+            .find(|item| item.label() == "自动开组合")
+            .expect("the row of the composition");
+        assert_eq!(
+            compose.value(),
+            "开",
+            "the composition opens on its own: {items:?}"
+        );
+
+        // a menu shows the name of the thing, not its key
+        let language = items
+            .iter()
+            .find(|item| item.label() == "语言")
+            .expect("the row of the language");
+        assert_eq!(language.value(), imesettings::display_name("zh-CN"));
+        let effort = items
+            .iter()
+            .find(|item| item.label() == "AI 力度")
+            .expect("the row of the effort");
+        assert_eq!(effort.value(), imesettings::effort_label("auto"));
+        let skin = items
+            .iter()
+            .find(|item| item.label() == "外观")
+            .expect("the row of the skin");
+        assert_eq!(skin.value(), imesettings::skin_label("laser"));
+
+        // the three local tools of the bar are rows of the panel, under the keys their click uses
+        let keys: Vec<&str> = items
+            .iter()
+            .filter_map(|item| match item {
+                PanelItem::Menu { key, .. } => Some(*key),
+                _ => None,
+            })
+            .collect();
+        for tool in ["symbols", "datetime", "clipboard"] {
+            assert!(
+                keys.contains(&tool),
+                "the local tool {tool} is a row of the panel: {items:?}"
+            );
+        }
+    }
 }

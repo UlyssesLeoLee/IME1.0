@@ -94,7 +94,10 @@ mod tests {
     fn the_lens_is_the_opening_and_the_light_is_the_slit_on_the_edge() {
         let m = mouth();
         // the centre of the mouth is the lens
-        assert!(on_the_lens(&m, 20, 300), "the centre of the mouth is the lens");
+        assert!(
+            on_the_lens(&m, 20, 300),
+            "the centre of the mouth is the lens"
+        );
         // and it is not the light: the light is one radius away, on the edge of the screen
         assert!(!on_the_light(&m, 20, 300), "the lens is not the light");
         // the slit sits on the edge itself and it is the light the user sees
