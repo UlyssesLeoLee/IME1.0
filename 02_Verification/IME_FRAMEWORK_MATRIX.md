@@ -29,8 +29,8 @@
 | 项 | 值 |
 |---|---|
 | 文件 | `01_Source/dist/ProgrammingIME-0.3.2-win-x64-setup.exe` |
-| 大小 | 10,394,410 字节 |
-| SHA-256 | `502a10535750e270817b830f93b221b595959caa2ce6509732685e2e69e89e5f` |
+| 大小 | 10,393,898 字节 |
+| SHA-256 | `c9d562256cff7ccaaf0e42a054379ca28b996d02e7b51de7350b582963a57508` |
 | 形态 | x64 控制台子系统 EXE；载荷以 PE overlay 附在桩程序之后 |
 | 桩程序 | `pime-setup.exe`，788,480 字节（含安装向导与内嵌 logo） |
 | 载荷（`pime_tsf.dll` 2,632,704 B ／ `pime-core.exe` 3,214,200 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 211,138 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 1,104,896 B ／ `pime-ai-worker.exe` 400,896 B ／ `pime-mcp.exe` 706,560 B ／ `pime-ime.exe` 762,880 B ／ `meta.json` 87 B 条） |  |
@@ -400,8 +400,8 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 <!-- installer-claims:begin -->
 # machine-readable claims (checked by 01_Source/tests/smoke/installer-claims-check.js)
 installer_file = ProgrammingIME-0.3.2-win-x64-setup.exe
-installer_bytes = 10394410
-installer_sha256 = 502a10535750e270817b830f93b221b595959caa2ce6509732685e2e69e89e5f
+installer_bytes = 10393898
+installer_sha256 = c9d562256cff7ccaaf0e42a054379ca28b996d02e7b51de7350b582963a57508
 stub_bytes = 788480
 payload_entry_count = 10
 payload_pime_tsf_dll_bytes = 2698752
@@ -409,7 +409,7 @@ payload_pime_core_exe_bytes = 3216956
 payload_license_bytes = 1085
 payload_programming_ime_vsix_bytes = 218970
 payload_pime_ico_bytes = 66724
-payload_pime_tray_exe_bytes = 1137152
+payload_pime_tray_exe_bytes = 1136640
 payload_pime_ai_worker_exe_bytes = 400896
 payload_pime_mcp_exe_bytes = 1013760
 payload_pime_ime_exe_bytes = 850944

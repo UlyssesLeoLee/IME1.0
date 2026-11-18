@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-18T04:02:45.490Z",
+  "generated": "2026-11-18T10:43:58.119Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -11,8 +11,8 @@
    "pass": 458
   },
   "tsf": {
-   "total": 374,
-   "pass": 374
+   "total": 375,
+   "pass": 375
   },
   "uat": {
    "total": 59,
@@ -1142,10 +1142,10 @@
     "input::tests::ut_064_a_failure_while_candidates_show_hides_the_window",
     "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
     "input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
-    "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
-    "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
     "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
-    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating"
+    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
+    "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
+    "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes"
    ],
    "failed": [],
    "reason": ""
