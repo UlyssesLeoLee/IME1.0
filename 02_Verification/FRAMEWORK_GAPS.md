@@ -1820,6 +1820,14 @@ D-148 补上这组量化数据（选项 A~E 在台账 §3.2）。
 `lifecycle-the-rollback-undoes-in-reverse-order`（激活失败要**按反序**撤销，TSF 拒绝同一 client id 的第二个键事件接收器，
 所以重试必须从干净状态开始）。**3 条全部咬住** ⇒ **红绿轮 48 → 51 条**。
 ⇒ 至此，重构第一期拆出来的三个有纯逻辑的模块（`laser_ui/hit.rs`、`tip/panel.rs`、`tip/lifecycle.rs`）都纳入了红绿轮。
+
+**再补两处共享核心（`pime-core`）的逻辑**：界面语言的解析（`i18n.rs`）与候选浮窗的定位（`uimodel.rs`）。
+这两处是**两个引擎共用的一份实现**（桥接侧的 JS 镜像由差分测试对着它比）⇒ 改坏一处，Rust 套件与差分测试**同时**会发现：
+`i18n-the-interface-locale-wins`（用户显式指定的界面语言压过编辑器的语言，FR-044 / UT-056）、
+`i18n-the-locale-reads-its-column`（每种语言读自己那一列文案，FR-044 / UT-044）、
+`overlay-the-window-flips-above-only-without-room`（候选窗先在光标下方、下面放不下才翻到上面，FR-043 / UT-055）、
+`overlay-the-scaling-is-capped-at-250`（显示缩放夹在 100-250 %，FR-043 / UT-055）。
+**4 条全部咬住** ⇒ **红绿轮 51 → 55 条**。
 而那条变异把它也写成 false ⇒ 两者一样，看不出差别 ⇒ 改成**开与关两种状态都验**之后才咬住。
 
 **这一轮还踩到并定位了另一个坑（D-166）**：变异轮是门禁的最后一步，它把 `pime-core` 的二进制留在**被改坏**的状态；

@@ -502,4 +502,43 @@ module.exports = [
     to: '        if let Some(cookie) = self.thread.take() {\n            self.advises.unadvise_thread(cookie);\n        }\n        if let Some(cookie) = self.language.take() {\n            self.advises.unadvise_language(cookie);\n        }',
     suite: TSF,
   },
+  // ---- the shared core: the interface language and the placement of the candidate window -------------------
+  // The core is the one implementation both engines share, so a mutation here is caught by the Rust suite and by
+  // the parity tests of the bridge at the same time.
+  {
+    id: 'i18n-the-interface-locale-wins',
+    what: 'an explicit interface locale wins over the language of the editor',
+    req: 'FR-044（UI 显示语言独立于 Windows 语言与 Programming Profile）/ UT-056',
+    file: '01_Source/crates/pime-core/src/i18n.rs',
+    from: '    if let Some(known) = LOCALES.iter().find(|l| **l == setting) {',
+    to: '    if let Some(known) = LOCALES.iter().find(|l| **l != setting) {',
+    suite: CORE,
+  },
+  {
+    id: 'i18n-the-locale-reads-its-column',
+    what: 'the locale reads its own column of the texts (the Chinese column is Chinese)',
+    req: 'FR-044（UI 显示语言中文、英文、日文）/ UT-044',
+    file: '01_Source/crates/pime-core/src/i18n.rs',
+    from: '        "zh-CN" => 1,',
+    to: '        "zh-CN" => 2,',
+    suite: CORE,
+  },
+  {
+    id: 'overlay-the-window-flips-above-only-without-room',
+    what: 'the candidate window goes below the caret and flips above only when there is no room below',
+    req: 'FR-043（候选窗口位置回退）/ UT-055',
+    file: '01_Source/crates/pime-core/src/uimodel.rs',
+    from: '    if y + h > mon.y + mon.h {',
+    to: '    if y + h < mon.y + mon.h {',
+    suite: CORE,
+  },
+  {
+    id: 'overlay-the-scaling-is-capped-at-250',
+    what: 'the display scaling is clamped to 100-250 %',
+    req: 'FR-043（DPI/多屏适配）/ UT-055',
+    file: '01_Source/crates/pime-core/src/uimodel.rs',
+    from: '    let scale = dpi.clamp(100.0, 250.0) / 100.0;',
+    to: '    let scale = dpi.clamp(100.0, 400.0) / 100.0;',
+    suite: CORE,
+  },
 ];

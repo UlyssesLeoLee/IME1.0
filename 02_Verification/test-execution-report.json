@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-18T11:35:03.169Z",
+  "generated": "2026-11-18T12:21:35.799Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -475,12 +475,12 @@
     "engine: excerpts and insert previews are identical in both engines (UT-027)",
     "rust: context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
-    "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
-    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
-    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed"
+    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
+    "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
+    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned"
    ],
    "failed": [],
    "reason": ""
