@@ -385,4 +385,52 @@ module.exports = [
     to: "    let text = raw.trim_end_matches('\\0');",
     suite: TSF,
   },
+  // ---- the hit tests of the laser interface (the module the refactor split out) --------------------------------
+  // What is under the mouse: the lens of the mouth, the light of the slit, the row of the panel and the action of
+  // that row. The suite is the text-service crate: these behaviours are watched through the unit tests of the module.
+  {
+    id: 'hit-lens-is-not-the-light',
+    what: 'the lens is the round opening of the mouth; the light is the slit on the edge of the screen',
+    req: 'D-103（激光口贴边，命中区跟着光缝走）/ FR-041',
+    file: '01_Source/crates/pime-tsf/src/laser_ui/hit.rs',
+    from: '    mouth.contains(screen_x, screen_y)',
+    to: '    mouth_hit(mouth, screen_x, screen_y)',
+    suite: TSF,
+  },
+  {
+    id: 'hit-row-under-the-mouse',
+    what: 'the row under the mouse is the one whose rectangle holds the point',
+    req: 'FR-041 / UT-055（悬浮框与它的行）',
+    file: '01_Source/crates/pime-tsf/src/laser_ui/hit.rs',
+    from: '    layout.rows.iter().position(|(_, rect)| rect.contains(x, y))',
+    to: '    layout.rows.iter().position(|(_, rect)| rect.contains(y, x))',
+    suite: TSF,
+  },
+  {
+    id: 'hit-action-under-the-mouse',
+    what: 'the action of a click is the action of the row under the mouse',
+    req: 'FR-041 / UT-055（悬浮框与它的行）',
+    file: '01_Source/crates/pime-tsf/src/laser_ui/hit.rs',
+    from: '    layout.action_at(x, y)',
+    to: '    layout.action_at(y, x)',
+    suite: TSF,
+  },
+  {
+    id: 'hit-row-rect-is-on-the-screen',
+    what: 'the rectangle of a row is in the coordinates of the screen, not of the panel',
+    req: 'FR-041 / UT-055（悬浮框与它的行）',
+    file: '01_Source/crates/pime-tsf/src/laser_ui/hit.rs',
+    from: '            origin.left + rect.left,',
+    to: '            rect.left,',
+    suite: TSF,
+  },
+  {
+    id: 'paint-the-core-is-the-colour-of-its-source',
+    what: 'the core of the light is the colour of its source (the agent); the halo is the soft light around it',
+    req: 'D-90~D-92（多 Agent 演示：光口是它自己的颜色）/ FR-041',
+    file: '01_Source/crates/pime-tsf/src/laser_ui/paint.rs',
+    from: 'canvas.blend(x, y, colour, core_cover * 0.78 * breathe * ends);',
+    to: 'canvas.blend(x, y, halo_colour, core_cover * 0.78 * breathe * ends);',
+    suite: TSF,
+  },
 ];

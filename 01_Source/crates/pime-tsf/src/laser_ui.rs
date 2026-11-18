@@ -1231,11 +1231,14 @@ mod tests {
         );
         // the colour of an agent: a red that is far away from the pale blue of the human
         let colour = Rgb::from_hsv(20.0, 0.90, 0.95);
+        // the halo around the light is a colour of its own: the core of the slit and the light around it are two
+        // different things, and the picture has to keep them apart
+        let halo = Rgb::from_hsv(210.0, 0.60, 1.0);
         let mut pixels = vec![0u8; (GLOW_SIZE * GLOW_SIZE * 4) as usize];
         {
             let mut canvas = Canvas::new(GLOW_SIZE, GLOW_SIZE, &mut pixels)
                 .expect("the picture of the window fits into the buffer");
-            paint::draw_glow(&mut canvas, mouth, origin, 0, colour, colour);
+            paint::draw_glow(&mut canvas, mouth, origin, 0, colour, halo);
         }
         // the light is at the edge of the screen (2026-11-12), so inside the picture it is at the edge of the
         // window, not at its middle
@@ -1250,6 +1253,18 @@ mod tests {
             "the light is in the colour of the agent: r={} b={}",
             pixels[middle],
             pixels[middle + 2]
+        );
+        // and the light **around** it is the halo: the pixel next to the line is blue, not red
+        let beside = if slit.vertical {
+            middle - 4
+        } else {
+            middle - (GLOW_SIZE as usize) * 4
+        };
+        assert!(
+            pixels[beside + 2] > pixels[beside],
+            "the halo around the light is the halo colour: r={} b={}",
+            pixels[beside],
+            pixels[beside + 2]
         );
         // and the corner of the picture is far away from the mouth: there is no light there
         let corner = 3;

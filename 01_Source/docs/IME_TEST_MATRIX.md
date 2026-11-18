@@ -117,6 +117,21 @@ $env:PIME_IME_LIVE="1"; cargo test --test ime_host -- --nocapture    # L3：真 
 
 证据（每个场景一个 JSON）落在 `PIME_IME_EVIDENCE_DIR`；门禁链**不**设置该变量，所以普通跑不写文件。
 
+**在红绿（变异）轮之后跑 JS 套件或追溯报告之前，先重建 core**（D-166）：变异轮是门禁的最后一步，
+它把 `pime-core` 的二进制留在了**被改坏**的状态（最后一条变异是 `grants-mismatch`），
+而 JS 套件里的引擎差分测试直接用那个二进制 ⇒ 它会**假红**（`provider-mismatch`），
+那个二进制还会让 **TAP 报告器退不出** ⇒ 追溯报告会挂住不返回。
+**门禁本身不受影响**（`gate-log.js` 每轮先清缓存，D-133）；单独跑时先来一句：
+
+```powershell
+cd E:\IME1.0\01_Source
+$env:PATH="C:\msys64\mingw64\bin;C:\Users\seiko\.cargo\bin;"+$env:PATH
+$env:RUSTUP_TOOLCHAIN="stable-x86_64-pc-windows-gnu"; $env:CARGO_TARGET_DIR="C:\cargo-target-ime"
+cargo build -p pime-core                                  # 先把 core 重建回没被改坏的样子
+$env:PIME_CORE_EXE="$env:CARGO_TARGET_DIR\debug\pime-core.exe"
+node scripts\traceability-report.js                       # 再出报告（带上引擎差分测试）
+```
+
 L4（会开窗，会在桌面上短暂出现激光面板与设置窗）：
 
 ```powershell

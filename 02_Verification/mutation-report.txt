@@ -1,5 +1,5 @@
-# The red-green check of 2026-11-17T10:03:40.214Z
-# 39 mutations of the implementation; every one of them is restored right after it is applied.
+# The red-green check of 2026-11-18T02:25:09.475Z
+# 44 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -40,11 +40,18 @@ CAUGHT ime-context-collect [IT-013 / FR-013] the text service collects the chara
 CAUGHT ime-direct-observing [IT-013 / FR-015] the host that grants the nearby range switches the machine to observing
 CAUGHT grants-scope [IT-013 / UT-029] a grant of one level does not stand in for another one
 CAUGHT clipboard-clean [D-97 / D-120（剪贴板）] the text of the clipboard is trimmed: no NUL at the end of the buffer, no spaces around it
+CAUGHT hit-lens-is-not-the-light [D-103（激光口贴边，命中区跟着光缝走）/ FR-041] the lens is the round opening of the mouth; the light is the slit on the edge of the screen
+CAUGHT hit-row-under-the-mouse [FR-041 / UT-055（悬浮框与它的行）] the row under the mouse is the one whose rectangle holds the point
+CAUGHT hit-action-under-the-mouse [FR-041 / UT-055（悬浮框与它的行）] the action of a click is the action of the row under the mouse
+CAUGHT hit-row-rect-is-on-the-screen [FR-041 / UT-055（悬浮框与它的行）] the rectangle of a row is in the coordinates of the screen, not of the panel
+CAUGHT paint-the-core-is-the-colour-of-its-source [D-90~D-92（多 Agent 演示：光口是它自己的颜色）/ FR-041] the core of the light is the colour of its source (the agent); the halo is the soft light around it
 
-the run checked 39 mutations: 39 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+the run checked 44 mutations: 44 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
 
 by the design entry (what the round says about each requirement):
+  D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
   D-90（没有领域头时补的那一行是说明行）: 1 caught
+  D-90~D-92（多 Agent 演示：光口是它自己的颜色）/ FR-041: 1 caught
   D-90~D-92（多 Agent 演示）: 5 caught
   D-90~D-92（多 Agent 演示的 .NEMA 口径）: 4 caught
   D-92（修订号）: 1 caught
@@ -56,6 +63,7 @@ by the design entry (what the round says about each requirement):
   FR-004 / UT-005: 3 caught
   FR-005 / UT-003: 1 caught
   FR-041 / UT-055: 1 caught
+  FR-041 / UT-055（悬浮框与它的行）: 3 caught
   IT-013 / FR-013: 2 caught
   IT-013 / FR-015: 1 caught
   IT-013 / UT-029: 1 caught
