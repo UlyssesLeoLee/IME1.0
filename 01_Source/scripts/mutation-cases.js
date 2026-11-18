@@ -541,4 +541,43 @@ module.exports = [
     to: '    let scale = dpi.clamp(100.0, 400.0) / 100.0;',
     suite: CORE,
   },
+  // ---- the screening of what may go out, and the symbol table ------------------------------------------------
+  // The screening is the last line of defence in front of the user's code: a secret that is not recognised is a
+  // secret that leaves the machine.
+  {
+    id: 'secrets-the-env-file-is-sensitive',
+    what: 'a file named .env is credential-like and is never sent',
+    req: 'FR-049（外发敏感信息筛查）/ UT-062',
+    file: '01_Source/crates/pime-core/src/secrets.rs',
+    from: '    if b == ".env" {',
+    to: '    if b == ".envx" {',
+    suite: CORE,
+  },
+  {
+    id: 'secrets-the-github-prefix-is-a-token',
+    what: 'the ghp_ prefix marks a GitHub token',
+    req: 'FR-049（外发敏感信息筛查）/ UT-062',
+    file: '01_Source/crates/pime-core/src/secrets.rs',
+    from: "        && matches!(t[p + 2], 'p' | 'o' | 'u' | 's' | 'r')",
+    to: "        && matches!(t[p + 2], 'o' | 'u' | 's' | 'r')",
+    suite: CORE,
+  },
+  {
+    id: 'symbols-the-cap-is-the-max',
+    what: 'the symbol table never returns more symbols than the caller asked for',
+    req: 'FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）',
+    file: '01_Source/crates/pime-core/src/symbols.rs',
+    from: '        if out.len() >= max {',
+    to: '        if out.len() > max {',
+    suite: CORE,
+  },
+  {
+    id: 'transaction-a-read-only-document-is-refused',
+    what: 'a read-only document is refused, a writable one is not',
+    req: 'IT-035（编辑事务：只读文档被拒）/ UT-052',
+    file: '01_Source/crates/pime-core/src/edit/transaction.rs',
+    from: '        if !state.editable {',
+    to: '        if state.editable {',
+    suite: CORE,
+  },
 ];

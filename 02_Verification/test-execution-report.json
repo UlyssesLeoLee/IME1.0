@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-18T12:21:35.799Z",
+  "generated": "2026-11-18T13:21:07.633Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -450,10 +450,10 @@
     "UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
     "rust: textrange::tests::ut_026_crlf_is_not_split",
     "textrange::tests::ut_026_crlf_is_not_split",
-    "rust: textrange::tests::ut_026_offset_round_trip",
-    "textrange::tests::ut_026_offset_round_trip",
     "rust: textrange::tests::ut_026_out_of_range_is_rejected",
     "textrange::tests::ut_026_out_of_range_is_rejected",
+    "rust: textrange::tests::ut_026_offset_round_trip",
+    "textrange::tests::ut_026_offset_round_trip",
     "rust: textrange::tests::ut_026_positions_never_split_surrogates",
     "textrange::tests::ut_026_positions_never_split_surrogates"
    ],

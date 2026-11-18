@@ -1828,6 +1828,14 @@ D-148 补上这组量化数据（选项 A~E 在台账 §3.2）。
 `overlay-the-window-flips-above-only-without-room`（候选窗先在光标下方、下面放不下才翻到上面，FR-043 / UT-055）、
 `overlay-the-scaling-is-capped-at-250`（显示缩放夹在 100-250 %，FR-043 / UT-055）。
 **4 条全部咬住** ⇒ **红绿轮 51 → 55 条**。
+
+**再补三处核心里的、其中一处是隐私关键路径**：
+`secrets-the-env-file-is-sensitive`（名为 `.env` 的文件算凭据文件，绝不外发，FR-049 / UT-062）、
+`secrets-the-github-prefix-is-a-token`（`ghp_` 前缀是 GitHub 令牌，FR-049 / UT-062）、
+`symbols-the-cap-is-the-max`（符号表返回的条数不超过调用方要的条数，FR-041 + D-96）、
+`transaction-a-read-only-document-is-refused`（只读文档被拒、可写的文档不被拒，IT-035 / UT-052）。
+**4 条全部咬住** ⇒ **红绿轮 55 → 59 条**。
+⇒ **筛查（`secrets.rs`）现在也在尺子底下**：一道没认出来的密钥 ⇒ 它就出门了。
 而那条变异把它也写成 false ⇒ 两者一样，看不出差别 ⇒ 改成**开与关两种状态都验**之后才咬住。
 
 **这一轮还踩到并定位了另一个坑（D-166）**：变异轮是门禁的最后一步，它把 `pime-core` 的二进制留在**被改坏**的状态；

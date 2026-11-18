@@ -1,5 +1,5 @@
-# The red-green check of 2026-11-18T12:05:46.832Z
-# 55 mutations of the implementation; every one of them is restored right after it is applied.
+# The red-green check of 2026-11-18T13:04:29.977Z
+# 59 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -56,8 +56,12 @@ CAUGHT i18n-the-interface-locale-wins [FR-044（UI 显示语言独立于 Windows
 CAUGHT i18n-the-locale-reads-its-column [FR-044（UI 显示语言中文、英文、日文）/ UT-044] the locale reads its own column of the texts (the Chinese column is Chinese)
 CAUGHT overlay-the-window-flips-above-only-without-room [FR-043（候选窗口位置回退）/ UT-055] the candidate window goes below the caret and flips above only when there is no room below
 CAUGHT overlay-the-scaling-is-capped-at-250 [FR-043（DPI/多屏适配）/ UT-055] the display scaling is clamped to 100-250 %
+CAUGHT secrets-the-env-file-is-sensitive [FR-049（外发敏感信息筛查）/ UT-062] a file named .env is credential-like and is never sent
+CAUGHT secrets-the-github-prefix-is-a-token [FR-049（外发敏感信息筛查）/ UT-062] the ghp_ prefix marks a GitHub token
+CAUGHT symbols-the-cap-is-the-max [FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）] the symbol table never returns more symbols than the caller asked for
+CAUGHT transaction-a-read-only-document-is-refused [IT-035（编辑事务：只读文档被拒）/ UT-052] a read-only document is refused, a writable one is not
 
-the run checked 55 mutations: 55 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+the run checked 59 mutations: 59 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
 
 by the design entry (what the round says about each requirement):
   D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
@@ -76,6 +80,7 @@ by the design entry (what the round says about each requirement):
   FR-041 / D-97（D-120）（剪贴板工具的那一行）: 1 caught
   FR-041 / UT-055: 1 caught
   FR-041 / UT-055（悬浮框与它的行）: 3 caught
+  FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）: 1 caught
   FR-041（悬浮框里的 Effort 入口）: 1 caught
   FR-041（悬浮框显示的就是产品现在的状态）: 1 caught
   FR-042 / FR-041（从悬浮下拉选择语言）: 1 caught
@@ -84,9 +89,11 @@ by the design entry (what the round says about each requirement):
   FR-043（候选窗口位置回退）/ UT-055: 1 caught
   FR-044（UI 显示语言中文、英文、日文）/ UT-044: 1 caught
   FR-044（UI 显示语言独立于 Windows 语言与 Programming Profile）/ UT-056: 1 caught
+  FR-049（外发敏感信息筛查）/ UT-062: 2 caught
   IT-013 / FR-013: 2 caught
   IT-013 / FR-015: 1 caught
   IT-013 / UT-029: 1 caught
+  IT-035（编辑事务：只读文档被拒）/ UT-052: 1 caught
   NFR-203 / ST-040: 2 caught
   ST-036（隐私过滤、无授权外发与诊断）/ 基本设计 §信任边界（宿主应用 ↔ TSF DLL）: 1 caught
   UT-006 / FR-026: 2 caught
