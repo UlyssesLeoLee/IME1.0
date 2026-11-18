@@ -472,4 +472,34 @@ module.exports = [
     to: '            key: "clipboard_text",',
     suite: TSF,
   },
+  // ---- the lifecycle of the text service (the module the refactor split out) -------------------------------
+  // The activation of the text service: the secure desktop of the host, the language of the active profile and
+  // the rollback that has to leave a retry clean.
+  {
+    id: 'lifecycle-secure-desktop-collects-nothing',
+    what: 'on the secure desktop of the host (logon, UAC) the text service collects nothing',
+    req: 'ST-036（隐私过滤、无授权外发与诊断）/ 基本设计 §信任边界（宿主应用 ↔ TSF DLL）',
+    file: '01_Source/crates/pime-tsf/src/tip/lifecycle.rs',
+    from: '    flags & TF_TMAE_SECUREMODE != 0',
+    to: '    flags & TF_TMAE_SECUREMODE == 0',
+    suite: TSF,
+  },
+  {
+    id: 'lifecycle-the-profile-tells-the-language',
+    what: 'the active profile of the product tells which language it is',
+    req: 'FR-042（即时语言切换）',
+    file: '01_Source/crates/pime-tsf/src/tip/lifecycle.rs',
+    from: '    } else if profile == crate::PROFILE_JA {\n        Some("ja-JP")',
+    to: '    } else if profile == crate::PROFILE_JA {\n        Some("zh-CN")',
+    suite: TSF,
+  },
+  {
+    id: 'lifecycle-the-rollback-undoes-in-reverse-order',
+    what: 'a failed activation undoes the advises in reverse order, so a retry of Activate starts clean',
+    req: '基本设计 §信任边界（宿主应用 ↔ TSF DLL：TSF 拒绝同一 client id 的第二个键事件接收器）',
+    file: '01_Source/crates/pime-tsf/src/tip/lifecycle.rs',
+    from: '        if let Some(cookie) = self.language.take() {\n            self.advises.unadvise_language(cookie);\n        }\n        if let Some(cookie) = self.thread.take() {\n            self.advises.unadvise_thread(cookie);\n        }',
+    to: '        if let Some(cookie) = self.thread.take() {\n            self.advises.unadvise_thread(cookie);\n        }\n        if let Some(cookie) = self.language.take() {\n            self.advises.unadvise_language(cookie);\n        }',
+    suite: TSF,
+  },
 ];

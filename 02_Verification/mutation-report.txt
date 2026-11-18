@@ -1,5 +1,5 @@
-# The red-green check of 2026-11-18T10:28:20.912Z
-# 48 mutations of the implementation; every one of them is restored right after it is applied.
+# The red-green check of 2026-11-18T11:21:18.221Z
+# 51 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -49,8 +49,11 @@ CAUGHT panel-switch-shows-the-real-state [FR-041（悬浮框显示的就是产�
 CAUGHT panel-language-row-shows-the-name [FR-042 / FR-041（从悬浮下拉选择语言）] the row of the language shows the name of the language, not its key
 CAUGHT panel-effort-row-shows-the-label [FR-041（悬浮框里的 Effort 入口）] the row of the effort shows the label of the effort, not its key
 CAUGHT panel-local-tool-keeps-its-key [FR-041 / D-97（D-120）（剪贴板工具的那一行）] a local tool of the bar keeps the key its click uses
+CAUGHT lifecycle-secure-desktop-collects-nothing [ST-036（隐私过滤、无授权外发与诊断）/ 基本设计 §信任边界（宿主应用 ↔ TSF DLL）] on the secure desktop of the host (logon, UAC) the text service collects nothing
+CAUGHT lifecycle-the-profile-tells-the-language [FR-042（即时语言切换）] the active profile of the product tells which language it is
+CAUGHT lifecycle-the-rollback-undoes-in-reverse-order [基本设计 §信任边界（宿主应用 ↔ TSF DLL：TSF 拒绝同一 client id 的第二个键事件接收器）] a failed activation undoes the advises in reverse order, so a retry of Activate starts clean
 
-the run checked 48 mutations: 48 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+the run checked 51 mutations: 51 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
 
 by the design entry (what the round says about each requirement):
   D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
@@ -72,10 +75,12 @@ by the design entry (what the round says about each requirement):
   FR-041（悬浮框里的 Effort 入口）: 1 caught
   FR-041（悬浮框显示的就是产品现在的状态）: 1 caught
   FR-042 / FR-041（从悬浮下拉选择语言）: 1 caught
+  FR-042（即时语言切换）: 1 caught
   IT-013 / FR-013: 2 caught
   IT-013 / FR-015: 1 caught
   IT-013 / UT-029: 1 caught
   NFR-203 / ST-040: 2 caught
+  ST-036（隐私过滤、无授权外发与诊断）/ 基本设计 §信任边界（宿主应用 ↔ TSF DLL）: 1 caught
   UT-006 / FR-026: 2 caught
   UT-007 / FR-026: 3 caught
   UT-026 / FR-013: 2 caught
@@ -83,4 +88,5 @@ by the design entry (what the round says about each requirement):
   UT-035 / FR-023: 1 caught
   UT-052 / FR-038: 1 caught
   UT-070 / NFR-203: 1 caught
+  基本设计 §信任边界（宿主应用 ↔ TSF DLL：TSF 拒绝同一 client id 的第二个键事件接收器）: 1 caught
 every mutation was caught: the suite really pins these behaviours

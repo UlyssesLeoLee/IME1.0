@@ -1813,6 +1813,15 @@ D-148 补上这组量化数据（选项 A~E 在台账 §3.2）。
 **红绿轮 44 → 48 条**。第一条用例最初**漏了**：测试里把 `space_confirms` 设成了 false，
 而那条变异把它也写成 false ⇒ 两者一样，看不出差别 ⇒ 改成**开与关两种状态都验**之后才咬住。
 
+**再补第三个重构模块：文本服务的生命周期（`tip/lifecycle.rs`，794 行，第一期最大的那个新模块）**。
+它的单测本来就扎实（回滚顺序、profile 映射、secure 标志都有），但**红绿轮没盯着它** ⇒ 加 3 条：
+`lifecycle-secure-desktop-collects-nothing`（宿主的安全桌面上什么都不收集）、
+`lifecycle-the-profile-tells-the-language`（当前激活的 profile 决定是哪种语言）、
+`lifecycle-the-rollback-undoes-in-reverse-order`（激活失败要**按反序**撤销，TSF 拒绝同一 client id 的第二个键事件接收器，
+所以重试必须从干净状态开始）。**3 条全部咬住** ⇒ **红绿轮 48 → 51 条**。
+⇒ 至此，重构第一期拆出来的三个有纯逻辑的模块（`laser_ui/hit.rs`、`tip/panel.rs`、`tip/lifecycle.rs`）都纳入了红绿轮。
+而那条变异把它也写成 false ⇒ 两者一样，看不出差别 ⇒ 改成**开与关两种状态都验**之后才咬住。
+
 **这一轮还踩到并定位了另一个坑（D-166）**：变异轮是门禁的最后一步，它把 `pime-core` 的二进制留在**被改坏**的状态；
 紧接着跑追溯报告 ⇒ **挂住不返回**（本轮挂了两轮：900 s 与 600 s），单独跑 JS 套件 ⇒ **停在第 95 条不动**；
 用 `--test-force-exit` 强制退出才看到真相：引擎差分测试的 `grants` 那条报 `provider-mismatch`（正是 `grants-mismatch` 变异的效果）
