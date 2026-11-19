@@ -111,4 +111,64 @@ mod tests {
         assert_eq!(pairs.len(), SYMBOLS.len());
         assert_eq!(pairs[0], ("←", "向左箭头"));
     }
+
+    /// The mathematics of the table: the symbols a programmer writes every day and cannot type.
+    ///
+    /// The group is pinned on purpose: the names are what a screen reader reads, and a symbol that loses its name
+    /// (or its place in the table) is a symbol the user cannot find.
+    #[test]
+    fn the_mathematics_of_the_table_are_there_with_their_names() {
+        let expected: &[(&str, &str)] = &[
+            ("±", "正负号"),
+            ("×", "乘号"),
+            ("÷", "除号"),
+            ("≠", "不等于"),
+            ("≤", "小于等于"),
+            ("≥", "大于等于"),
+            ("≈", "约等于"),
+            ("∞", "无穷大"),
+            ("√", "平方根"),
+            ("∑", "求和"),
+            ("∏", "连乘"),
+            ("∫", "积分"),
+            ("∂", "偏导数"),
+            ("∇", "梯度"),
+            ("∈", "属于"),
+            ("∉", "不属于"),
+            ("⊂", "真包含于"),
+            ("⊆", "包含于"),
+            ("∪", "并集"),
+            ("∩", "交集"),
+            ("∅", "空集"),
+            ("→", "推出"),
+            ("⇒", "蕴含"),
+        ];
+        let pairs = symbol_pairs();
+        for (text, name) in expected {
+            assert!(
+                pairs.contains(&(*text, *name)),
+                "the symbol {text} ({name}) is missing from the table"
+            );
+        }
+        // the mathematics comes before the logic and the sets, the way the panel offers them
+        let first = pairs.iter().position(|p| p.0 == "±").expect("the first math symbol");
+        let last = pairs.iter().position(|p| p.0 == "⇒").expect("the last math symbol");
+        let logic = pairs
+            .iter()
+            .position(|p| p.0 == "¬")
+            .expect("the first logic symbol");
+        assert!(first < last && last < logic, "the order of the groups");
+    }
+
+    /// Every symbol of the table is written into the document as exactly one UTF-16 unit: a surrogate pair would be
+    /// two units and would split the caret in the editor.
+    #[test]
+    fn no_symbol_needs_two_utf16_units() {
+        for symbol in SYMBOLS {
+            assert!(
+                symbol.text.chars().count() == 1 && symbol.text.encode_utf16().count() == 1,
+                "{symbol:?}: one character, one UTF-16 unit"
+            );
+        }
+    }
 }

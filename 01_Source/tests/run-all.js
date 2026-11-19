@@ -31,10 +31,12 @@ const has = f => args.includes(f);
 const all = has('--all');
 const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|bench|mutation|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
-// The UAT is part of the fast set now (D-137): the acceptance scenarios are the ones that run against the real
-// VS Code, and without them a regression in them stays invisible until somebody runs them by hand. It costs about
-// four minutes per run and it needs a VS Code on the machine.
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'installer', 'uat'];
+// The UAT is NOT part of the fast set any more (the user, 2026-11-19): it drives the VS Code **bridge**, not the
+// input method itself, and it was the most fragile step of the gate - about 2.2% of its scenarios fail per run and
+// the failure reads like a product defect (D-150). It stays available as an explicit step
+// (`node tests/run-all.js --uat`) and its evidence stays in 02_Verification/uat, but it is no longer a gate.
+// What watches the input method itself is the step that drives the real TSF DLL through the real msctf.
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');

@@ -1312,6 +1312,12 @@ mod tests {
             vec!["BRACKET_UNCLOSED"]
         );
         assert!(codes("rust", "let s = r#\"raw } text\"#;", &[]).is_empty());
+        // the raw string is masked as a whole, its prefix included: what the validator sees is code, nothing else
+        assert_eq!(
+            mask_source("let s = r#\"raw } text\"#;", Style::Rust),
+            format!("let s = {};", " ".repeat(15)),
+            "the raw string is masked as a whole"
+        );
         assert!(codes("rust", "/* a /* nested */ still */ fn f() {}", &[]).is_empty());
         assert_eq!(mask_source("'a' 'b", Style::Rust), "    'b");
     }
