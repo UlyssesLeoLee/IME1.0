@@ -255,6 +255,10 @@ const ADDITIONS = [
   '02_Verification/DEFECT_SUBMISSION_2026-11-07.md',
   // the checklist the user walks through after the new DLL is in place
   '02_Verification/REAL_MACHINE_CHECKLIST.md',
+  // the regression test of the real input method (the installed DLL, a focused window, the real keyboard) and its
+  // live harness (2026-11-19; the key events do not reach the text service - D-170)
+  '01_Source/tests/tsf/ime_live.rs',
+  '01_Source/tests/tsf/common/ime_live.rs',
 ];
 
 const isBinary = bytes => bytes.includes(0);

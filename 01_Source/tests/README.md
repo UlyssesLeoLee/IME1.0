@@ -10,7 +10,7 @@ tests/
   golden-v0.2/             frozen behaviour of release v0.2 - read-only (SHA256SUMS.txt)
   js/                      node:test suites for the extension's pure logic and engine adapter (ut-*.test.js, parity.test.js, helpers.js)
   rust/                    integration tests of crates/pime-core (wired through [[test]] entries in its Cargo.toml)
-  tsf/                     the tests of the input method itself (crates/pime-tsf): common/ = the harness (a fake host, a scripted predictor, the transcript writer), common/scenarios.rs = the 21 behaviour scenarios + the 23-function ledger, ime_scenarios.rs, ime_functions.rs, ime_host.rs (the host-level COM test)
+  tsf/                     the tests of the input method itself (crates/pime-tsf): common/ = the harness (a fake host, a scripted predictor, the transcript writer), common/scenarios.rs = the 21 behaviour scenarios + the 23-function ledger, common/ime_live.rs = the live harness (a real window with the keyboard focus, the real msctf, the real keyboard), ime_scenarios.rs, ime_functions.rs, ime_host.rs (the host-level COM test), ime_live.rs (the regression test of the REAL installed input method)
   tsf/ime_*.rs             the end-to-end binaries of the text service: ime_registration.rs (IT-002, the other input methods stay untouched), ime_context_security.rs (IT-005, a secure field collects nothing), ime_dpi_language.rs (IT-037, the geometry at 200 % and the language independence), ime_resilience.rs (IT-042, a core that does not answer) - the two that only partly prove their case carry NO case number on purpose, so the traceability report does not count them as covered
   smoke/                   core-binary-smoke.js: the real pime-core.exe over JSON Lines; tsf-dll-check.js: builds crates/pime-tsf and inspects the DLL; ai-worker-smoke.js; ipc-smoke.js; ime-ui-capture.ps1 + ime-ui-check.js: the native windows of the IME (open them, take a picture, check that it is not a flat rectangle)
   ipc/, setup/              integration tests of crates/pime-ipc and crates/pime-setup (wired through [[test]] entries in their Cargo.toml)
@@ -47,6 +47,10 @@ powershell tests/e2e/Invoke-E2E.ps1 -Config tests/e2e/vmconfig.json   # the end-
 - `PIME_CORE_EXE` (path of a built `pime-core.exe`) enables the engine differential tests in `tests/js/ut-engine.test.js`; without it they are
   reported as skipped, never as passed.
 - `PIME_IME_LIVE=1` makes `tests/tsf/ime_host.rs` drive the real `msctf` instead of the fake host (it opens the candidate window).
+  It also makes `tests/tsf/ime_live.rs` drive the **installed** input method: a real window that owns the keyboard focus, the real
+  document, the real keyboard (`SendInput` -> the window procedure asks TSF). That one takes the focus of the desktop for a moment
+  (the laser interface comes on the screen), so it is opt-in on purpose; two of its four cases fail today (D-170: the key events do
+  not reach the text service).
   `PIME_IME_EVIDENCE_DIR=<dir>` makes every IME scenario write its transcript as a JSON file there; the regression chain does not set it, so a
   normal run writes nothing.
 - The function ledger of the input method (`tests/tsf/common/scenarios.rs`, `IME_FUNCTIONS`) names, for each of the 23 functions, the test that

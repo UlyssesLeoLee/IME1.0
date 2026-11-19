@@ -10,6 +10,7 @@
 
 #![allow(dead_code)]
 
+pub mod ime_live;
 pub mod scenarios;
 
 use std::cell::RefCell;

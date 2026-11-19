@@ -14,6 +14,7 @@
 | **L1 单元** | `crates/pime-tsf/src/*.rs` 的 `#[cfg(test)]` | 每个模块自己的逻辑（键位翻译、布局算法、菜单、注册计划……） | 否 | `cargo test` |
 | **L2 场景** | `01_Source/tests/tsf/ime_scenarios.rs` | 把文本服务当整体驱动：**打字 → 候选窗 → 组合串 → 提交 → 失败降级** | 否 | `cargo test --test ime_scenarios` |
 | **L3 宿主** | `01_Source/tests/tsf/ime_host.rs` | 真 COM 类对象、真 msctf、真文档上下文、真按键链 | 是（**要开窗**） | `PIME_IME_LIVE=1 cargo test --test ime_host` |
+| **L3′ 真输入法**（2026-11-19 起） | `01_Source/tests/tsf/ime_live.rs` + `01_Source/tests/tsf/common/ime_live.rs` | **已安装的** DLL + 真 msctf + **带焦点的真窗口** + **真键盘**（`SendInput` → 窗口过程里问 TSF）⇒ 输入法有没有真的活起来、按键有没有真的进到文本服务、候选有没有真的上屏 | 是（**要抢焦点**，opt-in） | `PIME_IME_LIVE=1 cargo test --test ime_live -- --nocapture` |
 | **L4 真机 UI** | `crates/pime-tsf/examples/ime_ui_probe.rs` + `tests/smoke/ime-ui-capture.ps1` + `tests/smoke/ime-ui-check.js` | 激光面板 / 设置窗的**真实画面**：探针真开窗 → .NET 抓屏 → Node 解析 PNG **+ 读探针写的 `probe-report.json`**（页签数、当前页、候选行数、窗口位置） | 是（要开窗，**opt-in**） | `node tests/run-all.js --tsf-ui` |
 
 L1 已经在门禁链里（`node tests/run-all.js --tsf`）。本轮补上的是 **L2 / L3 / L4 的取证链路**，并给 L1+L2 建了一份**不会烂掉的账本**。
@@ -113,7 +114,16 @@ cargo test --test ime_scenarios # 只跑场景套件
 cargo test --test ime_functions # 只跑功能账本
 $env:PIME_IME_EVIDENCE_DIR="E:\IME1.0\02_Verification\ime"; cargo test --test ime_scenarios   # 落证据
 $env:PIME_IME_LIVE="1"; cargo test --test ime_host -- --nocapture    # L3：真 msctf（会开候选窗）
+$env:PIME_IME_LIVE="1"; cargo test --test ime_live -- --nocapture --test-threads=1   # L3′：真输入法（会抢焦点）
 ```
+
+> **L3′（真输入法回归测试）的四条用例与今天的实测结果**（2026-11-19，本机）：
+> ① `the_input_method_comes_alive_when_its_profile_is_activated` —— **通过**（msctf 装入已安装的 DLL，输入法的窗口真的出现）；
+> ② `the_real_keyboard_reaches_the_window_procedure_of_the_host` —— **通过**（真实按键到达宿主窗口过程）；
+> ③ `the_mode_chord_is_eaten_by_the_text_service` —— **失败**（`Ctrl+F12` 没被文本服务吃掉 ⇒ D-170）；
+> ④ `the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document` —— **失败**（候选没有上屏 ⇒ D-170）。
+> ③④ 的失败信息里写明「D-170」与实测到的每一段事实；**缺陷修好后这两条会自己变绿**，这就是它作为回归测试的意义。
+> 这一步是 **opt-in**（`node tests/run-all.js --ime-live`），因为它会抢走桌面的焦点。
 
 证据（每个场景一个 JSON）落在 `PIME_IME_EVIDENCE_DIR`；门禁链**不**设置该变量，所以普通跑不写文件。
 
@@ -152,8 +162,8 @@ node 01_Source\tests\run-all.js --tsf-ui
 | 项 | 状态 | 说明 |
 |---|---|---|
 | **L4 原生窗口 UI 测试** | **部分** | 已建：探针真开候选窗 / 激光面板 / 设置窗 → .NET 抓屏 → Node 解析 PNG（1920×1080、颜色数 ≥ 50，拒绝纯色图），证据 `02_Verification/ime-ui/ime-windows.png`。**第十六轮把判据往上提了一层**：截图证明不了「页签存在」和「窗口居中」，所以探针另外写一份机器可读的 `probe-report.json`（设置窗是否打开、**页签数**、**当前页标题**、**候选行数**、窗口矩形、屏幕尺寸），`ime-ui-check.js` 断言**页签 6 页**、当前页是「插件」、**面板里有候选行**、**设置窗中心与屏幕中心的偏差 < 30%**；页数≠6 或列表为空时探针退出码非 0。**仍未做**：像素/文案级模板匹配，也没有人点过这些窗。 |
-| **L3 真机注册态** | **未做** | `examples/tsf_host.rs --profile` 能证明 msctf 加载了已安装 DLL，但**按键不路由**（控制台宿主没有带焦点的窗口，TSF 只把文本服务挂到**有焦点**的上下文上）。要在记事本/VS Code 里实测，需要注册态 + 一个真窗口宿主。 |
-| **L3 未注册态全链** | **部分** | `ime_host.rs` 已能创建真 COM 对象、走真 msctf、真文档上下文（`PIME_IME_LIVE=1`），但**按键是否真路由到文本服务**要看该环境下的实测结果，不能预先断言。 |
+| **L3 真机注册态** | **部分**（2026-11-19 起有了一半） | **已建**：`tests/tsf/ime_live.rs` 驱动**已安装的** DLL —— 真窗口（`CreateWindowExW`）+ 抢焦点（`AttachThreadInput`/`SetForegroundWindow`/`SetFocus`）+ 真文档（`CreateContext`/`Push`/`AssociateFocus`/`SetFocus`）+ 真键盘（`SendInput` → 宿主窗口过程里问 `ITfKeystrokeMgr`）。**测出来的**：① profile 激活成功，msctf 把已安装的 `pime_tsf.dll` 装进本进程，**输入法的窗口真的出现**（`ProgrammingIME.Glow`/`LaserPanel`/`Beam`/`PIME1AgentBridge`）；② 文本服务**持有本线程的 key event sink**（宿主再 advise 一次被 msctf 以 `E_INVALIDARG` 拒绝）；③ 真实键盘**确实到达**宿主窗口过程。**没测出来的**：④ **按键进不到文本服务** —— 连必须被吃的 `Ctrl+F12` 都答「不是我的」，文档里只有宿主自己写的字符 ⇒ **D-170**（未修，等裁定）。 |
+| **L3 未注册态全链** | **部分** | `ime_host.rs` 已能创建真 COM 对象、走真 msctf、真文档上下文（`PIME_IME_LIVE=1`），但它断言的是「宿主自己写入的 `fn`」，**测不到按键有没有进到文本服务** ⇒ 这一段由 `ime_live.rs` 补上（见上一行）。 |
 | **TSF 侧插件语言开关** | **已做**（第十六轮） | 设置窗的**插件页**可以勾选 Cypher / PL\/SQL / T-SQL（默认 PL/SQL 开、T-SQL 关），写回设置即刻生效（`tip.rs` 的 `apply_plugins()`）。**未在真实宿主里验证过**（新 DLL 还没换上）。 |
 | **真实键盘下的中文/日文输入** | **未做** | 自带词库有**端到端测试**（中文档「ni」→「你」上屏；日文档「nihon」→假名），但那是**驱动控制器**、不是**真键盘 + 真宿主**。真实手感要等新 DLL 换上之后在记事本 / VS Code 里试。 |
 | **AI 代理写进真实宿主** | **部分** | **通道**已经在真实 Windows 上跑通：① DLL 侧一条**跨进程真机往返**（宿主进程里是真的桥接窗口与真的 `WM_COPYDATA`，另一个进程按协议发请求并等回包）；② 客户端侧一条**真机往返**（假桥接窗 + 真客户端，含「桥接不回答时按时放弃」的保护）。**没做**：**文字真的落进记事本 / VS Code 的文档**——新 DLL 还没换上（要注销或重启），所以「AI 写一段中文 / 日文 / 代码到编辑器里」这条**一次都没在真实宿主里跑过**。 |

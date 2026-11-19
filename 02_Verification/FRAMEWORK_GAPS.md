@@ -1913,3 +1913,46 @@ v0.3.1（2026-11-11）之后走了六轮改动，这一轮把它们**出包并�
 真命名管道往返只能靠内存管道取证、TASE 的算法认证状态是 `TESTED` 不是 `APPROVED`），另外补上了这一版新增的三条据实说明：
 UAT 这一天 8 轮里出过 11 次场景失败（**D-150**，多数是夹具竞态）、判据 7 查出 12 处注释与代码矛盾（**D-152 ~ D-163**）、
 以及 **144 条**待裁定项里与这一版直接相关的那几条。
+
+### 5.32 第三十五轮（2026-11-19）：**真输入法的回归测试** —— 输入法活起来了，但按键进不去（D-170）
+
+**这一轮做了什么**：用户说「重新设计实际测输入法的自动测试」「输入法的测试脚本要留作回归测试」。
+于是新写了 `01_Source/tests/tsf/ime_live.rs`（测试目标）+ `01_Source/tests/tsf/common/ime_live.rs`（真宿主 harness），
+**不再用 VS Code 桥接冒充输入法测试**（UAT 已在上一轮退出门禁常跑集合）。
+
+**harness 的关键三点**（都是这一轮实测逼出来的，与旧探针 `examples/tsf_host.rs` 的差别）：
+
+1. **窗口要先拿到键盘焦点，而文档是在焦点之前关联的** —— 真实应用在 `WM_CREATE` 里关联文档，窗口后来才到前面；
+2. **按键要在窗口过程里问 TSF** —— 旧探针在控制台里直接调 `TestKeyDown`，那不是应用的做法；
+3. **按键要真的按出来**（`SendInput` ⇒ `WM_KEYDOWN`）—— 这样测的是「OS → 应用 → TSF → 输入法」整条链。
+
+**测出来的（2026-11-19，本机，已安装的 0.3.1 版 DLL）**：
+
+| 段 | 结果 |
+|---|---|
+| 真窗口 + 抢焦点（`AttachThreadInput` / `SetForegroundWindow` / `SetFocus`） | ✅ `ITfThreadMgr::IsThreadFocus` = TRUE |
+| 真文档（`CreateDocumentMgr` / `CreateContext` / `Push` / `AssociateFocus` / `SetFocus`） | ✅ |
+| profile 激活（`ITfInputProcessorProfileMgr::ActivateProfile(zh-CN)`） | ✅ msctf 把**已安装的** `pime_tsf.dll` 装进本进程 |
+| **输入法真的活起来** | ✅ 线程里出现 `ProgrammingIME.Glow` / `LaserPanel` / `Beam` / `PIME1AgentBridge` |
+| 文本服务**持有 key event sink** | ✅（宿主再 advise 一次自己的 sink ⇒ msctf 答 `E_INVALIDARG`） |
+| 真实键盘到达宿主窗口过程 | ✅ |
+| **按键到达文本服务** | ❌ **`'w'` / `'o'` / 空格 / `Ctrl+F12` 一律答「不是我的」 ⇒ D-170** |
+
+**顺带测到的三件事**（都会写进后续的排查）：
+
+- `CreateContext` 只接受 `dwflags` 0 或 `TF_ES_SYNC`（0x1）；`TF_ES_READWRITE`（0x6）被 msctf 以 `E_INVALIDARG` 拒绝
+  ⇒ **写**要在**编辑会话**上用 `TF_ES_READWRITE`（`RequestEditSession` 的 0x6 才是能写的那一个）。
+- 旧版 `ITfThreadMgr::Activate(REFGUID)`（把 profile 变成**本线程**的输入处理器）在本机**把 msctf 弄崩**（0xC0000005）⇒ 不可用。
+- 探针与测试进程里 **`CoUninitialize` 必须晚于所有 COM 对象的释放**，否则 msctf 崩（0xC0000005）—— 这也修正了
+  `tests/tsf/ime_host.rs` 的隐患（它的 `drive()` 写不进文档时会 `expect` panic，因为那个 context 不可写）。
+
+**这一轮的产物**：
+
+- `01_Source/tests/tsf/ime_live.rs` + `01_Source/tests/tsf/common/ime_live.rs`（新，**四条用例**：两条今天通过、两条今天失败并指向 D-170）；
+- `01_Source/crates/pime-tsf/Cargo.toml`：新增 `[[test]] name = "ime_live"` 与四个 Windows 特性；
+- `01_Source/tests/run-all.js`：新增 **opt-in** 步 `--ime-live`（抢桌面焦点，所以不进常跑集合）；
+- `02_Verification/DEFECT_SUBMISSION_2026-11-07.md`：**D-170**（高）；
+- `01_Source/docs/IME_TEST_MATRIX.md`：四层表里新增 **L3′ 真输入法** 一层，§5 的「L3 真机注册态」从「未做」改成「部分（有了一半）」。
+
+**没有做的**：没有改 `crates/pime-tsf/src/` 的任何生产代码（D-170 的修法要你裁定：可能是文本服务 advise sink 时的
+client id，也可能是宿主侧还差一步），没有把 `--ime-live` 挂进常跑集合（它会抢焦点）。

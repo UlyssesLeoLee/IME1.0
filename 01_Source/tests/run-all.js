@@ -7,6 +7,7 @@
 //   node tests/run-all.js --tsf           crates/pime-tsf: its unit tests, then build the DLL (GNU target) and inspect it (x64, exports, imports); never registers it
 //   node tests/run-all.js --agent         crates/pime-agent: the front-ends the AI clients call (the MCP server, the CLI, the local server)
 //   node tests/run-all.js --tsf-live      crates/pime-tsf: the live host test (the real msctf, a real context; it opens the candidate window on the desktop)
+//   node tests/run-all.js --ime-live      crates/pime-tsf: the regression test of the REAL input method (the installed DLL, a real window with the keyboard focus, the real keyboard; it takes the focus of the desktop)
 //   node tests/run-all.js --tsf-ui         crates/pime-tsf: the native windows (the probe opens the candidate window, the floating bar and the settings window; a picture of the desktop is taken and checked)
 //   node tests/run-all.js --worker        crates/pime-ai-worker: unit tests + the smoke test against the HTTPS mock (needs OpenSSL; writes PIME-TEST session credentials and removes them)
 //   node tests/run-all.js --ipc           crates/pime-ipc: unit + loopback tests on real named pipes (unique test pipe names)
@@ -29,13 +30,14 @@ const verification = path.join(root, '02_Verification');
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|tsf-ui|worker|ipc|setup|agent|tase|bench|mutation|installer|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|ime-live|tsf-ui|worker|ipc|setup|agent|tase|bench|mutation|installer|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
 // The UAT is NOT part of the fast set any more (the user, 2026-11-19): it drives the VS Code **bridge**, not the
 // input method itself, and it was the most fragile step of the gate - about 2.2% of its scenarios fail per run and
 // the failure reads like a product defect (D-150). It stays available as an explicit step
 // (`node tests/run-all.js --uat`) and its evidence stays in 02_Verification/uat, but it is no longer a gate.
-// What watches the input method itself is the step that drives the real TSF DLL through the real msctf.
+// What watches the input method itself is the step that drives the real TSF DLL through the real msctf
+// (`--ime-live`: the installed DLL, a real window with the keyboard focus, the real keyboard).
 const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
@@ -191,6 +193,13 @@ if (want('tsf')) {
 if (has('--tsf-live')) {
   step('TSF live host test (the real msctf, a real document context; it opens the candidate window)', () =>
     cargoRetry('pime-tsf', ['test', '--test', 'ime_host', '--', '--nocapture'], {PIME_IME_LIVE: '1'}));
+}
+// The regression test of the REAL input method: the installed DLL, a real window that owns the keyboard focus, the
+// real keyboard. It takes the focus of the desktop for a moment (the laser interface comes on the screen), so it is
+// opt-in (--ime-live). Two of its four cases fail today (D-170: the key events do not reach the text service).
+if (has('--ime-live')) {
+  step('the real input method (the installed DLL, a focused window, the real keyboard; it takes the focus of the desktop)', () =>
+    cargoRetry('pime-tsf', ['test', '--test', 'ime_live', '--', '--nocapture', '--test-threads=1'], {PIME_IME_LIVE: '1'}));
 }
 // The native windows (the candidate window, the floating bar, the settings window): the probe opens them, a picture of
 // the desktop is taken while they are open and the picture is checked (it must not be a flat rectangle).
