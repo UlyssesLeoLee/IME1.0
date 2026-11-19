@@ -1,5 +1,5 @@
-# The red-green check of 2026-11-18T13:04:29.977Z
-# 59 mutations of the implementation; every one of them is restored right after it is applied.
+# The red-green check of 2026-11-19T16:35:38.770Z
+# 65 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -60,8 +60,14 @@ CAUGHT secrets-the-env-file-is-sensitive [FR-049（外发敏感信息筛查）/ 
 CAUGHT secrets-the-github-prefix-is-a-token [FR-049（外发敏感信息筛查）/ UT-062] the ghp_ prefix marks a GitHub token
 CAUGHT symbols-the-cap-is-the-max [FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）] the symbol table never returns more symbols than the caller asked for
 CAUGHT transaction-a-read-only-document-is-refused [IT-035（编辑事务：只读文档被拒）/ UT-052] a read-only document is refused, a writable one is not
+CAUGHT validators-the-rust-raw-string-is-masked [FR-046（声明式语法规则）/ UT-023] a Rust raw string is masked like any other literal
+CAUGHT validators-a-nested-block-comment-is-one-comment [FR-046（声明式语法规则）/ UT-023] a nested block comment in Rust stays one comment
+CAUGHT x86-the-odd-nibble-count-is-refused [FR-052（机器码：只编码确定的形式）/ UT-023] a hex value with an odd number of nibbles is refused (an incomplete byte)
+CAUGHT x86-the-non-hex-character-is-refused [FR-052（机器码：只编码确定的形式）/ UT-023] a value with a character that is not a hex digit is refused
+CAUGHT transaction-the-content-hash-is-part-of-the-baseline [IT-031（文档变了就是陈旧的）/ ST-027] the content hash is part of the baseline the plan was reviewed against
+CAUGHT x86-a-high-register-needs-the-rex-prefix [FR-052（机器码：只编码确定的形式）/ UT-023] a register above r7 needs the REX prefix, otherwise the bytes are another instruction
 
-the run checked 59 mutations: 59 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+the run checked 65 mutations: 65 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
 
 by the design entry (what the round says about each requirement):
   D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
@@ -89,10 +95,13 @@ by the design entry (what the round says about each requirement):
   FR-043（候选窗口位置回退）/ UT-055: 1 caught
   FR-044（UI 显示语言中文、英文、日文）/ UT-044: 1 caught
   FR-044（UI 显示语言独立于 Windows 语言与 Programming Profile）/ UT-056: 1 caught
+  FR-046（声明式语法规则）/ UT-023: 2 caught
   FR-049（外发敏感信息筛查）/ UT-062: 2 caught
+  FR-052（机器码：只编码确定的形式）/ UT-023: 3 caught
   IT-013 / FR-013: 2 caught
   IT-013 / FR-015: 1 caught
   IT-013 / UT-029: 1 caught
+  IT-031（文档变了就是陈旧的）/ ST-027: 1 caught
   IT-035（编辑事务：只读文档被拒）/ UT-052: 1 caught
   NFR-203 / ST-040: 2 caught
   ST-036（隐私过滤、无授权外发与诊断）/ 基本设计 §信任边界（宿主应用 ↔ TSF DLL）: 1 caught

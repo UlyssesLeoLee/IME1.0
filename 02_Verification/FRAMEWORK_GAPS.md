@@ -2097,3 +2097,41 @@ REPORT mode=natural language=zh-CN composition="" commit=missing write=ok bridge
 
 ⇒ 一行报告就说清了：**模式对（自然语言输入）、语言对（zh-CN）、组合串打开了（字母被吃掉）、
 写回路径通（桥接写进去了）、候选没上屏（commit=missing）** ⇒ D-171。
+
+
+### 5.37 第四十轮（2026-11-19）：**证据重出 —— 数字对齐之后门禁 18 步全绿**
+
+这一轮没有新的功能改动，只有**证据的重出**：新的真输入法回归测试让两个套件的计数变了，而 claims 块还写着旧数。
+
+| 套件 | 旧 | 新 | 原因 |
+|---|---|---|---|
+| Rust TSF `cargo test` | 375 | **383** | 新增 `tests/tsf/ime_live.rs` 的 **8 条**（默认全跳过） |
+| Rust 核心 `cargo test --workspace` | 458 | **460** | `symbol_table` 的**两条数学符号单测**（上一轮 `c72bc86` 加的） |
+
+**踩到的一个坑（值得记住）**：第一轮门禁跑完是**红**的，红在两步 claims 校验上，
+原因是 **claims 块还写着核心 458，而日志里已经是 460** ⇒
+「FAIL rust_core_tests: the log says 460, the document says 458」⇒
+**加了测试之后，claims / 矩阵正文 / 交付说明 / 验收判据要一起改，再跑门禁**；
+顺序反了就会白跑一轮（那一轮的变异轮花了 **992 s**）。
+
+**第二轮（数字对齐后）门禁全绿，18 步、exit 0、零 FAIL 行**：
+
+| 步 | 结果 |
+|---|---|
+| 语法 / golden / golden-v0.2 | PASS |
+| Rust 核心 | PASS **460 项** |
+| JavaScript（含引擎差分） | PASS **357 项** |
+| `pime-core.exe` 真机冒烟 | PASS |
+| TSF crate | PASS **383 项** |
+| TSF DLL 的 PE 检查 | PASS |
+| TASE 15 个 crate | PASS **1055 项** |
+| TASE 目录两关 | PASS |
+| agent 三件套 | PASS **85 项** |
+| 成本基准 | PASS |
+| **红绿（变异）轮** | PASS（**992 s**，**65 条全部 CAUGHT**） |
+| 三道 claims 校验（矩阵 / UAT / 证据交叉） | **全 PASS** |
+
+**追溯报告随之重生成**（它读的就是这一轮的日志）：JS **357** / 核心 **460** / TSF **383** / UAT **59**
+⇒ **UT 76/77、IT 44/48、ST 36/43 = 156/168 = 92.9%**（与覆盖门禁逐项一致）。
+**清单 857 条全部对得上**，收尾复核 exit 0（覆盖门禁那一条 exit 1 是**设计内的答案**：DD-01 / DD-09 / DD-10 需要一台
+Windows 11 机器）。

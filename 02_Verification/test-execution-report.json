@@ -1,18 +1,18 @@
 {
  "summary": {
-  "generated": "2026-11-18T13:21:07.633Z",
+  "generated": "2026-11-19T16:53:28.218Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
    "pass": 357
   },
   "rust": {
-   "total": 458,
-   "pass": 458
+   "total": 460,
+   "pass": 460
   },
   "tsf": {
-   "total": 375,
-   "pass": 375
+   "total": 383,
+   "pass": 383
   },
   "uat": {
    "total": 59,
@@ -178,10 +178,10 @@
    "tests": [
     "js: UT-008 de-duplication keeps one row and every source",
     "UT-008 de-duplication keeps one row and every source",
-    "rust: candidate::tests::ut_008_candidates_without_text_are_never_merged",
-    "candidate::tests::ut_008_candidates_without_text_are_never_merged",
     "rust: candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row",
-    "candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row"
+    "candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row",
+    "rust: candidate::tests::ut_008_candidates_without_text_are_never_merged",
+    "candidate::tests::ut_008_candidates_without_text_are_never_merged"
    ],
    "failed": [],
    "reason": ""
@@ -450,10 +450,10 @@
     "UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
     "rust: textrange::tests::ut_026_crlf_is_not_split",
     "textrange::tests::ut_026_crlf_is_not_split",
-    "rust: textrange::tests::ut_026_out_of_range_is_rejected",
-    "textrange::tests::ut_026_out_of_range_is_rejected",
     "rust: textrange::tests::ut_026_offset_round_trip",
     "textrange::tests::ut_026_offset_round_trip",
+    "rust: textrange::tests::ut_026_out_of_range_is_rejected",
+    "textrange::tests::ut_026_out_of_range_is_rejected",
     "rust: textrange::tests::ut_026_positions_never_split_surrogates",
     "textrange::tests::ut_026_positions_never_split_surrogates"
    ],
@@ -477,10 +477,10 @@
     "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
-    "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
-    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
     "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
-    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned"
+    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
+    "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
+    "scope::tests::ut_027_wider_requests_are_refused_not_trimmed"
    ],
    "failed": [],
    "reason": ""
