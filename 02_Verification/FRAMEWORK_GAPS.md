@@ -2035,3 +2035,35 @@ Win32 程序里打中文，看到的就是「打了字，什么都没发生」�
   另加 `the_context_of_the_client_that_owns_the_sink_receives_the_keys`（client id 的探针，见 §5.33 的扫描：sink 在 21 号，
   上下文建在 21 号**也没有用** ⇒ 路由规则不是「按上下文的属主找」）；
 - `02_Verification/DEFECT_SUBMISSION_2026-11-07.md`：**D-171**。
+
+### 5.35 第三十八轮（2026-11-19）：**用产品自己的桥接当观测通道 ⇒ 断点被夹到两段之间**
+
+上一轮发现「输入法吃掉按键却不写回文档」（D-171）。这一轮用**产品自己的桥接**（agent 协议，`PIME1AgentBridge`
+窗口 + `WM_COPYDATA`）问了三件事，**没有动一行生产代码**：
+
+| 问法 | 回答 | 含义 |
+|---|---|---|
+| `{"v":1,"op":"status"}` | `{"ok":true,"message":"the input mode is on","language":"zh-CN"}` | **模式对**（自然语言输入）、**语言对**（zh-CN） |
+| `{"v":1,"op":"insert","text":"我"}` | `{"ok":true,"inserted":1}`，**控件里的文本从 `" "` 变成 `" 我"`** | **写回路径是通的**（输入法能把文字写进焦点文档） |
+| 引擎直问 `predict("zh-CN","wo")` | 第一个候选就是「我」 | **引擎答得出** |
+
+⇒ **断点被夹在「按键被吃掉」与「候选出现」之间**：模式对、语言对、写回路径通、引擎答得出「我」，
+**候选列表却是空的** ⇒ 要么输入法**根本没问引擎**，要么**问了但答案被丢掉**。
+
+**这一轮顺带把测试里的「猜模式」去掉了**：输入模式是产品的状态（代码输入 / 自然语言输入），
+现在测试**直接问桥接**（`status` ⇒ 「the input mode is on」/「the direct mode is on」），
+需要时按 `Ctrl+F12` 切过去，**测完按回去**。
+
+**桥接协议的三个坑**（都踩过）：
+
+1. **窗口**：桥接窗口是**本进程**里的隐藏顶层窗口（类 `PIME1AgentBridge`，标题以 `PIME1.` 开头），
+   在线程里枚举就能找到（`EnumThreadWindows` + 类名）。
+2. **`CopyDataStruct` 要自己声明**：`windows` crate 的那个在 x64 上布局不对（仓库的 `agent_bridge.rs` 也是自己声明的：
+   `dw_data: usize, cb_data: u32, lp_data: *mut c_void`，共 24 字节、指针在 16）。
+3. **请求体不带结尾的零**（**回包才带**）——带了会被 JSON 解析器判成 `MALFORMED`（实测：带 ⇒ `MALFORMED`；
+   不带 ⇒ 正常回答）。请求里还要写 `"reply":<窗口句柄>`，回包才会到这个窗口（`WM_COPYDATA` + `dwData = 0x50494D02`）。
+
+**下一步（不改生产代码）**：产品的追踪走 `OutputDebugStringW`（`register.rs` 的 `debug_line`），
+把宿主放进**子进程**、父进程用 `DebugActiveProcess` 当调试器收 `DEBUG_OUTPUT` 事件，
+就能看到输入法自己写的那些行（`pime-tsf uielement: begin id=N show=1` 之类）⇒ **候选为什么是空的**，
+应当在那几行里露出来。这条路（D-171 的选项 ①）等排期。

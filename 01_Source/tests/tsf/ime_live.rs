@@ -264,6 +264,13 @@ fn the_plain_edit_control_receives_the_input_method() {
         );
         return;
     }
+    // The bridge of the input method is the product's own channel to the text service: it says which language and
+    // which mode are on, and it can write text into the focused document. Both are asked here, so that the test does
+    // not have to guess the mode.
+    eprintln!(
+        "the status of the input method: {:?}",
+        host.the_mode_of_the_input_method()
+    );
     eprintln!(
         "the windows of the thread: {:?}",
         common::ime_live::thread_window_classes()
@@ -274,24 +281,26 @@ fn the_plain_edit_control_receives_the_input_method() {
         eprintln!("the input method did not come alive in this thread; the measurement stops here");
         return;
     }
-    // The mode of the input method is a state of its own (it can be the code input or the natural language input),
-    // so the test **measures** it instead of assuming it: in the code input the letters land in the document as they
-    // were typed, in the natural language input the input method takes them (the composition is open).
-    host.type_real("wo");
-    let first = host.read();
-    eprintln!("after typing \"wo\": {first:?}");
-    let (composition, switched) = if first.contains("wo") {
-        // the code input: the chord switches to the natural language input
+    eprintln!(
+        "the status of the input method: {:?}",
+        host.the_mode_of_the_input_method()
+    );
+    // The mode of the input method is a state of its own (it can be the code input or the natural language input).
+    // The bridge of the input method answers it ("the input mode is on" / "the direct mode is on"), so the test does
+    // not have to guess it.
+    let status = host.the_mode_of_the_input_method().unwrap_or_default();
+    let natural_language = status.contains("the input mode is on");
+    eprintln!("the status of the input method: {status:?} (the natural language input is on: {natural_language})");
+    let switched = !natural_language;
+    if switched {
+        // the chord switches to the natural language input
         host.press_ctrl_f12();
-        host.type_real("wo");
-        (host.read(), true)
-    } else {
-        // the natural language input was already on: the letters were taken by the input method
-        (first.clone(), false)
-    };
-    eprintln!("after the composition: {composition:?}");
+    }
+    host.type_real("wo");
+    let composition = host.read();
+    eprintln!("after typing \"wo\": {composition:?}");
     assert!(
-        !composition.contains("wo") || first.is_empty(),
+        !composition.contains("wo") || composition.is_empty(),
         "in the natural language input the input method must take the letters (the composition is open); the \
          document holds {composition:?}"
     );
@@ -314,6 +323,16 @@ fn the_plain_edit_control_receives_the_input_method() {
         // the mode of the user is put back the way it was
         host.press_ctrl_f12();
     }
+    // The path of the agents: the bridge of the input method writes text into the focused document. If that lands
+    // in the control, the write path of the input method works here and the break is in the composition itself.
+    let before_the_write = host.read();
+    let answer = host.ask_the_bridge_to_write("我");
+    std::thread::sleep(std::time::Duration::from_millis(400));
+    let after_the_write = host.read();
+    eprintln!(
+        "the bridge wrote \"我\": the answer is {answer:?}; the document went from {before_the_write:?} to \
+         {after_the_write:?}"
+    );
     assert!(
         after_space.contains('我'),
         "the candidate must land in the document of the application; it holds {after_space:?} (D-171)"

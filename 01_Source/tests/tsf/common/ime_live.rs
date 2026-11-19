@@ -55,7 +55,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DispatchMessageW, EnumThreadWindows, GetClassNameW,
     GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, MSG,
     PM_REMOVE, PeekMessageW, PostMessageW, RegisterClassW, SetForegroundWindow, ShowWindow,
-    TranslateMessage, SW_SHOW, WM_INPUTLANGCHANGEREQUEST, WM_KEYDOWN, WM_SETFOCUS, WNDCLASSW,
+    SendMessageW, TranslateMessage, SW_SHOW, WM_COPYDATA, WM_INPUTLANGCHANGEREQUEST, WM_KEYDOWN,
+    WM_SETFOCUS, WNDCLASSW,
     WINDOW_EX_STYLE, WINDOW_STYLE, WS_EX_TOOLWINDOW, WS_OVERLAPPEDWINDOW,
 };
 use windows::core::{GUID, HRESULT, Interface, PCWSTR, implement};
@@ -76,8 +77,6 @@ pub const PROFILE_MS_CHINESE: GUID = GUID::from_u128(0xfa550b04_5ad7_411f_a5ac_c
 const HOST_CLASS: &str = "PimeImeLiveHost";
 /// The window class of the glow of the laser interface (the sign that the input method came alive).
 pub const GLOW_CLASS: &str = "ProgrammingIME.Glow";
-/// The window class of the bridge of the AI agents (the second sign that the input method came alive).
-pub const BRIDGE_CLASS: &str = "PIME1AgentBridge";
 
 // ---------------------------------------------------------------- the edit session (the host writes through it)
 
@@ -266,6 +265,112 @@ fn use_the_chinese_layout() -> Option<HKL> {
     Some(active)
 }
 
+// The answer of the bridge of the input method (the window of the agent protocol).
+thread_local! {
+    static REPLY: RefCell<Option<String>> = const { RefCell::new(None) };
+}
+
+/// The `CopyDataStruct` of Windows, declared here instead of taken from the `windows` crate.
+///
+/// The Windows definition is `ULONG_PTR dwData; DWORD cbData; PVOID lpData;` - on x64 that is 24 bytes with the
+/// data pointer at 16. The crate's own bridge declares it the same way (the struct travels between two processes, and
+/// a layout that is one byte off would make the message carry nonsense).
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct CopyDataStruct {
+    dw_data: usize,
+    cb_data: u32,
+    lp_data: *mut c_void,
+}
+
+/// The class of the bridge window of the input method (one per process that has the input method active).
+pub const BRIDGE_CLASS: &str = "PIME1AgentBridge";
+/// The `dwData` of a request of the bridge.
+pub const COPYDATA_REQUEST: u32 = 0x5049_4D01;
+/// The `dwData` of the answer of the bridge.
+pub const COPYDATA_REPLY: u32 = 0x5049_4D02;
+
+/// The window of the bridge of the input method, if it is in this process.
+fn bridge_window() -> Option<HWND> {
+    let mut found: Option<HWND> = None;
+    // SAFETY: the call has no preconditions.
+    let tid = unsafe { GetCurrentThreadId() };
+    // SAFETY: the pointer is a live local for the whole enumeration.
+    unsafe {
+        let _ = EnumThreadWindows(
+            tid,
+            Some(find_bridge_window),
+            LPARAM(&mut found as *mut Option<HWND> as isize),
+        );
+    }
+    found
+}
+
+unsafe extern "system" fn find_bridge_window(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    let mut buffer = [0u16; 64];
+    // SAFETY: the buffer is live and large enough for the class name.
+    let len = unsafe { GetClassNameW(hwnd, &mut buffer) };
+    if len > 0 {
+        let class = String::from_utf16_lossy(&buffer[..len as usize]);
+        if class == BRIDGE_CLASS {
+            // SAFETY: the pointer was made from a live local in `bridge_window`.
+            let slot = unsafe { &mut *(lparam.0 as *mut Option<HWND>) };
+            *slot = Some(hwnd);
+            return BOOL(0); // one is enough
+        }
+    }
+    BOOL(1)
+}
+
+/// What the host knows about the input method, asked through the bridge of the agent protocol.
+///
+/// The bridge is the product's own channel to the text service: it answers what the input method is doing (its
+/// language and its input mode) and it can write text into the focused document. Both are asked here so that the
+/// test does not have to guess.
+impl EditHost {
+    /// Asks the bridge of the input method and returns its answer.
+    pub fn ask_the_bridge(&self, payload: &str) -> Option<String> {
+        let bridge = bridge_window()?;
+        REPLY.with(|slot| *slot.borrow_mut() = None);
+        // The request carries **no** trailing zero (the answer of the bridge carries one; the request does not - the
+        // parser of the product would read the zero as part of the JSON).
+        let mut bytes = payload.as_bytes().to_vec();
+        let data = CopyDataStruct {
+            dw_data: COPYDATA_REQUEST as usize,
+            cb_data: bytes.len() as u32,
+            lp_data: bytes.as_mut_ptr().cast(),
+        };
+        // SAFETY: the payload lives until the call returns; the bridge answers the window we name.
+        unsafe {
+            let _ = SendMessageW(
+                bridge,
+                WM_COPYDATA,
+                WPARAM(self.window.hwnd.0 as usize),
+                LPARAM((&data as *const CopyDataStruct) as isize),
+            );
+        }
+        pump_for(120);
+        REPLY.with(|slot| slot.borrow().clone())
+    }
+
+    /// Asks the bridge what the input method is doing: the answer names the language and the mode.
+    pub fn the_mode_of_the_input_method(&self) -> Option<String> {
+        self.ask_the_bridge(&format!(
+            "{{\"v\":1,\"op\":\"status\",\"reply\":{}}}",
+            self.window.hwnd.0 as usize
+        ))
+    }
+
+    /// Asks the bridge to write `text` into the focused document (the path of the agents).
+    pub fn ask_the_bridge_to_write(&self, text: &str) -> Option<String> {
+        let escaped = text.replace('\\', "\\\\").replace('"', "\\\"");
+        self.ask_the_bridge(&format!(
+            "{{\"v\":1,\"op\":\"insert\",\"text\":\"{escaped}\",\"reply\":{}}}",
+            self.window.hwnd.0 as usize
+        ))
+    }
+}
+
 /// The window procedure of the host: it asks TSF about every key, the way every application does.
 unsafe extern "system" fn host_window_proc(
     hwnd: HWND,
@@ -273,6 +378,20 @@ unsafe extern "system" fn host_window_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    if msg == WM_COPYDATA {
+        // The answer of the bridge of the input method (the protocol of the agents).
+        // SAFETY: the message carries a structure that lives while it is handled.
+        let data = unsafe { &*(lparam.0 as *const CopyDataStruct) };
+        if data.dw_data == COPYDATA_REPLY as usize && !data.lp_data.is_null() {
+            // SAFETY: Windows points at `cbData` bytes of payload that live while the message is handled.
+            let bytes = unsafe { std::slice::from_raw_parts(data.lp_data as *const u8, data.cb_data as usize) };
+            let text = String::from_utf8_lossy(bytes);
+            let text = text.trim_end_matches('\0').to_string();
+            REPLY.with(|slot| *slot.borrow_mut() = Some(text));
+            return LRESULT(1);
+        }
+        return LRESULT(0);
+    }
     if msg == WM_SETFOCUS {
         // The window has the keyboard focus now: this is where a real application tells TSF that the context of
         // this document is the active one.
