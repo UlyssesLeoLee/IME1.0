@@ -40,7 +40,8 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     ActivateKeyboardLayout, GetKeyboardLayout, HKL, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
-    KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, LoadKeyboardLayoutW, SendInput, SetFocus, SetKeyboardState,
+    GetFocus, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, LoadKeyboardLayoutW, SendInput,
+    SetFocus, SetKeyboardState,
     ToUnicodeEx, VIRTUAL_KEY, VK_CONTROL,
 };
 use windows::Win32::UI::TextServices::{
@@ -52,9 +53,10 @@ use windows::Win32::UI::TextServices::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DispatchMessageW, EnumThreadWindows, GetClassNameW,
-    GetForegroundWindow, GetWindowThreadProcessId, MSG, PM_REMOVE, PeekMessageW, PostMessageW,
-    RegisterClassW, SetForegroundWindow, ShowWindow, TranslateMessage, SW_SHOW, WM_INPUTLANGCHANGEREQUEST,
-    WM_KEYDOWN, WM_SETFOCUS, WNDCLASSW, WS_EX_TOOLWINDOW, WS_OVERLAPPEDWINDOW,
+    GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, MSG,
+    PM_REMOVE, PeekMessageW, PostMessageW, RegisterClassW, SetForegroundWindow, ShowWindow,
+    TranslateMessage, SW_SHOW, WM_INPUTLANGCHANGEREQUEST, WM_KEYDOWN, WM_SETFOCUS, WNDCLASSW,
+    WINDOW_EX_STYLE, WINDOW_STYLE, WS_EX_TOOLWINDOW, WS_OVERLAPPEDWINDOW,
 };
 use windows::core::{GUID, HRESULT, Interface, PCWSTR, implement};
 
@@ -383,7 +385,7 @@ impl FocusWindow {
     ///
     /// A process that is not the foreground one may not take the focus on its own: the thread of the window that is in
     /// front is attached to ours for a moment, the window is brought to the front, and the attachment is undone.
-    fn focus(&self) {
+    pub fn focus(&self) {
         // SAFETY: the window is live; the calls have no other preconditions.
         unsafe {
             let _ = ShowWindow(self.hwnd, SW_SHOW);
@@ -452,7 +454,7 @@ fn module_loaded(name: &str) -> bool {
 }
 
 /// The class names of the windows of this thread: the input method opens its own windows when it is activated.
-fn thread_window_classes() -> Vec<String> {
+pub fn thread_window_classes() -> Vec<String> {
     let mut names: Vec<String> = Vec::new();
     // SAFETY: the call has no preconditions.
     let tid = unsafe { GetCurrentThreadId() };
@@ -554,6 +556,145 @@ impl ITfKeyEventSink_Impl for ProbeSink_Impl {
     }
 }
 
+// ---------------------------------------------------------------- the host with a plain edit control
+
+/// A host that is **an ordinary Win32 window with an ordinary EDIT control**.
+///
+/// Nothing of TSF is done here on purpose: the keys go into the control, Windows hands them to the input processor
+/// of the thread, and the input processor writes its composition into the control. That is the path of every classic
+/// Windows application - the one that does not implement TSF itself - so it is the closest an automated test gets to
+/// "what the user sees in a real application".
+pub struct EditHost {
+    window: FocusWindow,
+    edit: HWND,
+}
+
+impl EditHost {
+    /// Opens the window with the edit control in it and gives the control the keyboard focus.
+    pub fn open() -> windows::core::Result<Self> {
+        // SAFETY: the module of this process is live.
+        let module = unsafe { GetModuleHandleW(None) }?;
+        let window = FocusWindow::open()?;
+        let class: Vec<u16> = "EDIT".encode_utf16().chain(std::iter::once(0)).collect();
+        // The text of an edit control **is** its content, so it starts empty (one NUL is the empty string).
+        let title: Vec<u16> = vec![0];
+        // SAFETY: the class name and the title are live wide strings; the control is a child of our window.
+        let edit = unsafe {
+            CreateWindowExW(
+                WINDOW_EX_STYLE(0),
+                PCWSTR(class.as_ptr()),
+                PCWSTR(title.as_ptr()),
+                WINDOW_STYLE(
+                    (windows::Win32::UI::WindowsAndMessaging::ES_MULTILINE as u32)
+                        | (windows::Win32::UI::WindowsAndMessaging::ES_AUTOVSCROLL as u32)
+                        | windows::Win32::UI::WindowsAndMessaging::WS_CHILD.0
+                        | windows::Win32::UI::WindowsAndMessaging::WS_VISIBLE.0,
+                ),
+                0,
+                0,
+                320,
+                80,
+                window.hwnd,
+                windows::Win32::UI::WindowsAndMessaging::HMENU(std::ptr::null_mut()),
+                module,
+                None,
+            )
+        }?;
+        // The control has the keyboard focus, and the window is in front.
+        // SAFETY: both windows are live and belong to this thread.
+        unsafe {
+            window.focus();
+            let _ = SetFocus(edit);
+        }
+        pump_for(150);
+        Ok(Self { window, edit })
+    }
+
+    /// Takes the keyboard focus of the edit control, and says whether it got it.
+    ///
+    /// The focus of the desktop is a scarce resource: Windows does not hand it to every process that asks. The test
+    /// **must not** type into somebody else's window, so the focus is checked before a single key is sent.
+    pub fn take_the_focus(&self) -> bool {
+        for _ in 0..30 {
+            // SAFETY: both windows are live and belong to this thread.
+            unsafe {
+                self.window.focus();
+                let _ = SetFocus(self.edit);
+            }
+            pump_for(60);
+            // SAFETY: the calls have no preconditions.
+            let (foreground, focus) = unsafe { (GetForegroundWindow(), GetFocus()) };
+            if foreground == self.window.hwnd && focus == self.edit {
+                return true;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(120));
+        }
+        false
+    }
+
+    /// Waits until the input method is alive (it opens its own windows when it is activated).
+    ///
+    /// The system activates the input processor of the thread when the focused window has the keyboard focus - that
+    /// takes a moment. Keys typed before it are plain text in the control, keys typed after it are the input
+    /// method's, so the test has to wait for it.
+    pub fn wait_for_the_input_method(&self, ms: u64) -> bool {
+        let end = std::time::Instant::now() + std::time::Duration::from_millis(ms);
+        while std::time::Instant::now() < end {
+            if thread_window_classes().iter().any(|w| w == GLOW_CLASS) {
+                return true;
+            }
+            pump_for(100);
+        }
+        false
+    }
+
+    /// Whether the edit control has the keyboard focus right now.
+    pub fn has_the_focus(&self) -> bool {
+        // SAFETY: the calls have no preconditions.
+        unsafe { GetForegroundWindow() == self.window.hwnd && GetFocus() == self.edit }
+    }
+
+    /// The text of the edit control, the way an application reads it.
+    pub fn read(&self) -> String {
+        // SAFETY: the control is live.
+        let length = unsafe { GetWindowTextLengthW(self.edit) };
+        if length <= 0 {
+            return String::new();
+        }
+        let mut buffer = vec![0u16; length as usize + 1];
+        // SAFETY: the buffer is live and large enough for the text of the control.
+        let written = unsafe { GetWindowTextW(self.edit, &mut buffer) };
+        String::from_utf16_lossy(&buffer[..written as usize])
+    }
+
+    /// Types `text` on the real keyboard.
+    pub fn type_real(&self, text: &str) {
+        for ch in text.chars() {
+            let (vk, scan) = key_of(ch);
+            if vk == 0 {
+                continue;
+            }
+            send_real_key(vk, scan);
+            pump_for(150);
+        }
+    }
+
+    /// Presses `Ctrl+F12` on the real keyboard: the chord that switches the input mode of the product.
+    pub fn press_ctrl_f12(&self) {
+        // The modifier goes in as a virtual key (a modifier has no extended scan code), the key itself with its scan
+        // code.
+        send_virtual_key(0x11, false);
+        send_real_key(0x7B, 0x58); // F12
+        send_virtual_key(0x11, true);
+        pump_for(400);
+    }
+
+    /// The window of the host (for the diagnostics).
+    pub fn window(&self) -> HWND {
+        self.window.hwnd
+    }
+}
+
 /// The host of the real input method.
 pub struct LiveHost {
     window: Option<FocusWindow>,
@@ -601,7 +742,20 @@ impl LiveHost {
     pub fn open() -> Result<Self, String> {
         // SAFETY: the apartment is initialised once and uninitialised in `Drop`.
         let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
-        Self::open_inner(apartment, What::RegisteredProfile)
+        Self::open_inner(apartment, What::RegisteredProfile, None)
+    }
+
+    /// Opens the host with the document context created under **another client id**.
+    ///
+    /// The keystroke manager of TSF hands the key to the key event sink that belongs to the **owner of the focused
+    /// context**. The text service advises its sink under the client id that msctf gave it (measured: 21 on this
+    /// machine), while `ITfThreadMgr2::Activate` hands the application another one (measured: 32). When the two do
+    /// not match, the keystroke manager finds no sink for the context of the application and the key goes nowhere.
+    /// This constructor exists to measure that: it creates the context under the id that was measured.
+    pub fn open_with_the_context_of_another_client(id: u32) -> Result<Self, String> {
+        // SAFETY: the apartment is initialised once and uninitialised in `Drop`.
+        let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
+        Self::open_inner(apartment, What::RegisteredProfile, Some(id))
     }
 
     /// Opens the host and activates **the text service of this build** (not the installed one) through
@@ -609,7 +763,7 @@ impl LiveHost {
     pub fn open_with_our_own_text_service() -> Result<Self, String> {
         // SAFETY: the apartment is initialised once and uninitialised in `Drop`.
         let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
-        Self::open_inner(apartment, What::OurOwnThroughActivateEx)
+        Self::open_inner(apartment, What::OurOwnThroughActivateEx, None)
     }
 
     /// Opens the host **without** activating any profile: the test then activates the profile of another text
@@ -617,7 +771,7 @@ impl LiveHost {
     pub fn open_without_any_profile() -> Result<Self, String> {
         // SAFETY: the apartment is initialised once and uninitialised in `Drop`.
         let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
-        Self::open_inner(apartment, What::Nothing)
+        Self::open_inner(apartment, What::Nothing, None)
     }
 
     /// Activates the profile of a text service that is registered on this machine.
@@ -638,7 +792,7 @@ impl LiveHost {
         }
     }
 
-    fn open_inner(apartment: bool, what: What) -> Result<Self, String> {
+    fn open_inner(apartment: bool, what: What, context_client_id: Option<u32>) -> Result<Self, String> {
         // The layout of the thread comes first: the window inherits it when it is created.
         let layout = use_the_chinese_layout();
         let window = FocusWindow::open().map_err(|e| format!("the window: {e:?}"))?;
@@ -660,12 +814,23 @@ impl LiveHost {
             .map_err(|e| format!("the document manager: {e:?}"))?;
         // msctf accepts only 0 or TF_ES_SYNC for the creation of a context (measured: 0x2 and 0x6 are refused with
         // E_INVALIDARG); the write session is the one that asks for TF_ES_READWRITE.
+        // The client id that owns the context. It has to be the one that owns the key event sink, otherwise the
+        // keystroke manager of TSF finds no sink for the context of the application and the key goes nowhere.
+        let context_client_id = context_client_id.unwrap_or(tid);
+        eprintln!(
+            "the client id of the thread: {tid}; the client id of the context: {context_client_id}; the thread id \
+             of Windows: {:?}",
+            // SAFETY: the call has no preconditions.
+            unsafe { GetCurrentThreadId() }
+        );
         let mut context: Option<ITfContext> = None;
         for flags in [TF_ES_SYNC.0, 0u32] {
             let mut candidate: Option<ITfContext> = None;
             let mut cookie = 0u32;
             // SAFETY: the document manager is live; the out parameters are live locals.
-            let hr = unsafe { doc_mgr.CreateContext(tid, flags, None, &mut candidate, &mut cookie) };
+            let hr = unsafe {
+                doc_mgr.CreateContext(context_client_id, flags, None, &mut candidate, &mut cookie)
+            };
             if hr.is_ok() && candidate.is_some() {
                 context = candidate;
                 break;
@@ -884,8 +1049,12 @@ pub fn client_id_that_holds_the_sink(&self) -> Option<u32> {
     };
     // SAFETY: the call has no preconditions.
     let thread_id = unsafe { GetCurrentThreadId() };
-    let mut candidates = vec![self.tid, thread_id, 0, 1, 2, 3, 4, 5, 6, 7, 8];
-    candidates.dedup();
+    // The scan is wide on purpose: the keystroke manager of TSF hands the key to the sink that belongs to the **owner
+    // of the focused context**, so the id under which the text service advised its sink decides whether the keys ever
+    // arrive. `UnadviseKeyEventSink` answers an error when there is no sink for that id, so the scan finds it.
+    let mut candidates: Vec<u32> = (0u32..512).collect();
+    candidates.push(self.tid);
+    candidates.push(thread_id);
     for id in candidates {
         // SAFETY: plain COM call on a live object; the id is a plain number.
         let removed = unsafe { keys.UnadviseKeyEventSink(id) }.is_ok();
@@ -993,6 +1162,26 @@ impl Drop for LiveHost {
             unsafe { CoUninitialize() };
         }
     }
+}
+
+/// Sends a virtual key (without a scan code): the modifiers go this way.
+fn send_virtual_key(vk: u32, up: bool) -> bool {
+    let flags = if up { KEYEVENTF_KEYUP } else { KEYEVENTF_EXTENDEDKEY };
+    let input = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(vk as u16),
+                wScan: 0,
+                dwFlags: flags,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    // SAFETY: the input is a live local of the right size.
+    let sent = unsafe { SendInput(&[input], std::mem::size_of::<INPUT>() as i32) };
+    sent == 1
 }
 
 /// Sends a real key through the keyboard of the system: the window procedure of the host gets the WM_KEYDOWN and

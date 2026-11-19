@@ -117,15 +117,14 @@ $env:PIME_IME_LIVE="1"; cargo test --test ime_host -- --nocapture    # L3：真 
 $env:PIME_IME_LIVE="1"; cargo test --test ime_live -- --nocapture --test-threads=1   # L3′：真输入法（会抢焦点）
 ```
 
-> **L3′（真输入法回归测试）的六条用例与今天的实测结果**（2026-11-19，本机）：
+> **L3′（真输入法回归测试）的用例与今天的实测结果**（2026-11-19，本机）：
 > ① `the_input_method_comes_alive_when_its_profile_is_activated` —— **通过**（msctf 装入已安装的 DLL，输入法的窗口真的出现）；
 > ② `the_real_keyboard_reaches_the_window_procedure_of_the_host` —— **通过**（真实按键到达宿主窗口过程）；
 > ③ `the_text_service_of_this_build_cannot_take_the_key_sink` —— **通过**（宿主自己激活 TIP ⇒ msctf 以 `E_INVALIDARG` 拒绝：只让已注册的输入处理器持有 key sink）；
-> ④ `the_microsoft_text_service_takes_the_keys_in_the_same_host` —— **失败**（**基线守卫**：同一个宿主连微软中文 IME 也驱动不了 ⇒ 宿主还不能当量具）；
-> ⑤ `the_mode_chord_is_eaten_by_the_text_service` —— **失败**（`Ctrl+F12` 没被文本服务吃掉 ⇒ D-170）；
-> ⑥ `the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document` —— **失败**（候选没有上屏 ⇒ D-170）。
-> ⑤⑥ 的失败信息里写的是「**unproven（未被证明）**」而不是「disproven」：**因为对照实验表明断点在宿主侧**，
-> 我们不能拿一把量不准的尺子给输入法定罪。④ **变绿**才是这条链能被判定的时刻。
+> ④ `the_plain_edit_control_receives_the_input_method` —— **失败**（**主用例**：字母被输入法吃了 ⇒ 按键到了输入法；但**候选没有上屏** ⇒ D-171）；
+> ⑤ `the_microsoft_text_service_takes_the_keys_in_the_same_host` —— **失败**（**基线守卫**：宿主自建 TSF 架子时连微软中文 IME 也驱动不了 ⇒ 宿主还不能当量具 ⇒ D-170）；
+> ⑥ `the_mode_chord_is_eaten_by_the_text_service` / `the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document` —— **失败**（宿主自建 TSF 架子时按键到不了文本服务 ⇒ D-170）。
+> ④⑤⑥ 的失败信息里写的是「**unproven（未被证明）**」/「**断链**」而不是「代码坏了」：**因为对照实验表明断点在宿主侧或产品的写回路径上**。
 > 这一步是 **opt-in**（`node tests/run-all.js --ime-live`），因为它会抢走桌面的焦点。
 
 证据（每个场景一个 JSON）落在 `PIME_IME_EVIDENCE_DIR`；门禁链**不**设置该变量，所以普通跑不写文件。
@@ -165,7 +164,7 @@ node 01_Source\tests\run-all.js --tsf-ui
 | 项 | 状态 | 说明 |
 |---|---|---|
 | **L4 原生窗口 UI 测试** | **部分** | 已建：探针真开候选窗 / 激光面板 / 设置窗 → .NET 抓屏 → Node 解析 PNG（1920×1080、颜色数 ≥ 50，拒绝纯色图），证据 `02_Verification/ime-ui/ime-windows.png`。**第十六轮把判据往上提了一层**：截图证明不了「页签存在」和「窗口居中」，所以探针另外写一份机器可读的 `probe-report.json`（设置窗是否打开、**页签数**、**当前页标题**、**候选行数**、窗口矩形、屏幕尺寸），`ime-ui-check.js` 断言**页签 6 页**、当前页是「插件」、**面板里有候选行**、**设置窗中心与屏幕中心的偏差 < 30%**；页数≠6 或列表为空时探针退出码非 0。**仍未做**：像素/文案级模板匹配，也没有人点过这些窗。 |
-| **L3 真机注册态** | **部分（有了一半；另一半是「未被证明」，不是「已证伪」）** | **已建**：`tests/tsf/ime_live.rs` 驱动**已安装的** DLL —— 真窗口（`CreateWindowExW`）+ 抢焦点（`AttachThreadInput`/`SetForegroundWindow`/`SetFocus`）+ 真文档（`CreateContext`/`Push`/`AssociateFocus`/`SetFocus`，**也在 `WM_SETFOCUS` 里再做一遍**）+ 真键盘（`SendInput` → 宿主窗口过程里问 `ITfKeystrokeMgr`）。**测出来的**：① profile 激活成功，msctf 把已安装的 `pime_tsf.dll` 装进本进程，**输入法的窗口真的出现**（`ProgrammingIME.Glow`/`LaserPanel`/`Beam`/`PIME1AgentBridge`）；② 文本服务**持有本线程的 key event sink**（宿主再 advise 一次被 msctf 以 `E_INVALIDARG` 拒绝；换 client id 也被拒 ⇒ 一个线程只允许一个 sink）；③ 真实键盘**确实到达**宿主窗口过程；④ **按键进不到文本服务** —— 连必须被吃的 `Ctrl+F12` 都答「不是我的」。**但**：**同一个宿主连已安装的微软中文 IME 也驱动不了** ⇒ 断点**不在我们的输入法**（宿主还差真实应用做到的那一步）⇒ 准确的说法是「**这一段从未被自动证明过**」。**基线守卫**：`the_microsoft_text_service_takes_the_keys_in_the_same_host` —— 宿主必须先能驱动**某个**输入法，否则它对我们的输入法没有发言权。**D-170**（未修，见 §5.33 的复核）。 |
+| **L3 真机注册态** | **部分（链路已经通到输入法，剩下最后一段）** | **主路径 = 普通 Win32 窗口 + 普通 EDIT 控件**（经典应用的路子，宿主**完全不碰 TSF**）：真键盘 `SendInput` 打字、读控件的文本。**测出来的**：① 代码输入下打 `wo` ⇒ 文档里是 `wo`（**产品的设计**）；② `Ctrl+F12` 切到自然语言输入后再打 `wo` ⇒ **字母被输入法吃掉**（文档里什么都没有）⇒ **按键真的到达了输入法**（自动化第一次证明这一点）；③ 但**组合串不显示**、**空格/数字 1/回车三个取词键都不上屏**（控件里是一个普通空格）⇒ **D-171（高，未修）**。**另一条路径（宿主自建 TSF 架子，`LiveHost`）**：profile 激活成功、已安装的 DLL 被 msctf 装进本进程、输入法的窗口真的出现、文本服务持有本线程的 key event sink、真实键盘到达宿主窗口过程 —— 但 **msctf 不把键投给它**（换微软 IME 同宿主也一样 ⇒ 宿主侧，**D-170**）。详见 `02_Verification/FRAMEWORK_GAPS.md` §5.33 / §5.34 |
 | **L3 未注册态全链** | **部分** | `ime_host.rs` 已能创建真 COM 对象、走真 msctf、真文档上下文（`PIME_IME_LIVE=1`），但它断言的是「宿主自己写入的 `fn`」，**测不到按键有没有进到文本服务** ⇒ 这一段由 `ime_live.rs` 补上（见上一行）。 |
 | **TSF 侧插件语言开关** | **已做**（第十六轮） | 设置窗的**插件页**可以勾选 Cypher / PL\/SQL / T-SQL（默认 PL/SQL 开、T-SQL 关），写回设置即刻生效（`tip.rs` 的 `apply_plugins()`）。**未在真实宿主里验证过**（新 DLL 还没换上）。 |
 | **真实键盘下的中文/日文输入** | **未做** | 自带词库有**端到端测试**（中文档「ni」→「你」上屏；日文档「nihon」→假名），但那是**驱动控制器**、不是**真键盘 + 真宿主**。真实手感要等新 DLL 换上之后在记事本 / VS Code 里试。 |
