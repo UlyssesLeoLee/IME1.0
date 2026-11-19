@@ -271,6 +271,10 @@ fn the_plain_edit_control_receives_the_input_method() {
         "the write path of the input method must work (the bridge writes into the document); the report is:\n{report}"
     );
     assert!(
+        report.contains("math=ok"),
+        "the mathematics of the symbol table has to reach the document through the same write path; the report is:\n{report}"
+    );
+    assert!(
         report.contains("commit=landed"),
         "the candidate must land in the document of the application (D-171: the keys are eaten and the write path \
          works, so the candidate list is empty); the report is:\n{report}"
@@ -331,17 +335,30 @@ fn drive_the_edit_control() {
         .unwrap_or(false)
         && after.contains('我')
         && after.len() > before.len();
+    // The mathematics of the symbol table: the symbols are **not typed** (they are rows of the panel), so the path
+    // that carries them into the document is the same write path - it has to carry a symbol of the table too.
+    let before_the_symbol = host.read();
+    let symbol_answer = host.ask_the_bridge_to_write("±");
+    std::thread::sleep(std::time::Duration::from_millis(400));
+    let after_the_symbol = host.read();
+    let math_path_works = symbol_answer
+        .as_deref()
+        .map(|a| a.contains("\"ok\":true"))
+        .unwrap_or(false)
+        && after_the_symbol.contains('±')
+        && after_the_symbol.len() > before_the_symbol.len();
     if switched {
         // the mode of the user is put back the way it was
         host.press_ctrl_f12();
     }
     println!(
-        "REPORT mode={} language={} composition={:?} commit={} write={} bridge={:?}",
+        "REPORT mode={} language={} composition={:?} commit={} write={} math={} bridge={:?}",
         if natural_language { "natural" } else { "code" },
         language,
         composition,
         if commit_landed { "landed" } else { "missing" },
         if write_path_works { "ok" } else { "broken" },
+        if math_path_works { "ok" } else { "broken" },
         answer
     );
 }
