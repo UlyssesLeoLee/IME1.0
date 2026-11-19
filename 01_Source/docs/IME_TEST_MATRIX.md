@@ -121,10 +121,11 @@ $env:PIME_IME_LIVE="1"; cargo test --test ime_live -- --nocapture --test-threads
 > ① `the_input_method_comes_alive_when_its_profile_is_activated` —— **通过**（msctf 装入已安装的 DLL，输入法的窗口真的出现）；
 > ② `the_real_keyboard_reaches_the_window_procedure_of_the_host` —— **通过**（真实按键到达宿主窗口过程）；
 > ③ `the_text_service_of_this_build_cannot_take_the_key_sink` —— **通过**（宿主自己激活 TIP ⇒ msctf 以 `E_INVALIDARG` 拒绝：只让已注册的输入处理器持有 key sink）；
-> ④ `the_plain_edit_control_receives_the_input_method` —— **失败**（**主用例**：字母被输入法吃了 ⇒ 按键到了输入法；但**候选没有上屏** ⇒ D-171）；
+> ④ `the_plain_edit_control_receives_the_input_method` —— **失败**（**主用例**：报告 `mode=natural language=zh-CN composition="" commit=missing write=ok` ⇒ 字母被输入法吃了、写回路径通、**候选没上屏** ⇒ D-171）；
 > ⑤ `the_microsoft_text_service_takes_the_keys_in_the_same_host` —— **失败**（**基线守卫**：宿主自建 TSF 架子时连微软中文 IME 也驱动不了 ⇒ 宿主还不能当量具 ⇒ D-170）；
 > ⑥ `the_mode_chord_is_eaten_by_the_text_service` / `the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document` —— **失败**（宿主自建 TSF 架子时按键到不了文本服务 ⇒ D-170）。
 > ④⑤⑥ 的失败信息里写的是「**unproven（未被证明）**」/「**断链**」而不是「代码坏了」：**因为对照实验表明断点在宿主侧或产品的写回路径上**。
+> **④ 必须在自己的子进程里跑**（别的用例会激活/停用输入法，留下状态）——它把机器可读的报告交给父进程。
 > 这一步是 **opt-in**（`node tests/run-all.js --ime-live`），因为它会抢走桌面的焦点。
 
 证据（每个场景一个 JSON）落在 `PIME_IME_EVIDENCE_DIR`；门禁链**不**设置该变量，所以普通跑不写文件。

@@ -253,89 +253,96 @@ fn the_context_of_the_client_that_owns_the_sink_receives_the_keys() {
 ///   ⇒ the input method eats the keys and writes nothing back (D-171).
 #[test]
 fn the_plain_edit_control_receives_the_input_method() {
+    // The child: it runs the drive and prints the report. The parent reads the report: the drive needs a clean
+    // process (the other cases of this file activate and deactivate the input method too).
+    if std::env::var("PIME_IME_CHILD").is_ok() {
+        drive_the_edit_control();
+        return;
+    }
     if !live_allowed() {
         return;
     }
+    let report = common::ime_live::run_the_drive_in_a_child(&[
+        "the_plain_edit_control_receives_the_input_method",
+    ]);
+    println!("--- the drive of the edit control ---\n{report}");
+    assert!(
+        report.contains("write=ok"),
+        "the write path of the input method must work (the bridge writes into the document); the report is:\n{report}"
+    );
+    assert!(
+        report.contains("commit=landed"),
+        "the candidate must land in the document of the application (D-171: the keys are eaten and the write path \
+         works, so the candidate list is empty); the report is:\n{report}"
+    );
+}
+
+/// The drive of the edit control: it measures and prints a machine-readable report.
+fn drive_the_edit_control() {
     let host = common::ime_live::EditHost::open().expect("the window with the edit control");
     if !host.take_the_focus() {
-        // The test must not type into somebody else's window: without the focus there is nothing to measure.
-        eprintln!(
-            "skipped: the edit control could not take the keyboard focus (the desktop gave it to another window)"
-        );
+        println!("REPORT focus=no");
         return;
     }
-    // The bridge of the input method is the product's own channel to the text service: it says which language and
-    // which mode are on, and it can write text into the focused document. Both are asked here, so that the test does
-    // not have to guess the mode.
-    eprintln!(
-        "the status of the input method: {:?}",
-        host.the_mode_of_the_input_method()
-    );
-    eprintln!(
-        "the windows of the thread: {:?}",
-        common::ime_live::thread_window_classes()
-    );
     // The input method is activated by the system when the focused window gets the focus: the keys typed before
-    // that are plain text, the ones after it are the input method's.
-    if !host.wait_for_the_input_method(3000) {
-        eprintln!("the input method did not come alive in this thread; the measurement stops here");
+    // that are plain text, the ones after it are the input method's. The **bridge** of the input method is the sign
+    // that it is alive (it comes with the text service).
+    let mut alive = false;
+    for _ in 0..30 {
+        if host.the_mode_of_the_input_method().is_some() {
+            alive = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    if !alive {
+        println!("REPORT ime=absent");
         return;
     }
-    eprintln!(
-        "the status of the input method: {:?}",
-        host.the_mode_of_the_input_method()
-    );
-    // The mode of the input method is a state of its own (it can be the code input or the natural language input).
-    // The bridge of the input method answers it ("the input mode is on" / "the direct mode is on"), so the test does
-    // not have to guess it.
     let status = host.the_mode_of_the_input_method().unwrap_or_default();
     let natural_language = status.contains("the input mode is on");
-    eprintln!("the status of the input method: {status:?} (the natural language input is on: {natural_language})");
+    let language = if status.contains("\"language\":\"zh-CN\"") {
+        "zh-CN"
+    } else if status.contains("\"language\":\"en-US\"") {
+        "en-US"
+    } else if status.contains("\"language\":\"ja-JP\"") {
+        "ja-JP"
+    } else {
+        "?"
+    };
     let switched = !natural_language;
     if switched {
-        // the chord switches to the natural language input
         host.press_ctrl_f12();
     }
     host.type_real("wo");
     let composition = host.read();
-    eprintln!("after typing \"wo\": {composition:?}");
-    assert!(
-        !composition.contains("wo") || composition.is_empty(),
-        "in the natural language input the input method must take the letters (the composition is open); the \
-         document holds {composition:?}"
-    );
-    // The space takes the highlighted candidate, and the input method writes it into the document.
+    // The space takes the highlighted candidate.
     host.type_real(" ");
     let after_space = host.read();
-    eprintln!("after the space: {after_space:?}");
-    // The other two ways to take a candidate: the digit and the enter.
-    host.type_real("wo");
-    let before_digit = host.read();
-    host.type_real("1");
-    let after_digit = host.read();
-    eprintln!("after typing \"wo\" and the digit 1: {before_digit:?} -> {after_digit:?}");
-    host.type_real("wo");
-    let before_enter = host.read();
-    host.type_real("\r");
-    let after_enter = host.read();
-    eprintln!("after typing \"wo\" and the enter: {before_enter:?} -> {after_enter:?}");
+    let commit_landed = after_space.contains('我');
+    // The path of the agents: the bridge writes into the focused document.
+    let before = host.read();
+    let answer = host.ask_the_bridge_to_write("我");
+    std::thread::sleep(std::time::Duration::from_millis(400));
+    let after = host.read();
+    let write_path_works = answer
+        .as_deref()
+        .map(|a| a.contains("\"ok\":true"))
+        .unwrap_or(false)
+        && after.contains('我')
+        && after.len() > before.len();
     if switched {
         // the mode of the user is put back the way it was
         host.press_ctrl_f12();
     }
-    // The path of the agents: the bridge of the input method writes text into the focused document. If that lands
-    // in the control, the write path of the input method works here and the break is in the composition itself.
-    let before_the_write = host.read();
-    let answer = host.ask_the_bridge_to_write("我");
-    std::thread::sleep(std::time::Duration::from_millis(400));
-    let after_the_write = host.read();
-    eprintln!(
-        "the bridge wrote \"我\": the answer is {answer:?}; the document went from {before_the_write:?} to \
-         {after_the_write:?}"
-    );
-    assert!(
-        after_space.contains('我'),
-        "the candidate must land in the document of the application; it holds {after_space:?} (D-171)"
+    println!(
+        "REPORT mode={} language={} composition={:?} commit={} write={} bridge={:?}",
+        if natural_language { "natural" } else { "code" },
+        language,
+        composition,
+        if commit_landed { "landed" } else { "missing" },
+        if write_path_works { "ok" } else { "broken" },
+        answer
     );
 }
 

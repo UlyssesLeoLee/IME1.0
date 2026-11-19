@@ -2067,3 +2067,33 @@ Win32 程序里打中文，看到的就是「打了字，什么都没发生」�
 把宿主放进**子进程**、父进程用 `DebugActiveProcess` 当调试器收 `DEBUG_OUTPUT` 事件，
 就能看到输入法自己写的那些行（`pime-tsf uielement: begin id=N show=1` 之类）⇒ **候选为什么是空的**，
 应当在那几行里露出来。这条路（D-171 的选项 ①）等排期。
+
+### 5.36 第三十九轮（2026-11-19）：**调试器抓取这条路在本机走不通（阴性结果也记账）**，另外「子进程隔离」是必须的
+
+上一轮说「下一步用 `DebugActiveProcess` 抓产品自己的 `OutputDebugString`」。这一轮把它做出来了，**结果是阴性**：
+
+| 做法 | 结果 |
+|---|---|
+| 父进程 `DebugActiveProcess(child, DEBUG_ONLY_THIS_PROCESS)` 附加成功 | ✅ 附加成功 |
+| 收到的事件 | **75 个**（`CREATE_PROCESS` 1、`LOAD_DLL` 约 40、`CREATE_THREAD`、`EXIT_*`……） |
+| 收到的 `OUTPUT_DEBUG_STRING_EVENT`（事件码 10） | **0 个** |
+| 阳性对照（子进程自己写 20 行 `OutputDebugStringW`，每 100 ms 一行） | **一行也没到** |
+
+⇒ **调试输出通道没有接上**：在本机，`DebugActiveProcess` 附加上去的调试器**收不到**被调试进程的
+`OutputDebugString`（事件流里根本没有事件码 10）。可靠的做法是**建进程时就带 `DEBUG_PROCESS`**
+（父进程从一开始就是调试器）或像 DebugView 那样抢下全局调试器（`DbgUiRemoteBreakin`）—— 两者都要多写一大块
+不安全的 FFI，且**收益有限**：产品的追踪只在「UI 元素 begin/update/end」「profile 变化」「异步收尾」
+这几处有，**候选请求引擎那一步本来就不追踪** ⇒ 就算抓到了，也只会看到「没有 begin 行」，
+而这件事我们已经从行为上知道了（候选列表是空的）。⇒ **这条路到此为止**，登记为阴性结果。
+
+**顺带查出一个必须记住的事**：这条用例**必须在自己的子进程里跑**。同进程里先跑别的用例（它们也会激活/停用
+输入法）之后，**输入法的状态是上一个用例留下的**（实测：桥接窗口已被销毁、`status` 问不到、
+只剩一个旧的光晕窗口）⇒ 现在这条用例**把驱动跑在子进程里**（`run_the_drive_in_a_child`），
+父进程只读它打印的机器可读报告：
+
+```
+REPORT mode=natural language=zh-CN composition="" commit=missing write=ok bridge={"ok":true,"inserted":1}
+```
+
+⇒ 一行报告就说清了：**模式对（自然语言输入）、语言对（zh-CN）、组合串打开了（字母被吃掉）、
+写回路径通（桥接写进去了）、候选没上屏（commit=missing）** ⇒ D-171。

@@ -371,6 +371,40 @@ impl EditHost {
     }
 }
 
+/// Runs the drive of the edit control **in a child process** and returns what it printed.
+///
+/// The drive needs a clean process: the input method is activated for the thread that has the focus, and the other
+/// cases of this file activate it too (and deactivate it again when they end) ⇒ in one process the state of the
+/// input method is whatever the case before left behind. The child starts fresh, and the report comes back through
+/// its output.
+pub fn run_the_drive_in_a_child(arguments: &[&str]) -> String {
+    // SAFETY: the call has no preconditions.
+    let exe = match std::env::current_exe() {
+        Ok(exe) => exe,
+        Err(e) => return format!("the test binary could not be found: {e}"),
+    };
+    let mut command = std::process::Command::new(exe);
+    command.args(arguments);
+    // The report is printed by the child: the test harness must not swallow it.
+    command.arg("--nocapture");
+    command.env("PIME_IME_CHILD", "1");
+    command.env("PIME_IME_LIVE", "1");
+    command.stdout(std::process::Stdio::piped());
+    command.stderr(std::process::Stdio::piped());
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(e) => return format!("the child could not be started: {e}"),
+    };
+    match child.wait_with_output() {
+        Ok(output) => format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ),
+        Err(e) => format!("the child could not be waited for: {e}"),
+    }
+}
+
 /// The window procedure of the host: it asks TSF about every key, the way every application does.
 unsafe extern "system" fn host_window_proc(
     hwnd: HWND,
