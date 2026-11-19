@@ -70,6 +70,13 @@ fn the_input_method_comes_alive_when_its_profile_is_activated() {
         host.key_sink_is_taken(),
         "the text service must hold the key event sink of the client id of the thread"
     );
+    // The diagnosis of D-170: one sink per client id (the text service's sink is on the client id of the thread) or
+    // one sink per thread (it is somewhere else and the keystroke manager cannot find it for this context).
+    eprintln!(
+        "the diagnosis: another client id may have a sink = {}; the focus is our document manager = {}",
+        host.another_client_id_may_have_a_sink(),
+        host.focus_is_our_document_manager()
+    );
 }
 
 /// The key events of the real keyboard reach the text service, and the candidate lands in the document.
@@ -100,7 +107,8 @@ fn the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document() {
     assert!(
         chord,
         "Ctrl+F12 must be eaten by the text service (it switches the input mode); the key events do not reach \
-         the text service (D-170)"
+         it. **D-170**: the same host does not drive the Microsoft Chinese IME either, so the chain of our text \
+         service is **unproven** by this host (not disproven) - the missing step is on the host side"
     );
 
     // Now the letters are eaten and the composition is open.
@@ -144,6 +152,67 @@ fn the_real_keyboard_reaches_the_window_procedure_of_the_host() {
     // asserted here: the point of this test is that the key reaches the window procedure and the question of TSF.
 }
 
+/// The text service of **this build**, activated by the host itself: does the key chain work with the code of this
+/// repository?
+///
+/// This is the variant that separates the two halves of D-170: msctf activating a **registered** text service (the
+/// installed DLL) versus the host activating the text service itself. Measured: msctf refuses the key event sink of
+/// a text service that is not the registered input processor of the thread (`E_INVALIDARG`), so this variant cannot
+/// work - it is kept as a diagnostic.
+#[test]
+fn the_text_service_of_this_build_cannot_take_the_key_sink() {
+    if !live_allowed() {
+        return;
+    }
+    match LiveHost::open_with_our_own_text_service() {
+        Ok(host) => {
+            let mut eaten = Vec::new();
+            for ch in ['w', 'o'] {
+                let (vk, scan) = common::ime_live::key_of(ch);
+                eaten.push(host.ask_about_key(vk, scan, Some(&ch.to_string())));
+            }
+            eprintln!("the keys of the text service of this build: {eaten:?}");
+        }
+        Err(reason) => {
+            // The measurement: msctf only lets the **registered** input processor of the thread hold the key event
+            // sink. The host cannot take it for a text service of its own.
+            eprintln!("the text service of this build was refused: {reason}");
+        }
+    }
+}
+
+/// The control experiment of D-170: the **Microsoft** Chinese text service, in the same host.
+///
+/// The host is only a valid measuring instrument if it can drive *some* text service. The Microsoft Chinese IME of
+/// Windows 11 runs as a separate process (`ChsIME.exe`) with an in-process proxy, so it is a weak baseline - but
+/// the measurement is still worth having: today the host drives neither.
+#[test]
+fn the_microsoft_text_service_takes_the_keys_in_the_same_host() {
+    if !live_allowed() {
+        return;
+    }
+    let host = LiveHost::open_without_any_profile().expect("the host opens");
+    host.activate_the_profile_of(
+        &common::ime_live::CLSID_MS_CHINESE,
+        &common::ime_live::PROFILE_MS_CHINESE,
+    )
+    .expect("the profile of the Microsoft text service");
+    std::thread::sleep(std::time::Duration::from_millis(600));
+    let mut eaten = Vec::new();
+    for ch in ['w', 'o'] {
+        let (vk, scan) = common::ime_live::key_of(ch);
+        eaten.push(host.ask_about_key(vk, scan, Some(&ch.to_string())));
+    }
+    eprintln!("the keys of the Microsoft text service: {eaten:?}");
+    eprintln!("the windows of the thread: {:?}", host.windows());
+    assert!(
+        eaten.iter().any(|e| *e),
+        "the host must be able to drive **some** text service, otherwise it cannot prove anything about ours \
+         (D-170): the Microsoft Chinese IME of Windows 11 runs as a separate process, so this baseline is weak, \
+         but the measurement says the host drives neither today"
+    );
+}
+
 /// The mode chord of the product belongs to the text service: it is the way from the code input to the natural
 /// language input. Measured with the direct call of TSF (the one the window procedure makes).
 #[test]
@@ -153,10 +222,19 @@ fn the_mode_chord_is_eaten_by_the_text_service() {
     }
     let host = LiveHost::open().expect("the host opens");
     let chord = host.ask_about_ctrl_f12();
+    // The diagnosis: which client id holds the key event sink of this thread. The keystroke manager of TSF hands the
+    // key to the sink of the focused context, and that context belongs to the client id that created it.
+    eprintln!(
+        "the diagnosis: the sink of this thread is under the client id {:?} (the client id of the thread is {})",
+        host.client_id_that_holds_the_sink(),
+        host.client_id()
+    );
     assert!(
         chord,
         "the text service must take Ctrl+F12; the key event sink of the thread is held by the text service \
-         (the sink is taken: {}), but the key does not arrive (D-170)",
+         (the sink is taken: {}), but the key does not arrive. **D-170**: the same host does not drive the \
+         Microsoft Chinese IME either, so the chain of our text service is **unproven** by this host (not \
+         disproven) - the missing step is on the host side",
         host.key_sink_is_taken()
     );
     assert_eq!((KEY_F12.0, KEY_F12.1), (0x7B, 0x58));

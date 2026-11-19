@@ -27,33 +27,36 @@
 //!    for `Ctrl+F12` (the chord that switches the input mode, which the text service must always take). See D-170.
 
 use std::cell::RefCell;
+use std::ffi::c_void;
 use std::rc::Rc;
 
 use windows::Win32::Foundation::{BOOL, HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::Graphics::Gdi::HBRUSH;
 use windows::Win32::System::Com::{
     CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoUninitialize,
+    IClassFactory,
 };
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    GetKeyboardLayout, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP,
-    KEYEVENTF_SCANCODE, SendInput, SetFocus, SetKeyboardState, ToUnicodeEx, VIRTUAL_KEY, VK_CONTROL,
+    ActivateKeyboardLayout, GetKeyboardLayout, HKL, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
+    KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, LoadKeyboardLayoutW, SendInput, SetFocus, SetKeyboardState,
+    ToUnicodeEx, VIRTUAL_KEY, VK_CONTROL,
 };
 use windows::Win32::UI::TextServices::{
     CLSID_TF_InputProcessorProfiles, CLSID_TF_ThreadMgr, ITfContext, ITfDocumentMgr, ITfEditSession,
     ITfEditSession_Impl, ITfInputProcessorProfileMgr, ITfKeyEventSink, ITfKeyEventSink_Impl,
-    ITfKeystrokeMgr, ITfRange, ITfThreadMgr, ITfThreadMgr2, TF_AE_NONE, TF_ANCHOR_END,
-    TF_DEFAULT_SELECTION, TF_ES_READ, TF_ES_READWRITE, TF_ES_SYNC, TF_IPSINK_FLAG_ACTIVE,
-    TF_PROFILETYPE_INPUTPROCESSOR, TF_SELECTION, TF_SELECTIONSTYLE,
+    ITfKeystrokeMgr, ITfRange, ITfTextInputProcessorEx, ITfThreadMgr, ITfThreadMgr2, TF_AE_NONE,
+    TF_ANCHOR_END, TF_DEFAULT_SELECTION, TF_ES_READ, TF_ES_READWRITE, TF_ES_SYNC,
+    TF_IPSINK_FLAG_ACTIVE, TF_PROFILETYPE_INPUTPROCESSOR, TF_SELECTION, TF_SELECTIONSTYLE,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DispatchMessageW, EnumThreadWindows, GetClassNameW,
-    GetForegroundWindow, GetWindowThreadProcessId, MSG, PM_REMOVE, PeekMessageW, RegisterClassW,
-    SetForegroundWindow, ShowWindow, TranslateMessage, SW_SHOW, WNDCLASSW, WM_KEYDOWN,
-    WS_EX_TOOLWINDOW, WS_OVERLAPPEDWINDOW,
+    GetForegroundWindow, GetWindowThreadProcessId, MSG, PM_REMOVE, PeekMessageW, PostMessageW,
+    RegisterClassW, SetForegroundWindow, ShowWindow, TranslateMessage, SW_SHOW, WM_INPUTLANGCHANGEREQUEST,
+    WM_KEYDOWN, WM_SETFOCUS, WNDCLASSW, WS_EX_TOOLWINDOW, WS_OVERLAPPEDWINDOW,
 };
-use windows::core::{GUID, Interface, PCWSTR, implement};
+use windows::core::{GUID, HRESULT, Interface, PCWSTR, implement};
 
 /// The COM class of this product (`lib.rs`: CLSID_PIME).
 pub const CLSID_PIME: GUID = GUID::from_u128(0x43f95ed1_95b4_421d_8f5a_837128c2d854);
@@ -61,6 +64,11 @@ pub const CLSID_PIME: GUID = GUID::from_u128(0x43f95ed1_95b4_421d_8f5a_837128c2d
 pub const PROFILE_ZH: GUID = GUID::from_u128(0x223fd919_f8cb_476c_a852_351e7381c801);
 /// The language id of zh-CN.
 pub const LANG_ZH_CN: u16 = 0x0804;
+
+/// The COM class of the Microsoft Chinese (Simplified) text service (the control experiment of D-170).
+pub const CLSID_MS_CHINESE: GUID = GUID::from_u128(0x81d4e9c9_1d3b_41bc_9e6c_4b40bf79e35e);
+/// The zh-CN language profile of the Microsoft Chinese (Simplified) text service.
+pub const PROFILE_MS_CHINESE: GUID = GUID::from_u128(0xfa550b04_5ad7_411f_a5ac_ca038ec515d7);
 
 /// The window class of the host.
 const HOST_CLASS: &str = "PimeImeLiveHost";
@@ -199,11 +207,12 @@ fn read_text(ctx: &ITfContext) -> windows::core::Result<String> {
 
 // ---------------------------------------------------------------- the window that owns the keyboard focus
 
-// What the window procedure needs: the keystroke manager of the thread and the context of the document. A real
-// application does exactly this in its window procedure: it asks TSF whether the key belongs to the input method, and
-// it writes the character into its own text store when the answer is no.
+// What the window procedure needs: the keystroke manager of the thread, the context of the document, and the
+// document manager (a real application associates the document with the window and sets the focus of TSF **in its
+// window procedure**, when the window receives WM_SETFOCUS).
 thread_local! {
-    static HOST: RefCell<Option<(ITfKeystrokeMgr, ITfContext)>> = const { RefCell::new(None) };
+    static HOST: RefCell<Option<(ITfKeystrokeMgr, ITfContext, ITfThreadMgr, ITfDocumentMgr)>> =
+        const { RefCell::new(None) };
 }
 
 /// The character a key press produces with the active layout, the way the text service reads it.
@@ -229,6 +238,32 @@ thread_local! {
     static RECEIVED: RefCell<Vec<bool>> = const { RefCell::new(Vec::new()) };
 }
 
+/// The keyboard layout of the thread, switched to zh-CN **before** the window is created.
+///
+/// The input processor that msctf makes the input processor of a thread is the one whose language profile matches the
+/// keyboard layout of the focused window: a user who types Chinese has the Chinese layout there. The window inherits
+/// the layout of the thread when it is created, so the switch has to come first.
+fn use_the_chinese_layout() -> Option<HKL> {
+    let name: Vec<u16> = "00000804".encode_utf16().chain(std::iter::once(0)).collect();
+    // SAFETY: the name is a null-terminated wide string that outlives the call.
+    let hkl = unsafe {
+        LoadKeyboardLayoutW(
+            PCWSTR(name.as_ptr()),
+            windows::Win32::UI::Input::KeyboardAndMouse::ACTIVATE_KEYBOARD_LAYOUT_FLAGS(0),
+        )
+    }
+    .ok()?;
+    // SAFETY: the layout is loaded; the call has no other precondition.
+    let active = unsafe {
+        ActivateKeyboardLayout(
+            hkl,
+            windows::Win32::UI::Input::KeyboardAndMouse::ACTIVATE_KEYBOARD_LAYOUT_FLAGS(0),
+        )
+    }
+    .ok()?;
+    Some(active)
+}
+
 /// The window procedure of the host: it asks TSF about every key, the way every application does.
 unsafe extern "system" fn host_window_proc(
     hwnd: HWND,
@@ -236,10 +271,27 @@ unsafe extern "system" fn host_window_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    if msg == WM_SETFOCUS {
+        // The window has the keyboard focus now: this is where a real application tells TSF that the context of
+        // this document is the active one.
+        HOST.with(|slot| {
+            let borrowed = slot.borrow();
+            let Some((_, _, thread_mgr, doc_mgr)) = borrowed.as_ref() else {
+                return;
+            };
+            // SAFETY: the thread manager and the document manager are live.
+            unsafe {
+                let _ = thread_mgr.AssociateFocus(hwnd, doc_mgr);
+                let _ = thread_mgr.SetFocus(Some(doc_mgr));
+            }
+        });
+        eprintln!("    the window procedure got the focus");
+        return LRESULT(0);
+    }
     if msg == WM_KEYDOWN {
         let eaten = HOST.with(|slot| {
             let borrowed = slot.borrow();
-            let Some((keys, ctx)) = borrowed.as_ref() else {
+            let Some((keys, ctx, _, _)) = borrowed.as_ref() else {
                 return false;
             };
             // SAFETY: plain COM calls on live objects.
@@ -313,6 +365,17 @@ impl FocusWindow {
                 None,
             )
         }?;
+        // The window asks for the Chinese layout explicitly: a window that is in front with the English layout makes
+        // msctf pick the English profile of the input method, not the Chinese one the user asked for.
+        // SAFETY: the window is live; the message carries the layout of the thread.
+        unsafe {
+            let _ = PostMessageW(
+                hwnd,
+                WM_INPUTLANGCHANGEREQUEST,
+                WPARAM(1),
+                LPARAM(unsafe { GetKeyboardLayout(0) }.0 as isize),
+            );
+        }
         Ok(Self { hwnd })
     }
 
@@ -495,10 +558,42 @@ impl ITfKeyEventSink_Impl for ProbeSink_Impl {
 pub struct LiveHost {
     window: Option<FocusWindow>,
     thread_mgr: Option<ITfThreadMgr>,
+    doc_mgr: Option<ITfDocumentMgr>,
     context: Option<ITfContext>,
     keys: Option<ITfKeystrokeMgr>,
+    /// The text service of this build, when the host activated it itself.
+    our_own_text_service: Option<ITfTextInputProcessorEx>,
     tid: u32,
     apartment: bool,
+}
+
+/// `ITfThreadMgr2::ActivateEx(TF_PID pid, REFCLSID rclsid)`: "this thread uses this text service".
+///
+/// The binding of the `windows` crate models this entry point with its two arguments **in the wrong order** (it
+/// passes a pointer where the `TF_PID` belongs), and the legacy `ITfThreadMgr::Activate` is modelled with another
+/// wrong shape - calling either of them through the binding crashes msctf. So the call is made through the vtable
+/// with the shape of the header.
+fn activate_ex(thread_mgr2: &ITfThreadMgr2, pid: u32, clsid: &GUID) -> HRESULT {
+    type ActivateExFn = unsafe extern "system" fn(*mut c_void, u32, *const GUID) -> HRESULT;
+    let vtable = ITfThreadMgr2::vtable(thread_mgr2);
+    // SAFETY: the vtable of the live interface; the slot is the one of the header.
+    let call: ActivateExFn = unsafe { std::mem::transmute(vtable.ActivateEx) };
+    // SAFETY: the thread manager is live; the class id is a valid reference.
+    unsafe { call(windows::core::Interface::as_raw(thread_mgr2), pid, clsid) }
+}
+
+/// `TF_PID_INPUTPROCESSOR`: the input processor of the thread (the keyboard one).
+const TF_PID_INPUTPROCESSOR: u32 = 0x1;
+
+/// What the host activates when it opens.
+#[derive(Clone, Copy)]
+pub enum What {
+    /// The registered profile of this product: msctf loads the installed DLL and activates it.
+    RegisteredProfile,
+    /// The text service of this build, activated by the host through `ITfThreadMgr2::ActivateEx`.
+    OurOwnThroughActivateEx,
+    /// Nothing: the test activates a profile itself (the control experiment).
+    Nothing,
 }
 
 impl LiveHost {
@@ -506,11 +601,50 @@ impl LiveHost {
     pub fn open() -> Result<Self, String> {
         // SAFETY: the apartment is initialised once and uninitialised in `Drop`.
         let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
-        Self::open_inner(apartment)
+        Self::open_inner(apartment, What::RegisteredProfile)
     }
 
-    fn open_inner(apartment: bool) -> Result<Self, String> {
+    /// Opens the host and activates **the text service of this build** (not the installed one) through
+    /// `ITfThreadMgr2::ActivateEx` - the modern "this thread uses this text service".
+    pub fn open_with_our_own_text_service() -> Result<Self, String> {
+        // SAFETY: the apartment is initialised once and uninitialised in `Drop`.
+        let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
+        Self::open_inner(apartment, What::OurOwnThroughActivateEx)
+    }
+
+    /// Opens the host **without** activating any profile: the test then activates the profile of another text
+    /// service (the control experiment of D-170).
+    pub fn open_without_any_profile() -> Result<Self, String> {
+        // SAFETY: the apartment is initialised once and uninitialised in `Drop`.
+        let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
+        Self::open_inner(apartment, What::Nothing)
+    }
+
+    /// Activates the profile of a text service that is registered on this machine.
+    pub fn activate_the_profile_of(&self, clsid: &GUID, profile: &GUID) -> windows::core::Result<()> {
+        let profiles: ITfInputProcessorProfileMgr = unsafe {
+            CoCreateInstance(&CLSID_TF_InputProcessorProfiles, None, CLSCTX_INPROC_SERVER)
+        }?;
+        // SAFETY: the profile manager is live; the ids are valid references.
+        unsafe {
+            profiles.ActivateProfile(
+                TF_PROFILETYPE_INPUTPROCESSOR,
+                LANG_ZH_CN,
+                clsid,
+                profile,
+                None,
+                TF_IPSINK_FLAG_ACTIVE,
+            )
+        }
+    }
+
+    fn open_inner(apartment: bool, what: What) -> Result<Self, String> {
+        // The layout of the thread comes first: the window inherits it when it is created.
+        let layout = use_the_chinese_layout();
         let window = FocusWindow::open().map_err(|e| format!("the window: {e:?}"))?;
+        // SAFETY: the call has no preconditions.
+        let thread_layout = unsafe { GetKeyboardLayout(0) };
+        eprintln!("the keyboard layout of the thread: {thread_layout:?} (asked for {layout:?})");
         // SAFETY: COM is initialised on this thread; the class is the real msctf thread manager.
         let thread_mgr: ITfThreadMgr = unsafe { CoCreateInstance(&CLSID_TF_ThreadMgr, None, CLSCTX_INPROC_SERVER) }
             .map_err(|e| format!("the thread manager: {e:?}"))?;
@@ -550,35 +684,79 @@ impl LiveHost {
         // SAFETY: the document manager is live.
         unsafe { thread_mgr.SetFocus(Some(&doc_mgr)) }.map_err(|e| format!("the focus: {e:?}"))?;
 
-        // The profile of this product that is registered on this machine becomes the input processor of the thread.
-        let profiles: ITfInputProcessorProfileMgr = unsafe {
-            CoCreateInstance(&CLSID_TF_InputProcessorProfiles, None, CLSCTX_INPROC_SERVER)
+        // The text service of this build, activated by the host itself, or the profile of this product that is
+        // registered on this machine (msctf then loads the installed DLL and activates it).
+        let mut our_own: Option<ITfTextInputProcessorEx> = None;
+        match what {
+            // the profile of this product that is registered on this machine: msctf loads the installed DLL
+            What::RegisteredProfile => {
+                let profiles: ITfInputProcessorProfileMgr = unsafe {
+                    CoCreateInstance(&CLSID_TF_InputProcessorProfiles, None, CLSCTX_INPROC_SERVER)
+                }
+                .map_err(|e| format!("the profile manager: {e:?}"))?;
+                // SAFETY: the profile manager is live; the ids are valid references.
+                unsafe {
+                    profiles.ActivateProfile(
+                        TF_PROFILETYPE_INPUTPROCESSOR,
+                        LANG_ZH_CN,
+                        &CLSID_PIME,
+                        &PROFILE_ZH,
+                        None,
+                        TF_IPSINK_FLAG_ACTIVE,
+                    )
+                }
+                .map_err(|e| format!("the profile: {e:?}"))?;
+            }
+            // no profile at all: the test activates one itself (the control experiment)
+            What::Nothing => {}
+            // the text service of this build, activated by the host itself
+            What::OurOwnThroughActivateEx => {
+                // The modern entry point: "this thread uses this text service". The binding of the `windows` crate
+                // has the wrong shape for the legacy `ITfThreadMgr::Activate`, but this one is right.
+                let hr = activate_ex(&thread_mgr2, TF_PID_INPUTPROCESSOR, &CLSID_PIME);
+                eprintln!("  ITfThreadMgr2::ActivateEx(our class) -> {hr:?}");
+                // The class object of this build, straight out of the crate.
+                let mut raw: *mut c_void = std::ptr::null_mut();
+                // SAFETY: the ids are valid references; the out parameter is a live local.
+                let class = unsafe { pime_tsf::DllGetClassObject(&CLSID_PIME, &IClassFactory::IID, &mut raw) };
+                if class.is_err() || raw.is_null() {
+                    return Err(format!("the class object of this build: {class:?}"));
+                }
+                // SAFETY: the factory is a live COM object the crate handed over.
+                let factory: IClassFactory = unsafe { windows::core::Interface::from_raw(raw) };
+                // SAFETY: the factory creates the text service for our class.
+                let tip: ITfTextInputProcessorEx = unsafe { factory.CreateInstance(None) }
+                    .map_err(|e| format!("the text service of this build: {e:?}"))?;
+                // SAFETY: the thread manager is live; the client id belongs to this thread.
+                let activated = unsafe { tip.ActivateEx(Some(&thread_mgr), tid, 0) };
+                eprintln!("  the text service of this build -> ActivateEx {activated:?}");
+                if activated.is_err() {
+                    return Err(format!("the text service of this build: {activated:?}"));
+                }
+                our_own = Some(tip);
+            }
         }
-        .map_err(|e| format!("the profile manager: {e:?}"))?;
-        // SAFETY: the profile manager is live; the ids are valid references.
-        unsafe {
-            profiles.ActivateProfile(
-                TF_PROFILETYPE_INPUTPROCESSOR,
-                LANG_ZH_CN,
-                &CLSID_PIME,
-                &PROFILE_ZH,
-                None,
-                TF_IPSINK_FLAG_ACTIVE,
-            )
-        }
-        .map_err(|e| format!("the profile: {e:?}"))?;
         pump_for(600);
 
         // SAFETY: the thread manager is the one the profile was activated on.
         let keys: ITfKeystrokeMgr = thread_mgr
             .cast()
             .map_err(|e| format!("the keystroke manager: {e:?}"))?;
-        HOST.with(|slot| *slot.borrow_mut() = Some((keys.clone(), context.clone())));
+        HOST.with(|slot| {
+            *slot.borrow_mut() = Some((
+                keys.clone(),
+                context.clone(),
+                thread_mgr.clone(),
+                doc_mgr.clone(),
+            ));
+        });
         Ok(Self {
             window: Some(window),
             thread_mgr: Some(thread_mgr),
+            doc_mgr: Some(doc_mgr),
             context: Some(context),
             keys: Some(keys),
+            our_own_text_service: our_own,
             tid,
             apartment,
         })
@@ -651,7 +829,74 @@ impl LiveHost {
         refused.is_err()
     }
 
-    /// Asks TSF about one key, the way the window procedure of an application does. Returns whether the text service
+    /// Whether msctf accepts a **second** key event sink for another client id of this thread.
+    ///
+    /// One sink per client id means the text service's sink is on the client id of the thread (the one the context was
+    /// created with); one sink per thread means it is somewhere else.
+    pub fn another_client_id_may_have_a_sink(&self) -> bool {
+        let keys: ITfKeystrokeMgr = match self.thread_mgr.as_ref().and_then(|m| m.cast().ok()) {
+            Some(keys) => keys,
+            None => return false,
+        };
+        let probe: ITfKeyEventSink = ProbeSink.into();
+        // SAFETY: plain COM call on a live object; the sink is a live object of ours.
+        let accepted = unsafe { keys.AdviseKeyEventSink(0x9999, &probe, BOOL(1)) }.is_ok();
+        if accepted {
+            // SAFETY: undoes the advise above.
+            let _ = unsafe { keys.UnadviseKeyEventSink(0x9999) };
+        }
+        accepted
+    }
+
+    /// Whether the document manager of the host is the one that has the focus of the thread manager.
+///
+/// The keystroke manager of TSF hands the key to the sink of the **focused context**; if the document manager of the
+/// host is not the focused one, the context of the host is not the one that is asked.
+pub fn focus_is_our_document_manager(&self) -> bool {
+    let (Some(doc_mgr), Some(thread_mgr)) = (self.doc_mgr.as_ref(), self.thread_mgr.as_ref()) else {
+        return false;
+    };
+    // SAFETY: the thread manager is live.
+    let focused = match unsafe { thread_mgr.GetFocus() } {
+        Ok(focused) => focused,
+        Err(_) => return false,
+    };
+    let ours = doc_mgr.cast::<windows::core::IUnknown>();
+    let theirs = focused.cast::<windows::core::IUnknown>();
+    match (ours, theirs) {
+        (Ok(ours), Ok(theirs)) => {
+            windows::core::Interface::as_raw(&ours) == windows::core::Interface::as_raw(&theirs)
+        }
+        _ => false,
+    }
+}
+
+/// Which client id holds the key event sink of this thread.
+///
+/// msctf allows **one** key event sink per thread (measured: a second one is refused for every client id), and it
+/// hands the key to the sink of the **focused context** - which belongs to the client id that created that context.
+/// If the text service advised its sink under a different id, the keystroke manager cannot find it: the key goes
+/// nowhere. This probe walks the ids that could be the one and reports which of them can be unadvised.
+pub fn client_id_that_holds_the_sink(&self) -> Option<u32> {
+    let keys: ITfKeystrokeMgr = match self.thread_mgr.as_ref().and_then(|m| m.cast().ok()) {
+        Some(keys) => keys,
+        None => return None,
+    };
+    // SAFETY: the call has no preconditions.
+    let thread_id = unsafe { GetCurrentThreadId() };
+    let mut candidates = vec![self.tid, thread_id, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+    candidates.dedup();
+    for id in candidates {
+        // SAFETY: plain COM call on a live object; the id is a plain number.
+        let removed = unsafe { keys.UnadviseKeyEventSink(id) }.is_ok();
+        if removed {
+            return Some(id);
+        }
+    }
+    None
+}
+
+/// Asks TSF about one key, the way the window procedure of an application does. Returns whether the text service
     /// ate the key. A key that is not eaten is written into the document by the host.
     pub fn ask_about_key(&self, vk: u32, scan: u32, text: Option<&str>) -> bool {
         let state = [0u8; 256];
@@ -720,7 +965,12 @@ impl LiveHost {
         RECEIVED.with(|slot| slot.borrow().clone())
     }
 
-    /// The window of the host (its handle), for the tests that need it.
+    /// The client id of this thread (the thread manager hands it out).
+pub fn client_id(&self) -> u32 {
+    self.tid
+}
+
+/// The window of the host (its handle), for the tests that need it.
     pub fn window(&self) -> HWND {
         self.window.as_ref().expect("the window").hwnd
     }
@@ -734,6 +984,8 @@ impl Drop for LiveHost {
         HOST.with(|slot| *slot.borrow_mut() = None);
         self.keys = None;
         self.context = None;
+        self.our_own_text_service = None;
+        self.doc_mgr = None;
         self.thread_mgr = None;
         self.window = None;
         if self.apartment {
