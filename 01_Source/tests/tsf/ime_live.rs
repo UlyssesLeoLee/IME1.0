@@ -279,11 +279,140 @@ fn the_plain_edit_control_receives_the_input_method() {
         "the candidate must land in the document of the application (D-171: the keys are eaten and the write path \
          works, so the candidate list is empty); the report is:\n{report}"
     );
+    assert!(
+        report.contains("digit=landed"),
+        "the digit of a candidate must **take** the candidate and not land in the document (the report of the user: \
+         the digit is inserted into the pinyin and the selected text is not written); the report is:\n{report}"
+    );
+}
+
+/// The real Notepad: the application the user types in.
+///
+/// What this case really measures (and what it cannot):
+/// * **it can**: prove that the input method is the input processor **of the real Notepad** - the bridge of the agent
+///   protocol answers from the **Notepad's own process**, and it names the mode and the language;
+/// * **it cannot**: deliver the keys. The Notepad of Windows 11 is a store application (XAML), and a background
+///   process cannot give it the keyboard focus on this machine (`SetForegroundWindow` is refused by the foreground
+///   lock, and the click lands on the window that is in front). The keys therefore never reach the Notepad, and the
+///   text service stays without a context - which is also why the bridge answers "the field is a password field"
+///   (the text service fails closed when it has no context).
+///   ⇒ **the measurement of the real Notepad is the manual one** (`02_Verification/REAL_MACHINE_CHECKLIST.md`).
+#[test]
+fn the_input_method_is_the_input_processor_of_the_real_notepad() {
+    // The Notepad is a **real application on the desktop**: this case opens it, takes the focus and types on the
+    // keyboard of the user. It therefore asks for its own switch (on top of PIME_IME_LIVE).
+    if std::env::var("PIME_IME_NOTEPAD").as_deref() != Ok("1") {
+        eprintln!(
+            "skipped: this case opens the real Notepad on the desktop; it needs PIME_IME_NOTEPAD=1 (on top of \
+             PIME_IME_LIVE)"
+        );
+        return;
+    }
+    // The child: it drives the Notepad (the Notepad needs the desktop to itself) and prints what it measured.
+    if std::env::var("PIME_IME_CHILD").is_ok() {
+        drive_the_real_notepad();
+        return;
+    }
+    if !live_allowed() {
+        return;
+    }
+    let report = common::ime_live::run_the_drive_in_a_child(&[
+        "the_input_method_is_the_input_processor_of_the_real_notepad",
+    ]);
+    println!("--- the real Notepad ---\n{report}");
+    assert!(
+        report.contains("ime_in_the_notepad=yes"),
+        "the input method must be the input processor of the real Notepad (its bridge answers from the Notepad's \
+         own process); the report is:\n{report}"
+    );
+}
+
+/// The drive of the real Notepad: it prints a machine-readable report of what the file ended up holding.
+fn drive_the_real_notepad() {
+    let _modifiers = common::ime_live::ModifiersReleased;
+    let mut host = match common::ime_live::NotepadHost::open() {
+        Ok(host) => host,
+        Err(e) => {
+            println!("REPORT notepad=unavailable ({e:?})");
+            return;
+        }
+    };
+    // The input method that is active in the Notepad's own process: its bridge answers what it is doing.
+    let reply = common::ime_live::ReplyWindow::open();
+    let bridge_pid = common::ime_live::bridge_window_anywhere()
+        .map(common::ime_live::process_of_window)
+        .unwrap_or(0);
+    let ask = |op: &str| -> Option<String> {
+        reply.as_ref().and_then(|r| {
+            r.ask(&format!(
+                "{{\"v\":1,\"op\":\"{op}\",\"reply\":{}}}",
+                r.hwnd().0 as usize
+            ))
+        })
+    };
+    let status = ask("status");
+    eprintln!(
+        "the Notepad is in front: {}; the process of the Notepad: {}; the process of the bridge: {}",
+        host.is_in_front(),
+        host.process_id(),
+        bridge_pid
+    );
+    // The positive control: the bridge of the input method writes a character into the focused document of the
+    // Notepad. If that character is there afterwards, the path works and the missing candidate is the input
+    // method's.
+    let control = ask("insert").map(|_| ()).is_some();
+    let write_answer = reply.as_ref().and_then(|r| {
+        r.ask(&format!(
+            "{{\"v\":1,\"op\":\"insert\",\"text\":\"X\",\"reply\":{}}}",
+            r.hwnd().0 as usize
+        ))
+    });
+    // The letters of the word, then the space that takes the candidate.
+    host.type_real("wo");
+    std::thread::sleep(std::time::Duration::from_millis(600));
+    // The space takes the candidate. The selection of the document must stay a caret while the commit happens: the
+    // commit verifies the text before the caret, and a selection would make that verification fail (the measurement
+    // would then measure its own disturbance instead of the input method).
+    host.type_real(" ");
+    std::thread::sleep(std::time::Duration::from_millis(800));
+    // Select everything and let the input method read the selection back: that is the text of the document.
+    host.select_all();
+    std::thread::sleep(std::time::Duration::from_millis(400));
+    let read = ask("read");
+    host.save();
+    let saved = host.what_was_saved();
+    let text_of_the_document = read.clone().unwrap_or_default();
+    let control_ok = text_of_the_document.contains('X');
+    let committed = text_of_the_document.contains('我');
+    // the process of the Notepad, before it is closed
+    let notepad_pid = host.process_id();
+    host.close();
+    println!(
+        "REPORT notepad={:?} read={:?} control={} committed={} status={:?} write={:?} ime_in_the_notepad={}",
+        saved,
+        text_of_the_document,
+        if control_ok { "ok" } else { "broken" },
+        if committed { "yes" } else { "no" },
+        status,
+        write_answer,
+        if bridge_pid == notepad_pid { "yes" } else { "no" }
+    );
 }
 
 /// The drive of the edit control: it measures and prints a machine-readable report.
 fn drive_the_edit_control() {
+    // The drive presses chords (Ctrl+F12): whatever happens, the modifiers of the keyboard are released at the end.
+    let _modifiers = common::ime_live::ModifiersReleased;
     let host = common::ime_live::EditHost::open().expect("the window with the edit control");
+    // The profile of this product is activated for this thread: the system only makes the text service the input
+    // processor of a thread when the profile of its language is active, and the state of the language bar of the
+    // desktop of the user must not decide what the measurement sees.
+    if let Err(e) = host.activate_our_profile() {
+        println!("REPORT profile=unavailable ({e:?})");
+        return;
+    }
+    // The focus comes **after** the activation: switching the input method may give the foreground to another window,
+    // and a key that goes to another window is typed into somebody else's document.
     if !host.take_the_focus() {
         println!("REPORT focus=no");
         return;
@@ -292,12 +421,12 @@ fn drive_the_edit_control() {
     // that are plain text, the ones after it are the input method's. The **bridge** of the input method is the sign
     // that it is alive (it comes with the text service).
     let mut alive = false;
-    for _ in 0..30 {
+    for _ in 0..60 {
         if host.the_mode_of_the_input_method().is_some() {
             alive = true;
             break;
         }
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(150));
     }
     if !alive {
         println!("REPORT ime=absent");
@@ -318,13 +447,26 @@ fn drive_the_edit_control() {
     if switched {
         host.press_ctrl_f12();
     }
+    // The focus is checked again: a key that goes to another window is typed into somebody else's document.
+    let focus_before_typing = host.has_the_focus();
+    let modifiers_before_typing = host.modifier_state();
     host.type_real("wo");
+    let modifiers_after_typing = host.modifier_state();
+    // The document is read **without touching the selection**. The commit verifies the text before the caret, so a
+    // selection (the "select all" of an earlier version of this drive) would make that verification fail: the
+    // measurement would then measure its own disturbance instead of the input method.
     let composition = host.read();
+    let caret_of_the_application = host.read_selection();
     // The space takes the highlighted candidate.
     host.type_real(" ");
     let after_space = host.read();
     let commit_landed = after_space.contains('我');
-    // The path of the agents: the bridge writes into the focused document.
+    // The digit of a candidate: it has to **take** the candidate, not land in the document (the report of the user:
+    // "the digit of the candidate is inserted into the pinyin and the selected text is not written").
+    host.type_real("wo");
+    host.type_real("1");
+    let after_digit = host.read();
+    let digit_landed = after_digit.matches('我').count() == 2 && !after_digit.contains('1');    // The path of the agents: the bridge writes into the focused document.
     let before = host.read();
     let answer = host.ask_the_bridge_to_write("我");
     std::thread::sleep(std::time::Duration::from_millis(400));
@@ -351,14 +493,31 @@ fn drive_the_edit_control() {
         // the mode of the user is put back the way it was
         host.press_ctrl_f12();
     }
+    // The view of the input method itself: it reads the selection of the document. It happens at the very end,
+    // because a selection disturbs the commit (the commit verifies the text before the caret).
+    host.select_all();
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    let document_of_the_input_method = host.ask_the_bridge(&format!(
+        "{{\"v\":1,\"op\":\"read\",\"reply\":{}}}",
+        host.window().0 as usize
+    ));
     println!(
-        "REPORT mode={} language={} composition={:?} commit={} write={} math={} bridge={:?}",
+        "REPORT mode={} language={} focus={} modifiers_before={:?} modifiers_after={:?} composition={:?} caret={:?} after_space={:?} \
+         commit={} digit={} write={} math={} document_after_the_digit={:?} document_of_the_input_method={:?} bridge={:?}",
         if natural_language { "natural" } else { "code" },
         language,
+        if focus_before_typing { "ok" } else { "lost" },
+        modifiers_before_typing,
+        modifiers_after_typing,
         composition,
+        caret_of_the_application,
+        after_space,
         if commit_landed { "landed" } else { "missing" },
+        if digit_landed { "landed" } else { "missing" },
         if write_path_works { "ok" } else { "broken" },
         if math_path_works { "ok" } else { "broken" },
+        after_digit,
+        document_of_the_input_method,
         answer
     );
 }

@@ -251,11 +251,16 @@ unsafe fn typed_range(
             return Ok(range);
         }
         let wanted = -(want.len() as i32);
-        let mut moved = 0i32;
+        let mut start = 0i32;
         range
-            .ShiftStart(ec, wanted, &mut moved, std::ptr::null())
+            .ShiftStart(ec, wanted, &mut start, std::ptr::null())
             .map_err(refused)?;
-        if moved != wanted {
+        // `start` is the **absolute** position of the new start of the range, not the number of units it moved:
+        // comparing it with the shift failed for every range, so the verification below never ran, every write was
+        // refused, the input method degraded and the keys of the candidate fell through to the application (the digit
+        // of a candidate landed in the document instead of the candidate). The text that follows is the proof that the
+        // range covers exactly what the user typed: nothing is written over text the user did not type.
+        if start < 0 {
             return Err(HostError::Mismatch);
         }
         let mut buffer = vec![0u16; want.len() + 1];
@@ -268,6 +273,42 @@ unsafe fn typed_range(
         }
         Ok(range)
     }
+}
+
+/// Open a composition over the text the user typed and hand that text to the composition.
+///
+/// TSF starts a composition with an **empty** string: the host shows nothing, the range the commit reads back does
+/// not carry the pinyin, so the verification in [`typed_range`] fails, the commit is refused, the input method
+/// degrades and every key after that falls through to the host (the digit of a candidate lands in the document
+/// instead of the candidate). The typed text therefore has to go *into* the composition, the way the platform does
+/// it: the composition range is written right after the composition started.
+///
+/// # Safety
+/// `ctx`, `client_id` and `sink` must be live; the edit cookie is taken from the session this function opens.
+fn open_composition(
+    ctx: &ITfContext,
+    client_id: u32,
+    sink: &ITfCompositionSink,
+    typed: &str,
+) -> std::result::Result<ITfComposition, HostError> {
+    let (ctx2, sink, typed) = (ctx.clone(), sink.clone(), typed.to_string());
+    run_session(ctx, client_id, SYNC_WRITE, move |ec| {
+        // SAFETY: `ec` belongs to the running session on `ctx2`.
+        unsafe {
+            let range = typed_range(&ctx2, ec, &typed)?;
+            let owner: ITfContextComposition = ctx2.cast().map_err(refused)?;
+            // SAFETY: live COM objects and a valid edit cookie.
+            let composition = owner.StartComposition(ec, &range, &sink).map_err(refused)?;
+            // The composition is empty as it was born: the pinyin has to be written into it, or the host shows
+            // nothing and the commit that follows can never find what the user typed.
+            let comp_range = composition.GetRange().map_err(refused)?;
+            let wide: Vec<u16> = typed.encode_utf16().collect();
+            if !wide.is_empty() {
+                comp_range.SetText(ec, 0, &wide).map_err(refused)?;
+            }
+            Ok(composition)
+        }
+    })
 }
 
 /// True when the input scope of the context says "password".
@@ -424,14 +465,7 @@ impl HostText for TsfHost {
         if self.composition.is_some() {
             return Ok(());
         }
-        let (ctx2, sink, typed) = (ctx.clone(), self.sink.clone(), typed.to_string());
-        let composition = run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
-            // SAFETY: `ec` belongs to the running session on `ctx2`.
-            let range = unsafe { typed_range(&ctx2, ec, &typed) }?;
-            let owner: ITfContextComposition = ctx2.cast().map_err(refused)?;
-            // SAFETY: live COM objects and a valid edit cookie.
-            unsafe { owner.StartComposition(ec, &range, &sink) }.map_err(refused)
-        })?;
+        let composition = open_composition(&ctx, self.client_id, &self.sink, typed)?;
         self.composition = Some((ctx, composition));
         Ok(())
     }
@@ -477,6 +511,21 @@ impl HostText for TsfHost {
 
     fn commit(&mut self, typed: &str, text: &str) -> std::result::Result<(), HostError> {
         let ctx = self.context.clone().ok_or(HostError::Refused)?;
+        // The composition still holds the typed text. The platform refuses a write that overlaps an open
+        // composition, and a refused write degrades the input method (every key after that falls through to the
+        // host). The composition is therefore ended first: its text stays in the document as ordinary text, so the
+        // verified range below still finds exactly what the user typed.
+        let composition = self.composition.take();
+        if let Some((composition_ctx, ending)) = composition.clone() {
+            let ended = run_session(&composition_ctx, self.client_id, SYNC_WRITE, move |ec| {
+                // SAFETY: `ec` belongs to the running session on the composition's own context.
+                unsafe { ending.EndComposition(ec) }.map_err(refused)
+            });
+            if ended.is_err() {
+                // the composition is still open in that document: give the handle back, the controller ends it
+                self.composition = composition;
+            }
+        }
         let (ctx2, typed, wide) = (
             ctx.clone(),
             typed.to_string(),

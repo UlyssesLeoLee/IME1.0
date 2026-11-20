@@ -39,10 +39,9 @@ use windows::Win32::System::Com::{
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    ActivateKeyboardLayout, GetKeyboardLayout, HKL, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
-    GetFocus, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, LoadKeyboardLayoutW, SendInput,
-    SetFocus, SetKeyboardState,
-    ToUnicodeEx, VIRTUAL_KEY, VK_CONTROL,
+    ActivateKeyboardLayout, GetAsyncKeyState, GetKeyboardLayout, HKL, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
+    KEYBD_EVENT_FLAGS, GetFocus, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, LoadKeyboardLayoutW, SendInput, SetFocus,
+    SetKeyboardState, ToUnicodeEx, VIRTUAL_KEY, VK_CONTROL,
 };
 use windows::Win32::UI::TextServices::{
     CLSID_TF_InputProcessorProfiles, CLSID_TF_ThreadMgr, ITfContext, ITfDocumentMgr, ITfEditSession,
@@ -52,11 +51,11 @@ use windows::Win32::UI::TextServices::{
     TF_IPSINK_FLAG_ACTIVE, TF_PROFILETYPE_INPUTPROCESSOR, TF_SELECTION, TF_SELECTIONSTYLE,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DispatchMessageW, EnumThreadWindows, GetClassNameW,
-    GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, MSG,
-    PM_REMOVE, PeekMessageW, PostMessageW, RegisterClassW, SetForegroundWindow, ShowWindow,
-    SendMessageW, TranslateMessage, SW_SHOW, WM_COPYDATA, WM_INPUTLANGCHANGEREQUEST, WM_KEYDOWN,
-    WM_SETFOCUS, WNDCLASSW,
+    CreateWindowExW, DefWindowProcW, DispatchMessageW, EnumThreadWindows, EnumWindows,
+    GetClassNameW, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
+    GetWindowThreadProcessId, MSG, PM_REMOVE, PeekMessageW, PostMessageW, RegisterClassW,
+    SendMessageW, SetForegroundWindow, ShowWindow, TranslateMessage, SW_SHOW, WM_CLOSE,
+    WM_COPYDATA, WM_INPUTLANGCHANGEREQUEST, WM_KEYDOWN, WM_SETFOCUS, WNDCLASSW,
     WINDOW_EX_STYLE, WINDOW_STYLE, WS_EX_TOOLWINDOW, WS_OVERLAPPEDWINDOW,
 };
 use windows::core::{GUID, HRESULT, Interface, PCWSTR, implement};
@@ -290,20 +289,41 @@ pub const COPYDATA_REQUEST: u32 = 0x5049_4D01;
 /// The `dwData` of the answer of the bridge.
 pub const COPYDATA_REPLY: u32 = 0x5049_4D02;
 
-/// The window of the bridge of the input method, if it is in this process.
-fn bridge_window() -> Option<HWND> {
+/// The window of the bridge of the input method, **wherever it is**: the window belongs to the process that has the
+/// input method active - in the real Notepad that is the Notepad's own process, not ours.
+pub fn bridge_window_anywhere() -> Option<HWND> {
     let mut found: Option<HWND> = None;
-    // SAFETY: the call has no preconditions.
-    let tid = unsafe { GetCurrentThreadId() };
     // SAFETY: the pointer is a live local for the whole enumeration.
     unsafe {
-        let _ = EnumThreadWindows(
-            tid,
+        let _ = EnumWindows(
             Some(find_bridge_window),
-            LPARAM(&mut found as *mut Option<HWND> as isize),
+            LPARAM((&mut found as *mut Option<HWND>) as isize),
         );
     }
     found
+}
+
+/// Asks the bridge of the input method and returns its answer. The answer goes to the window `reply_to` names.
+pub fn ask_the_bridge(reply_to: HWND, payload: &str) -> Option<String> {
+    let bridge = bridge_window_anywhere()?;
+    REPLY.with(|slot| *slot.borrow_mut() = None);
+    let mut bytes = payload.as_bytes().to_vec();
+    let data = CopyDataStruct {
+        dw_data: COPYDATA_REQUEST as usize,
+        cb_data: bytes.len() as u32,
+        lp_data: bytes.as_mut_ptr().cast(),
+    };
+    // SAFETY: the payload lives until the call returns; the bridge answers the window we name.
+    unsafe {
+        let _ = SendMessageW(
+            bridge,
+            WM_COPYDATA,
+            WPARAM(reply_to.0 as usize),
+            LPARAM((&data as *const CopyDataStruct) as isize),
+        );
+    }
+    pump_for(200);
+    REPLY.with(|slot| slot.borrow().clone())
 }
 
 unsafe extern "system" fn find_bridge_window(hwnd: HWND, lparam: LPARAM) -> BOOL {
@@ -330,27 +350,7 @@ unsafe extern "system" fn find_bridge_window(hwnd: HWND, lparam: LPARAM) -> BOOL
 impl EditHost {
     /// Asks the bridge of the input method and returns its answer.
     pub fn ask_the_bridge(&self, payload: &str) -> Option<String> {
-        let bridge = bridge_window()?;
-        REPLY.with(|slot| *slot.borrow_mut() = None);
-        // The request carries **no** trailing zero (the answer of the bridge carries one; the request does not - the
-        // parser of the product would read the zero as part of the JSON).
-        let mut bytes = payload.as_bytes().to_vec();
-        let data = CopyDataStruct {
-            dw_data: COPYDATA_REQUEST as usize,
-            cb_data: bytes.len() as u32,
-            lp_data: bytes.as_mut_ptr().cast(),
-        };
-        // SAFETY: the payload lives until the call returns; the bridge answers the window we name.
-        unsafe {
-            let _ = SendMessageW(
-                bridge,
-                WM_COPYDATA,
-                WPARAM(self.window.hwnd.0 as usize),
-                LPARAM((&data as *const CopyDataStruct) as isize),
-            );
-        }
-        pump_for(120);
-        REPLY.with(|slot| slot.borrow().clone())
+        ask_the_bridge(self.window.hwnd, payload)
     }
 
     /// Asks the bridge what the input method is doing: the answer names the language and the mode.
@@ -403,6 +403,303 @@ pub fn run_the_drive_in_a_child(arguments: &[&str]) -> String {
         ),
         Err(e) => format!("the child could not be waited for: {e}"),
     }
+}
+
+// ---------------------------------------------------------------- the real notepad
+
+/// A host that is the **real Notepad** of Windows: the application the user types in.
+///
+/// The evidence is the file itself: the Notepad is opened with a file, the keys are typed on the real keyboard, the
+/// file is saved, and the text of the file says what the input method committed. Nothing of TSF is done by the test
+/// here - the Notepad is the application, exactly like in the manual acceptance.
+pub struct NotepadHost {
+    file: std::path::PathBuf,
+    window: HWND,
+    child: std::process::Child,
+}
+
+impl NotepadHost {
+    /// Opens the Notepad with a file of its own and puts it in front.
+    pub fn open() -> windows::core::Result<Self> {
+        let file = std::env::temp_dir().join("pime-ime-live-notepad.txt");
+        // The file starts with a known text: the Notepad saves it without asking anything.
+        std::fs::write(&file, "start:").ok();
+        // SAFETY: the call has no preconditions.
+        let child = std::process::Command::new("C:\\Windows\\System32\\notepad.exe")
+            .arg(&file)
+            .spawn()
+            .map_err(|e| windows::core::Error::from_win32())?;
+        // The Notepad needs a moment; its window carries the name of the file.
+        let name = file
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let window = wait_for_a_window_whose_title_has(&name, 20_000)
+            .ok_or_else(windows::core::Error::from_win32)?;
+        let host = Self { file, window, child };
+        host.put_in_front();
+        Ok(host)
+    }
+
+    /// Brings the Notepad in front and gives it the keyboard focus.
+    ///
+    /// `SetForegroundWindow` is refused for a process that does not own the foreground (the foreground lock). A **real
+    /// mouse click** on the window of the application is what gives the foreground to a background process, so the
+    /// harness clicks on the text area of the Notepad.
+    pub fn put_in_front(&self) {
+        // The window is raised above everything: a window that is behind another one never receives the click.
+        // SAFETY: the window is live.
+        unsafe {
+            let _ = windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
+                self.window,
+                windows::Win32::UI::WindowsAndMessaging::HWND_TOPMOST,
+                0,
+                0,
+                0,
+                0,
+                windows::Win32::UI::WindowsAndMessaging::SWP_NOMOVE
+                    | windows::Win32::UI::WindowsAndMessaging::SWP_NOSIZE
+                    | windows::Win32::UI::WindowsAndMessaging::SWP_SHOWWINDOW,
+            );
+            let other = thread_of_window(self.window);
+            let mine = GetCurrentThreadId();
+            if other != 0 && other != mine {
+                let _ = AttachThreadInput(mine, other, true);
+            }
+            let _ = SetForegroundWindow(self.window);
+            let _ = SetFocus(self.window);
+            if other != 0 && other != mine {
+                let _ = AttachThreadInput(mine, other, false);
+            }
+        }
+        pump_for(200);
+        // the click: into the text area of the Notepad (below the tab bar of the window)
+        let mut rect = windows::Win32::Foundation::RECT::default();
+        // SAFETY: the window is live; the rectangle is a live local.
+        unsafe {
+            let _ = windows::Win32::UI::WindowsAndMessaging::GetWindowRect(self.window, &mut rect);
+        }
+        let x = rect.left + 200;
+        let y = rect.top + 140;
+        click_at(x, y);
+        pump_for(400);
+    }
+
+    /// Whether the Notepad really is the window in front (the keys only go there).
+    pub fn is_in_front(&self) -> bool {
+        // SAFETY: the call has no preconditions.
+        unsafe { GetForegroundWindow() == self.window }
+    }
+
+    /// The process of the Notepad.
+    pub fn process_id(&self) -> u32 {
+        process_of_window(self.window)
+    }
+
+    /// Where the window is, and how big the screen is (the click needs both).
+    pub fn geometry(&self) -> (i32, i32, i32, i32, i32, i32) {
+        let mut rect = windows::Win32::Foundation::RECT::default();
+        // SAFETY: the window is live; the rectangle is a live local.
+        unsafe {
+            let _ = windows::Win32::UI::WindowsAndMessaging::GetWindowRect(self.window, &mut rect);
+        }
+        // SAFETY: the calls have no preconditions.
+        let (width, height) = unsafe {
+            (
+                windows::Win32::UI::WindowsAndMessaging::GetSystemMetrics(
+                    windows::Win32::UI::WindowsAndMessaging::SM_CXSCREEN,
+                ),
+                windows::Win32::UI::WindowsAndMessaging::GetSystemMetrics(
+                    windows::Win32::UI::WindowsAndMessaging::SM_CYSCREEN,
+                ),
+            )
+        };
+        (rect.left, rect.top, rect.right, rect.bottom, width, height)
+    }
+
+    /// Types `text` on the real keyboard (the Notepad has the focus).
+    pub fn type_real(&self, text: &str) {
+        for ch in text.chars() {
+            let (vk, scan) = key_of(ch);
+            if vk == 0 {
+                continue;
+            }
+            send_real_key(vk, scan);
+            pump_for(200);
+        }
+    }
+
+    /// Presses `Ctrl+S` (save) and waits a moment.
+    pub fn save(&self) {
+        send_virtual_key(0x11, false); // the control key
+        send_real_key(0x53, 0x1D); // S
+        send_virtual_key(0x11, true);
+        pump_for(1200);
+    }
+
+    /// Presses `Ctrl+A` (select everything).
+    pub fn select_all(&self) {
+        send_virtual_key(0x11, false); // the control key
+        send_real_key(0x41, 0x1E); // A
+        send_virtual_key(0x11, true);
+        pump_for(400);
+    }
+
+    /// The text of the file: what the Notepad saved.
+    pub fn what_was_saved(&self) -> String {
+        std::fs::read_to_string(&self.file).unwrap_or_default()
+    }
+
+    /// Closes the Notepad.
+    pub fn close(&mut self) {
+        // SAFETY: the window is live.
+        unsafe {
+            let _ = windows::Win32::UI::WindowsAndMessaging::PostMessageW(
+                self.window,
+                WM_CLOSE,
+                WPARAM(0),
+                LPARAM(0),
+            );
+        }
+        let _ = self.child.kill();
+        pump_for(300);
+    }
+}
+
+/// The thread that owns a window (its input queue is the one that gets the keys).
+fn thread_of_window(hwnd: HWND) -> u32 {
+    // SAFETY: the call has no preconditions.
+    unsafe { GetWindowThreadProcessId(hwnd, None) }
+}
+
+/// The first top level window whose title has `part` in it.
+fn wait_for_a_window_whose_title_has(part: &str, timeout_ms: u64) -> Option<HWND> {
+    let end = std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
+    while std::time::Instant::now() < end {
+        if let Some(hwnd) = find_a_window_whose_title_has(part) {
+            return Some(hwnd);
+        }
+        pump_for(200);
+    }
+    None
+}
+
+fn find_a_window_whose_title_has(part: &str) -> Option<HWND> {
+    let mut found: Option<HWND> = None;
+    // the callback reads the part out of this thread's memory
+    TITLE_PART.with(|p| *p.borrow_mut() = part.to_string());
+    // SAFETY: the pointer is a live local for the whole enumeration.
+    unsafe {
+        let _ = EnumWindows(
+            Some(find_by_title),
+            LPARAM((&mut found as *mut Option<HWND>) as isize),
+        );
+    }
+    found
+}
+
+thread_local! {
+    static TITLE_PART: RefCell<String> = const { RefCell::new(String::new()) };
+}
+
+unsafe extern "system" fn find_by_title(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    // SAFETY: the pointer was made from a live local in `find_a_window_whose_title_has`.
+    let slot = unsafe { &mut *(lparam.0 as *mut Option<HWND>) };
+    let mut buffer = [0u16; 512];
+    // SAFETY: the buffer is live and large enough for the title.
+    let len = unsafe { GetWindowTextW(hwnd, &mut buffer) };
+    if len > 0 {
+        let title = String::from_utf16_lossy(&buffer[..len as usize]);
+        let wanted = TITLE_PART.with(|p| p.borrow().clone());
+        if !wanted.is_empty() && title.contains(&wanted) {
+            *slot = Some(hwnd);
+            return BOOL(0);
+        }
+    }
+    BOOL(1)
+}
+
+/// A window of the host that only receives the answer of the bridge.
+///
+/// It is needed when the input method lives in **another process** (the real Notepad): the answer of the bridge comes
+/// to the window the request names.
+pub struct ReplyWindow {
+    window: FocusWindow,
+}
+
+impl ReplyWindow {
+    /// Opens the window.
+    pub fn open() -> Option<Self> {
+        FocusWindow::open().ok().map(|window| Self { window })
+    }
+
+    /// The handle of the window.
+    pub fn hwnd(&self) -> HWND {
+        self.window.hwnd
+    }
+
+    /// Asks the bridge of the input method (wherever it is) and returns its answer.
+    pub fn ask(&self, payload: &str) -> Option<String> {
+        ask_the_bridge(self.window.hwnd, payload)
+    }
+}
+
+/// The process that owns a window.
+pub fn process_of_window(hwnd: HWND) -> u32 {
+    let mut pid = 0u32;
+    // SAFETY: the call has no preconditions; the out parameter is a live local.
+    unsafe {
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+    }
+    pid
+}
+
+/// Clicks the mouse at a point of the screen: the click is what gives the foreground to a background process.
+fn click_at(x: i32, y: i32) {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        INPUT_MOUSE, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEINPUT,
+    };
+    // The cursor goes to the point in **pixels** (the normalized coordinates of SendInput would need the size of the
+    // screen, and the virtual screen may start somewhere else).
+    // SAFETY: the call has no preconditions.
+    unsafe {
+        let _ = windows::Win32::UI::WindowsAndMessaging::SetCursorPos(x, y);
+    }
+    pump_for(100);
+    let press = INPUT {
+        r#type: INPUT_MOUSE,
+        Anonymous: INPUT_0 {
+            mi: MOUSEINPUT {
+                dx: 0,
+                dy: 0,
+                mouseData: 0,
+                dwFlags: MOUSEEVENTF_LEFTDOWN,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    let release = INPUT {
+        r#type: INPUT_MOUSE,
+        Anonymous: INPUT_0 {
+            mi: MOUSEINPUT {
+                dx: 0,
+                dy: 0,
+                mouseData: 0,
+                dwFlags: MOUSEEVENTF_LEFTUP,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    // SAFETY: the inputs are live locals of the right size.
+    unsafe {
+        let _ = SendInput(
+            &[press, release],
+            std::mem::size_of::<INPUT>() as i32,
+        );
+    }
+    pump_for(200);
 }
 
 /// The window procedure of the host: it asks TSF about every key, the way every application does.
@@ -646,7 +943,13 @@ pub fn key_of(ch: char) -> (u32, u32) {
             ];
             (code, SCANS[(ch as usize) - ('a' as usize)])
         }
-        '0'..='9' => (ch as u32 - '0' as u32 + 0x30, 0x0B + (ch as u32 - '0' as u32)),
+        // the scan codes of the digits: '1' is 0x02, ..., '9' is 0x0A, '0' is 0x0B. The scan code decides which key the
+        // system sees: 0x0C is the minus key, so a wrong number here types a minus instead of a digit.
+        '1'..='9' => (
+            ch as u32 - '0' as u32 + 0x30,
+            0x02 + (ch as u32 - '0' as u32),
+        ),
+        '0' => (0x30, 0x0B),
         ' ' => (0x20, 0x39),
         _ => (0, 0),
     }
@@ -763,6 +1066,28 @@ impl EditHost {
         Ok(Self { window, edit })
     }
 
+    /// Activates the profile of this product (the zh-CN one) for this thread.
+    ///
+    /// The system only makes the text service the input processor of a thread when the profile of its language is
+    /// active. Without this the measurement depends on the state of the desktop of the user - the language bar may
+    /// have another input method in front - and the drive measures nothing at all.
+    pub fn activate_our_profile(&self) -> windows::core::Result<()> {
+        let profiles: ITfInputProcessorProfileMgr = unsafe {
+            CoCreateInstance(&CLSID_TF_InputProcessorProfiles, None, CLSCTX_INPROC_SERVER)
+        }?;
+        // SAFETY: the profile manager is live; the ids are valid references.
+        unsafe {
+            profiles.ActivateProfile(
+                TF_PROFILETYPE_INPUTPROCESSOR,
+                LANG_ZH_CN,
+                &CLSID_PIME,
+                &PROFILE_ZH,
+                None,
+                TF_IPSINK_FLAG_ACTIVE,
+            )
+        }
+    }
+
     /// Takes the keyboard focus of the edit control, and says whether it got it.
     ///
     /// The focus of the desktop is a scarce resource: Windows does not hand it to every process that asks. The test
@@ -801,10 +1126,38 @@ impl EditHost {
         false
     }
 
+    /// The caret of the application: the start and the end of its selection (the way the application sees it).
+    pub fn read_selection(&self) -> String {
+        let mut start = 0u32;
+        let mut end = 0u32;
+        // EM_GETSEL (0x00B0): the start and the end of the selection of the control, in characters.
+        // SAFETY: the control is live; the two numbers are live locals for the call.
+        let ok = unsafe {
+            SendMessageW(
+                self.edit,
+                0x00B0,
+                WPARAM((&mut start as *mut u32).cast::<usize>() as usize),
+                LPARAM((&mut end as *mut u32).cast::<usize>() as isize),
+            )
+        };
+        if ok.0 == 0 {
+            return "<the control did not answer>".to_string();
+        }
+        format!("{start}..{end}")
+    }
+
     /// Whether the edit control has the keyboard focus right now.
     pub fn has_the_focus(&self) -> bool {
         // SAFETY: the calls have no preconditions.
         unsafe { GetForegroundWindow() == self.window.hwnd && GetFocus() == self.edit }
+    }
+
+    /// Presses `Ctrl+A` (select everything).
+    pub fn select_all(&self) {
+        send_virtual_key(0x11, false); // the control key
+        send_real_key(0x41, 0x1E); // A
+        send_virtual_key(0x11, true);
+        pump_for(400);
     }
 
     /// The text of the edit control, the way an application reads it.
@@ -830,6 +1183,26 @@ impl EditHost {
             send_real_key(vk, scan);
             pump_for(150);
         }
+    }
+
+    /// The state of the modifier keys of the keyboard right now.
+    ///
+    /// A modifier that is down makes every key a chord: the measurement would type `Ctrl+W` instead of `w`, and the
+    /// document would stay empty - a measurement of the modifier, not of the input method.
+    pub fn modifier_state(&self) -> String {
+        let mut out = String::new();
+        for (name, vk) in [
+            ("shift", 0x10),
+            ("ctrl", 0x11),
+            ("alt", 0x12),
+            ("lwin", 0x5B),
+            ("rwin", 0x5C),
+        ] {
+            // SAFETY: the call has no preconditions.
+            let down = unsafe { GetAsyncKeyState(vk as i32) } < 0;
+            out.push_str(&format!("{name}={} ", if down { "down" } else { "up" }));
+        }
+        out
     }
 
     /// Presses `Ctrl+F12` on the real keyboard: the chord that switches the input mode of the product.
@@ -1317,9 +1690,43 @@ impl Drop for LiveHost {
     }
 }
 
+/// Releases every modifier key of the keyboard.
+///
+/// The drives press chords (Ctrl+F12, Ctrl+A, Ctrl+S) with `SendInput`. A modifier that goes down and never comes up
+/// - because the drive was interrupted, or because the process died in between - stays down for **the whole machine**:
+/// every key of the user then behaves as if that key were held (the user of the machine sees it as "the input is
+/// broken"). Nothing of that kind may survive a drive.
+pub fn release_every_modifier() {
+    for vk in [0x10, 0x11, 0x12, 0x5B, 0x5C] {
+        send_virtual_key(vk, true);
+    }
+    // the modifiers that have a key of their own on the keyboard
+    for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5] {
+        send_virtual_key(vk, true);
+    }
+}
+
+/// The guard that releases the modifiers of the keyboard when the drive ends, whatever the way it ends.
+pub struct ModifiersReleased;
+
+impl Drop for ModifiersReleased {
+    fn drop(&mut self) {
+        release_every_modifier();
+    }
+}
+
 /// Sends a virtual key (without a scan code): the modifiers go this way.
+///
+/// **No `KEYEVENTF_EXTENDEDKEY`**: that flag means "the right-hand key of the pair". A modifier that goes down as the
+/// extended key and comes up as the normal one leaves the *right* Ctrl (or Shift, or Alt) pressed **for the whole
+/// machine**: every key of the user then behaves as a chord (the user sees it as "the input is broken"), and the
+/// measurement types `Ctrl+W` instead of `w`.
 fn send_virtual_key(vk: u32, up: bool) -> bool {
-    let flags = if up { KEYEVENTF_KEYUP } else { KEYEVENTF_EXTENDEDKEY };
+    let flags = if up {
+        KEYEVENTF_KEYUP
+    } else {
+        KEYBD_EVENT_FLAGS(0)
+    };
     let input = INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {

@@ -772,6 +772,12 @@ impl LaserUi {
             Role::Glow => {
                 self.on_mouth = false;
                 self.hover_since = None;
+                // The mouse left the mouth: the panel that hangs on it goes away too (the user asked for it on
+                // 2026-11-20: "the floating window should disappear when there is no hover on the mouth, to avoid
+                // occlusion - that is also one of the reasons the mouth exists, to keep the floating window small").
+                // The clock of the closing starts here: without it the panel waited for a leave of the panel that
+                // never came (the mouse never entered it), and stayed on the screen over the code.
+                self.left_at = Some(now_ms());
             }
             Role::Panel => {
                 self.on_panel = false;
@@ -827,7 +833,10 @@ impl LaserUi {
             model.panel.reveal = 0.0;
         }
         self.place_panel();
-        self.on_panel = true;
+        // The mouse is on the **mouth** (that is why the panel opens), not on the panel: saying otherwise made the
+        // panel believe the mouse was still on it, and it then never closed - it stayed on the screen over the code
+        // (the user reported it on 2026-11-20). The panel window says where the mouse really is.
+        self.on_panel = false;
         self.left_at = None;
         if let Some(panel) = &self.panel {
             panel.show();
@@ -1343,6 +1352,24 @@ mod tests {
     fn the_panel_is_closed_until_the_user_asks_for_it() {
         let ui = on_screen();
         assert!(!ui.borrow().panel_is_open(), "the panel does not show itself");
+    }
+
+    /// The mouse left the mouth: the panel that hangs on it goes away.
+    ///
+    /// The user asked for it on 2026-11-20: the floating window must not stay on the screen when there is no hover on
+    /// the mouth - it would cover the code (that is also one of the reasons the mouth exists: to keep the floating
+    /// window small). Before the fix the clock of the closing only started when the mouse left the **panel**, and the
+    /// mouse that never entered the panel left it waiting for ever.
+    #[test]
+    fn the_panel_goes_away_when_the_mouse_leaves_the_mouth() {
+        let ui = on_screen();
+        ui.borrow_mut().open_panel();
+        assert!(ui.borrow().panel_is_open(), "the panel is open");
+        // the mouse leaves the mouth (it never entered the panel)
+        ui.borrow_mut().handle(Role::Glow, USER_KEY, GlassEvent::Leave);
+        std::thread::sleep(std::time::Duration::from_millis(HOVER_CLOSE_MS + 80));
+        ui.borrow_mut().tick();
+        assert!(!ui.borrow().panel_is_open(), "the panel went away");
     }
 
     /// The user works in the application again (he clicked somewhere else and types): the panel of the settings goes

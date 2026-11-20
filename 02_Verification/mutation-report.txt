@@ -1,4 +1,4 @@
-# The red-green check of 2026-11-19T16:35:38.770Z
+# The red-green check of 2026-11-20T07:35:11.024Z
 # 65 mutations of the implementation; every one of them is restored right after it is applied.
 
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
@@ -14,8 +14,8 @@ CAUGHT budget-limit [UT-035 / FR-023] the budget of the AI is refused when it is
 CAUGHT grants-mismatch [UT-029 / FR-016] a grant is refused when the provider does not match
 CAUGHT keymap-mode-chord [D-95（Ctrl+F12 = 模式切换）] Ctrl+F12 switches between the code input and the natural language input
 CAUGHT keymap-alt-f1 [D-95（Ctrl+F12 = 模式切换）] Alt+F1 switches the input mode as well
-CAUGHT controller-default-mode [FR-005 / UT-003] the factory mode is the code input
-CAUGHT controller-secure-chord [FR-004 / UT-005] the mode key stays with the host in a password field
+STALE  controller-default-mode [FR-005 / UT-003] the factory mode is the code input: the text to break is not in the file any more
+STALE  controller-secure-chord [FR-004 / UT-005] the mode key stays with the host in a password field: the text to break is not in the file any more
 CAUGHT laser-demo-action [D-90~D-92（多 Agent 演示）] a click on the row of the demonstration asks for the demonstration
 CAUGHT demo-body-length [D-90~D-92（多 Agent 演示）] every agent writes exactly twenty characters
 CAUGHT demo-header-tab [D-90~D-92（多 Agent 演示）] the header of a domain starts with a real tab
@@ -67,7 +67,7 @@ CAUGHT x86-the-non-hex-character-is-refused [FR-052（机器码：只编码确�
 CAUGHT transaction-the-content-hash-is-part-of-the-baseline [IT-031（文档变了就是陈旧的）/ ST-027] the content hash is part of the baseline the plan was reviewed against
 CAUGHT x86-a-high-register-needs-the-rex-prefix [FR-052（机器码：只编码确定的形式）/ UT-023] a register above r7 needs the REX prefix, otherwise the bytes are another instruction
 
-the run checked 65 mutations: 65 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
+the run checked 63 mutations: 63 caught, 0 missed, 0 unknown (the suite did not run), 2 stale
 
 by the design entry (what the round says about each requirement):
   D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
@@ -81,8 +81,8 @@ by the design entry (what the round says about each requirement):
   D-95（Ctrl+F12 = 模式切换）: 2 caught
   D-97 / D-120（剪贴板）: 1 caught
   FR-001 / UT-011: 1 caught
-  FR-004 / UT-005: 3 caught
-  FR-005 / UT-003: 1 caught
+  FR-004 / UT-005: 2 caught, 1 stale
+  FR-005 / UT-003: 1 stale
   FR-041 / D-97（D-120）（剪贴板工具的那一行）: 1 caught
   FR-041 / UT-055: 1 caught
   FR-041 / UT-055（悬浮框与它的行）: 3 caught
