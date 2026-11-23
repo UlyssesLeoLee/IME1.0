@@ -124,33 +124,43 @@ function restoreLeftovers() {
       //   one, so it stays; the copy of the run is written aside instead of being copied over it (a restore that quietly
       //   throws away the work of the developer is worse than a broken file).
       //
-      // The backup therefore carries **both** versions: `<name>` is the original, `<name>.mutated` is what the run
-      // wrote. Without the second one the two cases look the same.
-      const mutatedPath = `${backup}.mutated`;
-      let current = null;
-      try { current = fs.readFileSync(target, 'utf8'); } catch { /* the target is gone */ }
+      // The backup carries **both** versions (see `backup`): without the second one the two cases look the same.
+      let original = null;
       let mutated = null;
-      try { mutated = fs.readFileSync(mutatedPath, 'utf8'); } catch { /* an old backup without it */ }
+      try {
+        const stored = JSON.parse(fs.readFileSync(backup, 'utf8'));
+        original = stored.original;
+        mutated = stored.mutated;
+      } catch {
+        // a backup of an older run (the plain original): the mutation is unknown, so the only safe reading is
+        // "the file was changed by somebody else" - their version stays.
+        try { original = fs.readFileSync(backup, 'utf8'); } catch { /* unreadable: reported below */ }
+      }
+      let current = null;
+      try { current = fs.readFileSync(target, 'utf8'); } catch { /* the target is gone: the backup is the only copy left */ }
+      if (original === null) {
+        // the backup cannot be read: leave everything as it is and say so
+        kept.push({target, aside: backup});
+        continue;
+      }
       if (current !== null && mutated !== null && current === mutated) {
         // the run was killed before the restore: the original goes back.
-        fs.copyFileSync(backup, target);
+        fs.writeFileSync(target, original, 'utf8');
         fs.unlinkSync(backup);
-        fs.unlinkSync(mutatedPath);
         touch(target);
         restored++;
         continue;
       }
-      const differs = current === null || current !== fs.readFileSync(backup, 'utf8');
-      if (differs) {
+      if (current === null || current !== original) {
+        // the file on the disk is neither the original nor the mutation: the developer is working in the tree and
+        // their version stays.
         const aside = `${backup}.kept`;
         fs.renameSync(backup, aside);
-        if (fs.existsSync(mutatedPath)) fs.renameSync(mutatedPath, `${aside}.mutated`);
         kept.push({target, aside});
         continue;
       }
-      fs.copyFileSync(backup, target);
+      fs.writeFileSync(target, original, 'utf8');
       fs.unlinkSync(backup);
-      if (fs.existsSync(mutatedPath)) fs.unlinkSync(mutatedPath);
       touch(target);
       restored++;
     } catch {
@@ -172,26 +182,25 @@ function touch(file) {
 
 function backup(relative, original, mutated) {
   fs.mkdirSync(BACKUP_DIR, {recursive: true});
-  // The backup is written **atomically**: a temporary file and a rename. A kill in the middle of the write would
-  // otherwise leave a truncated backup, and the next run would copy it over a good source file (D-178).
+  // **Both** versions go into one file and it is renamed **once**: two renames would leave a backup without its
+  // second version if the run is killed in between, and the next run could not tell the two cases apart
+  // (a killed run from a mutation against a file the developer edited). One atomic rename, no window (D-178).
   const name = path.join(BACKUP_DIR, backupName(relative));
   const temporary = `${name}.tmp`;
-  fs.writeFileSync(temporary, original);
+  fs.writeFileSync(temporary, JSON.stringify({original: original.toString('utf8'), mutated: mutated.toString('utf8')}));
   fs.renameSync(temporary, name);
-  // The bytes of the mutation go with it: the next run has to tell "the run was killed before the restore" from
-  // "the developer edited the file" (see `restoreLeftovers`).
-  const mutatedTemporary = `${name}.mutated.tmp`;
-  fs.writeFileSync(mutatedTemporary, mutated);
-  fs.renameSync(mutatedTemporary, `${name}.mutated`);
 }
 
 function undoBackup(relative) {
   const file = path.join(BACKUP_DIR, backupName(relative));
   if (!fs.existsSync(file)) return;
-  fs.copyFileSync(file, path.join(root, relative));
+  try {
+    const stored = JSON.parse(fs.readFileSync(file, 'utf8'));
+    fs.writeFileSync(path.join(root, relative), stored.original, 'utf8');
+  } catch {
+    fs.copyFileSync(file, path.join(root, relative));
+  }
   fs.unlinkSync(file);
-  const mutated = `${file}.mutated`;
-  if (fs.existsSync(mutated)) fs.unlinkSync(mutated);
 }
 
 // The leftovers of a killed run are put back **before anything else**, even before a listing: a run that only lists
@@ -222,6 +231,12 @@ for (const item of cases) {
 
 const wanted = only ? only.split(',').map(prefix => prefix.trim()).filter(Boolean) : [];
 const selected = wanted.length ? cases.filter(item => wanted.some(prefix => item.id.startsWith(prefix))) : cases;
+// A prefix that matches **no** case is a mistake, not a round that checks nothing: the report must not be overwritten
+// with an empty round and the exit code must not be 0 (a round that checked nothing is not a green round).
+if (selected.length === 0) {
+  console.error(`no case matches ${wanted.join(', ')}: nothing was checked`);
+  process.exit(5);
+}
 if (!args.includes('--append')) {
   // The header names the **selected** count: a partial round must not look like a whole one in the file alone (the
   // note used to go to the console only, so a reader of the committed report could not tell).

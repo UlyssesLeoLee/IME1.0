@@ -397,7 +397,9 @@ impl Inner {
             &self.settings,
             &self.effort,
             &self.skin,
-            self.controller.input_mode(),
+            // The row shows the mode that is really in force: in a password field nothing is eaten, whatever the
+            // session's mode is, and the panel must not say two different things at once.
+            self.controller.effective_input_mode(),
         )
     }
 

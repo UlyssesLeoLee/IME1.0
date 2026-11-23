@@ -8,8 +8,7 @@
 // holds a freshly written executable. Both make the gate red in a way that looks like a product defect and is not.
 //
 // This script measures the three things that decide whether the release can go out, and says what to do about each
-// one. It changes nothing: it only reads (the one exception is a rename attempt on a temporary copy of the installer,
-// never on the file itself).
+// one. It changes nothing: it only reads (the one thing it opens for writing is the installer, and it writes no byte).
 //
 // Exit code 0 when everything is in place, 1 when something is missing (the text says what).
 const fs = require('fs');
@@ -32,7 +31,11 @@ const counter = (name) => {
   const r = spawnSync('powershell', ['-NoProfile', '-Command', `(Get-Counter '${name}').CounterSamples[0].CookedValue`], {
     encoding: 'utf8',
   });
-  const value = Number((r.stdout || '').trim());
+  const text = (r.stdout || '').trim();
+  // An empty or non-numeric answer is **not** a number: `Number('')` is 0, and a limit of 0 MB would say "0 MB free of
+  // 0 MB" instead of "the counter could not be read" (D-178).
+  if (!/^-?\d+(\.\d+)?$/.test(text)) return null;
+  const value = Number(text);
   return Number.isFinite(value) ? value : null;
 };
 const limit = counter('\\Memory\\Commit Limit');
@@ -75,6 +78,8 @@ if (!fs.existsSync(installer)) {
 const logPath = path.join(root, '02_Verification', 'installer-build.log');
 if (!fs.existsSync(logPath)) {
   check(false, 'the build transcript exists');
+} else if (!fs.existsSync(installer)) {
+  check(false, 'the build transcript describes the artefact that is on the disk', 'the installer is not on the disk');
 } else {
   const log = fs.readFileSync(logPath, 'utf8');
   const size = fs.statSync(installer).size;

@@ -52,7 +52,8 @@ impl WritingMode {
             WritingMode::Natural => LaserTheme::MOUTH_SLIT_NATURAL,
         };
         // The core of the mouth of the human is pale: every agent writes in a vivid colour, so a pale core can never
-        // be an agent's mouth (the rule is checked here, in the production code, not only in a test).
+        // be an agent's mouth. The check is a `debug_assert`: it is there for the builds that carry the tests (and it
+        // must not panic in the text service of a user, which is why it is not a plain `assert!`).
         debug_assert!(
             colour.saturation() <= HUMAN_SATURATION_MAX,
             "the colour of the human is pale: it is {}",
@@ -147,10 +148,11 @@ pub const HUMAN_COLOURS: [Rgb; 2] = [
     LaserTheme::MOUTH_SLIT_NATURAL,
 ];
 
-/// How far the colour of an agent has to be from the **pale blue** of the human (in degrees).
+/// How far the colour of an agent sits from the **pale blue** of the human (in degrees).
 ///
-/// The pale blue was already the reserved place of the human (an agent that looks like it would be mistaken for the
-/// keyboard); the amber does not need a place of its own, because the saturation keeps it apart from every agent.
+/// This is not a rule that the code enforces: it is what the greedy choice of the circle happens to give (the pale
+/// blue was the reserved place of the human before the natural language input got a colour of its own). The rule
+/// that **is** enforced is the saturation: the core of the human is pale, the core of an agent is vivid.
 pub const HUMAN_HUE_GAP: f64 = 45.0;
 
 /// The saturation of the **core** of the mouth of the human: it is **pale**.
@@ -159,11 +161,6 @@ pub const HUMAN_HUE_GAP: f64 = 45.0;
 /// never be an agent's mouth. The halo around the core is light, not identity: it is drawn faint and it does not say
 /// who is writing.
 pub const HUMAN_SATURATION_MAX: f64 = 0.4;
-
-/// The saturation of the colour of the human: it is **pale**.
-fn saturation_of(colour: Rgb) -> f64 {
-    colour.saturation()
-}
 
 /// One source of light: a mouth on the edge of the screen that belongs to one speaker.
 #[derive(Clone, Debug, PartialEq)]
@@ -584,9 +581,9 @@ mod tests {
         // the colours of the human are pale: the mouth of the keyboard is never a strong colour
         for colour in HUMAN_COLOURS {
             assert!(
-                saturation_of(colour) <= PALE,
+                colour.saturation() <= PALE,
                 "the colour of the human is pale: it is {}",
-                saturation_of(colour)
+                colour.saturation()
             );
         }
         let mut registry = MouthRegistry::new();
@@ -601,9 +598,9 @@ mod tests {
             assert!(!source.is_user, "this is the mouth of an agent");
             // every agent is vivid: it can never be mistaken for the pale mouth of the human
             assert!(
-                saturation_of(source.colour) >= VIVID,
+                source.colour.saturation() >= VIVID,
                 "the colour of the agent {index} is not vivid enough: {}",
-                saturation_of(source.colour)
+                source.colour.saturation()
             );
             // and it is far from the pale blue, the colour the human had before the round
             let distance = angle_distance(hue(source.colour), hue(LaserTheme::MOUTH_SLIT));
