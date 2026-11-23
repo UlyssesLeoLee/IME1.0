@@ -669,11 +669,24 @@ impl<'a> Canvas<'a> {
     /// away around it.
     pub fn fill_shadow(&mut self, rect: PixelRect, radius: i32, colour: Rgb, shadow: Shadow) {
         let blur = shadow.blur.max(1) as f64;
+        // The solid part of the shadow is the panel itself: the same outline, the same corners. The glass of the
+        // panel covers it completely, so nothing of it can show at the corners of the panel (its coverage there is
+        // zero). Measured from a shape that is moved or grown, the corners of the panel fell inside the shadow and
+        // showed through as a patch - the semi-transparent spikes the user reported on 2026-11-23.
+        // The shadow is a little squarer than the glass, but with the **same corner centres**: the glass of the
+        // panel is translucent, so its corners only cover the picture partly, and a shadow that reaches past them
+        // shows as a small dark square (the semi-transparent spikes the user reported on 2026-11-23).
+        //
+        // A rounded rectangle with the radius r has its corner centres at the distance r from the corners of the
+        // rectangle, so the rectangle whose corner centres are the ones of the glass is the glass shrunk by the
+        // difference of the radii.
+        let shadow_radius = (radius.max(0) as f64 - blur * 2.0 / 3.0).max(0.0);
+        let inset = radius.max(0) - shadow_radius.round() as i32;
         let shape = PixelRect::new(
-            rect.left + shadow.offset_x,
-            rect.top + shadow.offset_y,
-            rect.right + shadow.offset_x,
-            rect.bottom + shadow.offset_y,
+            rect.left + inset,
+            rect.top + inset,
+            rect.right - inset,
+            rect.bottom - inset,
         );
         let grown = PixelRect::new(
             shape.left - blur as i32,
@@ -681,18 +694,49 @@ impl<'a> Canvas<'a> {
             shape.right + blur as i32,
             shape.bottom + blur as i32,
         );
+        // The shadow falls where the offset puts it, but it is measured from the outline of the panel: the penumbra
+        // is the shadow of the panel, not of a bigger shape.
+        let fallen = PixelRect::new(
+            shape.left + shadow.offset_x,
+            shape.top + shadow.offset_y,
+            shape.right + shadow.offset_x,
+            shape.bottom + shadow.offset_y,
+        );
+        let grown = PixelRect::new(
+            fallen.left - blur as i32,
+            fallen.top - blur as i32,
+            fallen.right + blur as i32,
+            fallen.bottom + blur as i32,
+        );
         for y in grown.top.max(0)..grown.bottom.min(self.height) {
             for x in grown.left.max(0)..grown.right.min(self.width) {
-                let distance = distance_to_rounded_box(
+                // how far the pixel is outside the outline of the panel
+                let outside = distance_to_rounded_box(
                     x as f64 + 0.5,
                     y as f64 + 0.5,
                     shape.left as f64,
                     shape.top as f64,
                     shape.right as f64,
                     shape.bottom as f64,
-                    radius.max(0) as f64,
+                    shadow_radius,
                 );
-                let alpha = shadow.strength * shadow_coverage(distance, blur);
+                // The shadow is the panel itself, moved a little: inside the panel the glass covers it, so only the
+                // penumbra around the panel is seen. The corners of the panel are covered by neither, so the shadow
+                // may not reach them at all.
+                let alpha = if outside > 0.0 {
+                    let distance = distance_to_rounded_box(
+                        x as f64 + 0.5,
+                        y as f64 + 0.5,
+                        fallen.left as f64,
+                        fallen.top as f64,
+                        fallen.right as f64,
+                        fallen.bottom as f64,
+                        shadow_radius,
+                    );
+                    shadow.strength * shadow_coverage(distance, blur)
+                } else {
+                    0.0
+                };
                 if alpha > 0.0 {
                     self.blend(x, y, colour, alpha);
                 }
@@ -1269,6 +1313,47 @@ mod tests {
         assert!(shadow_coverage(0.0, 10.0) > shadow_coverage(5.0, 10.0));
         assert!(shadow_coverage(5.0, 10.0) > shadow_coverage(20.0, 10.0));
         assert_eq!(shadow_coverage(20.0, 10.0), 0.0);
+    }
+
+    /// The shadow of a rounded panel must not stick out at the four corners (the user saw semi-transparent spikes
+    /// around the corners of the floating window on 2026-11-23).
+    #[test]
+    fn the_shadow_of_a_rounded_panel_does_not_stick_out_at_its_corners() {
+        let mut pixels = vec![0u8; 120 * 120 * 4];
+        let panel = PixelRect::new(20, 20, 100, 100);
+        {
+            let mut canvas = Canvas::new(120, 120, &mut pixels).expect("the buffer fits");
+            canvas.fill_shadow(
+                panel,
+                12,
+                Rgb::new(0, 0, 0),
+                Shadow {
+                    blur: 12,
+                    offset_x: 0,
+                    offset_y: 5,
+                    strength: 0.55,
+                },
+            );
+            // the glass of the panel, the way the floating window is painted
+            canvas.fill_rounded(panel, 12, Rgb::new(40, 40, 40), 0.8);
+        }
+        // The four corners of the panel: the glass does not reach there, so the shadow may only be faint
+        // there (it used to be a hard patch that showed as a spike around the corners of the floating window).
+        for (x, y) in [(20, 20), (99, 20), (20, 99), (99, 99)] {
+            let index = ((y as usize) * 120 + x as usize) * 4;
+            let alpha = pixels[index + 3];
+            assert!(
+                alpha <= 36,
+                "the corner ({x}, {y}) must not carry a patch of shadow (alpha {alpha})"
+            );
+        }
+        // The shadow under the straight edge is untouched: it is at its strongest right below the panel.
+        let below = ((101 * 120) + 60) * 4;
+        assert!(
+            pixels[below + 3] > 0,
+            "the shadow under the panel is still there (alpha {})",
+            pixels[below + 3]
+        );
     }
 
     #[test]
