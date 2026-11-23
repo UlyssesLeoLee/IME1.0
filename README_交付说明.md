@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，860 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，861 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 

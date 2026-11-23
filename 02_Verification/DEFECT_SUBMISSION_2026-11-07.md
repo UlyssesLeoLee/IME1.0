@@ -491,6 +491,25 @@ D-131 只是文档口径。①②③④⑤ 各组互不影响，**你可以只�
   **B** 做成全局（放进设置文件或一个进程内的全局状态）⇒ 需要定义「谁写的模式算」「重启后怎么办」。
 - **影响**：A 只改文档；B 要改 `tip/lifecycle.rs` 与模式的存放位置，并处理「不落盘」这条保证。
 
+**D-180 · 机器上的 360 杀软把刚构建出来的二进制隔离了 ⇒ 门禁的红是机器的红，不是代码的红（高 · 待你处置）**
+- **症状（2026-11-24 实测）**：整轮变异实录里 **11 条 pime-core 用例连续「套件没跑起来（exit 101）」**，
+  同一轮 pime-tsf 的用例全部 CAUGHT；交付用的 0.3.3 安装包**构建后被从 `dist/` 里删掉**，`--dry-run` 起不来进程。
+- **根因**：`ld.exe: cannot open output file ...: Permission denied`（那个 .exe 的 ACL 被改成只读给当前用户，属主还是本人）
+  ⇒ 360 主动防御（`ZhuDongFangYu`）给新链接的二进制套壳；权限放回去后**执行又被拒**（`os error 5`），
+  文件随后消失；**复制到别处的同一份文件可以正常执行** ⇒ 360 认的是它看过的那条路径/那份内容。
+  **对照组**：同目录的 0.3.1 / 0.3.2 安装包执行正常 ⇒ 判的是今天这个 0.3.3 构建。
+- **我已做的（工具侧，可复核）**：新增 `01_Source/scripts/cargo-suite.js` —— 撞上这两种机器故障时，
+  先放回被锁文件的写权限再跑；还不行就把测试二进制**复制到临时目录**再跑（同一批测试、同一批断言）。
+  `mutation-check.js` 与 `run-all.js` 都走它。实测：原来判 unknown 的 `nema-tab` 用例改完后是**真 CAUGHT**。
+  「套件没跑起来」仍然只记 **unknown**，绝不记 caught。
+- **要你做的（我做不了）**：① **退掉 360 托盘**（`360tray` / `ZhuDongFangYu`；`Stop-Process` 杀不掉，受保护进程），
+  或把 `E:\IME1.0` 与 `C:\cargo-target-ime` 加进它的信任区，**或重启机器**；
+  ② **关掉 Edge/Chrome 腾提交额度**（本机已提交约 23.8 GB / 上限约 23.8 GB，页面文件固定 8 GB 且
+  `AutomaticManagedPagefile=False`）⇒ 新链接的可执行文件会 `os error 1455`。
+- **为什么现在提**：用户规矩是「红绿测试确保所有功能正常之后再上一版」。**v0.3.3 没有发布**：
+  功能部分（Rust / JS / TSF / 变异轮）能在这台机器上跑通，但**交付产物无法自证**（构建实录缺「大小 + 摘要」那段 ⇒
+  三道 claims 校验把产物判为**未验证**）。详见 `FRAMEWORK_GAPS.md` §5.39。
+
 
 ---
 
@@ -500,5 +519,5 @@ D-131 只是文档口径。①②③④⑤ 各组互不影响，**你可以只�
 |---|---|
 | 每条缺陷的原始证据 | `02_Verification/FRAMEWORK_GAPS.md`，按 D 编号搜；本轮的新登记在 §5.26~§5.29 |
 | 门禁跑得干不干净 | `02_Verification/run-all-2026-11-04.log`（本轮两轮都 exit 0，零 FAIL 行） |
-| 产物与数字对不对得上 | `02_Verification/IME_FRAMEWORK_MATRIX.md` 的 `installer-claims` 块 + 仓库根目录的 `MANIFEST_SHA256.txt`（**857 条**，`update-manifest.js --check` 通过） |
+| 产物与数字对不对得上 | `02_Verification/IME_FRAMEWORK_MATRIX.md` 的 `installer-claims` 块 + 仓库根目录的 `MANIFEST_SHA256.txt`（**861 条**，`update-manifest.js --check` 通过） |
 | 缺陷提交单本身 | 本文件；改了请告诉我编号，我同步回 FRAMEWORK_GAPS 的状态列 |

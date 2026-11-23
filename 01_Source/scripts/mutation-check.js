@@ -19,6 +19,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { runCargoSuite } = require('./cargo-suite.js');
 
 const root = path.resolve(__dirname, '..', '..');
 const cases = require('./mutation-cases.js');
@@ -86,14 +87,16 @@ function runSuiteOnce(suite) {
   }
   if (suite.kind === 'rust') {
     const cwd = path.join(root, '01_Source', 'crates', suite.crate);
-    const result = spawnSync('cargo', ['test', '--quiet'], {
+    // The helper survives the scanner of the machine: it restores the write access of a binary the scanner
+    // locked and runs the test binaries from a copy when the scanner refuses to execute them (D-138). Without
+    // it, every case of a crate whose binary is quarantined ends as "the suite did not run" - the round would
+    // say nothing about the code at all.
+    const result = runCargoSuite({
+      args: ['test', '--quiet'],
       cwd,
-      encoding: 'utf8',
       env: {...RUST_ENV, ...(suite.env || {})},
-      shell: process.platform === 'win32',
-      maxBuffer: 256 * 1024 * 1024,
     });
-    return {status: result.status === null ? -1 : result.status, out: `${result.stdout || ''}${result.stderr || ''}`};
+    return {status: result.status, out: result.out, note: result.note};
   }
   throw new Error(`unknown suite kind: ${suite.kind}`);
 }
@@ -323,10 +326,12 @@ for (const item of selected) {
   fs.writeFileSync(file, mutated, 'utf8');
   let status = 0;
   let out = '';
+  let note = '';
   try {
     const run = runSuite(item.suite);
     status = run.status;
     out = run.out;
+    note = run.note || '';
   } catch (error) {
     status = -1;
     out = String(error.message || error);
@@ -369,6 +374,7 @@ for (const item of selected) {
   } else if (failedAssertion) {
     caught++;
     write(`CAUGHT ${item.id} ${anchor(item)}${item.what}`);
+    if (note) write(`note: ${item.id}: ${note}`);
     noteAnchor(item, 'caught');
   } else {
     errors.push(item.id);
@@ -386,6 +392,7 @@ for (const item of selected) {
           ? 'cargo was not on the PATH'
           : '';
     write(`ERROR ${item.id} ${anchor(item)}${item.what}  <-- the suite did not run (exit ${status}): the result is unknown${cause ? ' (' + cause + ')' : ''}`);
+    if (note) write(`note: ${item.id}: ${note}`);
     noteAnchor(item, 'unknown');
     const lines = out.split(/\r?\n/).filter(line => /error|warning: unused|no space left|os error 1\d\d|is not recognized/i.test(line)).slice(0, 3);
     for (const line of lines) console.log(`         ${line}`);

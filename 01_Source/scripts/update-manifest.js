@@ -265,6 +265,9 @@ const ADDITIONS = [
   // the preflight of the release: what is still missing before the release can go out (the commit limit of the
   // machine, the handle of the scanner on the installer, the transcript, the numbers of the documents)
   '01_Source/scripts/release-preflight.js',
+  // the cargo runs that survive the scanner of the machine: it restores the write access of a locked binary and
+  // runs the test binaries from a copy when the scanner refuses to execute them (D-138, D-180)
+  '01_Source/scripts/cargo-suite.js',
 ];
 
 const isBinary = bytes => bytes.includes(0);

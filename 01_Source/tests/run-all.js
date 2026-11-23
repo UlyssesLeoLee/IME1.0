@@ -24,6 +24,7 @@ const {spawnSync, spawn} = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const {runCargoSuite} = require('../scripts/cargo-suite.js');
 
 const tests = __dirname, src = path.resolve(tests, '..'), root = path.resolve(src, '..');
 const verification = path.join(root, '02_Verification');
@@ -134,14 +135,21 @@ if (want('fixtures')) step('golden fixtures are unchanged (compare only)', () =>
 if (want('golden')) step('golden-v0.2 cases are still present in the live fixtures', () => sh(process.execPath, [path.join(src, 'scripts', 'glue-check.js'), '--golden']));
 if (want('rust')) {
   step('Rust: cargo test --workspace', () => {
+    let last = null;
     for (let attempt = 1; attempt <= 3; attempt++) { // a freshly linked exe can fail once while Defender scans it
-      const r = spawnSync('cargo', ['test', '--workspace'], {cwd: src, encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir}});
-      process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
-      saveEvidence('rust', `${r.stdout || ''}${r.stderr || ''}`);
-      if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-      if (!CANNOT_EXECUTE.test((r.stdout || '') + (r.stderr || ''))) break;
+      // The helper restores the write access of a binary the scanner locked and runs the test binaries from a
+      // copy when the scanner refuses to execute them (D-138). The tests are the same tests either way.
+      const r = runCargoSuite({args: ['test', '--workspace'], cwd: src, env: {...process.env, CARGO_TARGET_DIR: targetDir}});
+      last = r;
+      process.stdout.write(r.out || '');
+      if (r.note) console.log(`note: ${r.note}`);
+      saveEvidence('rust', r.out || '');
+      if (r.status === 0) return {ok: true, note: ((r.out || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
+      if (!CANNOT_EXECUTE.test(r.out || '')) break;
       if (attempt < 3) sleepSync(RETRY_PAUSE_MS);
     }
+    // A test binary that could not be started at all is the machine, not the code: the step says so.
+    if (last && last.status === -1) return {ok: false, note: `the scanner of the machine blocked a test binary (${last.note || 'the binary could not be started'})`};
     return {ok: false, note: 'cargo test failed'};
   });
 } else if ((want('smoke') || want('uat-rust')) && !fs.existsSync(coreExe)) {
@@ -172,14 +180,18 @@ if (want('uat')) step('UAT on real VS Code (JavaScript engine)', () => {
 if (want('uat-rust')) step('UAT on real VS Code (Rust engine)', () => uat('rust'));
 // cargo in one of the crates that live outside the main workspace; a freshly linked exe can fail once with os error 5
 const cargoRetry = (crate, cargoArgs, extraEnv = {}, evidenceName = '') => {
+  let last = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const r = spawnSync('cargo', cargoArgs, {cwd: path.join(src, 'crates', crate), encoding: 'utf8', env: {...process.env, CARGO_TARGET_DIR: targetDir, ...extraEnv}, shell: isWin});
-    process.stdout.write(r.stdout || ''); process.stderr.write(r.stderr || '');
-    if (evidenceName) saveEvidence(evidenceName, `${r.stdout || ''}${r.stderr || ''}`);
-    if (r.status === 0) return {ok: true, note: ((r.stdout || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-    if (!CANNOT_EXECUTE.test((r.stdout || '') + (r.stderr || ''))) break;
+    const r = runCargoSuite({args: cargoArgs, cwd: path.join(src, 'crates', crate), env: {...process.env, CARGO_TARGET_DIR: targetDir, ...extraEnv}});
+    last = r;
+    process.stdout.write(r.out || '');
+    if (r.note) console.log(`note: ${r.note}`);
+    if (evidenceName) saveEvidence(evidenceName, r.out || '');
+    if (r.status === 0) return {ok: true, note: ((r.out || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
+    if (!CANNOT_EXECUTE.test(r.out || '')) break;
     if (attempt < 3) sleepSync(RETRY_PAUSE_MS);
   }
+  if (last && last.status === -1) return {ok: false, note: `the scanner of the machine blocked a test binary in crates/${crate} (${last.note || 'the binary could not be started'})`};
   return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
 };
 if (want('tsf')) {
