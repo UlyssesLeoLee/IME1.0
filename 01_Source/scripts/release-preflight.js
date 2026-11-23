@@ -73,6 +73,32 @@ if (!fs.existsSync(installer)) {
   if (writable) check(true, 'the installer can be written (the scanner holds no handle on it)');
 }
 
+// ---- 2b. the antivirus scanner and the binaries of the project ---------------------------------------------------
+// The scanner of this machine does not only hold the installer: it also refuses to execute the binaries of the
+// project (a freshly linked test binary is quarantined). A binary that cannot even start is not a test result -
+// the gate cannot be green while that is the case. This check starts one of them and says what happens.
+const targetDir = process.env.CARGO_TARGET_DIR || path.join(root, '01_Source', 'target');
+const deps = path.join(targetDir, 'debug', 'deps');
+let probe = null;
+if (fs.existsSync(deps)) {
+  const candidates = fs.readdirSync(deps)
+    .filter(name => /^pime_core-.*\.exe$/.test(name))
+    .map(name => path.join(deps, name))
+    .map(file => ({file, at: fs.statSync(file).mtimeMs}))
+    .sort((a, b) => b.at - a.at);
+  if (candidates.length) probe = candidates[0].file;
+}
+if (!probe) {
+  console.log('note the binaries of the project could not be probed (none is built on this machine)');
+} else {
+  const run = spawnSync(probe, ['--list'], {encoding: 'utf8', timeout: 60000});
+  if (run.status === null) {
+    check(false, 'the scanner lets the binaries of the project run', `${path.basename(probe)} could not be started (${run.error ? run.error.code || run.error.message : 'no exit code'})`);
+  } else {
+    check(true, 'the scanner lets the binaries of the project run', `${path.basename(probe)} started`);
+  }
+}
+
 // ---- 3. the build transcript and the artefact -------------------------------------------------------------------
 // The transcript has to describe the artefact that is on the disk (the evidence cross-check compares the two).
 const logPath = path.join(root, '02_Verification', 'installer-build.log');

@@ -268,6 +268,9 @@ const ADDITIONS = [
   // the cargo runs that survive the scanner of the machine: it restores the write access of a locked binary and
   // runs the test binaries from a copy when the scanner refuses to execute them (D-138, D-180)
   '01_Source/scripts/cargo-suite.js',
+  // the numbers of the documents are written from the products on the disk (the size and the digest of the
+  // installer, the test counts of the logs) - nothing is typed in by hand
+  '01_Source/scripts/refresh-claims.js',
 ];
 
 const isBinary = bytes => bytes.includes(0);

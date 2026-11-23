@@ -2323,6 +2323,19 @@ laser.set_input_mode`）**没有单元测试**——`Inner` 需要真的 `ITfThr
 - 变异轮与门禁对「二进制被隔离」的判定没有放松：套件没跑起来仍然记 **unknown**，**绝不记 caught**
   （否则红绿轮会「为错误的理由」变绿）。
 
+**这一轮的结果**：**77 条变异用例全部被抓到**（**0 missed / 0 stale**）。
+
+- 完整一轮的实录：`the run checked 77 mutations: 68 caught, 0 missed, 9 unknown (the suite did not run), 0 stale`。
+  那 9 条 unknown **全是机器的额度见底**（最后一轮连续 rebuild 时 cargo `os error 1455`），其中 **8 条正是
+  Ctrl+F12 指示器那组 `mode-*`**；
+- 把这 9 条单独补跑（`--append`，实录里留着痕迹）：`9 mutations: 8 caught, 0 missed, 1 unknown`；
+  最后 1 条再补跑一次：`1 mutations: 1 caught` ⇒ **every mutation was caught**。
+- 实录（`02_Verification/mutation-report.txt`）现在有 **77 条 CAUGHT / 0 MISSED / 0 STALE**，
+  另有 10 行 ERROR —— 每一行 unknown 都对应一次补跑并最终被抓到。
+  这正是「**套件没跑起来 ≠ 套件没注意到**」的证据：兜底逻辑没有把任何一条 unknown 变成 caught，
+  它只是让套件**真的跑起来**。
+- 机器要让这一轮**一次过绿**，仍然需要那两件事：腾出提交额度、退掉 360。
+
 **仍然需要你做的（机器侧，我做不了）**：
 
 1. **退掉 360 托盘**（`360tray` / `ZhuDongFangYu`；本会话里 `Stop-Process` 杀不掉它——它是受保护进程），

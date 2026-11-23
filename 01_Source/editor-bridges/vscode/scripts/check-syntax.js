@@ -5,7 +5,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const roots = [root, path.join(root, '..', '..', 'tests')]; // the extension sources and every script under 01_Source/tests
+// the extension sources, every script under 01_Source/tests and every script under 01_Source/scripts
+// (the scripts of the gate itself: a syntax error in one of them would break the gate without anybody noticing)
+const roots = [root, path.join(root, '..', '..', 'tests'), path.join(root, '..', '..', 'scripts')];
 const files = [];
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -14,13 +16,13 @@ const files = [];
     if (entry.isDirectory()) walk(p); else if (entry.name.endsWith('.js')) files.push(p);
   }
 })(roots[0]);
-if (fs.existsSync(roots[1])) (function walkTests(dir) {
+for (const extra of roots.slice(1)) if (fs.existsSync(extra)) (function walkTests(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
     const p = path.join(dir, entry.name);
     if (entry.isDirectory()) walkTests(p); else if (entry.name.endsWith('.js')) files.push(p);
   }
-})(roots[1]);
+})(extra);
 let failed = 0;
 for (const f of files) {
   try { execFileSync(process.execPath, ['--check', f], {stdio: 'pipe'}); }
