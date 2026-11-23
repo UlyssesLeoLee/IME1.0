@@ -15,6 +15,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('node:crypto');
 const {spawnSync} = require('node:child_process');
 
 const root = path.resolve(__dirname, '..', '..');
@@ -77,7 +78,7 @@ if (!fs.existsSync(logPath)) {
 } else {
   const log = fs.readFileSync(logPath, 'utf8');
   const size = fs.statSync(installer).size;
-  const digest = require('node:crypto').createHash('sha256').update(fs.readFileSync(installer)).digest('hex');
+  const digest = crypto.createHash('sha256').update(fs.readFileSync(installer)).digest('hex');
   const recorded = log.match(/(\d+) bytes\s+sha256 ([0-9a-f]{64})/);
   check(
     !!recorded && Number(recorded[1]) === size && recorded[2] === digest,
@@ -99,8 +100,9 @@ console.log(`
 If the commit limit is short: close the browsers and the other big applications, or let Windows manage the paging
 file (administrator PowerShell):  wmic computersystem set AutomaticManagedPagefile=True
 If the scanner holds the installer: quit it from its tray (the process is 360tray) or restart the machine.
-Then:  node scripts/build-installer.js   (the transcript must end with the size and the digest)
-      node scripts/gate-log.js          (the whole gate, about 25 minutes)
-      node scripts/release-preflight.js (this script again - everything must be ok)`);
+Then, from the root of the repository:
+      node 01_Source/scripts/build-installer.js   (the transcript must end with the size and the digest)
+      node 01_Source/scripts/gate-log.js          (the whole gate, about 25 minutes)
+      node 01_Source/scripts/release-preflight.js (this script again - everything must be ok)`);
 console.log(problems ? `\n${problems} thing(s) are missing before the release can go out` : '\neverything is in place');
 process.exit(problems ? 1 : 0);
