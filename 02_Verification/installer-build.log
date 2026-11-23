@@ -3,23 +3,23 @@ IME1.0 installer 0.3.3
 
 == pime-core: cargo build --release --target x86_64-pc-windows-gnu -p pime-core --bin pime-core  (.)
 warning: `pime-core` (lib) generated 1 warning (run `cargo fix --lib -p pime-core` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 22.96s
+    Finished `release` profile [optimized] target(s) in 21.42s
 
 == pime-tsf (text service DLL): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tsf)
 warning: `pime-tsf` (lib) generated 3 warnings (run `cargo fix --lib -p pime-tsf` to apply 2 suggestions)
-    Finished `release` profile [optimized] target(s) in 20.81s
+    Finished `release` profile [optimized] target(s) in 19.56s
 
 == pime-tray (resident tray): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tray)
    Compiling pime-tray v0.1.0 (E:\IME1.0\01_Source\crates\pime-tray)
-    Finished `release` profile [optimized] target(s) in 29.72s
+    Finished `release` profile [optimized] target(s) in 28.56s
 
 == pime-ai-worker (speech service client): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-ai-worker)
    Compiling pime-ai-worker v0.3.3 (E:\IME1.0\01_Source\crates\pime-ai-worker)
-    Finished `release` profile [optimized] target(s) in 13.80s
+    Finished `release` profile [optimized] target(s) in 13.15s
 
 == pime-agent (the interface for the AI clients): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-agent)
    Compiling pime-agent v0.1.0 (E:\IME1.0\01_Source\crates\pime-agent)
-    Finished `release` profile [optimized] target(s) in 31.86s
+    Finished `release` profile [optimized] target(s) in 30.57s
 
 == VS Code extension
   note: the extension has no media/ folder yet (P6 produces it); the .vsix is built without one
@@ -127,21 +127,6 @@ warning: `pime-tsf` (lib) generated 3 warnings (run `cargo fix --lib -p pime-tsf
 
 == pime-setup (installer stub): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-setup)
    Compiling pime-setup v0.3.3 (E:\IME1.0\01_Source\crates\pime-setup)
-    Finished `release` profile [optimized] target(s) in 17.36s
+    Finished `release` profile [optimized] target(s) in 16.44s
 
-== checks on the result
-ok   machine is x64 (0x8664), found x64 (AMD64)
-ok   an EXE for the console subsystem
-ok   imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, gdi32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, ole32.dll, oleaut32.dll, shell32.dll, user32.dll)
-ok   payload footer and hashes verify (10 entries, read by an independent reader)
-ok   the payload program pime_tsf.dll is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, api-ms-win-core-winrt-error-l1-1-0.dll, bcryptprimitives.dll, gdi32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, ole32.dll, oleaut32.dll, propsys.dll, user32.dll, userenv.dll, ws2_32.dll)
-ok   the payload program pime-core.exe is x64 and imports only Windows system DLLs (api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, kernel32.dll, msvcrt.dll, ntdll.dll, userenv.dll, ws2_32.dll)
-ok   the payload program pime-tray.exe is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, gdi32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, ole32.dll, oleaut32.dll, propsys.dll, shell32.dll, user32.dll, winmm.dll)
-ok   the payload program pime-ai-worker.exe is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, crypt32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, winhttp.dll)
-ok   the payload program pime-mcp.exe is x64 and imports only Windows system DLLs (api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, kernel32.dll, msvcrt.dll, ntdll.dll, user32.dll)
-ok   the payload program pime-ime.exe is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, kernel32.dll, msvcrt.dll, ntdll.dll, user32.dll, ws2_32.dll)
-FAIL --dry-run finds and verifies the payload (exit null)
-ok   --dry-run created nothing
-
-
-build-installer FAILED: 1 check(s) failed
+build-installer FAILED: could not write E:\IME1.0\01_Source\dist\ProgrammingIME-0.3.3-win-x64-setup.exe: the file stays locked by another program
