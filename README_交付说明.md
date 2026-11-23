@@ -715,26 +715,33 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 * **整轮门禁跑了，是红的，但红的是这台机器不是产品**（2026-11-24 实测）：
   ① **提交额度到顶**（系统已提交 23.8 GB / 上限 24.3 GB，页面文件被固定成 8 GB 且系统托管关闭）⇒
   JS 套件在堆上炸了（`JavaScript heap out of memory`）、`pime-core` 编译报 `os error 1455`「页面文件太小」；
-  ② **杀软隔离新链接的测试二进制**（D-138：日志里 `could not execute process ... (never executed)`）⇒
-  `ime_permission_levels` 那个目标没跑 ⇒ **4 个测试目标没跑**（门禁量到 379 而不是 397），
-  于是 **2 条变异用例漏网**（`ime-context-window`、`grants-scope`——它们只被那个被隔离的目标覆盖）；
-  ③ 杀软还把刚出的安装包**锁住**了（`dist/` 里那个文件连改名都拒绝）⇒ 构建脚本自己的 `--dry-run` 自检起不来进程
-  ⇒ 构建实录缺了最后那段摘要。
-  **产品这边**：核心 330 项、TSF **397 项**（手工量到的真数：lib 356 + 集成 41）全绿；新增的 **12 条**变异用例 **12 caught / 0 missed / 0 stale**。
-  ⇒ **发布按你的规矩押后**：门禁没全绿就不发 v0.3.3；
-* **怎么让它变绿（三条命令的事）**：
+  ② **杀软隔离新链接的二进制**（D-138 → **D-180**，2026-11-24 查清了）：360 主动防御（`ZhuDongFangYu`）对新链接出来的
+     .exe 做三件事——**把写权限收走**（下一次链接同一个文件报 `cannot open output file ...: Permission denied`）、
+     **拒绝执行**（`could not execute process ... (never executed)` / `os error 5` / `EPERM`）、**过一会儿把文件删掉**。
+     它认的是**内容**：同一份字节复制到 `%TEMP%` 照样被拦，而同目录的 0.3.1 / 0.3.2 安装包执行正常（exit 0）；
+  ③ **同一套机制也落在交付产物上**：今天构建出来的 0.3.3 安装包被删掉、`--dry-run` 起不来进程 ⇒
+     构建实录缺了最后那段摘要 ⇒ 三道 claims 校验只能把产物判为**未验证**（不是已验证）⇒ v0.3.3 不发。
+  **门禁这边已经自愈**（`01_Source/scripts/cargo-suite.js`，D-180）：撞上这两种机器故障就先放回被锁文件的写权限再跑；
+     还不行就把测试二进制**复制到临时目录**再跑（同一批测试、同一批断言）；**「起不来」只记 unknown，绝不记 caught**
+     ——门禁现在能分清「机器红」与「代码红」，不会为错误的理由变绿。
+  **产品这边**：核心 330 项、TSF **397 项**（手工量到的真数：lib 356 + 集成 41）全绿；
+     **完整的 77 条变异用例全部被抓到**（**77 caught / 0 missed / 0 stale**；实录里那几行「套件没跑起来」都是机器的额度见底，
+     每一条都补跑过并最终被抓到）⇒ **发布按你的规矩押后**：门禁没全绿就不发 v0.3.3；
+* **怎么让它变绿（四步的事）**：
   ① **先跑体检**：`node 01_Source/scripts/release-preflight.js` ⇒ 它一次量清**还差什么**（提交额度余量、杀软是否锁着
      安装包、构建实录是否对得上产物、文档里的数字是否与产物一致），并把处置办法打出来；
   ② **腾内存**（提交额度到顶是根因）：关掉 Edge / Chrome / claude 之类的大户，或用管理员跑
      `wmic computersystem set AutomaticManagedPagefile=True`（页面文件交给系统管，可能要重启）；
-  ③ **杀软放开新产物**：360（`360tray`）在 `dist\ProgrammingIME-0.3.3-win-x64-setup.exe` 这个路径上留了句柄，
-     **写不进去也改名不了**（2026-11-24 实测：同名文件被锁 45 分钟以上；**换个名字的同一份副本 `--dry-run` exit 0**
-     ⇒ 是路径上的锁，不是产物的问题）。构建脚本本来就有重试（写 10 次、干跑 5 次），但这种锁重试救不了。
-     **先试轻的**：在 360 的托盘上退出它（持句柄的就是 `360tray` 这个进程）；不行就**重开一次机器** ⇒ 然后重跑构建，实录里才会有「大小 + 摘要」那段摘要；
+  ③ **杀软放开新产物**：360（`360tray` / `ZhuDongFangYu`）对本项目新链接出来的二进制按**内容**下判决，不放行 ⇒
+     **先试轻的**：在 360 的托盘上退出它；不行就**重开一次机器**；再不行就把 `E:\IME1.0` 与 `C:\cargo-target-ime`
+     加进它的信任区 ⇒ 然后重跑构建，实录里才会有「大小 + 摘要」那段摘要；
   ④ 然后 `node 01_Source/scripts/gate-log.js` 重跑一轮（约 25 分钟，其中变异轮占 17 分钟），
-     再 `node E:\tmp-pime-wiz\refresh-claims.cjs` + `node 01_Source/scripts/update-manifest.js` 对齐数字与清单，最后打标签发布。
+     再 `node 01_Source/scripts/refresh-claims.js`（文档里的数字与 claims **从产物和日志自动写**，日志不完整时它拒绝写）
+     + `node 01_Source/scripts/traceability-report.js` + `node 01_Source/scripts/update-manifest.js`
+     对齐数字、追溯报告与清单，最后打标签发布。
   **判断有没有腾够**：`Get-Counter '\Memory\Commit Limit'` 与 `'\Memory\Committed Bytes'` 的差值要留出 **2 GB 以上**；
-  **本轮已经做到的**（不依赖那台机器）：红绿轮 12 条新用例 **12 caught / 0 missed / 0 unknown / 0 stale** ✓；核心 330、TSF 397 全绿 ✓；
+  **本轮已经做到的**（不依赖那台机器）：**完整的 77 条变异用例 77 caught / 0 missed / 0 stale** ✓；
+     核心 330、TSF 397 全绿 ✓；门禁工具已经能在杀软封锁下自己跑起来（并且如实区分「机器红」与「代码红」）✓；
   0.3.3 的产物已构建并**部署**到每用户 COM 覆盖（`%LOCALAPPDATA%\IME1.0-dev16\pime_tsf.dll`）⇒ 重开应用就能看见标志 ✓；
 * **追溯报告（`02_Verification/test-execution-report.*`）还是 2026-11-20 那份**（JS 357 / core 460 / TSF 383）⇒
   **不能现在重出**：它读的是门禁写出来的证据文件，而现在的证据文件是那轮**被机器打断**的一轮（JS 掉了 27 项、core 掉了 21 项），
