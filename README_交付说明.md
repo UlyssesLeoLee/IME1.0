@@ -717,6 +717,13 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
   ⇒ 构建实录缺了最后那段摘要。
   **产品这边**：核心 330 项、TSF **397 项**（手工量到的真数：lib 356 + 集成 41）全绿；新增的 **12 条**变异用例 **12 caught / 0 missed / 0 stale**。
   ⇒ **发布按你的规矩押后**：门禁没全绿就不发 v0.3.3；
+* **怎么让它变绿（两条命令的事）**：
+  ① **腾内存**（提交额度到顶是根因）：关掉 Edge / Chrome / claude 之类的大户，或用管理员跑
+     `wmic computersystem set AutomaticManagedPagefile=True`（页面文件交给系统管，可能要重启）；
+  ② **杀软放开新产物**：等几分钟让它扫完，`dist/` 里那个安装包现在连改名都拒绝；
+  然后 `node 01_Source/scripts/gate-log.js` 重跑一轮（约 25 分钟，其中变异轮占 17 分钟），
+  再 `node E:\tmp-pime-wiz\refresh-claims.cjs` + `node 01_Source/scripts/update-manifest.js` 对齐数字与清单，最后打标签发布。
+  **判断有没有腾够**：`Get-Counter '\Memory\Commit Limit'` 与 `'\Memory\Committed Bytes'` 的差值要留出 **2 GB 以上**；
 * **tip 层的接线**（模式 ⇒ 界面 ⇒ 屏幕）没有单元测试（`Inner` 需要真的 `ITfThreadMgr`，构造不出来），只有真机用例能覆盖。
 
 ### 五、留给你裁定的
