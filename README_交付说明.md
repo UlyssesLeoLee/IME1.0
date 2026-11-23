@@ -723,7 +723,7 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
   ② **杀软放开新产物**：360（`360tray`）在 `dist\ProgrammingIME-0.3.3-win-x64-setup.exe` 这个路径上留了句柄，
      **写不进去也改名不了**（2026-11-24 实测：同名文件被锁 45 分钟以上；**换个名字的同一份副本 `--dry-run` exit 0**
      ⇒ 是路径上的锁，不是产物的问题）。构建脚本本来就有重试（写 10 次、干跑 5 次），但这种锁重试救不了。
-     **重开一次机器**（或重启 360 的进程）就能解开 ⇒ 然后重跑构建，实录里才会有「大小 + 摘要」那段摘要；
+     **先试轻的**：在 360 的托盘上退出它（持句柄的就是 `360tray` 这个进程）；不行就**重开一次机器** ⇒ 然后重跑构建，实录里才会有「大小 + 摘要」那段摘要；
   ③ 然后 `node 01_Source/scripts/gate-log.js` 重跑一轮（约 25 分钟，其中变异轮占 17 分钟），
      再 `node E:\tmp-pime-wiz\refresh-claims.cjs` + `node 01_Source/scripts/update-manifest.js` 对齐数字与清单，最后打标签发布。
   **判断有没有腾够**：`Get-Counter '\Memory\Commit Limit'` 与 `'\Memory\Committed Bytes'` 的差值要留出 **2 GB 以上**；
