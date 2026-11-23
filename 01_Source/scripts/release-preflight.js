@@ -100,6 +100,19 @@ for (const script of ['tests/smoke/installer-claims-check.js', 'tests/smoke/evid
   check(r.status === 0, `the numbers of the documents match the products: ${script}`, failures.join(' | '));
 }
 
+// ---- 5. the files the release uploads ---------------------------------------------------------------------------
+// The release needs the installer, its digest file, the extension and the release notes: a missing one is found here
+// and not after the tag is pushed.
+const releaseFiles = [
+  ['01_Source/dist', installerName],
+  ['01_Source/dist', `${installerName}.sha256`],
+  ['01_Source/dist', 'programming-ime-vscode-bridge-0.3.3.vsix'],
+];
+for (const [directory, name] of releaseFiles) {
+  const file = path.join(root, directory, name);
+  check(fs.existsSync(file), `the release file is there: ${directory}/${name}`);
+}
+
 // ---- what to do --------------------------------------------------------------------------------------------------
 console.log(`
 If the commit limit is short: close the browsers and the other big applications, or let Windows manage the paging
