@@ -262,6 +262,9 @@ const ADDITIONS = [
   // the probe that renders the mouth of the human in the two modes (the sign of the mode - D-177) and its picture
   '01_Source/crates/pime-tsf/examples/laser_mode_probe.rs',
   '02_Verification/ime-ui/mode-indicator.png',
+  // the preflight of the release: what is still missing before the release can go out (the commit limit of the
+  // machine, the handle of the scanner on the installer, the transcript, the numbers of the documents)
+  '01_Source/scripts/release-preflight.js',
 ];
 
 const isBinary = bytes => bytes.includes(0);

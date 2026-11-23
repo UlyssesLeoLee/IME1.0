@@ -718,13 +718,15 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
   **产品这边**：核心 330 项、TSF **397 项**（手工量到的真数：lib 356 + 集成 41）全绿；新增的 **12 条**变异用例 **12 caught / 0 missed / 0 stale**。
   ⇒ **发布按你的规矩押后**：门禁没全绿就不发 v0.3.3；
 * **怎么让它变绿（三条命令的事）**：
-  ① **腾内存**（提交额度到顶是根因）：关掉 Edge / Chrome / claude 之类的大户，或用管理员跑
+  ① **先跑体检**：`node 01_Source/scripts/release-preflight.js` ⇒ 它一次量清**还差什么**（提交额度余量、杀软是否锁着
+     安装包、构建实录是否对得上产物、文档里的数字是否与产物一致），并把处置办法打出来；
+  ② **腾内存**（提交额度到顶是根因）：关掉 Edge / Chrome / claude 之类的大户，或用管理员跑
      `wmic computersystem set AutomaticManagedPagefile=True`（页面文件交给系统管，可能要重启）；
-  ② **杀软放开新产物**：360（`360tray`）在 `dist\ProgrammingIME-0.3.3-win-x64-setup.exe` 这个路径上留了句柄，
+  ③ **杀软放开新产物**：360（`360tray`）在 `dist\ProgrammingIME-0.3.3-win-x64-setup.exe` 这个路径上留了句柄，
      **写不进去也改名不了**（2026-11-24 实测：同名文件被锁 45 分钟以上；**换个名字的同一份副本 `--dry-run` exit 0**
      ⇒ 是路径上的锁，不是产物的问题）。构建脚本本来就有重试（写 10 次、干跑 5 次），但这种锁重试救不了。
      **先试轻的**：在 360 的托盘上退出它（持句柄的就是 `360tray` 这个进程）；不行就**重开一次机器** ⇒ 然后重跑构建，实录里才会有「大小 + 摘要」那段摘要；
-  ③ 然后 `node 01_Source/scripts/gate-log.js` 重跑一轮（约 25 分钟，其中变异轮占 17 分钟），
+  ④ 然后 `node 01_Source/scripts/gate-log.js` 重跑一轮（约 25 分钟，其中变异轮占 17 分钟），
      再 `node E:\tmp-pime-wiz\refresh-claims.cjs` + `node 01_Source/scripts/update-manifest.js` 对齐数字与清单，最后打标签发布。
   **判断有没有腾够**：`Get-Counter '\Memory\Commit Limit'` 与 `'\Memory\Committed Bytes'` 的差值要留出 **2 GB 以上**；
   **本轮已经做到的**（不依赖那台机器）：红绿轮 12 条新用例 **12 caught / 0 missed / 0 unknown / 0 stale** ✓；核心 330、TSF 397 全绿 ✓；
