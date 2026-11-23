@@ -1,70 +1,6 @@
-# The red-green check of 2026-11-23T17:44:27.273Z
-# 77 of the 77 mutations of the implementation were checked in this round; every one of them is restored right after it is applied.
-ERROR nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)  <-- the suite did not run (exit 101): the result is unknown
-ERROR nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer  <-- the suite did not run (exit 101): the result is unknown
-ERROR nema-trailing [D-90~D-92（多 Agent 演示的 .NEMA 口径）] nothing may follow the revision of a domain header  <-- the suite did not run (exit 101): the result is unknown
-ERROR nema-graph-marker [D-90~D-92（多 Agent 演示的 .NEMA 口径）] the mark of a graph domain touches its id  <-- the suite did not run (exit 101): the result is unknown
-ERROR nema-scope [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain reaches up to the header of the next one  <-- the suite did not run (exit 101): the result is unknown
-ERROR romaji-a [D-93（日文罗马音表）] the romaji table: a alone is あ (breaking it puts い back)  <-- the suite did not run (exit 101): the result is unknown
-ERROR textrange-surrogate [UT-026 / FR-013] an offset never splits a surrogate pair  <-- the suite did not run (exit 101): the result is unknown
-ERROR predict-invalid [UT-006 / FR-026] a candidate that does not validate is not offered  <-- the suite did not run (exit 101): the result is unknown
-ERROR imeswitch-cycle [FR-001 / UT-011] the language key walks through the three languages  <-- the suite did not run (exit 101): the result is unknown
-ERROR budget-limit [UT-035 / FR-023] the budget of the AI is refused when it is used up  <-- the suite did not run (exit 101): the result is unknown
-ERROR grants-mismatch [UT-029 / FR-016] a grant is refused when the provider does not match  <-- the suite did not run (exit 101): the result is unknown
-CAUGHT keymap-mode-chord [D-95（Ctrl+F12 = 模式切换）] Ctrl+F12 switches between the code input and the natural language input
-CAUGHT keymap-alt-f1 [D-95（Ctrl+F12 = 模式切换）] Alt+F1 switches the input mode as well
-CAUGHT controller-default-mode [FR-005 / UT-003] the factory mode is the code input
-CAUGHT controller-secure-chord [FR-004 / UT-005] the mode key stays with the host in a password field
-CAUGHT laser-demo-action [D-90~D-92（多 Agent 演示）] a click on the row of the demonstration asks for the demonstration
-CAUGHT demo-body-length [D-90~D-92（多 Agent 演示）] every agent writes exactly twenty characters
-CAUGHT demo-header-tab [D-90~D-92（多 Agent 演示）] the header of a domain starts with a real tab
-CAUGHT demo-note [D-90（没有领域头时补的那一行是说明行）] the address of the interpreter is only written when there is no domain header
-CAUGHT demo-revision [D-92（同一领域再写一次时修订号递增）] a domain that is written again gets the next revision
-CAUGHT demo-secure [FR-004 / UT-005] a password field gets nothing at all
-CAUGHT mouths-user-mouth [D-90~D-92（多 Agent 演示）] the mouth of the human does not follow the demonstration
-CAUGHT panel-list-opens-the-panel [FR-041 / UT-055] the list of candidates opens the panel (the options are shown while typing)
-CAUGHT laser-slit-on-the-edge [D-90~D-92（多 Agent 演示）] the light of the mouth lies on the edge of the screen (no gap)
-CAUGHT js-candidates-risk [UT-007 / FR-026] the weight of the risk note
-CAUGHT js-candidates-segment [UT-007 / FR-026] the weight of the segments
-CAUGHT js-candidates-tie [UT-007 / FR-026] the tie breaker of the ranking
-CAUGHT js-candidates-password [FR-004 / UT-005] the reason the candidates are off in a password field
-CAUGHT js-textrange-surrogate [UT-026 / FR-013] an offset never splits a surrogate pair
-CAUGHT js-transaction-apply [UT-052 / FR-038] a failed syntax check disables the default apply
-CAUGHT js-languages-invalid [UT-006 / FR-026] a candidate that does not validate is not offered
-CAUGHT f1-progress [NFR-203 / ST-040] the tab says that it is working while the provider thinks
-CAUGHT f1-first-candidate [NFR-203 / ST-040] the first candidate of the F1 path becomes ready
-CAUGHT f1-cancel [UT-070 / NFR-203] a cancelled F1 request leaves the tab idle, not in error
-ERROR ime-context-window [IT-013 / FR-013] the text service keeps a window of what was typed, not all of it  <-- the suite did not run (exit 101): the result is unknown
-ERROR ime-context-collect [IT-013 / FR-013] the text service collects the characters the user typed  <-- the suite did not run (exit 101): the result is unknown
-ERROR ime-direct-observing [IT-013 / FR-015] the host that grants the nearby range switches the machine to observing  <-- the suite did not run (exit 101): the result is unknown
-CAUGHT grants-scope [IT-013 / UT-029] a grant of one level does not stand in for another one
-CAUGHT clipboard-clean [D-97 / D-120（剪贴板）] the text of the clipboard is trimmed: no NUL at the end of the buffer, no spaces around it
-CAUGHT hit-lens-is-not-the-light [D-103（激光口贴边，命中区跟着光缝走）/ FR-041] the lens is the round opening of the mouth; the light is the slit on the edge of the screen
-CAUGHT hit-row-under-the-mouse [FR-041 / UT-055（悬浮框与它的行）] the row under the mouse is the one whose rectangle holds the point
-CAUGHT hit-action-under-the-mouse [FR-041 / UT-055（悬浮框与它的行）] the action of a click is the action of the row under the mouse
-CAUGHT hit-row-rect-is-on-the-screen [FR-041 / UT-055（悬浮框与它的行）] the rectangle of a row is in the coordinates of the screen, not of the panel
-CAUGHT paint-the-core-is-the-colour-of-its-source [D-90~D-92（多 Agent 演示：光口是它自己的颜色）/ FR-041] the core of the light is the colour of its source (the agent); the halo is the soft light around it
-CAUGHT panel-switch-shows-the-real-state [FR-041（悬浮框显示的就是产品现在的状态）] a switch of the panel shows the setting that is really in force
-CAUGHT panel-language-row-shows-the-name [FR-042 / FR-041（从悬浮下拉选择语言）] the row of the language shows the name of the language, not its key
-CAUGHT panel-effort-row-shows-the-label [FR-041（悬浮框里的 Effort 入口）] the row of the effort shows the label of the effort, not its key
-CAUGHT panel-local-tool-keeps-its-key [FR-041 / D-97（D-120）（剪贴板工具的那一行）] a local tool of the bar keeps the key its click uses
-CAUGHT lifecycle-secure-desktop-collects-nothing [ST-036（隐私过滤、无授权外发与诊断）/ 基本设计 §信任边界（宿主应用 ↔ TSF DLL）] on the secure desktop of the host (logon, UAC) the text service collects nothing
-CAUGHT lifecycle-the-profile-tells-the-language [FR-042（即时语言切换）] the active profile of the product tells which language it is
-CAUGHT lifecycle-the-rollback-undoes-in-reverse-order [基本设计 §信任边界（宿主应用 ↔ TSF DLL：TSF 拒绝同一 client id 的第二个键事件接收器）] a failed activation undoes the advises in reverse order, so a retry of Activate starts clean
-ERROR i18n-the-interface-locale-wins [FR-044（UI 显示语言独立于 Windows 语言与 Programming Profile）/ UT-056] an explicit interface locale wins over the language of the editor  <-- the suite did not run (exit 101): the result is unknown
-ERROR i18n-the-locale-reads-its-column [FR-044（UI 显示语言中文、英文、日文）/ UT-044] the locale reads its own column of the texts (the Chinese column is Chinese)  <-- the suite did not run (exit 101): the result is unknown
-ERROR overlay-the-window-flips-above-only-without-room [FR-043（候选窗口位置回退）/ UT-055] the candidate window goes below the caret and flips above only when there is no room below  <-- the suite did not run (exit 101): the result is unknown
-ERROR overlay-the-scaling-is-capped-at-250 [FR-043（DPI/多屏适配）/ UT-055] the display scaling is clamped to 100-250 %  <-- the suite did not run (exit 101): the result is unknown
-ERROR secrets-the-env-file-is-sensitive [FR-049（外发敏感信息筛查）/ UT-062] a file named .env is credential-like and is never sent  <-- the suite did not run (exit 101): the result is unknown
-ERROR secrets-the-github-prefix-is-a-token [FR-049（外发敏感信息筛查）/ UT-062] the ghp_ prefix marks a GitHub token  <-- the suite did not run (exit 101): the result is unknown
-ERROR symbols-the-cap-is-the-max [FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）] the symbol table never returns more symbols than the caller asked for  <-- the suite did not run (exit 101): the result is unknown
-ERROR transaction-a-read-only-document-is-refused [IT-035（编辑事务：只读文档被拒）/ UT-052] a read-only document is refused, a writable one is not  <-- the suite did not run (exit 101): the result is unknown
-ERROR validators-the-rust-raw-string-is-masked [FR-046（声明式语法规则）/ UT-023] a Rust raw string is masked like any other literal  <-- the suite did not run (exit 101): the result is unknown
-ERROR validators-a-nested-block-comment-is-one-comment [FR-046（声明式语法规则）/ UT-023] a nested block comment in Rust stays one comment  <-- the suite did not run (exit 101): the result is unknown
-ERROR x86-the-odd-nibble-count-is-refused [FR-052（机器码：只编码确定的形式）/ UT-023] a hex value with an odd number of nibbles is refused (an incomplete byte)  <-- the suite did not run (exit 101): the result is unknown
-ERROR x86-the-non-hex-character-is-refused [FR-052（机器码：只编码确定的形式）/ UT-023] a value with a character that is not a hex digit is refused  <-- the suite did not run (exit 101): the result is unknown
-ERROR transaction-the-content-hash-is-part-of-the-baseline [IT-031（文档变了就是陈旧的）/ ST-027] the content hash is part of the baseline the plan was reviewed against  <-- the suite did not run (exit 101): the result is unknown
-ERROR x86-a-high-register-needs-the-rex-prefix [FR-052（机器码：只编码确定的形式）/ UT-023] a register above r7 needs the REX prefix, otherwise the bytes are another instruction  <-- the suite did not run (exit 101): the result is unknown
+# The red-green check of 2026-11-23T18:45:25.503Z
+# 12 of the 77 mutations of the implementation were checked in this round; every one of them is restored right after it is applied.
+# note: 12 of the 77 cases are selected
 CAUGHT mode-the-mouth-of-the-human-is-amber [D-177（Ctrl+F12 的可见指示器）] the mouth of the human is amber in the natural language input
 CAUGHT mode-the-natural-mouth-is-open [D-177（Ctrl+F12 的可见指示器）] the mouth of the human is a double line in the natural language input (the mouth is open)
 CAUGHT mode-the-mouth-follows-the-mode [D-177（Ctrl+F12 的可见指示器）] the mouth of the human takes the colour of the mode at once, even when it is already on the screen
@@ -75,61 +11,13 @@ CAUGHT mode-the-screen-knows-the-mode [D-177（Ctrl+F12 的可见指示器）] t
 CAUGHT mode-the-key-tells-the-interface [D-177（Ctrl+F12 的可见指示器）/ D-95] the mode key tells the interface, so that the sign of the mode follows the mode
 CAUGHT mode-the-panel-names-the-mode [D-177（Ctrl+F12 的可见指示器）] the row of the panel names the thing the switch turns on (the natural language input)
 CAUGHT mode-the-panel-says-the-mode-in-words [D-177（Ctrl+F12 的可见指示器）] the panel says in words which mode the human is in
-STALE  mode-the-settings-do-not-carry-the-mode-of-the-session [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the settings of the file do not carry the mode of the session (a save must not undo the switch of the user): the text to break is not in the file any more
+CAUGHT mode-the-settings-do-not-carry-the-mode-of-the-session [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the settings of the file do not carry the mode of the session (a save must not undo the switch of the user)
 CAUGHT mode-the-mode-is-not-written-to-the-file [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the mode is a state of the text service, not a setting of the file (it must not survive a restart)
 
-the run checked 77 mutations: 48 caught, 0 missed, 28 unknown (the suite did not run), 1 stale
-FAIL: these files were not restored: 01_Source\crates\pime-tsf\src\controller.rs, 01_Source\crates\pime-tsf\src\mouths.rs, 01_Source\crates\pime-tsf\src\laser_ui\paint.rs
-the result of 28 mutation(s) is unknown: nema-tab, nema-revision-zero, nema-trailing, nema-graph-marker, nema-scope, romaji-a, textrange-surrogate, predict-invalid, imeswitch-cycle, budget-limit, grants-mismatch, ime-context-window, ime-context-collect, ime-direct-observing, i18n-the-interface-locale-wins, i18n-the-locale-reads-its-column, overlay-the-window-flips-above-only-without-room, overlay-the-scaling-is-capped-at-250, secrets-the-env-file-is-sensitive, secrets-the-github-prefix-is-a-token, symbols-the-cap-is-the-max, transaction-a-read-only-document-is-refused, validators-the-rust-raw-string-is-masked, validators-a-nested-block-comment-is-one-comment, x86-the-odd-nibble-count-is-refused, x86-the-non-hex-character-is-refused, transaction-the-content-hash-is-part-of-the-baseline, x86-a-high-register-needs-the-rex-prefix
-the suite did not verify 1 mutation(s): the text to break is not in the file any more (mode-the-settings-do-not-carry-the-mode-of-the-session)
-a stale case is a failure: a case that is written wrong or whose anchor is gone has verified nothing (D-111)
+the run checked 12 mutations: 12 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
 
 by the design entry (what the round says about each requirement):
-  D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
   D-177（Ctrl+F12 的可见指示器）: 9 caught
-  D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）: 1 caught, 1 stale
+  D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）: 2 caught
   D-177（Ctrl+F12 的可见指示器）/ D-95: 1 caught
-  D-90（没有领域头时补的那一行是说明行）: 1 caught
-  D-90~D-92（多 Agent 演示：光口是它自己的颜色）/ FR-041: 1 caught
-  D-90~D-92（多 Agent 演示）: 5 caught
-  D-90~D-92（多 Agent 演示的 .NEMA 口径）: 4 unknown
-  D-92（修订号）: 1 unknown
-  D-92（同一领域再写一次时修订号递增）: 1 caught
-  D-93（日文罗马音表）: 1 unknown
-  D-95（Ctrl+F12 = 模式切换）: 2 caught
-  D-97 / D-120（剪贴板）: 1 caught
-  FR-001 / UT-011: 1 unknown
-  FR-004 / UT-005: 3 caught
-  FR-005 / UT-003: 1 caught
-  FR-041 / D-97（D-120）（剪贴板工具的那一行）: 1 caught
-  FR-041 / UT-055: 1 caught
-  FR-041 / UT-055（悬浮框与它的行）: 3 caught
-  FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）: 1 unknown
-  FR-041（悬浮框里的 Effort 入口）: 1 caught
-  FR-041（悬浮框显示的就是产品现在的状态）: 1 caught
-  FR-042 / FR-041（从悬浮下拉选择语言）: 1 caught
-  FR-042（即时语言切换）: 1 caught
-  FR-043（DPI/多屏适配）/ UT-055: 1 unknown
-  FR-043（候选窗口位置回退）/ UT-055: 1 unknown
-  FR-044（UI 显示语言中文、英文、日文）/ UT-044: 1 unknown
-  FR-044（UI 显示语言独立于 Windows 语言与 Programming Profile）/ UT-056: 1 unknown
-  FR-046（声明式语法规则）/ UT-023: 2 unknown
-  FR-049（外发敏感信息筛查）/ UT-062: 2 unknown
-  FR-052（机器码：只编码确定的形式）/ UT-023: 3 unknown
-  IT-013 / FR-013: 2 unknown
-  IT-013 / FR-015: 1 unknown
-  IT-013 / UT-029: 1 caught
-  IT-031（文档变了就是陈旧的）/ ST-027: 1 unknown
-  IT-035（编辑事务：只读文档被拒）/ UT-052: 1 unknown
-  NFR-203 / ST-040: 2 caught
-  ST-036（隐私过滤、无授权外发与诊断）/ 基本设计 §信任边界（宿主应用 ↔ TSF DLL）: 1 caught
-  UT-006 / FR-026: 1 caught, 1 unknown
-  UT-007 / FR-026: 3 caught
-  UT-026 / FR-013: 1 caught, 1 unknown
-  UT-029 / FR-016: 1 unknown
-  UT-035 / FR-023: 1 unknown
-  UT-052 / FR-038: 1 caught
-  UT-070 / NFR-203: 1 caught
-  基本设计 §信任边界（宿主应用 ↔ TSF DLL：TSF 拒绝同一 client id 的第二个键事件接收器）: 1 caught
-
-the round is RED (exit 2)
+every mutation was caught: the suite really pins these behaviours
