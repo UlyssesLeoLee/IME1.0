@@ -11,7 +11,7 @@
 - `00_Documents/`：9 个原始设计文件（6 MD + 3 XLSX），内容未修改
 - `01_Source/`：源码、测试、Playwright 用户验收脚本（见 `01_Source/README.md`）
 - `02_Verification/`：实际运行结果、UT/IT/ST 追踪报告、UAT 截图；另有 2026-11-04 的框架矩阵与缺口提交单
-- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，859 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
+- `MANIFEST_SHA256.txt`：文件完整性校验清单（文本文件按 **LF 归一化内容**（= git blob 字节）计算，二进制文件按原字节计算；**本轮已全量刷新，860 条全部对得上**，可用 `node 01_Source/scripts/update-manifest.js --check` 复核）
 
 ## 2026-11-02 第三、四轮改动（本轮）
 
@@ -525,7 +525,7 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
 
 33. **按重构后的代码重出安装包**：磁盘上的旧包建于 **13:14:58**，**早于重构提交（13:33 / 14:29）**
     ⇒ 包里**没有**重构后的二进制。新包 **10,394,410 B / sha256 `502a1053…`**；
-    claims、清单同步刷新（清单 **859 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。**第三十五轮又补登记了 2 个新文件**（`01_Source/tests/tsf/ime_live.rs` 与 `01_Source/tests/tsf/common/ime_live.rs`：真输入法的回归测试与它的真宿主 harness），清单因此从 855 条变成 857 条。
+    claims、清单同步刷新（清单 **860 条**，`update-manifest.js --check` **exit 0**，三道 claims 校验全绿）。**第三十五轮又补登记了 2 个新文件**（`01_Source/tests/tsf/ime_live.rs` 与 `01_Source/tests/tsf/common/ime_live.rs`：真输入法的回归测试与它的真宿主 harness），清单因此从 855 条变成 857 条。
 
 34. **抓到两个「证据说谎」的坑**（都是我自己发现的）：
     ① **共享 target 目录里的陈旧产物**伪造了一次 `grants` 失败（D-123；`cargo clean -p pime-tsf` 重建后全绿，
