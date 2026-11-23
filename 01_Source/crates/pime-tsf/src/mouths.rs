@@ -30,6 +30,74 @@ pub const USER_KEY: &str = "user";
 /// The name the human is shown under.
 pub const USER_LABEL: &str = "user";
 
+/// The way the human at the keyboard writes.
+///
+/// The mode is **visible**: the mouth of the human is one pale blue line in the code input and a double amber line in
+/// the natural language input. The user asked for it on 2026-11-23 ("Ctrl+F12增加可见指示器"): the mode decides
+/// whether the input method eats the letters, so the user has to be able to see it at a glance, without opening the
+/// panel and without reading anything.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WritingMode {
+    /// The code input: the letters go to the host and the list of the candidates is only a preview.
+    Code,
+    /// The natural language input: the input method owns the letters and the list takes the digits.
+    Natural,
+}
+
+impl WritingMode {
+    /// The colour of the slit of the mouth of the human in this mode.
+    pub fn slit(self) -> Rgb {
+        let colour = match self {
+            WritingMode::Code => LaserTheme::MOUTH_SLIT,
+            WritingMode::Natural => LaserTheme::MOUTH_SLIT_NATURAL,
+        };
+        // The core of the mouth of the human is pale: every agent writes in a vivid colour, so a pale core can never
+        // be an agent's mouth (the rule is checked here, in the production code, not only in a test).
+        debug_assert!(
+            colour.saturation() <= HUMAN_SATURATION_MAX,
+            "the colour of the human is pale: it is {}",
+            colour.saturation()
+        );
+        colour
+    }
+
+    /// The words the panel shows for this mode.
+    ///
+    /// They are the words of the two modes of the product, so that the panel says in words what the mouth of the
+    /// human says in colour.
+    pub fn label(self) -> &'static str {
+        match self {
+            WritingMode::Code => "代码输入",
+            WritingMode::Natural => "自然语言输入",
+        }
+    }
+
+    /// The mode of a flag: `true` is the natural language input (the one that owns the letters).
+    pub fn from_natural(natural: bool) -> WritingMode {
+        if natural {
+            WritingMode::Natural
+        } else {
+            WritingMode::Code
+        }
+    }
+
+    /// The colour of the halo around that slit.
+    pub fn halo(self) -> Rgb {
+        match self {
+            WritingMode::Code => LaserTheme::MOUTH_HALO,
+            WritingMode::Natural => LaserTheme::MOUTH_HALO_NATURAL,
+        }
+    }
+
+    /// Whether the slit of the mouth of the human is a **double** one in this mode.
+    ///
+    /// The natural language input is a mouth that is open: the light comes out of it in two lines, so that the shape
+    /// says the same thing as the colour. The code input is a mouth at rest: one hairline.
+    pub fn is_double(self) -> bool {
+        matches!(self, WritingMode::Natural)
+    }
+}
+
 /// How many places of hue the circle of the colours is cut into (every 15 degrees).
 pub const HUE_SLOTS: usize = 24;
 
@@ -37,7 +105,11 @@ pub const HUE_SLOTS: usize = 24;
 pub const HUE_STEP: f64 = 360.0 / HUE_SLOTS as f64;
 
 /// The saturation of the colour of an agent: strong enough to be seen at a glance.
-pub const SATURATION_MIN: f64 = 0.80;
+///
+/// It is a little above 0.8 because the colour is written in eight bits: the round trip through the screen can take
+/// the saturation of the agent a little below the number that is asked for (the rule of the human is at 0.4, so the
+/// gap between the two is wide either way).
+pub const SATURATION_MIN: f64 = 0.82;
 
 /// The biggest saturation of the colour of an agent.
 pub const SATURATION_MAX: f64 = 0.95;
@@ -60,6 +132,38 @@ pub const MOUTHS_PER_EDGE: usize = 6;
 
 /// The radius of the lens of a mouth.
 pub const MOUTH_RADIUS: i32 = 12;
+
+/// The colours of the **core** of the mouth of the human: the pale blue of the code input and the pale amber of the
+/// natural language input.
+///
+/// They are **pale** (the saturation of both is below 0.4), while the core of every agent is **vivid** (the saturation
+/// of the agents is at least `SATURATION_MIN`) ⇒ no agent can ever be mistaken for the keyboard, whatever colour the
+/// circle hands it. That is a stronger guarantee than a distance on the colour circle, and it costs the agents
+/// nothing: the place of the circle they may take is not made smaller by it.
+///
+/// The halo around the core is light, not identity: it is drawn faint and it says nothing about who is writing.
+pub const HUMAN_COLOURS: [Rgb; 2] = [
+    LaserTheme::MOUTH_SLIT,
+    LaserTheme::MOUTH_SLIT_NATURAL,
+];
+
+/// How far the colour of an agent has to be from the **pale blue** of the human (in degrees).
+///
+/// The pale blue was already the reserved place of the human (an agent that looks like it would be mistaken for the
+/// keyboard); the amber does not need a place of its own, because the saturation keeps it apart from every agent.
+pub const HUMAN_HUE_GAP: f64 = 45.0;
+
+/// The saturation of the **core** of the mouth of the human: it is **pale**.
+///
+/// Every agent writes in a vivid colour (the saturation of the agents is at least `SATURATION_MIN`), so a pale core can
+/// never be an agent's mouth. The halo around the core is light, not identity: it is drawn faint and it does not say
+/// who is writing.
+pub const HUMAN_SATURATION_MAX: f64 = 0.4;
+
+/// The saturation of the colour of the human: it is **pale**.
+fn saturation_of(colour: Rgb) -> f64 {
+    colour.saturation()
+}
 
 /// One source of light: a mouth on the edge of the screen that belongs to one speaker.
 #[derive(Clone, Debug, PartialEq)]
@@ -90,6 +194,8 @@ pub struct MouthRegistry {
     used_hues: Vec<f64>,
     /// How many agents have a mouth (the number of the agent that comes next).
     agents: usize,
+    /// The way the human writes right now: the mouth of the human shows it.
+    user_mode: WritingMode,
 }
 
 impl Default for MouthRegistry {
@@ -107,6 +213,7 @@ impl MouthRegistry {
             // mistaken for the keyboard.
             used_hues: vec![hue_of(LaserTheme::MOUTH_SLIT)],
             agents: 0,
+            user_mode: WritingMode::Code,
         }
     }
 
@@ -153,6 +260,29 @@ impl MouthRegistry {
         self.make(key, label, work, user_place, Some(mouth))
     }
 
+    /// The way the human writes right now.
+    pub fn user_mode(&self) -> WritingMode {
+        self.user_mode
+    }
+
+    /// The way the human writes from now on: the mouth of the human takes the colour and the shape of the mode.
+    ///
+    /// The mouth of the human is the only thing of the interface that is always on the screen, so it is the sign of
+    /// the mode: one pale blue line in the code input, a double amber line in the natural language input. Returns
+    /// whether the mode changed.
+    pub fn set_user_mode(&mut self, mode: WritingMode) -> bool {
+        if self.user_mode == mode {
+            return false;
+        }
+        self.user_mode = mode;
+        // The mouth of the human may already be on the screen: it takes the colour of the new mode at once.
+        if let Some(source) = self.sources.iter_mut().find(|source| source.is_user) {
+            source.colour = mode.slit();
+            source.halo = mode.halo();
+        }
+        true
+    }
+
     /// Make the source of a key that is not in the registry yet.
     ///
     /// The colour of an agent is the one of its key, and its place is the place of the edge it takes, unless
@@ -168,8 +298,8 @@ impl MouthRegistry {
         let is_user = key == USER_KEY;
         let (colour, halo, mouth) = if is_user {
             (
-                LaserTheme::MOUTH_SLIT,
-                LaserTheme::MOUTH_HALO,
+                self.user_mode.slit(),
+                self.user_mode.halo(),
                 mouth_at(work, user_place, MOUTH_RADIUS),
             )
         } else {
@@ -267,6 +397,14 @@ fn agent_colour(key: &str, used: &[f64]) -> (Rgb, f64) {
 }
 
 /// The hue of the agent: the place of the circle that is the farthest from every hue that is taken.
+///
+/// The place of the circle is **not** made smaller for the sake of the amber of the human: the colour of the human is
+/// always pale and the colour of an agent is always vivid, so the two can never be mistaken for each other (see
+/// `HUMAN_COLOURS`). Reserving a second place of the circle would have cost the agents their own distance from each
+/// other, and that distance is what lets the user learn "the red one is Claude".
+///
+/// When two places are equally far away, the hash of the key picks one of them: it looks random, but the same key
+/// always gets the same colour.
 fn choose_hue(key: &str, used: &[f64]) -> f64 {
     let mut best: Vec<f64> = Vec::new();
     let mut best_distance = f64::MIN;
@@ -283,6 +421,11 @@ fn choose_hue(key: &str, used: &[f64]) -> f64 {
         } else if (distance - best_distance).abs() <= 1e-9 {
             best.push(hue);
         }
+    }
+    // The circle always has a place left (the human reserves one hue of the 24), but the tool must not panic if it
+    // did not: a colour that is too close to the human is better than a panic in the middle of the screen.
+    if best.is_empty() {
+        return hue_of(LaserTheme::MOUTH_SLIT);
     }
     // The hash of the key picks among the places that are equally far away.
     let digest = pime_core::sha256::sha256(key.as_bytes());
@@ -385,6 +528,90 @@ mod tests {
         let agent = registry.obtain("agent:a:one:1", "one", work(), user_place());
         assert!(!agent.is_user);
         assert_ne!(agent.colour, LaserTheme::MOUTH_SLIT);
+    }
+
+    /// The mouth of the human **shows the mode of the human**: a pale blue line in the code input and an amber line in
+    /// the natural language input.
+    ///
+    /// The user asked for a visible sign of the mode on 2026-11-23 ("Ctrl+F12增加可见指示器"), and the mouth of the
+    /// human is the only part of the interface that is always on the screen.
+    #[test]
+    fn the_mouth_of_the_human_shows_the_mode_of_the_human() {
+        let mut registry = MouthRegistry::new();
+        assert_eq!(registry.user_mode(), WritingMode::Code, "the code input is the default");
+        let user = registry.obtain(USER_KEY, USER_LABEL, work(), user_place());
+        assert_eq!(user.colour, LaserTheme::MOUTH_SLIT, "the code input is the pale blue the user asked for");
+        assert_eq!(user.halo, LaserTheme::MOUTH_HALO);
+        assert!(!WritingMode::Code.is_double(), "the code input is a mouth at rest");
+        assert!(WritingMode::Natural.is_double(), "the natural language input is a mouth that is open");
+
+        // the mode changes: the mouth of the human follows it at once, even when it is already on the screen
+        assert!(registry.set_user_mode(WritingMode::Natural), "the mode changed");
+        let user = registry.obtain(USER_KEY, USER_LABEL, work(), user_place());
+        assert_eq!(
+            user.colour,
+            LaserTheme::MOUTH_SLIT_NATURAL,
+            "the natural language input is an amber mouth"
+        );
+        assert_eq!(user.halo, LaserTheme::MOUTH_HALO_NATURAL);
+
+        // the same mode a second time changes nothing
+        assert!(
+            !registry.set_user_mode(WritingMode::Natural),
+            "the mode did not change a second time"
+        );
+        // and back to the code input
+        assert!(registry.set_user_mode(WritingMode::Code));
+        let user = registry.obtain(USER_KEY, USER_LABEL, work(), user_place());
+        assert_eq!(user.colour, LaserTheme::MOUTH_SLIT, "the code input is the pale blue again");
+    }
+
+    /// The sign of the mode belongs to the human alone: the mouth of the human is **pale** and the mouth of an agent is
+    /// **vivid**, so no agent can ever be mistaken for the keyboard.
+    ///
+    /// The thresholds are **written down here** and not taken from the constants they protect: a test that takes the
+    /// threshold from the very constant it protects proves nothing - the red-green round caught exactly that (the
+    /// first version of this test passed with the rule switched off).
+    ///
+    /// Six agents, like the test of the pale blue: the colours are spread over the circle, and the **seventh** agent
+    /// already sits at 39 degrees from the pale blue (the place of the human on the circle is not made smaller by
+    /// this round, so that guarantee did not move). The amber does not need a place of its own: the saturation keeps
+    /// it apart from every agent, and the place of the circle stays free for the agents.
+    #[test]
+    fn the_sign_of_the_mode_belongs_to_the_human_alone() {
+        const PALE: f64 = 0.4;
+        const VIVID: f64 = 0.8;
+        // the colours of the human are pale: the mouth of the keyboard is never a strong colour
+        for colour in HUMAN_COLOURS {
+            assert!(
+                saturation_of(colour) <= PALE,
+                "the colour of the human is pale: it is {}",
+                saturation_of(colour)
+            );
+        }
+        let mut registry = MouthRegistry::new();
+        registry.set_user_mode(WritingMode::Natural);
+        for index in 0..6 {
+            let source = registry.obtain(
+                &format!("agent:provider:agent-{index}:instance"),
+                "agent",
+                work(),
+                user_place(),
+            );
+            assert!(!source.is_user, "this is the mouth of an agent");
+            // every agent is vivid: it can never be mistaken for the pale mouth of the human
+            assert!(
+                saturation_of(source.colour) >= VIVID,
+                "the colour of the agent {index} is not vivid enough: {}",
+                saturation_of(source.colour)
+            );
+            // and it is far from the pale blue, the colour the human had before the round
+            let distance = angle_distance(hue(source.colour), hue(LaserTheme::MOUTH_SLIT));
+            assert!(
+                distance >= 45.0,
+                "the colour of the agent {index} is too close to the pale blue of the human ({distance} degrees)"
+            );
+        }
     }
 
     /// The same key always gets the same colour and the same place; another key gets another colour and another

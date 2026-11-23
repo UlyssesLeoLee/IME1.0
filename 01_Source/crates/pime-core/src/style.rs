@@ -96,6 +96,20 @@ impl Rgb {
         Some(hue.rem_euclid(360.0))
     }
 
+    /// The saturation of this colour, in `0..=1`: how strong the colour is against a grey of the same brightness.
+    ///
+    /// A grey has no saturation at all (`0.0`), a pure colour has all of it (`1.0`). The colour of the mouth of the
+    /// human is **pale** (the saturation is below 0.4) and the colour of an agent is **vivid** (the saturation is at
+    /// least 0.8): that is what tells the keyboard apart from the agents, whatever hue the circle hands them.
+    pub fn saturation(&self) -> f64 {
+        let max = self.r.max(self.g).max(self.b) as f64;
+        let min = self.r.min(self.g).min(self.b) as f64;
+        if max <= 0.0 {
+            return 0.0;
+        }
+        (max - min) / max
+    }
+
     /// The three channels as linear light (the way a light is added, not the way a number is added).
     pub fn to_linear(self) -> [f64; 3] {
         [
@@ -399,6 +413,20 @@ impl LaserTheme {
     pub const MOUTH_SLIT: Rgb = Rgb::new(0x9E, 0xD8, 0xFF);
     /// The soft blue around the slit: the light that leaks into the air.
     pub const MOUTH_HALO: Rgb = Rgb::new(0x3C, 0x8C, 0xFF);
+    /// The slit of the mouth of the human while the **natural language input** is on: a pale amber one.
+    ///
+    /// The mode of the human has to be visible without reading anything (the user asked for it on 2026-11-23:
+    /// 「Ctrl+F12增加可见指示器」), and the mouth of the human is the only thing of the interface that is always on the
+    /// screen. So the mouth keeps the pale blue of the code input and turns amber in the natural language input: the
+    /// amber is the colour of a mouth that is open and about to speak.
+    ///
+    /// The amber is **pale** on purpose: the colour of the human is always a pale one (the saturation of both of them
+    /// is below 0.4), while every agent writes in a **vivid** one (the saturation of the agents is at least 0.8).
+    /// That is what keeps an agent from being mistaken for the keyboard - and it holds for every colour an agent can
+    /// take, without taking a single place of the colour circle away from them.
+    pub const MOUTH_SLIT_NATURAL: Rgb = Rgb::new(0xFF, 0xE0, 0xAA);
+    /// The soft amber around that slit: the light that leaks into the air while the natural language input is on.
+    pub const MOUTH_HALO_NATURAL: Rgb = Rgb::new(0xD9, 0x86, 0x24);
     /// The middle of the beam: cyan.
     pub const BEAM_MID: Rgb = Rgb::new(0x59, 0xE8, 0xFF);
     /// The edge of the beam: magenta.

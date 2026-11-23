@@ -637,4 +637,122 @@ module.exports = [
     to: '        if r >= 16 {',
     suite: CORE,
   },
+
+  // ---- the sign of the mode of the human (Ctrl+F12) ------------------------------------------------------------
+  // The user asked for it on 2026-11-23: 「Ctrl+F12增加可见指示器」. The mouth of the human is the sign (a pale
+  // blue single line in the code input, a double amber line in the natural language input), the panel says the mode
+  // in words, and the mode key tells the interface that the mode changed. Every case below breaks one link of that
+  // chain, so that the round proves the chain really holds - as far as the **unit tests** can reach: the wiring in the
+  // tip layer (`Pending::ModeChanged` -> `sync_laser`) needs a real `ITfThreadMgr` and is covered by the real-machine
+  // test, not by a unit test.
+  {
+    id: 'mode-the-mouth-of-the-human-is-amber',
+    what: 'the mouth of the human is amber in the natural language input',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/mouths.rs',
+    from: 'WritingMode::Natural => LaserTheme::MOUTH_SLIT_NATURAL,',
+    to: 'WritingMode::Natural => LaserTheme::MOUTH_SLIT,',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-natural-mouth-is-open',
+    what: 'the mouth of the human is a double line in the natural language input (the mouth is open)',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/mouths.rs',
+    from: 'matches!(self, WritingMode::Natural)',
+    to: 'matches!(self, WritingMode::Code)',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-mouth-follows-the-mode',
+    what: 'the mouth of the human takes the colour of the mode at once, even when it is already on the screen',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/mouths.rs',
+    from: 'source.colour = mode.slit();',
+    to: 'source.colour = LaserTheme::MOUTH_SLIT;',
+    suite: TSF,
+  },
+  {
+    id: 'mode-no-agent-takes-the-colour-of-the-human',
+    what: 'the colour of the human is pale: an agent (whose colour is vivid) can never be mistaken for the keyboard',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-core/src/style.rs',
+    from: 'pub const MOUTH_SLIT_NATURAL: Rgb = Rgb::new(0xFF, 0xE0, 0xAA);',
+    to: 'pub const MOUTH_SLIT_NATURAL: Rgb = Rgb::new(0xFF, 0xC0, 0x00);',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-two-lines-fall-on-pixel-centres',
+    what: 'the two lines of the open mouth fall on the centre of a pixel (a line between two pixels lights both)',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/laser_ui/paint.rs',
+    from: 'const DOUBLE_SLIT_OFFSET: f64 = 3.0;',
+    to: 'const DOUBLE_SLIT_OFFSET: f64 = 2.5;',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-painter-draws-the-open-mouth',
+    what: 'the painter draws the two lines of the open mouth in the natural language input',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/laser_ui/paint.rs',
+    from: 'let double = mode.is_some_and(|mode| mode.is_double());',
+    to: 'let double = false;',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-screen-knows-the-mode',
+    what: 'the model of the screen carries the mode of the human (the painter reads it from there)',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/laser_ui.rs',
+    from: 'mode: if source.is_user { Some(mode) } else { None },',
+    to: 'mode: if source.is_user { Some(WritingMode::Code) } else { None },',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-key-tells-the-interface',
+    what: 'the mode key tells the interface, so that the sign of the mode follows the mode',
+    req: 'D-177（Ctrl+F12 的可见指示器）/ D-95',
+    file: '01_Source/crates/pime-tsf/src/controller.rs',
+    // The anchor carries the `if changed` in front of it: the line itself is in the file twice (the mode key and
+    // the settings window), and the harness replaces the **first** one it finds.
+    from: 'if changed\n            && let Some(hook) = self.mode_hook.clone()\n        {\n            hook();\n        }',
+    to: 'if changed\n            && let Some(hook) = self.mode_hook.clone().filter(|_| false)\n        {\n            hook();\n        }',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-panel-names-the-mode',
+    what: 'the row of the panel names the thing the switch turns on (the natural language input)',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/tip/panel.rs',
+    from: 'label: "自然语言输入",',
+    to: 'label: "输入模式",',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-panel-says-the-mode-in-words',
+    what: 'the panel says in words which mode the human is in',
+    req: 'D-177（Ctrl+F12 的可见指示器）',
+    file: '01_Source/crates/pime-tsf/src/mouths.rs',
+    from: 'WritingMode::Natural => "自然语言输入",',
+    to: 'WritingMode::Natural => "代码输入",',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-settings-do-not-carry-the-mode-of-the-session',
+    what: 'the settings of the file do not carry the mode of the session (a save must not undo the switch of the user)',
+    req: 'D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）',
+    file: '01_Source/crates/pime-tsf/src/controller.rs',
+    from: 'pub fn the_file_carries_the_mode_of_the_session() -> bool {\n        false\n    }',
+    to: 'pub fn the_file_carries_the_mode_of_the_session() -> bool {\n        true\n    }',
+    suite: TSF,
+  },
+  {
+    id: 'mode-the-mode-is-not-written-to-the-file',
+    what: 'the mode is a state of the text service, not a setting of the file (it must not survive a restart)',
+    req: 'D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）',
+    file: '01_Source/crates/pime-tsf/src/tip/panel.rs',
+    from: '"input_mode" => Some(PanelSwitch::Mode),',
+    to: '"input_mode" => Some(PanelSwitch::Setting),',
+    suite: TSF,
+  },
 ];

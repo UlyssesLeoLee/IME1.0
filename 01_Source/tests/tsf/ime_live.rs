@@ -462,6 +462,14 @@ fn drive_the_edit_control() {
     if switched {
         host.press_ctrl_f12();
     }
+    // The mode really changed: the bridge answers with the mode of the text service, so the **installed** DLL can be
+    // asked what it did (the user asked for a visible sign of the mode on 2026-11-23 - this is the part of it a
+    // machine can check; the pixels are the human's job).
+    let after_the_switch = host.the_mode_of_the_input_method().unwrap_or_default();
+    assert!(
+        after_the_switch.contains("the input mode is on"),
+        "Ctrl+F12 must switch the installed text service to the natural language input: the bridge says {after_the_switch}"
+    );
     // The focus is checked again: a key that goes to another window is typed into somebody else's document.
     let focus_before_typing = host.has_the_focus();
     let modifiers_before_typing = host.modifier_state();

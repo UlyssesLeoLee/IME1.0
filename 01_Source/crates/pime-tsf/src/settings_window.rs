@@ -433,7 +433,7 @@ pub fn toggle_label(toggle: Toggle) -> &'static str {
     match toggle {
         Toggle::SpaceConfirms => "空格上屏（否则空格就是空格）",
         Toggle::AutoCompose => "自动开组合（打字即进入组字）",
-        Toggle::InputMode => "默认进入输入模式（否则直接输入）",
+        Toggle::InputMode => "启动时用自然语言输入（默认是代码输入）",
         Toggle::LaserUi => "显示激光界面",
         Toggle::PunctPaging => "标点翻页（= . ] 翻页，- , [ 后退）",
         Toggle::Vertical => "纵向书写（文字排成一列，Ctrl+Alt+V 也可以切）",

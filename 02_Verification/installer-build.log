@@ -1,31 +1,31 @@
-IME1.0 installer 0.3.2
+IME1.0 installer 0.3.3
   cargo target dir: C:\cargo-target-ime
 
 == pime-core: cargo build --release --target x86_64-pc-windows-gnu -p pime-core --bin pime-core  (.)
-Compiling pime-core v0.3.2 (E:\IME1.0\01_Source\crates\pime-core)
-    Finished `release` profile [optimized] target(s) in 33.17s
+warning: `pime-core` (lib) generated 1 warning (run `cargo fix --lib -p pime-core` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 22.96s
 
 == pime-tsf (text service DLL): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tsf)
-   Compiling pime-tsf v0.3.2 (E:\IME1.0\01_Source\crates\pime-tsf)
-    Finished `release` profile [optimized] target(s) in 27.86s
+warning: `pime-tsf` (lib) generated 3 warnings (run `cargo fix --lib -p pime-tsf` to apply 2 suggestions)
+    Finished `release` profile [optimized] target(s) in 20.81s
 
 == pime-tray (resident tray): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tray)
    Compiling pime-tray v0.1.0 (E:\IME1.0\01_Source\crates\pime-tray)
-    Finished `release` profile [optimized] target(s) in 37.46s
+    Finished `release` profile [optimized] target(s) in 29.72s
 
 == pime-ai-worker (speech service client): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-ai-worker)
-   Compiling pime-ai-worker v0.3.2 (E:\IME1.0\01_Source\crates\pime-ai-worker)
-    Finished `release` profile [optimized] target(s) in 17.13s
+   Compiling pime-ai-worker v0.3.3 (E:\IME1.0\01_Source\crates\pime-ai-worker)
+    Finished `release` profile [optimized] target(s) in 13.80s
 
 == pime-agent (the interface for the AI clients): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-agent)
    Compiling pime-agent v0.1.0 (E:\IME1.0\01_Source\crates\pime-agent)
-    Finished `release` profile [optimized] target(s) in 38.56s
+    Finished `release` profile [optimized] target(s) in 31.86s
 
 == VS Code extension
   note: the extension has no media/ folder yet (P6 produces it); the .vsix is built without one
-  vsce 4.0.0: npx --yes @vscode/vsce@4.0.0 package --no-dependencies --allow-missing-repository --out E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.2.vsix
+  vsce 4.0.0: npx --yes @vscode/vsce@4.0.0 package --no-dependencies --allow-missing-repository --out E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.3.vsix
     | INFO  Files included in the VSIX:
-  | programming-ime-vscode-bridge-0.3.2.vsix
+  | programming-ime-vscode-bridge-0.3.3.vsix
   | ├─ [Content_Types].xml 
   | ├─ extension.vsixmanifest 
   | └─ extension/
@@ -61,8 +61,8 @@ Compiling pime-core v0.3.2 (E:\IME1.0\01_Source\crates\pime-core)
   | 
   | => Run vsce ls --tree to see all included files.
   | 
-  |  DONE  Packaged: E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.2.vsix (50 files, 213.84 KB)
-  programming-ime-vscode-bridge-0.3.2.vsix: 218970 bytes, 50 files
+  |  DONE  Packaged: E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.3.vsix (50 files, 213.84 KB)
+  programming-ime-vscode-bridge-0.3.3.vsix: 218970 bytes, 50 files
          [Content_Types].xml
          extension.vsixmanifest
          extension/LICENSE.txt
@@ -117,8 +117,8 @@ Compiling pime-core v0.3.2 (E:\IME1.0\01_Source\crates\pime-core)
   ok   contains src/ (33 files), package.nls*.json (3), LICENSE, language-packs/ (7), language-plugins/ (3)
   note: no media/ in the package (the extension folder has none yet)
   ok   no scripts/, .vscode/, node_modules/, tests or source maps
-  ok   package.json version 0.3.2
-  ok   extension.vsixmanifest: pime-local-prototype.programming-ime-vscode-bridge 0.3.2
+  ok   package.json version 0.3.3
+  ok   extension.vsixmanifest: pime-local-prototype.programming-ime-vscode-bridge 0.3.3
   ok   33 JavaScript files pass node --check
   ok   every relative require() and __dirname path resolves inside the package
   note: extension/src/core/languages.js: ../../../../language-packs leaves the extension (development-layout fallback of findPackDir() (the in-package language-packs/ is tried first))
@@ -126,8 +126,8 @@ Compiling pime-core v0.3.2 (E:\IME1.0\01_Source\crates\pime-core)
   ok   negative control: without the packaged language-packs/ the same call fails (it does not find the repository copy)
 
 == pime-setup (installer stub): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-setup)
-   Compiling pime-setup v0.3.2 (E:\IME1.0\01_Source\crates\pime-setup)
-    Finished `release` profile [optimized] target(s) in 20.70s
+   Compiling pime-setup v0.3.3 (E:\IME1.0\01_Source\crates\pime-setup)
+    Finished `release` profile [optimized] target(s) in 17.36s
 
 == checks on the result
 ok   machine is x64 (0x8664), found x64 (AMD64)
@@ -140,11 +140,8 @@ ok   the payload program pime-tray.exe is x64 and imports only Windows system DL
 ok   the payload program pime-ai-worker.exe is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, crypt32.dll, kernel32.dll, msvcrt.dll, ntdll.dll, winhttp.dll)
 ok   the payload program pime-mcp.exe is x64 and imports only Windows system DLLs (api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, kernel32.dll, msvcrt.dll, ntdll.dll, user32.dll)
 ok   the payload program pime-ime.exe is x64 and imports only Windows system DLLs (advapi32.dll, api-ms-win-core-synch-l1-2-0.dll, bcryptprimitives.dll, kernel32.dll, msvcrt.dll, ntdll.dll, user32.dll, ws2_32.dll)
+FAIL --dry-run finds and verifies the payload (exit null)
+ok   --dry-run created nothing
 
-build-installer: OK
-  installer   E:\IME1.0\01_Source\dist\ProgrammingIME-0.3.2-win-x64-setup.exe
-              10393898 bytes   sha256 c9d562256cff7ccaaf0e42a054379ca28b996d02e7b51de7350b582963a57508   (ProgrammingIME-0.3.2-win-x64-setup.exe.sha256 written)
-  stub        788480 bytes (pime-setup.exe, x64 console, unsigned)
-  payload     pime_tsf.dll 2698752, pime-core.exe 3216956, LICENSE 1085, programming-ime.vsix 218970, pime.ico 66724, pime-tray.exe 1136640, pime-ai-worker.exe 400896, pime-mcp.exe 1013760, pime-ime.exe 850944, meta.json 87
-  extension   programming-ime-vscode-bridge-0.3.2.vsix 218970 bytes, 50 files, id pime-local-prototype.programming-ime-vscode-bridge
-  NOT signed (SmartScreen will warn). NOT run: the text service DLL is unverified in a VM, so this is a pre-release.
+
+build-installer FAILED: 1 check(s) failed

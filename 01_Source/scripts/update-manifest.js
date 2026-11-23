@@ -259,6 +259,9 @@ const ADDITIONS = [
   // live harness (2026-11-19; the key events do not reach the text service - D-170)
   '01_Source/tests/tsf/ime_live.rs',
   '01_Source/tests/tsf/common/ime_live.rs',
+  // the probe that renders the mouth of the human in the two modes (the sign of the mode - D-177) and its picture
+  '01_Source/crates/pime-tsf/examples/laser_mode_probe.rs',
+  '02_Verification/ime-ui/mode-indicator.png',
 ];
 
 const isBinary = bytes => bytes.includes(0);

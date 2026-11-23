@@ -66,7 +66,9 @@ fn laser_items(
     vec![
         PanelItem::Toggle {
             key: "input_mode",
-            label: "输入模式",
+            // The row names the thing the switch turns **on**, so that the switch is never a guess: it is on in the
+            // natural language input (the letters are eaten) and off in the code input (the default).
+            label: "自然语言输入",
             on: input_mode,
         },
         PanelItem::Toggle {
@@ -249,6 +251,13 @@ impl Inner {
     ///
     /// The menus and the laser panel all go through here, so that they can never disagree about what the setting is.
     fn set_option(&mut self, name: &str, on: bool) {
+        // The mode is a state of the controller, not a setting of the file: it is the same thing Alt+F1 does, and it
+        // must not survive a restart (see `switch_of`).
+        if switch_of(name) == Some(PanelSwitch::Mode) {
+            self.controller.set_input_mode(on);
+            self.sync_laser();
+            return;
+        }
         let mut value = self.settings;
         match name {
             "tab_cycles" => value.tab_cycles = on,
@@ -257,13 +266,6 @@ impl Inner {
             "auto_compose" => value.auto_compose = on,
             "punct_paging" => value.punct_paging = on,
             "laser_ui" => value.laser_ui = on,
-            "input_mode" => {
-                // The input mode is a state of the controller, not a file: it is the same thing Alt+F1 does.
-                self.controller.set_input_mode(on);
-                self.settings = value;
-                self.sync_laser();
-                return;
-            }
             _ => return,
         }
         // A key that the user turns by hand is no longer the one of the scheme: the scheme becomes "custom".
@@ -405,6 +407,12 @@ impl Inner {
         let Ok(mut laser) = self.laser.try_borrow_mut() else {
             return;
         };
+        // The mode of the human is **visible**: the mouth of the human is a pale blue line in the code input and a
+        // double amber line in the natural language input. The mouth is the only part of the interface that is always
+        // on the screen, so it is the sign of the mode (the user asked for it on 2026-11-23).
+        // The sign shows the mode that is **really** in force: in a password field nothing is eaten, whatever the mode
+        // is, and a sign that says "the letters are eaten" where they are not is a lie.
+        laser.set_input_mode(self.controller.effective_input_mode());
         laser.set_items(items);
         laser.set_place(
             crate::laser::MouthPlace::from_text(&self.mouth_place),
@@ -413,6 +421,31 @@ impl Inner {
         // says nothing about it (the hide happened in a callback of one of its own windows).
         let work = work_area_of(Rect::new(0, 0, 0, 0));
         laser.show(work);
+    }
+}
+
+/// What the panel does with one of its switches.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum PanelSwitch {
+    /// A setting of the file: the value is written to `settings.json`.
+    Setting,
+    /// The mode of the text service: it is **not** written to the file.
+    Mode,
+}
+
+/// What the panel does with the switch of the given key.
+///
+/// The mode is a **state of the text service**, not a setting of the file: it is the same thing Alt+F1 does, and a
+/// mode that survived a restart would come back as the natural language input without the user asking for it (the
+/// code input is the factory mode - the user decided that on 2026-11-11). Every other switch of the panel is a
+/// setting of the file.
+pub(super) fn switch_of(name: &str) -> Option<PanelSwitch> {
+    match name {
+        "tab_cycles" | "tab_to_host" | "space_confirms" | "auto_compose" | "punct_paging" | "laser_ui" => {
+            Some(PanelSwitch::Setting)
+        }
+        "input_mode" => Some(PanelSwitch::Mode),
+        _ => None,
     }
 }
 
@@ -466,6 +499,53 @@ impl crate::demo::DemoHost for DemoHost<'_> {
 mod tests {
     use super::*;
 
+    /// The mode of the text service is **not** a setting of the file: it must not survive a restart.
+    ///
+    /// The user decided on 2026-11-11 that the factory mode is the **code input**; a mode that came back as the
+    /// natural language input after a restart would eat the letters of the code without the user asking for it.
+    #[test]
+    fn the_mode_is_not_written_to_the_settings_file() {
+        assert_eq!(
+            switch_of("input_mode"),
+            Some(PanelSwitch::Mode),
+            "the mode is a state of the text service, not a setting of the file"
+        );
+        for key in [
+            "tab_cycles",
+            "tab_to_host",
+            "space_confirms",
+            "auto_compose",
+            "punct_paging",
+            "laser_ui",
+        ] {
+            assert_eq!(switch_of(key), Some(PanelSwitch::Setting), "{key} is a setting of the file");
+        }
+        assert_eq!(switch_of("nothing"), None, "a key that is not a switch does nothing");
+    }
+
+    /// The panel says in words which mode the human is in: the two lines must not be the same, and neither of them
+    /// may be empty (a line that says nothing says nothing).
+    ///
+    /// The user asked for a visible sign of the mode on 2026-11-23 ("Ctrl+F12增加可见指示器").
+    #[test]
+    fn the_panel_says_in_words_which_mode_the_human_is_in() {
+        let code = crate::mouths::WritingMode::Code.label();
+        let natural = crate::mouths::WritingMode::Natural.label();
+        assert!(!code.is_empty(), "the line of the code input says something");
+        assert!(!natural.is_empty(), "the line of the natural language input says something");
+        assert_ne!(code, natural, "the two modes do not say the same thing");
+        assert!(code.contains("代码"), "the code input is named: {code}");
+        assert!(natural.contains("自然语言"), "the natural language input is named: {natural}");
+        assert_eq!(
+            crate::mouths::WritingMode::from_natural(true),
+            crate::mouths::WritingMode::Natural
+        );
+        assert_eq!(
+            crate::mouths::WritingMode::from_natural(false),
+            crate::mouths::WritingMode::Code
+        );
+    }
+
     /// The panel of the laser interface must have exactly the number of rows its window is tall enough for.
     #[test]
     fn the_panel_has_the_number_of_rows_its_window_expects() {
@@ -510,7 +590,11 @@ mod tests {
 
         // the first row is the switch of the input mode, and it shows the mode that is on
         assert!(items[0].is_toggle(), "the first row is a switch: {items:?}");
-        assert_eq!(items[0].label(), "输入模式");
+        assert_eq!(
+            items[0].label(),
+            "自然语言输入",
+            "the row names the thing the switch turns on: the switch is on in the natural language input"
+        );
         assert_eq!(items[0].value(), "开", "the input mode is on: {items:?}");
 
         // a switch shows the setting that is really in force - and that holds in both states

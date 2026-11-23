@@ -474,6 +474,12 @@ pub struct PanelLayout {
     pub rows: Vec<(PanelItem, Rect)>,
     /// The one line the panel shows under its rows: what the last action did.
     pub status: Option<String>,
+    /// The mode of the human, on a line of its own under the rows.
+    ///
+    /// It has a line of its own because the line of the last action belongs to the last action (the report of the
+    /// demonstration, the message of the secure field), and a sign of the mode that another action can wipe is not a
+    /// sign.
+    pub mode: Option<String>,
 }
 
 impl PanelLayout {
@@ -491,6 +497,7 @@ impl PanelLayout {
             height: y + padding,
             rows,
             status: None,
+            mode: None,
         }
     }
 

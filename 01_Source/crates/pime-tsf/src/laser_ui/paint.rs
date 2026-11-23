@@ -10,12 +10,22 @@ use pime_core::style::{BRAND_RAINBOW, Canvas, LaserTheme, PixelRect, Rgb, mix};
 use crate::glass::Model;
 use crate::laser::{Mouth, PanelItem, mouth_slit};
 use crate::layout::{Rect, TextMetrics};
+use crate::mouths::WritingMode;
 use crate::paint::LayeredSurface;
 
 use super::{PANEL_HANDLE, PANEL_ROW_HEIGHT};
 
 /// How long the light of the mouth takes to breathe once (in milliseconds).
 const SLIT_PULSE_MS: u64 = 2600;
+
+/// How far the two lines of the mouth of the natural language input are from each other (in pixels).
+///
+/// The natural language input is a mouth that is open: the light comes out of it in two lines. The code input is a
+/// mouth at rest: one hairline. The user asked for the mode to be visible on 2026-11-23 ("Ctrl+F12增加可见指示器").
+///
+/// The distance is a whole number of pixels, so that each of the two lines falls on the **centre** of a pixel and
+/// stays a crisp hairline instead of lighting two half pixels.
+const DOUBLE_SLIT_OFFSET: f64 = 3.0;
 
 /// How deep the gradient of the brand rainbow along the top of the panel reaches.
 const PANEL_RAINBOW_BAND: f64 = 9.0;
@@ -35,6 +45,7 @@ pub(super) fn paint_glow(surface: &mut LayeredSurface, model: &Model, key: &str)
         model.now_ms,
         state.colour,
         state.halo,
+        state.mode,
     );
 }
 
@@ -47,6 +58,10 @@ pub(super) fn paint_glow(surface: &mut LayeredSurface, model: &Model, key: &str)
 /// visible" ("若隐若现有一小截淡蓝色半透明激光"), so it is a hairline of pale blue with a soft halo around it
 /// and nothing else: no ring of the brand colours, no white core. It breathes slowly, so that the eye finds it
 /// without it asking for attention.
+///
+/// The **mode of the human** is shown by the mouth itself: one pale blue line in the code input, a **double amber
+/// line** in the natural language input. The mouth of the human is the only part of the interface that is always on
+/// the screen, so it is the sign of the mode (the user asked for it on 2026-11-23).
 pub(super) fn draw_glow(
     canvas: &mut Canvas,
     mouth: Mouth,
@@ -54,6 +69,7 @@ pub(super) fn draw_glow(
     now_ms: u64,
     colour: Rgb,
     halo_colour: Rgb,
+    mode: Option<WritingMode>,
 ) {
     let slit = mouth_slit(&mouth);
     // The line is put on the centre of a pixel: a line of light that falls between two pixels would light two of them
@@ -66,15 +82,23 @@ pub(super) fn draw_glow(
     let halo = slit.halo as f64;
     // The light breathes: it is there, but it does not demand the eye.
     let breathe = 0.78 + 0.22 * ((now_ms as f64 / SLIT_PULSE_MS as f64) * std::f64::consts::TAU).sin();
+    // The mouth of the natural language input is open: the light comes out of it in two lines.
+    let double = mode.is_some_and(|mode| mode.is_double());
     for y in 0..canvas.height {
         for x in 0..canvas.width {
             let px = x as f64 + 0.5;
             let py = y as f64 + 0.5;
             // How far the pixel is from the line of the slit, and how far along it it is.
-            let (across, along) = if slit.vertical {
-                ((px - centre_x).abs(), (py - centre_y).abs())
+            let (signed, along) = if slit.vertical {
+                (px - centre_x, (py - centre_y).abs())
             } else {
-                ((py - centre_y).abs(), (px - centre_x).abs())
+                (py - centre_y, (px - centre_x).abs())
+            };
+            // The distance to the nearest line: the middle one, or the nearer of the two of the open mouth.
+            let across = if double {
+                (signed.abs() - DOUBLE_SLIT_OFFSET).abs()
+            } else {
+                signed.abs()
             };
             if along > half {
                 continue;
@@ -288,14 +312,25 @@ pub(super) fn paint_panel(surface: &mut LayeredSurface, model: &Model, _key: &st
             }
             let _ = index;
         }
-        // The status of the panel: the one line under the rows, in the room that is left for it.
+        // The mode of the human: a line of its own, under the rows. The line below it belongs to the last action, and
+        // a sign of the mode that another action can wipe is not a sign.
+        if let Some(mode) = layout.mode.as_deref() {
+            let left = layout
+                .rows
+                .first()
+                .map(|(_, rect)| rect.left)
+                .unwrap_or(PANEL_HANDLE);
+            surface.draw_text(font, LaserTheme::DIM, left, PANEL_HANDLE + layout.rows.len() as i32 * PANEL_ROW_HEIGHT + 2, mode);
+        }
+        // The status of the panel: the one line under the rows, in the room that is left for it (what the last action
+        // did).
         if let Some(status) = layout.status.as_deref() {
             let left = layout
                 .rows
                 .first()
                 .map(|(_, rect)| rect.left)
                 .unwrap_or(PANEL_HANDLE);
-            let top = PANEL_HANDLE + layout.rows.len() as i32 * PANEL_ROW_HEIGHT + 4;
+            let top = PANEL_HANDLE + layout.rows.len() as i32 * PANEL_ROW_HEIGHT + 20;
             surface.draw_text(font, LaserTheme::DIM, left, top, status);
         }
     }

@@ -25,6 +25,7 @@ use windows::core::{PCWSTR, w};
 
 use crate::laser::{Beam, Mouth, PanelLayout};
 use crate::layout::Rect;
+use crate::mouths::WritingMode;
 use crate::paint::LayeredSurface;
 use pime_core::style::Rgb;
 
@@ -171,6 +172,12 @@ pub struct MouthState {
     pub mouth: Mouth,
     /// The rectangle of the window of the glow of this mouth, in screen coordinates.
     pub window: Rect,
+    /// The way the human writes, when this mouth is the mouth of the human.
+    ///
+    /// It is `None` for the mouth of an agent: an agent writes in its own colour, whatever the mode of the keyboard
+    /// is. It is the sign of the mode of the human: one pale blue line in the code input, a double amber line in the
+    /// natural language input.
+    pub mode: Option<WritingMode>,
 }
 
 /// What the windows draw and what the mouse works on.

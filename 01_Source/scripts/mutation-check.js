@@ -36,6 +36,10 @@ const write = line => {
 
 // ---- the suites that have to notice -------------------------------------------------------------------------
 const TARGET_DIR = process.env.CARGO_TARGET_DIR || 'C:\\cargo-target-ime';
+// The environment of the suite is the environment of the developer **minus the switches that would make the suite
+// fail for a reason that has nothing to do with the mutation**: the live tests drive the installed text service and
+// take the focus of the desktop, so a stray `PIME_IME_LIVE` in the shell that starts the gate would make every case
+// fail for an environment reason - the round would be green for the wrong reason.
 const RUST_ENV = {
   ...process.env,
   CARGO_TARGET_DIR: TARGET_DIR,
@@ -44,6 +48,8 @@ const RUST_ENV = {
   CARGO_PROFILE_DEV_DEBUG: '0',
   CARGO_INCREMENTAL: '0',
 };
+delete RUST_ENV.PIME_IME_LIVE;
+delete RUST_ENV.PIME_AGENT_BRIDGE_HWND;
 
 function runSuite(suite) {
   // A run that is killed by the machine (the file of the DLL is locked by the scanner, the cargo cannot get the
@@ -65,10 +71,15 @@ function runSuite(suite) {
 function runSuiteOnce(suite) {
   if (suite.kind === 'js') {
     const file = path.join(root, '01_Source', 'tests', 'js', suite.file);
+    const env = {...process.env, ...(suite.env || {})};
+    // The live switch must not reach the JavaScript suite either: a stray `PIME_IME_LIVE` would make the suite fail
+    // for a reason that has nothing to do with the mutation.
+    delete env.PIME_IME_LIVE;
+    delete env.PIME_AGENT_BRIDGE_HWND;
     const result = spawnSync(process.execPath, ['--test', '--test-reporter=tap', suite.file], {
       cwd: path.join(root, '01_Source', 'tests', 'js'),
       encoding: 'utf8',
-      env: {...process.env, ...(suite.env || {})},
+      env,
       maxBuffer: 256 * 1024 * 1024,
     });
     return {status: result.status === null ? -1 : result.status, out: `${result.stdout || ''}${result.stderr || ''}`};
@@ -89,11 +100,6 @@ function runSuiteOnce(suite) {
 
 // ---- the run ------------------------------------------------------------------------------------------------
 const digest = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-const before = new Map();
-for (const item of cases) {
-  const file = path.join(root, item.file);
-  if (!before.has(file)) before.set(file, {bytes: fs.readFileSync(file), digest: digest(file)});
-}
 
 if (list) {
   for (const item of cases) console.log(`${item.id}\t${item.what}\t${item.file}\t${item.suite.kind}:${item.suite.crate || item.suite.file}`);
@@ -107,12 +113,26 @@ const BACKUP_DIR = path.join(os.tmpdir(), 'ime-mutation-backups');
 const backupName = relative => relative.split('/').join('__');
 
 function restoreLeftovers() {
-  if (!fs.existsSync(BACKUP_DIR)) return 0;
+  if (!fs.existsSync(BACKUP_DIR)) return {restored: 0, kept: []};
   let restored = 0;
+  const kept = [];
   for (const name of fs.readdirSync(BACKUP_DIR)) {
     const backup = path.join(BACKUP_DIR, name);
     const target = path.join(root, name.split('__').join('/'));
     try {
+      // The file may have changed **after** the run was killed (the developer is working in the tree): their version
+      // is the newer one, so it stays. The backup is written aside instead of being copied over it, and the round says
+      // so - a restore that quietly throws away the work of the developer is worse than a broken file.
+      let differs = true;
+      try {
+        differs = fs.readFileSync(target, 'utf8') !== fs.readFileSync(backup, 'utf8');
+      } catch { /* the target is gone: the backup is the only copy left */ }
+      if (differs) {
+        const aside = `${backup}.kept`;
+        fs.renameSync(backup, aside);
+        kept.push({target, aside});
+        continue;
+      }
       fs.copyFileSync(backup, target);
       fs.unlinkSync(backup);
       touch(target);
@@ -121,7 +141,7 @@ function restoreLeftovers() {
       // a file that cannot be restored is reported by the restore check at the end of the run
     }
   }
-  return restored;
+  return {restored, kept};
 }
 
 // The mtime of a restored file has to move FORWARD.
@@ -136,7 +156,12 @@ function touch(file) {
 
 function backup(relative, bytes) {
   fs.mkdirSync(BACKUP_DIR, {recursive: true});
-  fs.writeFileSync(path.join(BACKUP_DIR, backupName(relative)), bytes);
+  // The backup is written **atomically**: a temporary file and a rename. A kill in the middle of the write would
+  // otherwise leave a truncated backup, and the next run would copy it over a good source file (D-178).
+  const name = path.join(BACKUP_DIR, backupName(relative));
+  const temporary = `${name}.tmp`;
+  fs.writeFileSync(temporary, bytes);
+  fs.renameSync(temporary, name);
 }
 
 function undoBackup(relative) {
@@ -147,17 +172,36 @@ function undoBackup(relative) {
 }
 
 const restoredAtStart = restoreLeftovers();
-if (restoredAtStart) {
-  console.log(`note: ${restoredAtStart} file(s) of a killed run were put back before this run started`);
+if (restoredAtStart.restored) {
+  console.log(`note: ${restoredAtStart.restored} file(s) of a killed run were put back before this run started`);
 }
-if (!args.includes('--append')) {
-  fs.writeFileSync(REPORT, `# The red-green check of ${new Date().toISOString()}\n# ${cases.length} mutations of the implementation; every one of them is restored right after it is applied.\n\n`, 'utf8');
+for (const kept of restoredAtStart.kept) {
+  console.log(`note: ${kept.target} was changed after a killed run: your version was kept, the copy of the run is in ${kept.aside}`);
+}
+
+// The snapshot of the files this run breaks is taken **after** the leftovers were put back: it has to hold the bytes
+// the tree is supposed to have, not the broken ones a killed run left behind. The snapshot taken before the restore
+// made every run after a killed one report "these files were not restored" although they were (D-178).
+const before = new Map();
+for (const item of cases) {
+  const file = path.join(root, item.file);
+  if (!before.has(file)) before.set(file, {bytes: fs.readFileSync(file), digest: digest(file)});
 }
 
 const wanted = only ? only.split(',').map(prefix => prefix.trim()).filter(Boolean) : [];
 const selected = wanted.length ? cases.filter(item => wanted.some(prefix => item.id.startsWith(prefix))) : cases;
+if (!args.includes('--append')) {
+  // The header names the **selected** count: a partial round must not look like a whole one in the file alone (the
+  // note used to go to the console only, so a reader of the committed report could not tell).
+  const scope = selected.length === cases.length
+    ? `all ${cases.length} mutations of the implementation were checked in this round`
+    : `${selected.length} of the ${cases.length} mutations of the implementation were checked in this round`;
+  fs.writeFileSync(REPORT, `# The red-green check of ${new Date().toISOString()}\n# ${scope}; every one of them is restored right after it is applied.\n`, 'utf8');
+}
 if (wanted.length && selected.length !== cases.length) {
-  console.log(`note: ${selected.length} of the ${cases.length} cases are selected`);
+  const note = `note: ${selected.length} of the ${cases.length} cases are selected`;
+  console.log(note);
+  fs.appendFileSync(REPORT, `# ${note}\n`, 'utf8');
 }
 
 // Every mutation rebuilds a crate, so the run needs room on the disk of the target directory. When the disk is
@@ -192,6 +236,8 @@ let stale = 0;
 const misses = [];
 const stales = [];
 const errors = [];
+// The files that somebody else changed while a case was running: they are not damage, they are the developer's work.
+const changedElsewhere = [];
 
 // The anchor of a case is written with LF in the cases file, but the files in the repository do not all use the
 // same line endings (the working tree has CRLF in some of them) => a plain comparison never matches and the case
@@ -223,8 +269,11 @@ for (const item of selected) {
     stales.push(item.id);
     continue;
   }
-  fs.writeFileSync(file, mutated, 'utf8');
+  // The backup comes **before** the mutation: a run that is killed between the two would leave a broken file in the
+  // tree **and no backup at all**, and the next run would take the broken bytes for the original, report that every
+  // file was restored and end green with a broken implementation in the tree (D-178).
   backup(item.file, Buffer.from(original, 'utf8'));
+  fs.writeFileSync(file, mutated, 'utf8');
   let status = 0;
   let out = '';
   try {
@@ -235,19 +284,36 @@ for (const item of selected) {
     status = -1;
     out = String(error.message || error);
   } finally {
-    // the original file comes back whatever happened
-    fs.writeFileSync(file, original, 'utf8');
-    undoBackup(item.file);
-    touch(file); // the artefact of the broken source is the newer one: cargo has to rebuild it (D-133)
+    // The original file comes back whatever happened - **unless** somebody else changed it while the case was running
+    // (the developer is editing the tree): restoring then would throw their work away. Their version stays, the backup
+    // is dropped (it must not come back at the next run either) and the round says so.
+    const current = fs.readFileSync(file, 'utf8');
+    if (current === mutated) {
+      fs.writeFileSync(file, original, 'utf8');
+      undoBackup(item.file);
+      touch(file); // the artefact of the broken source is the newer one: cargo has to rebuild it (D-133)
+    } else {
+      const leftover = path.join(BACKUP_DIR, backupName(item.file));
+      if (fs.existsSync(leftover)) fs.unlinkSync(leftover);
+      changedElsewhere.push(file);
+      write(`note: ${item.file} was changed by somebody else while the case ran: it was left as it is`);
+    }
   }
   // The suite has to **fail on an assertion**, not merely to stop: a build that does not compile, a test binary
   // that crashes or a cargo that cannot get the lock are all "the suite did not run", not "the suite noticed".
+  //
+  // A test binary that could **not be executed** is the same thing and must not be counted as a catch: the security
+  // scanner of the machine quarantines a freshly linked binary (D-138) and cargo prints "error: test failed" for it
+  // too ⇒ the round would be green for the wrong reason (the suite "noticed" the break because the test could not
+  // run at all).
+  const blockedBinary = /could not execute process|never executed|os error 5/i.test(out);
   const failedAssertion =
-    /test result: FAILED/.test(out) ||
-    /^failures:/m.test(out) ||
-    /^not ok \d+/m.test(out) ||
-    /^# fail [1-9]/m.test(out) ||
-    /error: test failed/.test(out);
+    !blockedBinary &&
+    (/test result: FAILED/.test(out) ||
+      /^failures:/m.test(out) ||
+      /^not ok \d+/m.test(out) ||
+      /^# fail [1-9]/m.test(out) ||
+      /error: test failed/.test(out));
   if (status === 0) {
     missed++;
     misses.push(item.id);
@@ -260,10 +326,18 @@ for (const item of selected) {
   } else {
     errors.push(item.id);
     // the reason matters: "the suite did not run" is what the report says, but the reader has to know whether the
-    // machine was the reason (a full disk, a cargo that is not on the PATH) or the code (D-135, D-147)
+    // machine was the reason (a full disk, a cargo that is not on the PATH, the scanner that holds a fresh test
+    // binary - D-138) or the code (D-135, D-147)
     const diskFull = /no space left on device|os error 112|disk full/i.test(out);
     const noCargo = /is not recognized|not found/i.test(out) && /cargo/i.test(out);
-    const cause = diskFull ? 'the disk was full' : noCargo ? 'cargo was not on the PATH' : '';
+    const scanner = blockedBinary;
+    const cause = scanner
+      ? 'the scanner of the machine held the test binary (D-138): run the target by hand before the gate'
+      : diskFull
+        ? 'the disk was full'
+        : noCargo
+          ? 'cargo was not on the PATH'
+          : '';
     write(`ERROR ${item.id} ${anchor(item)}${item.what}  <-- the suite did not run (exit ${status}): the result is unknown${cause ? ' (' + cause + ')' : ''}`);
     noteAnchor(item, 'unknown');
     const lines = out.split(/\r?\n/).filter(line => /error|warning: unused|no space left|os error 1\d\d|is not recognized/i.test(line)).slice(0, 3);
@@ -274,26 +348,39 @@ for (const item of selected) {
 // ---- the restore is verified, not trusted ---------------------------------------------------------------------
 const damaged = [];
 for (const [file, state] of before) {
+  // A file that somebody else changed while a case was running is not damage: it is the developer's work.
+  if (changedElsewhere.includes(file)) continue;
   if (digest(file) !== state.digest) damaged.push(path.relative(root, file));
 }
 write('');
 write(`the run checked ${caught + missed + errors.length + stale} mutations: ${caught} caught, ${missed} missed, ${errors.length} unknown (the suite did not run), ${stale} stale`);
+// Every failure is written down and the exit code is the most severe one. The code used to leave at the first
+// failure, so a round with a missed **and** a stale case lost the evidence of the stale one (D-178).
+//
+// The exit codes (every one of them means "the round is red", and the report says which one it was):
+//   1  the suite does not notice a mutation (a hole in the test suite)
+//   2  a file was not restored (the tree is not the one the round found)
+//   3  the result of a mutation is unknown (the suite did not run: the machine, not the code)
+//   4  a mutation is stale (the text to break is not in the file any more: it verified nothing - D-111)
+// The order below is the order of severity: a damaged tree first (nothing else can be believed), then the unknown
+// results, then the missed ones, then the stale ones.
+let exitCode = 0;
 if (damaged.length) {
   write(`FAIL: these files were not restored: ${damaged.join(', ')}`);
-  process.exit(2);
+  exitCode = 2;
 }
 if (errors.length) {
   write(`the result of ${errors.length} mutation(s) is unknown: ${errors.join(', ')}`);
-  process.exit(3);
+  if (!exitCode) exitCode = 3;
 }
 if (missed) {
   write(`the suite does not notice ${missed} mutation(s): ${misses.join(', ')}`);
-  process.exit(1);
+  if (!exitCode) exitCode = 1;
 }
 if (stale) {
   write(`the suite did not verify ${stale} mutation(s): the text to break is not in the file any more (${stales.join(', ')})`);
   write('a stale case is a failure: a case that is written wrong or whose anchor is gone has verified nothing (D-111)');
-  process.exit(4);
+  if (!exitCode) exitCode = 4;
 }
 write('');
 write('by the design entry (what the round says about each requirement):');
@@ -304,5 +391,10 @@ for (const [key, entry] of [...byAnchor.entries()].sort((a, b) => a[0].localeCom
   if (entry.unknown) parts.push(entry.unknown + ' unknown');
   if (entry.stale) parts.push(entry.stale + ' stale');
   write(`  ${key}: ${parts.join(', ')}`);
+}
+if (exitCode) {
+  write('');
+  write(`the round is RED (exit ${exitCode})`);
+  process.exit(exitCode);
 }
 write('every mutation was caught: the suite really pins these behaviours');

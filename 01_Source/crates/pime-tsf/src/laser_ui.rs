@@ -41,9 +41,10 @@ use crate::laser::{
     PanelLayout, mouth_at, panel_beside, panel_place, place_at,
 };
 use crate::layout::Rect;
-use crate::mouths::{MOUTH_RADIUS, MouthRegistry, MouthSource, USER_KEY, USER_LABEL};
+use crate::mouths::{MOUTH_RADIUS, MouthRegistry, MouthSource, USER_KEY, USER_LABEL, WritingMode};
 use crate::popup::GdiObject;
 use crate::ui::Anchor;
+use pime_core::style::{Canvas, Rgb};
 
 /// How wide the window of the mouth is.
 ///
@@ -136,6 +137,12 @@ pub struct LaserUi {
     panel: Option<GlassWindow>,
     /// The registry of the mouths: every source gets its own colour and its own place.
     registry: MouthRegistry,
+    /// The way the human writes right now: the mouth of the human shows it.
+    ///
+    /// The mouth of the human is the only thing of the interface that is always on the screen, so it is the sign of
+    /// the mode: one pale blue line in the code input, a double amber line in the natural language input. The user
+    /// asked for it on 2026-11-23 ("Ctrl+F12增加可见指示器").
+    mode: WritingMode,
     /// The font, kept alive for as long as the interface lives.
     font: Option<(u32, GdiObject)>,
     /// What the user asked for.
@@ -222,6 +229,7 @@ impl LaserUi {
                 beam: None,
                 panel: None,
                 registry: MouthRegistry::new(),
+                mode: WritingMode::Code,
                 font: None,
                 sink,
                 hover_since: None,
@@ -334,6 +342,33 @@ impl LaserUi {
             self.sync_mouths();
             self.repaint_all();
         }
+    }
+
+    /// The way the human writes: the mouth of the human shows it.
+    ///
+    /// The user asked for a visible sign of the mode on 2026-11-23 ("Ctrl+F12增加可见指示器"): the mouth of the
+    /// human is the only part of the interface that is always on the screen, so it is the sign. One pale blue line in
+    /// the code input, a double amber line in the natural language input.
+    pub fn set_input_mode(&mut self, natural: bool) {
+        let mode = if natural {
+            WritingMode::Natural
+        } else {
+            WritingMode::Code
+        };
+        if self.mode == mode {
+            return;
+        }
+        self.mode = mode;
+        self.registry.set_user_mode(mode);
+        if self.visible {
+            self.sync_mouths();
+            self.repaint_all();
+        }
+    }
+
+    /// The way the human writes right now.
+    pub fn writing_mode(&self) -> WritingMode {
+        self.mode
     }
 
     /// Put the interface on the screen (the work area of the monitor the caret is on).
@@ -989,12 +1024,12 @@ impl LaserUi {
         let place = self.place.unwrap_or_else(|| MouthPlace::default_in(work));
         // the mouth of the human: the place the user put it
         let user = self.registry.obtain(USER_KEY, USER_LABEL, work, place);
-        let mut states = vec![mouth_state(&user)];
+        let mut states = vec![mouth_state(&user, self.mode)];
         for source in self.registry.sources() {
             if source.is_user {
                 continue;
             }
-            states.push(mouth_state(&source));
+            states.push(mouth_state(&source, self.mode));
         }
         // the windows of the mouths that are gone go with them
         self.glows
@@ -1042,6 +1077,9 @@ impl LaserUi {
         let height = panel_height(layout.rows.len());
         self.panel_height = height;
         layout.status = self.status.clone();
+        // The mode of the human has a line of its own: the line of the status belongs to the last action, and a sign
+        // of the mode that another action can wipe is not a sign.
+        layout.mode = Some(format!("当前：{}", self.mode.label()));
         self.model.borrow_mut().panel.layout = layout;
         // the rows changed: the picture of the panel has to be drawn again
         self.panel_dirty = true;
@@ -1121,8 +1159,25 @@ impl LaserUi {
     }
 }
 
+/// The picture of the glow of a mouth, drawn into a canvas.
+///
+/// The painters live in a private module, so the probes of the crate (the examples) could not draw the mouth of the
+/// two modes into a picture of their own. This is the **same function** the windows use, with the same arguments:
+/// the picture of a probe is the picture of the screen.
+pub fn draw_glow(
+    canvas: &mut Canvas,
+    mouth: Mouth,
+    origin: Rect,
+    now_ms: u64,
+    colour: Rgb,
+    halo_colour: Rgb,
+    mode: Option<WritingMode>,
+) {
+    paint::draw_glow(canvas, mouth, origin, now_ms, colour, halo_colour, mode)
+}
+
 /// The state of a mouth of light, in the shape the painters read.
-fn mouth_state(source: &MouthSource) -> MouthState {
+fn mouth_state(source: &MouthSource, mode: WritingMode) -> MouthState {
     let left = source.mouth.x - GLOW_SIZE / 2;
     let top = source.mouth.y - GLOW_SIZE / 2;
     MouthState {
@@ -1132,6 +1187,8 @@ fn mouth_state(source: &MouthSource) -> MouthState {
         halo: source.halo,
         mouth: source.mouth,
         window: Rect::new(left, top, left + GLOW_SIZE, top + GLOW_SIZE),
+        // The mode is the sign of the mouth of the human only: the mouth of an agent keeps its own colour.
+        mode: if source.is_user { Some(mode) } else { None },
     }
 }
 
@@ -1182,6 +1239,7 @@ mod tests {
                 0,
                 LaserTheme::MOUTH_SLIT,
                 LaserTheme::MOUTH_HALO,
+                Some(WritingMode::Code),
             );
         }
         // the light is at the edge of the screen (2026-11-12), so inside the picture it is at the edge of the
@@ -1220,6 +1278,106 @@ mod tests {
         );
     }
 
+    /// The mode of the human is **visible**: the mouth of the human is a **single pale blue line** in the code input
+    /// and a **double amber line** in the natural language input.
+    ///
+    /// The user asked for it on 2026-11-23 ("Ctrl+F12增加可见指示器"): the mouth of the human is the only part of the
+    /// interface that is always on the screen, so it is the sign of the mode. The natural language input **eats the
+    /// letters**, so the user has to be able to see that at a glance.
+    #[test]
+    fn the_mouth_of_the_human_shows_the_mode_of_the_human() {
+        let work = Rect::new(0, 0, 1920, 1040);
+        let place = MouthPlace {
+            edge: Edge::Top,
+            offset: 960,
+        };
+        let mouth = mouth_at(work, place, MOUTH_RADIUS);
+        let origin = Rect::new(
+            mouth.x - GLOW_SIZE / 2,
+            mouth.y - GLOW_SIZE / 2,
+            mouth.x + GLOW_SIZE / 2,
+            mouth.y + GLOW_SIZE / 2,
+        );
+        let slit = crate::laser::mouth_slit(&mouth);
+        let column = (slit.x - origin.left) as usize;
+        let row = (slit.y - origin.top) as usize;
+        // the picture of the mouth in one mode
+        let picture = |mode: WritingMode| {
+            let (colour, halo) = match mode {
+                WritingMode::Code => (LaserTheme::MOUTH_SLIT, LaserTheme::MOUTH_HALO),
+                WritingMode::Natural => {
+                    (LaserTheme::MOUTH_SLIT_NATURAL, LaserTheme::MOUTH_HALO_NATURAL)
+                }
+            };
+            let mut pixels = vec![0u8; (GLOW_SIZE * GLOW_SIZE * 4) as usize];
+            {
+                let mut canvas = Canvas::new(GLOW_SIZE, GLOW_SIZE, &mut pixels)
+                    .expect("the picture of the window fits into the buffer");
+                paint::draw_glow(
+                    &mut canvas,
+                    mouth,
+                    origin,
+                    0,
+                    colour,
+                    halo,
+                    Some(mode),
+                );
+            }
+            pixels
+        };
+        // the alpha of the pixel at the row, in the column of the line
+        let alpha = |row: usize| (row * GLOW_SIZE as usize + column) * 4 + 3;
+        let code = picture(WritingMode::Code);
+        let natural = picture(WritingMode::Natural);
+        // the code input is a mouth at rest: **one** line, in the middle
+        assert!(
+            code[alpha(row)] > 90,
+            "the line of the code input must be lit, it was {}",
+            code[alpha(row)]
+        );
+        assert!(
+            code[alpha(row - 3)] * 3 < code[alpha(row)],
+            "the code input has one line: the row above it is {}",
+            code[alpha(row - 3)]
+        );
+        // The line falls on the **centre** of a pixel: the pixel next to it carries the halo and not the core of the
+        // light. A line between two pixels would light both of them (and the line itself would be half as bright).
+        assert!(
+            code[alpha(row - 1)] * 4 < code[alpha(row)],
+            "the line of the code input is on the centre of a pixel: the pixel next to it is {}",
+            code[alpha(row - 1)]
+        );
+        // the natural language input is a mouth that is open: **two** lines, one above the other
+        for line in [row - 3, row + 3] {
+            assert!(
+                natural[alpha(line)] > 90,
+                "the line at {line} must be lit, it was {}",
+                natural[alpha(line)]
+            );
+            // and each of the two lines is on the centre of a pixel, like the single one of the code input
+            assert!(
+                natural[alpha(line - 1)] * 4 < natural[alpha(line)],
+                "the line at {line} is on the centre of a pixel: the pixel next to it is {}",
+                natural[alpha(line - 1)]
+            );
+        }
+        assert!(
+            natural[alpha(row)] * 3 < natural[alpha(row - 3)],
+            "the two lines must be apart: the space between them is {}",
+            natural[alpha(row)]
+        );
+        // The light is the colour the painter was given (the amber of the natural language input): the picture is
+        // red first, so the red channel is the strongest one. That the product's own colour **is** amber is pinned by
+        // the registry (the mouth of the human takes the colour of the mode).
+        let amber = (row - 3) * GLOW_SIZE as usize + column;
+        assert!(
+            natural[amber * 4] > natural[amber * 4 + 2],
+            "the light of the natural language input is amber: r={} b={}",
+            natural[amber * 4],
+            natural[amber * 4 + 2]
+        );
+    }
+
     /// The mouth of an agent is drawn in the colour of that agent: the user sees at once who is writing.
     ///
     /// The slit of light stays a hairline in the colour of its source (the human keeps the pale blue the user asked
@@ -1247,7 +1405,7 @@ mod tests {
         {
             let mut canvas = Canvas::new(GLOW_SIZE, GLOW_SIZE, &mut pixels)
                 .expect("the picture of the window fits into the buffer");
-            paint::draw_glow(&mut canvas, mouth, origin, 0, colour, halo);
+            paint::draw_glow(&mut canvas, mouth, origin, 0, colour, halo, None);
         }
         // the light is at the edge of the screen (2026-11-12), so inside the picture it is at the edge of the
         // window, not at its middle
@@ -1283,6 +1441,74 @@ mod tests {
             "the corner of the window must stay dark, it was {}",
             pixels[corner + 3]
         );
+    }
+
+    /// The sign of the mode is **on the screen**: the mouth of the human in the model is the pale blue single line of
+    /// the code input and the amber double line of the natural language input.
+    ///
+    /// The user asked for a visible sign of the mode on 2026-11-23 ("Ctrl+F12增加可见指示器"). This is the whole
+    /// chain: the mode goes into the interface, the interface puts it into the model, and the painter draws it.
+    #[test]
+    fn the_mode_of_the_human_is_visible_in_the_mouth_on_the_screen() {
+        let ui = on_screen();
+        let mouth_of_the_human = |ui: &Rc<RefCell<LaserUi>>| {
+            ui.borrow()
+                .mouths()
+                .into_iter()
+                .find(|mouth| mouth.key == USER_KEY)
+                .expect("the mouth of the human is on the screen")
+        };
+        let code = mouth_of_the_human(&ui);
+        assert_eq!(code.colour, LaserTheme::MOUTH_SLIT, "the code input is the pale blue");
+        assert_eq!(code.mode, Some(WritingMode::Code), "the code input is the mode of the mouth");
+        // the natural language input: the mouth changes its colour and its shape
+        ui.borrow_mut().set_input_mode(true);
+        let natural = mouth_of_the_human(&ui);
+        assert_eq!(
+            natural.colour,
+            LaserTheme::MOUTH_SLIT_NATURAL,
+            "the natural language input is the amber mouth"
+        );
+        assert_eq!(
+            natural.mode,
+            Some(WritingMode::Natural),
+            "the natural language input is the mode of the mouth"
+        );
+        // and back to the code input
+        ui.borrow_mut().set_input_mode(false);
+        let code = mouth_of_the_human(&ui);
+        assert_eq!(code.colour, LaserTheme::MOUTH_SLIT, "the code input is the pale blue again");
+        assert_eq!(code.mode, Some(WritingMode::Code));
+    }
+
+    /// The mouth of an agent keeps its own colour in both modes: the sign of the mode belongs to the human alone.
+    ///
+    /// The agent's mouth is a single line in the colour of its source, whatever the mode of the keyboard is.
+    #[test]
+    fn the_mouth_of_an_agent_is_not_the_sign_of_the_mode() {
+        let ui = on_screen();
+        ui.borrow_mut().set_input_mode(true);
+        ui.borrow_mut().fire_for_at(
+            "agent:a:one:1",
+            "one",
+            Anchor {
+                x: 100,
+                y: 100,
+                line_height: 0,
+            },
+            100,
+            100,
+        );
+        let mouths = ui.borrow().mouths();
+        let agent = mouths
+            .iter()
+            .find(|mouth| mouth.key == "agent:a:one:1")
+            .expect("the agent has a mouth");
+        assert_eq!(
+            agent.mode, None,
+            "the mouth of an agent says nothing about the mode of the keyboard"
+        );
+        assert_ne!(agent.colour, LaserTheme::MOUTH_SLIT_NATURAL, "the amber is the mouth of the human");
     }
 
     /// The panel has to be tall enough for the rows it shows, and the number of rows is written down in one place.

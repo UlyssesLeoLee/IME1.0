@@ -458,29 +458,65 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         });
     }
 
+    /// Whether the settings of the file carry the mode of the **session**.
+    ///
+    /// They do **not**: the switch of the settings window is the mode of the **next start** (「启动时用自然语言输入（默认是
+    /// 代码输入）」), and the mode of the session is the one of the keyboard (Ctrl+F12 / Alt+F1). If the file carried it,
+    /// every save of the settings would undo the switch the user made in this session - for the skin, for the layout,
+    /// for anything.
+    ///
+    /// The rule is written as a function so that the red-green round can break it on purpose: a rule that is only the
+    /// absence of a line cannot be broken on purpose, and a rule nobody can break is a rule nobody watches.
+    pub fn the_file_carries_the_mode_of_the_session() -> bool {
+        false
+    }
+
     /// Apply the settings of the language profile (the settings window writes them; the text service applies them).
     ///
-    /// The settings change the key map (the page size, the Tab behaviour, whether the space key takes a candidate),
-    /// whether a composition opens by itself, and the mode the input method is in. A mode that was on and is now off
-    /// ends the composition, exactly like the mode button does.
+    /// The settings change the key map (the page size, the Tab behaviour, whether the space key takes a candidate)
+    /// and whether a composition opens by itself.
+    ///
+    /// The **mode is not one of them**: the switch of the settings window is the mode of the **next start**
+    /// (「启动时用自然语言输入（默认是代码输入）」), and the mode of this session is the one of the keyboard
+    /// (Ctrl+F12 / Alt+F1). Applying it here would undo the switch the user made in this session every time the
+    /// settings were saved - for the skin, for the layout, for anything.
     pub fn apply_settings(&mut self, settings: &crate::imesettings::LanguageSettings) {
         self.guarded((), |c| {
-            let was_input_mode = c.config.input_mode;
             c.config.keymap.page_size = settings.page_size().clamp(1, 9);
             c.config.keymap.tab_cycles = settings.tab_cycles;
             c.config.keymap.tab_to_host = settings.tab_to_host;
             c.config.keymap.space_confirms = settings.space_confirms;
             c.config.keymap.punct_paging = settings.punct_paging;
             c.config.auto_compose = settings.auto_compose;
-            c.config.input_mode = settings.input_mode;
+            if Self::the_file_carries_the_mode_of_the_session() {
+                // The rule of the product: the file does **not** carry the mode of the session (see the doc of
+                // `the_file_carries_the_mode_of_the_session`).
+                c.config.input_mode = settings.input_mode;
+                if !c.config.input_mode {
+                    // the composition and the list of the input mode end with it
+                    c.reset();
+                }
+            }
             c.machine.set_keymap(c.config.keymap);
             c.machine
                 .set_candidate_capture(c.config.candidate_capture || c.config.input_mode);
             c.machine.set_input_mode(c.config.input_mode);
-            if was_input_mode && !c.config.input_mode {
-                c.reset();
-            }
         });
+    }
+
+    /// Whether the text service collects nothing at all (a password field, the secure desktop).
+    ///
+    /// In such a field the letters are **not** eaten whatever the mode is, so the sign of the mode has to fall back
+    /// to the code input: a sign that says "the natural language input eats the letters" where it does not is a lie.
+    pub fn collects_nothing(&self) -> bool {
+        self.secure
+    }
+
+    /// The mode that is really in force here: the mode of the session, unless nothing is collected at all.
+    ///
+    /// This is what the sign of the mode shows (the mouth of the human), so that it says what happens to the letters.
+    pub fn effective_input_mode(&self) -> bool {
+        self.config.input_mode && !self.secure
     }
 
     /// An action from the user (a click in the candidate window) or from a host that draws the candidate list itself
@@ -764,6 +800,12 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             let effects = self.machine.set_secure_context(secure);
             self.apply(effects);
             self.settle();
+            // The sign of the mode follows: in a password field **nothing** is eaten, whatever the mode is, so the
+            // mouth of the human has to fall back to the code input (a sign that says "the letters are eaten" where
+            // they are not is a lie).
+            if let Some(hook) = self.mode_hook.clone() {
+                hook();
+            }
         }
     }
 
@@ -1622,18 +1664,17 @@ mod tests {
             ("Alt+F1", vk::F1, Modifiers { alt: true, ..NONE }),
         ] {
             let mut rig = Rig::new();
-            let told = Rc::new(RefCell::new(0));
-            {
-                let told = told.clone();
-                rig.ctl.set_mode_hook(Rc::new(move || {
-                    *told.borrow_mut() += 1;
-                }));
-            }
             rig.ctl.host_mut().secure = true;
             let before = rig.ctl.input_mode();
             assert!(!rig.press(code, None, mods, Host::Contract), "{name}: the key is the host's");
-            assert_eq!(*told.borrow(), 0, "{name}: nobody was told");
             assert_eq!(rig.ctl.input_mode(), before, "{name}: the mode did not change");
+            // The interface **is** told (the sign of the mode follows the *effective* mode: in a password field
+            // nothing is eaten, so the mouth of the human falls back to the code input) - what must not happen is a
+            // change of the mode itself.
+            assert!(
+                !rig.ctl.effective_input_mode(),
+                "{name}: nothing is eaten here, so the sign says the code input"
+            );
         }
     }
 
@@ -2982,6 +3023,97 @@ mod tests {
         // a plain F12 belongs to the host
         assert!(!rig.press(vk::F12, None, NONE, Host::Contract));
         assert!(!rig.ctl.input_mode(), "the mode did not change");
+    }
+
+    /// The mode key has to **tell the interface**: the sign of the mode (the mouth of the human: a pale blue line in the
+    /// code input, a double amber line in the natural language input) is drawn from that telling. A key that changed
+    /// the mode without telling would leave the sign of the mode wrong.
+    ///
+    /// The user asked for a visible sign of the mode on 2026-11-23 ("Ctrl+F12增加可见指示器").
+    #[test]
+    fn the_mode_key_tells_the_interface_so_that_the_sign_of_the_mode_follows() {
+        let ctrl = Modifiers { ctrl: true, ..NONE };
+        let mut rig = Rig::shipped();
+        let told = Rc::new(RefCell::new(0));
+        {
+            let told = told.clone();
+            rig.ctl.set_mode_hook(Rc::new(move || {
+                *told.borrow_mut() += 1;
+            }));
+        }
+        assert!(!rig.ctl.input_mode(), "the factory mode is the code input");
+        assert!(rig.press(vk::F12, None, ctrl, Host::Contract), "Ctrl+F12 is ours");
+        assert_eq!(*told.borrow(), 1, "the interface was told once: the sign of the mode follows");
+        assert!(rig.ctl.input_mode(), "the natural language input is on");
+        // and the other way round: the sign follows the mode
+        assert!(rig.press(vk::F12, None, ctrl, Host::Contract));
+        assert_eq!(*told.borrow(), 2, "the interface was told again");
+        assert!(!rig.ctl.input_mode(), "the code input is back");
+        // a key that changes nothing tells nothing
+        assert!(!rig.press(vk::F12, None, NONE, Host::Contract));
+        assert_eq!(*told.borrow(), 2, "a plain F12 belongs to the host: nobody was told");
+    }
+
+    /// The settings window does **not** change the mode of the session.
+    ///
+    /// Its switch is the mode of the **next start** (「启动时用自然语言输入（默认是代码输入）」); the mode of this
+    /// session is the one of the keyboard (Ctrl+F12 / Alt+F1). Applying it here would undo the switch the user made
+    /// in this session every time the settings were saved - for the skin, for the layout, for anything.
+    ///
+    /// The user asked for the code input to be the default on 2026-11-23; a save of the settings must not turn the
+    /// session into the natural language input behind the user's back.
+    #[test]
+    fn the_settings_window_does_not_change_the_mode_of_the_session() {
+        let ctrl = Modifiers { ctrl: true, ..NONE };
+        let mut rig = Rig::shipped();
+        let told = Rc::new(RefCell::new(0));
+        {
+            let told = told.clone();
+            rig.ctl.set_mode_hook(Rc::new(move || {
+                *told.borrow_mut() += 1;
+            }));
+        }
+        // the user switches to the natural language input in this session
+        assert!(rig.press(vk::F12, None, ctrl, Host::Contract));
+        assert!(rig.ctl.input_mode(), "the natural language input is on");
+        assert_eq!(*told.borrow(), 1, "the interface was told once");
+        // the settings window saves something (the file says the natural language input for the next start)
+        let mut settings = crate::imesettings::LanguageSettings::default();
+        settings.input_mode = true;
+        rig.ctl.apply_settings(&settings);
+        assert!(
+            rig.ctl.input_mode(),
+            "the mode of the session is still the natural language input"
+        );
+        assert_eq!(*told.borrow(), 1, "the mode did not change: nobody was told");
+        // and the other way round: the file says the code input, the session keeps its mode
+        let code = crate::imesettings::LanguageSettings::default();
+        rig.ctl.apply_settings(&code);
+        assert!(rig.ctl.input_mode(), "the mode of the session did not change either");
+        assert_eq!(*told.borrow(), 1, "the mode did not change: nobody was told");
+    }
+
+    /// The sign of the mode must say what happens to the letters: in a password field nothing is eaten, whatever the
+    /// mode is.
+    #[test]
+    fn the_sign_of_the_mode_falls_back_to_the_code_input_in_a_password_field() {
+        let mut rig = Rig::shipped();
+        assert!(!rig.ctl.effective_input_mode(), "the factory mode is the code input");
+        // the natural language input is on
+        rig.ctl.set_input_mode(true);
+        assert!(rig.ctl.input_mode(), "the natural language input is on");
+        assert!(
+            rig.ctl.effective_input_mode(),
+            "the letters are eaten: the sign says the natural language input"
+        );
+        // and now the user types into a password field: nothing is collected at all
+        rig.ctl.host_mut().secure = true;
+        rig.press(code_of('a'), Some('a'), NONE, Host::Contract);
+        assert!(rig.ctl.collects_nothing(), "a password field collects nothing");
+        assert!(
+            !rig.ctl.effective_input_mode(),
+            "the sign falls back to the code input: no letter is eaten here"
+        );
     }
 
     /// Every character of ordinary code, typed in the direct mode, reaches the host and nothing is committed,
