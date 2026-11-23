@@ -736,6 +736,9 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
   **判断有没有腾够**：`Get-Counter '\Memory\Commit Limit'` 与 `'\Memory\Committed Bytes'` 的差值要留出 **2 GB 以上**；
   **本轮已经做到的**（不依赖那台机器）：红绿轮 12 条新用例 **12 caught / 0 missed / 0 unknown / 0 stale** ✓；核心 330、TSF 397 全绿 ✓；
   0.3.3 的产物已构建并**部署**到每用户 COM 覆盖（`%LOCALAPPDATA%\IME1.0-dev16\pime_tsf.dll`）⇒ 重开应用就能看见标志 ✓；
+* **追溯报告（`02_Verification/test-execution-report.*`）还是 2026-11-20 那份**（JS 357 / core 460 / TSF 383）⇒
+  **不能现在重出**：它读的是门禁写出来的证据文件，而现在的证据文件是那轮**被机器打断**的一轮（JS 掉了 27 项、core 掉了 21 项），
+  在它上面重出只会把「更差的数」写进报告 ⇒ **必须等绿的那一轮之后再重出**（提醒里已经排了这一步 ✓）；
 * **tip 层的接线**（模式 ⇒ 界面 ⇒ 屏幕）没有单元测试（`Inner` 需要真的 `ITfThreadMgr`，构造不出来），只有真机用例能覆盖。
 
 ### 五、留给你裁定的
