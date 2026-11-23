@@ -101,11 +101,6 @@ function runSuiteOnce(suite) {
 // ---- the run ------------------------------------------------------------------------------------------------
 const digest = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
-if (list) {
-  for (const item of cases) console.log(`${item.id}\t${item.what}\t${item.file}\t${item.suite.kind}:${item.suite.crate || item.suite.file}`);
-  process.exit(0);
-}
-
 // The files this run breaks are backed up outside the repository: a run that is killed (the machine runs out of
 // memory now and then) must not leave a broken implementation in the working tree. The next run puts the files
 // back before it touches anything.
@@ -117,24 +112,45 @@ function restoreLeftovers() {
   let restored = 0;
   const kept = [];
   for (const name of fs.readdirSync(BACKUP_DIR)) {
+    if (name.endsWith('.mutated') || name.endsWith('.kept')) continue;
     const backup = path.join(BACKUP_DIR, name);
     const target = path.join(root, name.split('__').join('/'));
     try {
-      // The file may have changed **after** the run was killed (the developer is working in the tree): their version
-      // is the newer one, so it stays. The backup is written aside instead of being copied over it, and the round says
-      // so - a restore that quietly throws away the work of the developer is worse than a broken file.
-      let differs = true;
-      try {
-        differs = fs.readFileSync(target, 'utf8') !== fs.readFileSync(backup, 'utf8');
-      } catch { /* the target is gone: the backup is the only copy left */ }
+      // Two cases have to be told apart, because they need the opposite decision:
+      //
+      // * the file on the disk is **the mutation** (the run was killed before it could put the original back) => the
+      //   original **must** go back, or the tree keeps a broken implementation and the round runs against it;
+      // * the file on the disk is something else (the developer is working in the tree) => their version is the newer
+      //   one, so it stays; the copy of the run is written aside instead of being copied over it (a restore that quietly
+      //   throws away the work of the developer is worse than a broken file).
+      //
+      // The backup therefore carries **both** versions: `<name>` is the original, `<name>.mutated` is what the run
+      // wrote. Without the second one the two cases look the same.
+      const mutatedPath = `${backup}.mutated`;
+      let current = null;
+      try { current = fs.readFileSync(target, 'utf8'); } catch { /* the target is gone */ }
+      let mutated = null;
+      try { mutated = fs.readFileSync(mutatedPath, 'utf8'); } catch { /* an old backup without it */ }
+      if (current !== null && mutated !== null && current === mutated) {
+        // the run was killed before the restore: the original goes back.
+        fs.copyFileSync(backup, target);
+        fs.unlinkSync(backup);
+        fs.unlinkSync(mutatedPath);
+        touch(target);
+        restored++;
+        continue;
+      }
+      const differs = current === null || current !== fs.readFileSync(backup, 'utf8');
       if (differs) {
         const aside = `${backup}.kept`;
         fs.renameSync(backup, aside);
+        if (fs.existsSync(mutatedPath)) fs.renameSync(mutatedPath, `${aside}.mutated`);
         kept.push({target, aside});
         continue;
       }
       fs.copyFileSync(backup, target);
       fs.unlinkSync(backup);
+      if (fs.existsSync(mutatedPath)) fs.unlinkSync(mutatedPath);
       touch(target);
       restored++;
     } catch {
@@ -154,14 +170,19 @@ function touch(file) {
   try { fs.utimesSync(file, now, now); } catch { /* a file that cannot be touched is reported by the restore check */ }
 }
 
-function backup(relative, bytes) {
+function backup(relative, original, mutated) {
   fs.mkdirSync(BACKUP_DIR, {recursive: true});
   // The backup is written **atomically**: a temporary file and a rename. A kill in the middle of the write would
   // otherwise leave a truncated backup, and the next run would copy it over a good source file (D-178).
   const name = path.join(BACKUP_DIR, backupName(relative));
   const temporary = `${name}.tmp`;
-  fs.writeFileSync(temporary, bytes);
+  fs.writeFileSync(temporary, original);
   fs.renameSync(temporary, name);
+  // The bytes of the mutation go with it: the next run has to tell "the run was killed before the restore" from
+  // "the developer edited the file" (see `restoreLeftovers`).
+  const mutatedTemporary = `${name}.mutated.tmp`;
+  fs.writeFileSync(mutatedTemporary, mutated);
+  fs.renameSync(mutatedTemporary, `${name}.mutated`);
 }
 
 function undoBackup(relative) {
@@ -169,14 +190,25 @@ function undoBackup(relative) {
   if (!fs.existsSync(file)) return;
   fs.copyFileSync(file, path.join(root, relative));
   fs.unlinkSync(file);
+  const mutated = `${file}.mutated`;
+  if (fs.existsSync(mutated)) fs.unlinkSync(mutated);
 }
 
+// The leftovers of a killed run are put back **before anything else**, even before a listing: a run that only lists
+// the cases must not leave a broken implementation in the tree.
 const restoredAtStart = restoreLeftovers();
 if (restoredAtStart.restored) {
   console.log(`note: ${restoredAtStart.restored} file(s) of a killed run were put back before this run started`);
 }
 for (const kept of restoredAtStart.kept) {
   console.log(`note: ${kept.target} was changed after a killed run: your version was kept, the copy of the run is in ${kept.aside}`);
+}
+
+// A listing is a read of the cases - but it comes **after** the restore above: even a listing must not leave a broken
+// implementation in the tree.
+if (list) {
+  for (const item of cases) console.log(`${item.id}\t${item.what}\t${item.file}\t${item.suite.kind}:${item.suite.crate || item.suite.file}`);
+  process.exit(0);
 }
 
 // The snapshot of the files this run breaks is taken **after** the leftovers were put back: it has to hold the bytes
@@ -272,7 +304,7 @@ for (const item of selected) {
   // The backup comes **before** the mutation: a run that is killed between the two would leave a broken file in the
   // tree **and no backup at all**, and the next run would take the broken bytes for the original, report that every
   // file was restored and end green with a broken implementation in the tree (D-178).
-  backup(item.file, Buffer.from(original, 'utf8'));
+  backup(item.file, Buffer.from(original, 'utf8'), Buffer.from(mutated, 'utf8'));
   fs.writeFileSync(file, mutated, 'utf8');
   let status = 0;
   let out = '';
