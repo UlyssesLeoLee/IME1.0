@@ -58,6 +58,9 @@ pub struct FakeHost {
     pub doc: String,
     /// A composition is open in the document.
     pub composing: bool,
+    /// Where the composition of the text service starts in the document: the text it holds is the text from that
+    /// place to the end.
+    pub composition_at: Option<usize>,
     /// The field is a password field (or the host cannot tell - the contract says: fail closed).
     pub secure: bool,
     /// Where the caret is; None when the host cannot say.
@@ -100,15 +103,40 @@ impl HostText for FakeHost {
         self.anchor
     }
 
-    fn begin_composition(&mut self, typed: &str) -> Result<(), HostError> {
+    /// Open the composition of the text service over the caret.
+    fn begin_composition(&mut self) -> Result<(), HostError> {
+        if self.composing {
+            return Ok(());
+        }
         self.begins += 1;
         if self.refuse_begin {
             return Err(HostError::Refused);
         }
-        if self.mismatch || !self.doc.ends_with(typed) {
-            return Err(HostError::Mismatch);
-        }
         self.composing = true;
+        Ok(())
+    }
+
+    /// Write the typed text into the composition of the text service: the text service owns that range, so it
+    /// writes the typed text into it and replaces it with the candidate later.
+    fn write_composition(&mut self, text: &str) -> Result<(), HostError> {
+        if !self.composing && self.begin_composition().is_err() {
+            return Err(HostError::Refused);
+        }
+        // The composition holds the typed text: it replaces what it held (it is not piled up).
+        if let Some(start) = self.composition_at {
+            self.doc.truncate(start);
+        }
+        self.composition_at = Some(self.doc.len());
+        self.doc.push_str(text);
+        Ok(())
+    }
+
+    /// Write the typed text into the document at the caret (the path of the last resort).
+    fn write_char(&mut self, text: &str) -> Result<(), HostError> {
+        if self.refuse_commit {
+            return Err(HostError::Refused);
+        }
+        self.doc.push_str(text);
         Ok(())
     }
 
@@ -118,6 +146,8 @@ impl HostText for FakeHost {
             return Err(HostError::Refused); // the composition stays open in the document
         }
         self.composing = false;
+        // the text stays in the document, but it is no longer a composition
+        self.composition_at = None;
         Ok(())
     }
 
@@ -134,14 +164,23 @@ impl HostText for FakeHost {
         if self.refuse_commit {
             return Err(HostError::Refused);
         }
+        // The text the user typed must still be there: a document that changed under the input method is not
+        // written into.
         if self.mismatch || !self.doc.ends_with(typed) {
             return Err(HostError::Mismatch);
         }
-        self.doc.truncate(self.doc.len() - typed.len());
+        // The composition holds the typed text: the candidate replaces it.
+        if let Some(start) = self.composition_at.take() {
+            self.doc.truncate(start);
+            self.composing = false;
+        } else {
+            self.doc.truncate(self.doc.len() - typed.len());
+        }
         self.doc.push_str(text);
         self.commits.push((typed.to_string(), text.to_string()));
         Ok(())
     }
+
 }
 
 // ------------------------------------------------------------------ the prediction core (the "engine")
@@ -375,12 +414,27 @@ impl Harness {
         }
     }
 
-    /// Types the text; every character must reach the host (the default behaviour never eats a code character).
+    /// Types the text.
+    ///
+    /// In the code input every character reaches the host (that mode never eats a code character). In the natural
+    /// language input the text service eats the letters and writes them into its own composition: the letter is in the
+    /// document either way.
     pub fn type_text(&mut self, text: &str) {
         for c in text.chars() {
             let label = c.to_string();
+            let before = self.ctl.host_mut().doc.len();
             let eaten = self.press(code_of(c), Some(c), NONE, &label);
-            assert!(!eaten, "typing {c:?} must reach the host");
+            if eaten {
+                assert!(
+                    self.ctl.host_mut().doc.len() > before,
+                    "the text service writes the letter {c:?} itself"
+                );
+            } else {
+                assert!(
+                    self.ctl.host_mut().doc.len() > before,
+                    "typing {c:?} must reach the host"
+                );
+            }
         }
     }
 

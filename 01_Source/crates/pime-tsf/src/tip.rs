@@ -275,13 +275,12 @@ unsafe fn typed_range(
     }
 }
 
-/// Open a composition over the text the user typed and hand that text to the composition.
+/// Open a composition over the caret and hand it to the sink.
 ///
-/// TSF starts a composition with an **empty** string: the host shows nothing, the range the commit reads back does
-/// not carry the pinyin, so the verification in [`typed_range`] fails, the commit is refused, the input method
-/// degrades and every key after that falls through to the host (the digit of a candidate lands in the document
-/// instead of the candidate). The typed text therefore has to go *into* the composition, the way the platform does
-/// it: the composition range is written right after the composition started.
+/// The composition is opened over the **caret**, not over the text the user typed: the range of that text cannot be
+/// found by reading the document (a host that does not sync its text to the text service reads empty - measured on
+/// a plain edit control on 2026-11-21), and the text service does not need it: it writes the typed text into its own
+/// composition and replaces it with the candidate.
 ///
 /// # Safety
 /// `ctx`, `client_id` and `sink` must be live; the edit cookie is taken from the session this function opens.
@@ -289,23 +288,15 @@ fn open_composition(
     ctx: &ITfContext,
     client_id: u32,
     sink: &ITfCompositionSink,
-    typed: &str,
 ) -> std::result::Result<ITfComposition, HostError> {
-    let (ctx2, sink, typed) = (ctx.clone(), sink.clone(), typed.to_string());
+    let (ctx2, sink) = (ctx.clone(), sink.clone());
     run_session(ctx, client_id, SYNC_WRITE, move |ec| {
         // SAFETY: `ec` belongs to the running session on `ctx2`.
         unsafe {
-            let range = typed_range(&ctx2, ec, &typed)?;
+            let caret = caret_range(&ctx2, ec).map_err(refused)?;
             let owner: ITfContextComposition = ctx2.cast().map_err(refused)?;
             // SAFETY: live COM objects and a valid edit cookie.
-            let composition = owner.StartComposition(ec, &range, &sink).map_err(refused)?;
-            // The composition is empty as it was born: the pinyin has to be written into it, or the host shows
-            // nothing and the commit that follows can never find what the user typed.
-            let comp_range = composition.GetRange().map_err(refused)?;
-            let wide: Vec<u16> = typed.encode_utf16().collect();
-            if !wide.is_empty() {
-                comp_range.SetText(ec, 0, &wide).map_err(refused)?;
-            }
+            let composition = owner.StartComposition(ec, &caret, &sink).map_err(refused)?;
             Ok(composition)
         }
     })
@@ -364,6 +355,13 @@ struct TsfHost {
     /// `begin_composition` never mistakes it for an open one), for the single asynchronous attempt of
     /// `end_composition_later`; the controller makes that attempt right after the refusal.
     stranded: Option<(ITfContext, ITfComposition)>,
+    /// The range the text service wrote the typed text into: the range of the composition, or a plain range when the
+    /// host refused the composition.
+    ///
+    /// The candidate replaces the typed text **there**, so the write-back never reads the document: a host that does
+    /// not sync its text to the text service reads empty, and a write that depends on reading never lands (the
+    /// candidate landed after the pinyin: "wo我").
+    owned: Option<ITfRange>,
 }
 
 impl TsfHost {
@@ -374,6 +372,7 @@ impl TsfHost {
             context: None,
             composition: None,
             stranded: None,
+            owned: None,
         }
     }
 
@@ -460,13 +459,78 @@ impl HostText for TsfHost {
         .ok()
     }
 
-    fn begin_composition(&mut self, typed: &str) -> std::result::Result<(), HostError> {
+    /// Open the composition of the text service over the caret (empty).
+    ///
+    /// The range of the typed text cannot be found by reading the document (a host that does not sync its text to the
+    /// text service reads empty - measured on a plain edit control on 2026-11-21), so the composition is opened over
+    /// the caret and the typed text goes into it.
+    fn begin_composition(&mut self) -> std::result::Result<(), HostError> {
         let ctx = self.context.clone().ok_or(HostError::Refused)?;
         if self.composition.is_some() {
-            return Ok(());
+            return Ok(()); // the composition is open: there is nothing to open
         }
-        let composition = open_composition(&ctx, self.client_id, &self.sink, typed)?;
+        let composition = open_composition(&ctx, self.client_id, &self.sink)?;
         self.composition = Some((ctx, composition));
+        Ok(())
+    }
+
+    /// Write the typed text into the composition of the text service, opening that composition over the caret
+    /// when it is not open yet.
+    ///
+    /// The text service owns the range of the composition: it writes the typed text into it and replaces it with the
+    /// candidate later. Nothing is read from the document, so this works on a host that does not sync its text to the
+    /// text service (measured on a plain edit control on 2026-11-21).
+    fn write_composition(&mut self, text: &str) -> std::result::Result<(), HostError> {
+        let ctx = self.context.clone().ok_or(HostError::Refused)?;
+        if self.composition.is_none() {
+            self.begin_composition()?;
+        }
+        let (_, composition) = self.composition.clone().ok_or(HostError::Refused)?;
+        let wide: Vec<u16> = text.encode_utf16().collect();
+        // SAFETY: the composition is a live COM object.
+        let range = unsafe { composition.GetRange() }.map_err(refused)?;
+        // The text service keeps the range: the candidate replaces the typed text there (the commit never reads the
+        // document).
+        self.owned = Some(range.clone());
+        run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
+            // SAFETY: `ec` belongs to the running session on the composition's context.
+            unsafe {
+                range.SetText(ec, 0, &wide).map_err(refused)
+            }
+        })
+    }
+
+    /// Write one letter into the document at the caret, and put the caret after it.
+    ///
+    /// This is the path of the last resort: the host refused the composition, so the text service cannot replace the
+    /// typed text later - the candidate lands after it instead.
+    fn write_char(&mut self, text: &str) -> std::result::Result<(), HostError> {
+        let ctx = self.context.clone().ok_or(HostError::Refused)?;
+        let wide: Vec<u16> = text.encode_utf16().collect();
+        // The range the text service owns (the one it wrote the typed text into) or the caret: the typed text grows
+        // inside that range, so the candidate can replace it later.
+        let owned = self.owned.clone();
+        let ctx2 = ctx.clone();
+        let range = run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
+            // SAFETY: `ec` belongs to the running session on `ctx2`.
+            unsafe {
+                let range = match owned {
+                    Some(range) => range,
+                    None => caret_range(&ctx2, ec).map_err(refused)?,
+                };
+                range.SetText(ec, 0, &wide).map_err(refused)?;
+                // the caret goes after the typed text
+                let mut caret = range.Clone().map_err(refused)?;
+                caret.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
+                let selection = selection_of(caret);
+                let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
+                drop(ManuallyDrop::into_inner(selection.range));
+                set.map_err(refused)?;
+                Ok(range)
+            }
+        })?;
+        // The text service keeps the range it wrote into: the candidate replaces the typed text there.
+        self.owned = Some(range);
         Ok(())
     }
 
@@ -511,6 +575,31 @@ impl HostText for TsfHost {
 
     fn commit(&mut self, typed: &str, text: &str) -> std::result::Result<(), HostError> {
         let ctx = self.context.clone().ok_or(HostError::Refused)?;
+        // The text service owns the range it wrote the typed text into: the candidate replaces the typed text
+        // **there**. Nothing is read from the document: a host that does not sync its text to the text service reads
+        // empty (measured on a plain edit control on 2026-11-21), and a write that depends on reading never lands -
+        // the candidate landed after the pinyin ("wo我", the report of the user on 2026-11-23).
+        if let Some(range) = self.owned.clone() {
+            let wide: Vec<u16> = text.encode_utf16().collect();
+            let ctx2 = ctx.clone();
+            run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
+                // SAFETY: `ec` belongs to the running session on `ctx2`.
+                unsafe {
+                    range.SetText(ec, 0, &wide).map_err(refused)?;
+                    // the caret goes after the candidate
+                    let mut caret = range.Clone().map_err(refused)?;
+                    caret.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
+                    let selection = selection_of(caret);
+                    let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
+                    drop(ManuallyDrop::into_inner(selection.range));
+                    set.map_err(refused)
+                }
+            })?;
+            // The composition ends after the text is written (the order of the platform).
+            let _ = self.end_composition();
+            self.owned = None;
+            return Ok(());
+        }
         // The composition still holds the typed text. The platform refuses a write that overlaps an open
         // composition, and a refused write degrades the input method (every key after that falls through to the
         // host). The composition is therefore ended first: its text stays in the document as ordinary text, so the
@@ -531,10 +620,33 @@ impl HostText for TsfHost {
             typed.to_string(),
             text.encode_utf16().collect::<Vec<u16>>(),
         );
+        // The typed text before the caret is replaced when the host lets the text service read it (the application
+        // that syncs its text to the text service).
+        let replaced = run_session(&ctx, self.client_id, SYNC_WRITE, {
+            let (ctx2, typed, wide) = (ctx2.clone(), typed.clone(), wide.clone());
+            move |ec| {
+                // SAFETY: `ec` belongs to the running session on `ctx2`.
+                unsafe {
+                    let range = typed_range(&ctx2, ec, &typed)?;
+                    range.SetText(ec, 0, &wide).map_err(refused)?;
+                    // the caret goes after the inserted text
+                    range.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
+                    let selection = selection_of(range);
+                    let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
+                    drop(ManuallyDrop::into_inner(selection.range));
+                    set.map_err(refused)
+                }
+            }
+        });
+        if replaced.is_ok() {
+            return Ok(());
+        }
+        // The host does not let the text service read the document: the text lands at the caret, after the text the
+        // host owns (the code input is exactly this case: the code goes into the editor as it was typed).
         run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
             // SAFETY: `ec` belongs to the running session on `ctx2`.
             unsafe {
-                let range = typed_range(&ctx2, ec, &typed)?;
+                let range = caret_range(&ctx2, ec).map_err(refused)?;
                 range.SetText(ec, 0, &wide).map_err(refused)?;
                 // the caret goes after the inserted text
                 range.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;

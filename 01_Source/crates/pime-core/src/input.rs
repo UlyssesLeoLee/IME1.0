@@ -90,7 +90,8 @@ pub enum KeyOutcome {
     Consumed,
 }
 
-/// What the host adapter must do. `Commit` is the ONLY effect that writes text.
+/// What the host adapter must do. `Commit` writes the **candidate**; `WriteChar` writes the **letter the user
+/// typed** into the composition of the text service.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Effect {
     ShowCandidates,
@@ -99,6 +100,12 @@ pub enum Effect {
     BeginComposition,
     /// End (cancel) the machine-owned composition without writing anything.
     EndComposition,
+    /// A letter the user typed, to be written into the composition of the text service.
+    ///
+    /// In the natural language input the composition owns the typed text: the text service **eats** the letters and
+    /// writes them itself (the platform does the same), so that a candidate can **replace** the pinyin instead of
+    /// being added after it. In the code input nothing is eaten and this effect never appears.
+    WriteChar(char),
     Commit {
         candidate_id: String,
         text: String,
@@ -208,6 +215,9 @@ pub struct InputMachine<P: PredictPort> {
     selected: usize,
     observation_granted: bool,
     capture_enabled: bool,
+    /// The natural language input: the composition owns the typed text, so the letters are eaten and the text service
+    /// writes them itself. OFF = the code input: the input method never eats a code character.
+    input_mode: bool,
     keymap: KeyMap,
     secure: bool,
     policy_disabled: bool,
@@ -242,6 +252,7 @@ impl<P: PredictPort> InputMachine<P> {
             selected: 0,
             observation_granted: false,
             capture_enabled: false,
+            input_mode: false,
             keymap: KeyMap::default(),
             secure: false,
             policy_disabled: false,
@@ -389,6 +400,15 @@ impl<P: PredictPort> InputMachine<P> {
     /// Explicit opt-in: Tab/Enter/digits/arrows/Esc are consumed while candidates are showing.
     pub fn set_candidate_capture(&mut self, on: bool) {
         self.capture_enabled = on;
+    }
+
+    /// The natural language input (ON) or the code input (OFF, the default).
+    ///
+    /// In the natural language input the **composition owns the typed text**: the letters are eaten and the text
+    /// service writes them itself (the platform does the same), so that a candidate can **replace** the pinyin.
+    /// In the code input the input method never eats a code character: the code goes into the editor as it was typed.
+    pub fn set_input_mode(&mut self, on: bool) {
+        self.input_mode = on;
     }
 
     pub fn set_secure_context(&mut self, secure: bool) -> Vec<Effect> {
@@ -788,11 +808,52 @@ impl<P: PredictPort> InputMachine<P> {
         {
             return step;
         }
-        let effects = self.observe(ev, now_ms);
+        // In the natural language input a digit (or a space) never becomes part of the pinyin: the key takes a
+        // candidate, or it belongs to the host **and the composition ends with the highlighted candidate** - the
+        // way the mainstream input methods do it. A digit that fell through to `observe` would be pushed into the
+        // typed text: the digit of the candidate would land in the pinyin and the candidate would not be written
+        // (the report of the user on 2026-11-20).
+        if self.input_mode
+            && matches!(ev.key, Key::Char('0'..='9') | Key::Char(' '))
+            && matches!(self.state, State::Composing | State::Candidates)
+        {
+            let mut effects = self.accept(self.selected).unwrap_or_default();
+            if effects.is_empty() {
+                effects = self.cancel_effects();
+            }
+            return Step {
+                outcome: KeyOutcome::PassThrough,
+                effects,
+            };
+        }
+        let mut effects = self.observe(ev, now_ms);
+        // The natural language input owns the typed text: the letters are eaten and the text service writes them
+        // itself (the platform does the same), so that the candidate can replace the pinyin. The code input eats
+        // nothing: the code goes into the editor exactly as it was typed.
+        let eaten = self.owns_the_letter(ev);
+        if eaten && let Key::Char(c) = ev.key {
+            effects.insert(0, Effect::WriteChar(c));
+        }
         Step {
-            outcome: KeyOutcome::PassThrough,
+            outcome: if eaten {
+                KeyOutcome::Consumed
+            } else {
+                KeyOutcome::PassThrough
+            },
             effects,
         }
+    }
+
+    /// Whether the machine owns this letter: it does in the natural language input (the input mode is on), where the
+    /// composition holds the typed text and the host must not insert the letters itself.
+    ///
+    /// Only the letters are owned. The other characters (space, punctuation, digits) keep belonging to the host: the
+    /// digits and the space are the keys of the candidate list, and the punctuation belongs to the code.
+    ///
+    /// The first letter is owned as well - even before there are candidates: otherwise the host would insert it and
+    /// the text service would write it a second time (the document would hold the letter twice).
+    fn owns_the_letter(&self, ev: KeyEvent) -> bool {
+        self.input_mode && matches!(ev.key, Key::Char(c) if c.is_ascii_alphabetic())
     }
 
     /// Whether [`InputMachine::on_key`] would answer [`KeyOutcome::Consumed`] for `ev` right now, without touching
@@ -808,8 +869,16 @@ impl<P: PredictPort> InputMachine<P> {
             )
             || ev.ctrl
             || ev.alt
-            || (!self.capture_active() && !self.tab_is_ours(ev))
         {
+            return false;
+        }
+        // The letters of the natural language input belong to the composition: the text service eats them and writes
+        // them itself. **The test phase and the real phase must agree**: if the test phase says "not mine" while the
+        // real phase eats the letter anyway, the host inserts it a second time (the document holds the letter twice).
+        if self.owns_the_letter(ev) {
+            return true;
+        }
+        if !self.capture_active() && !self.tab_is_ours(ev) {
             return false;
         }
         let selectable = |idx: usize| self.selectable(idx).is_some();
@@ -832,7 +901,8 @@ impl<P: PredictPort> InputMachine<P> {
                 self.page_count() > 1
             }
             Key::Esc => true,
-            _ => false,
+            // the letters belong to the composition in the natural language input (the same rule as `on_key`)
+            _ => self.owns_the_letter(ev),
         }
     }
 }
@@ -1281,6 +1351,60 @@ mod tests {
             KeyOutcome::PassThrough
         );
         assert_eq!(m.stats.commits, 0);
+    }
+
+    /// A digit never becomes part of the pinyin (the user on 2026-11-23: the digit has to take the
+    /// candidate, the experience has to be like Sogou Pinyin).
+    ///
+    /// * the digit takes the candidate of its place on the page - the key is eaten and the candidate is written;
+    /// * a digit that has no candidate at its place belongs to the host, and the composition ends with the
+    ///   highlighted candidate: the document holds the candidate and the digit, never "wo9".
+    #[test]
+    fn a_digit_never_joins_the_pinyin() {
+        // a machine with three candidates and the natural language input
+        let mut m = machine();
+        m.grant_observation(true);
+        m.set_candidate_capture(true);
+        m.set_input_mode(true);
+        m.on_key(KeyEvent::ch('w'), 0);
+        m.on_key(KeyEvent::ch('o'), 0);
+        assert!(!m.candidates().is_empty(), "the list shows");
+        let highlighted = m.state();
+        let _ = highlighted;
+        // the digit takes the first candidate: the key is eaten and the commit happens
+        let step = m.on_key(KeyEvent::ch('1'), 1);
+        assert_eq!(step.outcome, KeyOutcome::Consumed, "the digit takes the candidate");
+        assert!(
+            step.effects.iter().any(|e| matches!(e, Effect::Commit { .. })),
+            "the candidate is written: {:?}",
+            step.effects
+        );
+        assert!(
+            !step.effects.iter().any(|e| matches!(e, Effect::WriteChar(_))),
+            "the digit is not written as text"
+        );
+        // a digit with no candidate at its place belongs to the host, and the pinyin is committed
+        let mut m = machine();
+        m.grant_observation(true);
+        m.set_candidate_capture(true);
+        m.set_input_mode(true);
+        m.on_key(KeyEvent::ch('w'), 0);
+        m.on_key(KeyEvent::ch('o'), 0);
+        let step = m.on_key(KeyEvent::ch('9'), 1);
+        assert_eq!(
+            step.outcome,
+            KeyOutcome::PassThrough,
+            "the digit belongs to the host: there is no candidate at that place"
+        );
+        assert!(
+            step.effects.iter().any(|e| matches!(e, Effect::Commit { .. })),
+            "the highlighted candidate is written instead of the digit in the pinyin: {:?}",
+            step.effects
+        );
+        assert!(
+            !step.effects.iter().any(|e| matches!(e, Effect::WriteChar(_))),
+            "the digit never joins the pinyin"
+        );
     }
 
     #[test]

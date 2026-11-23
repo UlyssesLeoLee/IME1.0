@@ -193,17 +193,29 @@ const misses = [];
 const stales = [];
 const errors = [];
 
+// The anchor of a case is written with LF in the cases file, but the files in the repository do not all use the
+// same line endings (the working tree has CRLF in some of them) => a plain comparison never matches and the case
+// ends as "stale", which means it verifies nothing. The pattern therefore accepts both line endings, and the
+// replacement is written with the line endings of the file it goes into.
+function anchorPattern(text) {
+  const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\r?\n/g, '\\r?\\n');
+  return new RegExp(escaped);
+}
+
 for (const item of selected) {
   const file = path.join(root, item.file);
   const original = fs.readFileSync(file, 'utf8');
-  if (!original.includes(item.from)) {
+  const pattern = anchorPattern(item.from);
+  if (!pattern.test(original)) {
     write(`STALE  ${item.id} ${anchor(item)}${item.what}: the text to break is not in the file any more`);
     noteAnchor(item, 'stale');
     stale++;
     stales.push(item.id);
     continue;
   }
-  const mutated = original.replace(item.from, item.to);
+  const endings = original.includes('\r\n') ? '\r\n' : '\n';
+  const replacement = item.to.replace(/\r?\n/g, endings);
+  const mutated = original.replace(pattern, () => replacement);
   if (mutated === original) {
     write(`STALE  ${item.id} ${anchor(item)}${item.what}: the replacement changed nothing`);
     noteAnchor(item, 'stale');
@@ -265,7 +277,7 @@ for (const [file, state] of before) {
   if (digest(file) !== state.digest) damaged.push(path.relative(root, file));
 }
 write('');
-write(`the run checked ${caught + missed + errors.length} mutations: ${caught} caught, ${missed} missed, ${errors.length} unknown (the suite did not run), ${stale} stale`);
+write(`the run checked ${caught + missed + errors.length + stale} mutations: ${caught} caught, ${missed} missed, ${errors.length} unknown (the suite did not run), ${stale} stale`);
 if (damaged.length) {
   write(`FAIL: these files were not restored: ${damaged.join(', ')}`);
   process.exit(2);
@@ -277,6 +289,11 @@ if (errors.length) {
 if (missed) {
   write(`the suite does not notice ${missed} mutation(s): ${misses.join(', ')}`);
   process.exit(1);
+}
+if (stale) {
+  write(`the suite did not verify ${stale} mutation(s): the text to break is not in the file any more (${stales.join(', ')})`);
+  write('a stale case is a failure: a case that is written wrong or whose anchor is gone has verified nothing (D-111)');
+  process.exit(4);
 }
 write('');
 write('by the design entry (what the round says about each requirement):');

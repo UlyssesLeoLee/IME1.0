@@ -1284,14 +1284,6 @@ mod tests {
             Some(ANCHOR)
         }
 
-        fn begin_composition(&mut self, typed: &str) -> Result<(), HostError> {
-            if self.doc.ends_with(typed) {
-                Ok(())
-            } else {
-                Err(HostError::Mismatch)
-            }
-        }
-
         fn end_composition(&mut self) -> Result<(), HostError> {
             Ok(())
         }
@@ -1305,6 +1297,23 @@ mod tests {
                 return Err(HostError::Mismatch);
             }
             self.doc.truncate(self.doc.len() - typed.len());
+            self.doc.push_str(text);
+            Ok(())
+        }
+
+        /// Open the composition of the text service over the caret.
+        fn begin_composition(&mut self) -> Result<(), HostError> {
+            Ok(())
+        }
+
+        /// Write the typed text into the composition of the text service.
+        fn write_composition(&mut self, text: &str) -> Result<(), HostError> {
+            self.doc.push_str(text);
+            Ok(())
+        }
+
+        /// Write the typed text into the document at the caret.
+        fn write_char(&mut self, text: &str) -> Result<(), HostError> {
             self.doc.push_str(text);
             Ok(())
         }

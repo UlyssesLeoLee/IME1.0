@@ -348,6 +348,11 @@ unsafe extern "system" fn find_bridge_window(hwnd: HWND, lparam: LPARAM) -> BOOL
 /// language and its input mode) and it can write text into the focused document. Both are asked here so that the
 /// test does not have to guess.
 impl EditHost {
+    /// The handle of the edit control of the host (the document the input method writes into).
+    pub fn edit_window(&self) -> HWND {
+        self.edit
+    }
+
     /// Asks the bridge of the input method and returns its answer.
     pub fn ask_the_bridge(&self, payload: &str) -> Option<String> {
         ask_the_bridge(self.window.hwnd, payload)
@@ -655,7 +660,7 @@ pub fn process_of_window(hwnd: HWND) -> u32 {
 }
 
 /// Clicks the mouse at a point of the screen: the click is what gives the foreground to a background process.
-fn click_at(x: i32, y: i32) {
+pub fn click_at(x: i32, y: i32) {
     use windows::Win32::UI::Input::KeyboardAndMouse::{
         INPUT_MOUSE, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEINPUT,
     };
@@ -901,6 +906,59 @@ fn module_loaded(name: &str) -> bool {
     let wide: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
     // SAFETY: the name is a null-terminated wide string that outlives the call.
     unsafe { GetModuleHandleW(PCWSTR(wide.as_ptr())) }.is_ok()
+}
+
+/// The window of the floating panel of the input method (the candidate list) and its rectangle on the screen.
+///
+/// The panel is the list: the candidates are drawn in it, and a click on a row takes the candidate (the user
+/// reported on 2026-11-20 that the floating window did not react). `None` when the panel is not on the screen.
+pub fn the_panel_of_the_input_method() -> Option<(HWND, i32, i32, i32, i32)> {
+    let panel = find_window_by_class("ProgrammingIME.LaserPanel")?;
+    let mut rect = windows::Win32::Foundation::RECT::default();
+    // SAFETY: the window is live and the rectangle is a live local.
+    if unsafe { windows::Win32::UI::WindowsAndMessaging::GetWindowRect(panel, &mut rect) }.is_err() {
+        return None;
+    }
+    Some((
+        panel,
+        rect.left,
+        rect.top,
+        rect.right - rect.left,
+        rect.bottom - rect.top,
+    ))
+}
+
+/// The first window of this thread with the class of the floating panel.
+fn find_window_by_class(class: &str) -> Option<HWND> {
+    let mut found: Option<HWND> = None;
+    // SAFETY: the call has no preconditions.
+    let tid = unsafe { GetCurrentThreadId() };
+    // SAFETY: the pointer is a live local for the whole enumeration.
+    unsafe {
+        let _ = EnumThreadWindows(
+            tid,
+            Some(collect_class_window),
+            LPARAM((&mut found as *mut Option<HWND>).cast::<isize>() as isize),
+        );
+    }
+    let _ = class;
+    found
+}
+
+unsafe extern "system" fn collect_class_window(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    // SAFETY: the pointer was made from a live local in `find_window_by_class`.
+    let found = unsafe { &mut *(lparam.0 as *mut Option<HWND>) };
+    let mut buffer = [0u16; 256];
+    // SAFETY: the buffer is live and large enough for the class name.
+    let len = unsafe { GetClassNameW(hwnd, &mut buffer) };
+    if len > 0 {
+        let name = String::from_utf16_lossy(&buffer[..len as usize]);
+        if name == "ProgrammingIME.LaserPanel" {
+            *found = Some(hwnd);
+            return BOOL(0); // one is enough
+        }
+    }
+    BOOL(1)
 }
 
 /// The class names of the windows of this thread: the input method opens its own windows when it is activated.

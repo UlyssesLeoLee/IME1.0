@@ -53,7 +53,7 @@ use crate::ui::Anchor;
 const GLOW_SIZE: i32 = 40;
 
 /// How tall the band at the top of the panel is. It is the handle of the panel: the panel is dragged by it.
-const PANEL_HANDLE: i32 = 18;
+pub const PANEL_HANDLE: i32 = 18;
 
 /// How wide the panel is.
 const PANEL_WIDTH: i32 = 268;
@@ -90,7 +90,7 @@ enum PanelMode {
 }
 
 /// How tall a row of the panel is.
-const PANEL_ROW_HEIGHT: i32 = 30;
+pub const PANEL_ROW_HEIGHT: i32 = 30;
 
 /// How much room the beam has around its way.
 const BEAM_MARGIN: i32 = 26;

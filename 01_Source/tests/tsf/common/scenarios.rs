@@ -624,8 +624,9 @@ pub static SCENARIOS: &[Scenario] = &[
             assert_eq!(t.commits, ["c1:fn"], "{t:?}");
             assert_eq!(
                 t.eaten,
-                ["Ctrl+F12", "Tab", "Enter"],
-                "the chord and both keys belonged to the input method"
+                ["Ctrl+F12", "f", "n", "Tab", "Enter"],
+                "the chord, the two letters of the natural language input (it owns the typed text) and both keys \
+                 belonged to the input method"
             );
         },
     },

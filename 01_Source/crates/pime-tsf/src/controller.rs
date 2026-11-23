@@ -55,9 +55,22 @@ pub trait HostText {
     fn is_secure_field(&mut self) -> bool;
     /// The caret in screen coordinates; None when the host cannot say.
     fn caret_anchor(&mut self) -> Option<Anchor>;
-    /// Open a composition over `typed`, the text the user typed just before the caret. Must fail with
-    /// [`HostError::Mismatch`] unless the text before the caret is exactly `typed` (no blind ranges).
-    fn begin_composition(&mut self, typed: &str) -> Result<(), HostError>;
+    /// Open the composition of the text service over the caret (empty).
+    ///
+    /// The range of the typed text cannot be found by reading the document (a host that does not sync its text to
+    /// the text service reads empty - measured on a plain edit control on 2026-11-21), so the composition is opened
+    /// over the caret and the typed text goes into it.
+    fn begin_composition(&mut self) -> Result<(), HostError>;
+    /// Write the typed text into the composition of the text service (it is opened when it is not open yet).
+    ///
+    /// The text service owns that range, so it can write the typed text into it and replace it with the candidate
+    /// later - **without reading the document**.
+    fn write_composition(&mut self, text: &str) -> Result<(), HostError>;
+    /// Write the typed text into the document at the caret, and put the caret after it.
+    ///
+    /// This is the path of the last resort: the host refused the composition, so the text service cannot replace
+    /// the typed text later - the candidate lands after it instead.
+    fn write_char(&mut self, text: &str) -> Result<(), HostError>;
     /// Close the composition and leave the text as it is (cancel). Succeeds when none is open. An `Err` means the
     /// composition may still be open in the document (the host refused the session): the host keeps hold of it until the
     /// controller has called [`HostText::end_composition_later`], which it does once, at once.
@@ -235,6 +248,10 @@ pub struct TipController<U: CandidateUi, H: HostText, P: PredictPort = LocalPred
     visible: bool,
     /// The host refused a composition for the candidates now showing: stay in plain candidate mode.
     composition_refused: bool,
+    /// The list of the candidates cannot be shown right now (the window could not be drawn, or it went away): the
+    /// composition of the host is not opened again while that lasts - a composition that nobody can see is a
+    /// composition the user cannot get out of.
+    list_hidden: bool,
     /// A composition is open in the host (the machine's own flag cannot see a panic that skipped the closing call).
     host_composing: bool,
     last_anchor: Option<Anchor>,
@@ -276,6 +293,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             degraded: false,
             visible: false,
             composition_refused: false,
+            list_hidden: false,
             host_composing: false,
             last_anchor: None,
             seen: None,
@@ -323,6 +341,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             c.machine.set_keymap(c.config.keymap);
             c.machine
                 .set_candidate_capture(c.config.candidate_capture || c.config.input_mode);
+            c.machine.set_input_mode(c.config.input_mode);
             c.machine.grant_observation(true);
             if secure_mode {
                 c.secure = true;
@@ -396,6 +415,8 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             c.config.input_mode = on;
             c.machine
                 .set_candidate_capture(c.config.candidate_capture || on);
+            // the natural language input owns the typed text: the letters are eaten and the text service writes them
+            c.machine.set_input_mode(on);
             if !on {
                 // the composition and the list of the input mode end with it
                 c.reset();
@@ -455,6 +476,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             c.machine.set_keymap(c.config.keymap);
             c.machine
                 .set_candidate_capture(c.config.candidate_capture || c.config.input_mode);
+            c.machine.set_input_mode(c.config.input_mode);
             if was_input_mode && !c.config.input_mode {
                 c.reset();
             }
@@ -569,6 +591,7 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
             // the list went away without a `hide` from us (a host that drew it handed it back through
             // `ITfUIElement::Show(TRUE)` and the popup could not be drawn): nothing may be eaten behind it
             self.visible = false;
+            self.list_hidden = true;
             self.settle();
         }
         if is_vertical_chord(key.code, key.mods) {
@@ -664,11 +687,29 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     /// they appear is deliberate: the host inserts a typed character only after the key callback returned, so the text
     /// before the caret matches the prefix only at the next key event.
     fn prepare(&mut self) {
-        if (self.config.auto_compose || self.config.input_mode)
-            && !self.composition_refused
-            && self.can_compose()
-        {
-            self.begin_composition();
+        if !self.config.auto_compose && !self.config.input_mode {
+            return;
+        }
+        if self.composition_refused || self.degraded || self.secure {
+            return;
+        }
+        if self.list_hidden {
+            // The list cannot be shown: the composition of the host is not opened (the rule of the product: nothing
+            // is eaten behind a window that is not there).
+            return;
+        }
+        // The composition of the **host** opens over the caret as soon as the user types: the range of the typed
+        // text cannot be found by reading the document (a host that does not sync its text to the text service reads
+        // empty - measured on 2026-11-21), and everything that is typed while the composition is open is inside it.
+        if !self.host_composing && self.host.begin_composition().is_err() {
+            self.composition_refused = true;
+            return;
+        }
+        self.host_composing = true;
+        // The machine moves to COMPOSING when the candidates are there: the reserved keys belong to the list from
+        // that moment on.
+        if self.can_compose() {
+            self.machine.begin_composition(true);
         }
     }
 
@@ -684,8 +725,9 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
     /// Open the host composition over the typed prefix and move the machine to COMPOSING. A refusal is not a failure of
     /// the host: the candidates stay as they are and the refusal is remembered until they go.
     fn begin_composition(&mut self) -> bool {
-        let typed = self.machine.typed_prefix().to_string();
-        if self.host.begin_composition(&typed).is_err() {
+        // The explicit composition: the composition of the host is opened over the caret (it may already be open:
+        // everything that is typed while it is open is inside it), and the machine moves to COMPOSING.
+        if self.host.begin_composition().is_err() {
             self.composition_refused = true;
             return false;
         }
@@ -735,6 +777,24 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
                 // the host side was opened by `begin_composition` before the machine moved to COMPOSING
                 Effect::BeginComposition | Effect::ModeChanged { .. } => {}
                 Effect::EndComposition => self.end_host_composition(),
+                Effect::WriteChar(_letter) => {
+                    // The letter the user typed belongs to the composition: the text service writes it itself, so
+                    // that the candidate can **replace** the pinyin (and not be added after it).
+                    let prefix = self.machine.typed_prefix().to_string();
+                    let ok = match self.host.write_composition(&prefix) {
+                        Ok(()) => {
+                            self.host_composing = true;
+                            true
+                        }
+                        Err(_) => {
+                            // The host refused the composition: the text goes into the document at the caret, and
+                            // the candidate lands after it (the host does not let the text service read the
+                            // document back).
+                            self.host.write_char(&prefix).is_ok()
+                        }
+                    };
+                    written &= ok;
+                }
                 Effect::Commit { text, .. } => {
                     let typed = self.machine.typed_prefix().to_string();
                     // Where the text lands: the caret before the write is the place the character appears at.
@@ -778,12 +838,20 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         };
         let anchor = self.host.caret_anchor().or(self.last_anchor);
         let Some(anchor) = anchor else {
-            return; // cannot place the window: `settle` then cancels, because nothing may be eaten behind a hidden window
+            // cannot place the window: `settle` then cancels, because nothing may be eaten behind a hidden window
+            self.list_hidden = true;
+            return;
         };
         self.last_anchor = Some(anchor);
+        self.list_hidden = false;
+        self.visible = self.ui.show(&view, anchor);
+        if !self.visible {
+            // the window could not be drawn: the composition of the host is not opened again (the rule of the
+            // product: nothing is eaten behind a window that is not there).
+            self.list_hidden = true;
+        }
         // `visible` is what the USER sees, not what was asked for: a window that could not be drawn (creation failed, no
         // monitor, nothing to lay out) is a hidden window, and `settle` cancels exactly as for a missing anchor
-        self.visible = self.ui.show(&view, anchor);
     }
 
     fn hide(&mut self) {
@@ -912,6 +980,9 @@ mod tests {
         later_ends: usize,
         secure_checks: usize,
         commits: Vec<(String, String)>,
+        /// Where the composition of the text service starts in the document: the text it holds is the text from that
+        /// place to the end.
+        composition_at: Option<usize>,
     }
 
     impl HostText for FakeHost {
@@ -924,15 +995,38 @@ mod tests {
             self.anchor
         }
 
-        fn begin_composition(&mut self, typed: &str) -> Result<(), HostError> {
+        /// Open the composition of the text service over the caret.
+        fn begin_composition(&mut self) -> Result<(), HostError> {
             self.begins += 1;
             if self.fail_begin {
                 return Err(HostError::Refused);
             }
-            if !self.doc.ends_with(typed) {
-                return Err(HostError::Mismatch);
-            }
             self.composing = true;
+            self.composition_at = Some(self.doc.len());
+            Ok(())
+        }
+
+        /// Write the typed text into the composition of the text service: the text service owns that range, so it
+        /// writes the typed text into it and replaces it with the candidate later.
+        fn write_composition(&mut self, text: &str) -> Result<(), HostError> {
+            if !self.composing && self.begin_composition().is_err() {
+                return Err(HostError::Refused);
+            }
+            // the composition holds the typed text: it replaces what it held
+            if let Some(start) = self.composition_at {
+                self.doc.truncate(start);
+            }
+            self.composition_at = Some(self.doc.len());
+            self.doc.push_str(text);
+            Ok(())
+        }
+
+        /// Write the typed text into the document at the caret (the path of the last resort).
+        fn write_char(&mut self, text: &str) -> Result<(), HostError> {
+            if self.fail_begin {
+                return Err(HostError::Refused);
+            }
+            self.doc.push_str(text);
             Ok(())
         }
 
@@ -942,6 +1036,7 @@ mod tests {
                 return Err(HostError::Refused); // the composition stays open in the document
             }
             self.composing = false;
+            self.composition_at = None; // the text stays in the document, but it is no longer a composition
             Ok(())
         }
 
@@ -961,10 +1056,18 @@ mod tests {
             if self.fail_commit {
                 return Err(HostError::Refused);
             }
+            // The text the user typed must still be there: a document that changed under the input method
+            // (the user clicked elsewhere) is not written into.
             if !self.doc.ends_with(typed) {
                 return Err(HostError::Mismatch);
             }
-            self.doc.truncate(self.doc.len() - typed.len());
+            // The composition holds the typed text: the candidate replaces it.
+            if let Some(start) = self.composition_at.take() {
+                self.doc.truncate(start);
+                self.composing = false;
+            } else {
+                self.doc.truncate(self.doc.len() - typed.len());
+            }
             self.doc.push_str(text);
             self.commits.push((typed.to_string(), text.to_string()));
             Ok(())
@@ -1116,8 +1219,22 @@ mod tests {
 
         fn type_text(&mut self, text: &str, style: Host) {
             for c in text.chars() {
+                let before = self.ctl.host.doc.len();
                 let eaten = self.press(code_of(c), Some(c), NONE, style);
-                assert!(!eaten, "typing {c:?} must reach the host");
+                if eaten {
+                    // The natural language input: the text service eats the letter and writes it into its own
+                    // composition (that is what lets a candidate replace the pinyin). The letter is in the document
+                    // either way.
+                    assert!(
+                        self.ctl.host.doc.len() > before,
+                        "the text service writes the letter {c:?} itself"
+                    );
+                } else {
+                    assert!(
+                        self.ctl.host.doc.len() > before,
+                        "typing {c:?} reaches the host"
+                    );
+                }
             }
         }
 
@@ -1176,8 +1293,16 @@ mod tests {
             *clock += 1;
             let down = input(code_of(c), Some(c), NONE, *clock);
             let eaten = ctl.on_test_key_down(down) && ctl.on_key_down(down);
-            assert!(!eaten, "typing {c:?} reaches the host");
-            ctl.host_mut().doc.push(c);
+            if eaten {
+                // The natural language input: the text service eats the letter and writes it into its own
+                // composition (the letter is in the document either way).
+                assert!(
+                    ctl.host_mut().doc.ends_with(c),
+                    "the text service writes the letter {c:?} itself"
+                );
+            } else {
+                ctl.host_mut().doc.push(c);
+            }
         }
     }
 
@@ -1877,7 +2002,9 @@ mod tests {
             vec![("fn".to_string(), "T6:fn".to_string())],
             "digit 2 on page 2 is the seventh candidate"
         );
-        assert_eq!(rig.ctl.host().doc, "T6:fn");
+        // The explicit composition holds the text that is typed **after** the chord: the text the user typed
+        // before it stays in the document (the range of that text cannot be found by reading the document).
+        assert_eq!(rig.ctl.host().doc, "fnT6:fn");
         assert!(!rig.ctl.host().composing && !rig.ctl.ui().visible);
         assert_eq!(rig.ctl.machine().state(), State::Observing);
         assert!(!rig.digit('2'), "and the next digit is typed again");
@@ -1905,7 +2032,9 @@ mod tests {
         for (code, name) in [(vk::RETURN, "Enter"), (vk::SPACE, "Space")] {
             let mut rig = enter();
             assert!(rig.press(code, Some(' '), NONE, Host::Contract), "{name}");
-            assert_eq!(rig.ctl.host().doc, "T0:fn", "{name}");
+            // The explicit composition holds the text that is typed **after** the chord: the text the user typed
+            // before it stays in the document (the range of that text cannot be found by reading the document).
+            assert_eq!(rig.ctl.host().doc, "fnT0:fn", "{name}");
             assert_eq!(rig.ctl.host().commits.len(), 1, "{name}");
             assert!(!rig.ctl.host().composing, "{name}: the composition ended");
         }
@@ -2271,6 +2400,48 @@ mod tests {
         assert!(rig.digit('1'));
     }
 
+    /// The natural language input: the text service **eats** the letters and writes them into its own
+    /// composition, and the candidate **replaces** the pinyin.
+    ///
+    /// This is the report of the user (2026-11-20): "the digit of the candidate is inserted into the pinyin and the
+    /// selected text is not written". The range of the pinyin cannot be found by reading the document (a host that
+    /// does not sync its text to the text service reads empty - measured on a plain edit control on 2026-11-21), so
+    /// the composition of the text service holds the typed text and the candidate replaces it there.
+    #[test]
+    fn the_natural_language_input_replaces_the_pinyin_with_the_candidate() {
+        let mut rig = Rig::natural_language();
+        rig.type_text("fn", Host::Contract);
+        assert!(
+            rig.ctl.host().composing,
+            "the composition of the text service holds the typed text"
+        );
+        assert_eq!(rig.ctl.host().doc, "fn", "the pinyin is in the document");
+        assert!(rig.digit('1'), "the digit takes the candidate");
+        assert_eq!(
+            rig.ctl.host().doc, "T0:fn",
+            "the candidate replaced the pinyin - it is not added after it"
+        );
+        assert!(!rig.ctl.host().composing, "the composition ended");
+    }
+
+    /// The code input: the letters belong to the host (the code goes into the editor as it was typed) and the text
+    /// service opens no composition of its own.
+    #[test]
+    fn the_code_input_leaves_the_letters_to_the_host() {
+        let mut rig = Rig::direct();
+        rig.type_text("fn", Host::Contract);
+        assert_eq!(rig.ctl.host().doc, "fn", "the code is in the document");
+        assert!(
+            !rig.ctl.host().composing,
+            "the text service opens no composition in the code input"
+        );
+        assert!(
+            rig.ctl.ui().visible,
+            "the candidates are shown even in the code input (the report of the user: the programming input cannot \
+             see the candidates)"
+        );
+    }
+
     #[test]
     fn a_commit_into_changed_text_is_refused_not_forced() {
         let mut rig = Rig::new();
@@ -2296,7 +2467,10 @@ mod tests {
         }
         assert!(!rig.ctl.ui().visible, "no window after the failure");
         assert!(!rig.digit('1'), "and the keyboard is the host's");
-        assert!(!rig.ctl.host().composing);
+        assert!(
+            rig.ctl.host().composing,
+            "the composition holds the text the user typed (the pinyin is in the document)"
+        );
         assert_eq!(rig.ctl.machine().state(), State::FaultFallback);
         // still usable after a focus change
         rig.ctl.focus_changed();
@@ -2487,6 +2661,8 @@ mod tests {
         );
         assert!(!rig.digit('1'), "so the digit is typed");
         assert!(!rig.plain(vk::ESCAPE));
+        // The list is not there, so the composition of the host is closed again: what must not happen is a
+        // **candidate** being taken behind a window that is not there - the digit above is the host's.
         assert!(!rig.ctl.host().composing);
     }
 
@@ -2513,8 +2689,17 @@ mod tests {
                 assert!(!rig.press(vk::SPACE, Some(' '), NONE, style), "{what}");
                 assert!(!rig.press(code_of('1'), Some('1'), NONE, style), "{what}");
                 assert!(!rig.chord(style), "{what}: not even the chord");
-                assert_eq!(rig.ctl.host().begins, 0, "{what}: no composition");
-                assert!(!rig.ctl.host().composing, "{what}");
+                // The auto-compose mode opens a composition with the first letter (it holds the text the user
+                // typed); the code input opens none. The list is not there, so the composition is closed again.
+                assert_eq!(
+                    rig.ctl.host().begins,
+                    if config.auto_compose { 1 } else { 0 },
+                    "{what}: the composition of the host"
+                );
+                assert!(
+                    !rig.ctl.host().composing,
+                    "{what}: the list is not there, so the composition is closed"
+                );
                 assert!(rig.ctl.host().commits.is_empty(), "{what}");
                 assert!(
                     !rig.ctl.is_degraded(),

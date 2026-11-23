@@ -284,6 +284,21 @@ fn the_plain_edit_control_receives_the_input_method() {
         "the digit of a candidate must **take** the candidate and not land in the document (the report of the user: \
          the digit is inserted into the pinyin and the selected text is not written); the report is:\n{report}"
     );
+    assert!(
+        report.contains("panel=on-screen"),
+        "the floating window (the panel is the list of the candidates) has to be on the screen while the candidates \
+         show; the report is:\n{report}"
+    );
+    assert!(
+        report.contains("code_panel=candidates"),
+        "the candidates must be visible in the floating window in the code input too (the report of the user: the \
+         programming input cannot see the candidates); the report is:\n{report}"
+    );
+    assert!(
+        report.contains("click=landed"),
+        "a click on a row of the floating window has to take that candidate and write it into the document (the \
+         report of the user: the floating window cannot be interacted with); the report is:\n{report}"
+    );
 }
 
 /// The real Notepad: the application the user types in.
@@ -450,14 +465,37 @@ fn drive_the_edit_control() {
     // The focus is checked again: a key that goes to another window is typed into somebody else's document.
     let focus_before_typing = host.has_the_focus();
     let modifiers_before_typing = host.modifier_state();
-    host.type_real("wo");
+    // The document is read after **every** letter: the text service and the application may see different
+    // things, and only the two together say where a letter went.
+    host.type_real("w");
+    let document_after_the_w = host.read();
+    host.type_real("o");
+    let document_after_the_o = host.read();
     let modifiers_after_typing = host.modifier_state();
     // The document is read **without touching the selection**. The commit verifies the text before the caret, so a
     // selection (the "select all" of an earlier version of this drive) would make that verification fail: the
     // measurement would then measure its own disturbance instead of the input method.
     let composition = host.read();
     let caret_of_the_application = host.read_selection();
+    // **The floating window**: the panel IS the list of candidates, and a click on one of its rows has to take that
+    // candidate (the report of the user on 2026-11-20: "the floating window cannot be interacted with, the click
+    // does nothing"). The click comes first: it takes the candidate and ends the list.
+    let panel = common::ime_live::the_panel_of_the_input_method();
+    let panel_is_on_the_screen = panel.is_some();
+    let click_landed = match panel {
+        Some((_, left, top, width, _)) => {
+            // the first row of the panel is under its handle
+            common::ime_live::click_at(
+                left + width / 2,
+                top + pime_tsf::laser_ui::PANEL_HANDLE + pime_tsf::laser_ui::PANEL_ROW_HEIGHT / 2,
+            );
+            std::thread::sleep(std::time::Duration::from_millis(700));
+            host.read().contains('我')
+        }
+        None => false,
+    };
     // The space takes the highlighted candidate.
+    host.type_real("wo");
     host.type_real(" ");
     let after_space = host.read();
     let commit_landed = after_space.contains('我');
@@ -466,7 +504,8 @@ fn drive_the_edit_control() {
     host.type_real("wo");
     host.type_real("1");
     let after_digit = host.read();
-    let digit_landed = after_digit.matches('我').count() == 2 && !after_digit.contains('1');    // The path of the agents: the bridge writes into the focused document.
+    let digit_landed = after_digit.matches('我').count() == 3 && !after_digit.contains('1');
+    // The path of the agents: the bridge writes into the focused document.
     let before = host.read();
     let answer = host.ask_the_bridge_to_write("我");
     std::thread::sleep(std::time::Duration::from_millis(400));
@@ -489,8 +528,34 @@ fn drive_the_edit_control() {
         .unwrap_or(false)
         && after_the_symbol.contains('±')
         && after_the_symbol.len() > before_the_symbol.len();
+    // The code input: the letters belong to the host (the code goes into the editor as it was typed) and the
+    // candidates must be visible in the floating window (the report of the user: "the programming input cannot see
+    // the candidates"). The panel of the candidates is shorter than the panel of the settings: the height tells
+    // which one is on the screen.
+    let mut code_panel = "absent";
+    let mut document_of_the_code_input = String::new();
+    let mut document_after_the_code_w = String::new();
+    let mut code_phase_ran = false;
     if switched {
-        // the mode of the user is put back the way it was
+        code_phase_ran = true;
+        host.press_ctrl_f12(); // the code input
+        std::thread::sleep(std::time::Duration::from_millis(400));
+        host.type_real("w");
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        document_after_the_code_w = host.read();
+        host.type_real("o");
+        std::thread::sleep(std::time::Duration::from_millis(400));
+        document_of_the_code_input = host.read();
+        code_panel = match common::ime_live::the_panel_of_the_input_method() {
+            Some((_, _, _, _, height)) if height < 400 => "candidates",
+            Some((_, _, _, _, _)) => "settings",
+            None => "absent",
+        };
+    }
+    // The document at the end: it says where the text the bridge wrote landed.
+    let document_at_the_end = host.read();
+    if switched && !code_phase_ran {
+        // the mode of the user is put back the way it was (the code input phase above already did it)
         host.press_ctrl_f12();
     }
     // The view of the input method itself: it reads the selection of the document. It happens at the very end,
@@ -502,8 +567,11 @@ fn drive_the_edit_control() {
         host.window().0 as usize
     ));
     println!(
-        "REPORT mode={} language={} focus={} modifiers_before={:?} modifiers_after={:?} composition={:?} caret={:?} after_space={:?} \
-         commit={} digit={} write={} math={} document_after_the_digit={:?} document_of_the_input_method={:?} bridge={:?}",
+        "REPORT mode={} language={} focus={} modifiers_before={:?} modifiers_after={:?} composition={:?} caret={:?} \
+         document_after_the_w={:?} document_after_the_o={:?} edit_window={:#x} \
+         panel={} click={} commit={} digit={} write={} math={} document_after_the_digit={:?} \
+         document_of_the_input_method={:?} bridge={:?} document_at_the_end={:?} code_panel={} \
+         document_after_the_code_w={:?} document_of_the_code_input={:?}",
         if natural_language { "natural" } else { "code" },
         language,
         if focus_before_typing { "ok" } else { "lost" },
@@ -511,14 +579,22 @@ fn drive_the_edit_control() {
         modifiers_after_typing,
         composition,
         caret_of_the_application,
-        after_space,
+        document_after_the_w,
+        document_after_the_o,
+        host.edit_window().0 as usize,
+        if panel_is_on_the_screen { "on-screen" } else { "absent" },
+        if click_landed { "landed" } else { "missing" },
         if commit_landed { "landed" } else { "missing" },
         if digit_landed { "landed" } else { "missing" },
         if write_path_works { "ok" } else { "broken" },
         if math_path_works { "ok" } else { "broken" },
         after_digit,
         document_of_the_input_method,
-        answer
+        answer,
+        document_at_the_end,
+        code_panel,
+        document_after_the_code_w,
+        document_of_the_code_input
     );
 }
 
