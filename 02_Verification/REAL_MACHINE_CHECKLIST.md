@@ -9,7 +9,7 @@
 1. 先把旧的装卸掉（**必须先卸**，不然旧 DLL 还被系统占着）：
    - 控制面板 → 程序 → 「IME1.0 / 编程输入法」→ 卸载；
    - 或者直接跑 `E:\IME1.0\01_Source\dist\ProgrammingIME-0.3.3-win-x64-setup.exe`
-     （10,416,270 字节，sha256 `61eb04ab4cf06da30fa2aff9962af674bde9e015970d4bfdfc8874c599dad54b`；
+     （10,416,270 字节，sha256 `ccea37237ca2ccb4f89e9c31dfa9e360ad28cc7fa1f12f1d3fd81439b8bebe30`；
      **认这个摘要再装**，别拿错版本——安装向导会自己发现旧版并提示先卸）。
 2. **先查一遍「每用户 COM 覆盖」**（这一步是这台机器特有的坑，2026-11-23 实测）：
    `HKCU\Software\Classes\CLSID\{43F95ED1-95B4-421D-8F5A-837128C2D854}\InProcServer32`

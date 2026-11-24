@@ -30,7 +30,7 @@
 |---|---|
 | 文件 | `01_Source/dist/ProgrammingIME-0.3.3-win-x64-setup.exe` |
 | 大小 | 10,416,270 字节 |
-| SHA-256 | `61eb04ab4cf06da30fa2aff9962af674bde9e015970d4bfdfc8874c599dad54b` |
+| SHA-256 | `ccea37237ca2ccb4f89e9c31dfa9e360ad28cc7fa1f12f1d3fd81439b8bebe30` |
 | 形态 | x64 控制台子系统 EXE；载荷以 PE overlay 附在桩程序之后 |
 | 桩程序 | `pime-setup.exe`，788,992 字节（含安装向导与内嵌 logo） |
 | 载荷（`pime_tsf.dll` 2,708,480 B ／ `pime-core.exe` 3,220,896 B ／ `LICENSE` 1,085 B ／ `programming-ime.vsix` 218,970 B ／ `pime.ico` 66,724 B ／ `pime-tray.exe` 1,144,832 B ／ `pime-ai-worker.exe` 400,896 B ／ `pime-mcp.exe` 1,013,760 B ／ `pime-ime.exe` 850,944 B ／ `meta.json` 87 B 条） |  |
@@ -199,7 +199,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 
 | 检查 | 结果 | 证据 |
 |---|---|---|
-| Rust 核心 `cargo test --workspace` | **461 / 461 通过**（本轮新增**AI 代理的线上契约** `pime-core/src/agent_proto.rs`：请求 / 回答 / 6 个操作 / 8 个错误码 / 载荷上限 / 消息码 / 窗口类名与标题前缀，10 项往返单测） | `run-all-2026-11-04.log` |
+| Rust 核心 `cargo test --workspace` | **462 / 461 通过**（本轮新增**AI 代理的线上契约** `pime-core/src/agent_proto.rs`：请求 / 回答 / 6 个操作 / 8 个错误码 / 载荷上限 / 消息码 / 窗口类名与标题前缀，10 项往返单测） | `run-all-2026-11-04.log` |
 | Rust TSF `cargo test` | **397 / 397 通过**（2026-11-23 给 **Ctrl+F12 的可见指示器**加了 10 条用例：光口在代码输入里是单线、在自然语言输入里是**双线**（像素级断言）、屏幕模型里带着模式、agent 的嘴不是模式的标志、agent 不得取人的任何一种颜色、Ctrl+F12 与设置窗口改模式都一定通知界面、面板用字把模式说出来；并给这批新代码加了 **12 条变异用例**（每条都被抓到）。此前：2026-11-20 修掉**写回校验的真缺陷**（`tip.rs` 的 `typed_range` 把 `ShiftStart` 回填的**起点绝对位置**和**位移量**比错了 ⇒ 每次写回都被自己拒绝 ⇒ 降级 ⇒ 候选数字漏给宿主）与**悬浮窗不收起**（`laser_ui.rs`，鼠标离开激光口时收起计时没启动），并给真机夹具修掉**卡住的右 Ctrl**、**数字键扫描码**、**量提交前的全选**三个错；新增单测 `the_panel_goes_away_when_the_mouse_leaves_the_mouth`；本轮新增 **DLL 侧的 AI 桥接**：`agent_bridge.rs`（隐藏桥接窗口 + `WM_COPYDATA` 收发 + 密码框不写 + 结构体布局）与 `tip.rs` 的接线（写入光标处 / 替换选区 / 读选区 / 切语言 / 状态）；另修掉一个**真缺陷**：桥接窗口**第二次就打不开**（类注册结果记在局部变量里，`Once` 的闭包只执行一次 ⇒ 切走再切回来，AI 就再也叫不动输入法），并补了**真机跨进程往返**测试） | `run-all-2026-11-04.log` |
 | Rust agent `cargo test` | **85 / 85 通过**（本轮新增 `crates/pime-agent`：**MCP 服务端**（7 个工具）、**CLI**（12 个操作）、**本地服务**（命名管道 `\\.\pipe\pime-agent-v1` + HTTP 127.0.0.1 + 令牌）；含一条**真机 `WM_COPYDATA` 往返**与一条「桥接不回答时按时放弃」的保护） | `run-all-2026-11-04.log` |
 | 安装器 `cargo test`（单元 105 + 真实文件系统 13 + 真实链接 5） | **123 / 123 通过**（本轮载荷 8 → **10** 条：新增 `pime-mcp.exe` 与 `pime-ime.exe`；安装计划、清单、步骤数与期望值全部同步） | `setup-tests-2026-11-04.log` |
@@ -401,7 +401,7 @@ DLL 导出与类工厂、**COM 对象计数与 `DllCanUnloadNow`**、文本服�
 # machine-readable claims (checked by 01_Source/tests/smoke/installer-claims-check.js)
 installer_file = ProgrammingIME-0.3.3-win-x64-setup.exe
 installer_bytes = 10416270
-installer_sha256 = 61eb04ab4cf06da30fa2aff9962af674bde9e015970d4bfdfc8874c599dad54b
+installer_sha256 = ccea37237ca2ccb4f89e9c31dfa9e360ad28cc7fa1f12f1d3fd81439b8bebe30
 stub_bytes = 788992
 payload_entry_count = 10
 payload_pime_tsf_dll_bytes = 2708480
@@ -414,7 +414,7 @@ payload_pime_ai_worker_exe_bytes = 400896
 payload_pime_mcp_exe_bytes = 1013760
 payload_pime_ime_exe_bytes = 850944
 payload_meta_json_bytes = 87
-rust_core_tests = 461
+rust_core_tests = 462
 rust_tsf_tests = 397
 rust_agent_tests = 85
 rust_tase_tests = 1055

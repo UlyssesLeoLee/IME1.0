@@ -1,18 +1,18 @@
 {
  "summary": {
-  "generated": "2026-11-19T16:53:28.218Z",
+  "generated": "2026-11-24T04:53:24.363Z",
   "node": "v24.19.0",
   "js": {
-   "total": 357,
-   "pass": 357
+   "total": 330,
+   "pass": 330
   },
   "rust": {
-   "total": 460,
-   "pass": 460
+   "total": 462,
+   "pass": 462
   },
   "tsf": {
-   "total": 383,
-   "pass": 383
+   "total": 397,
+   "pass": 397
   },
   "uat": {
    "total": 59,
@@ -39,8 +39,8 @@
    }
   },
   "extras": {
-   "total": 250,
-   "pass": 250
+   "total": 247,
+   "pass": 247
   }
  },
  "rows": [
@@ -71,10 +71,10 @@
     "tsf"
    ],
    "tests": [
-    "rust: install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
-    "install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
     "rust: install_plan::tests::ut_002_selection_errors_and_subsets",
-    "install_plan::tests::ut_002_selection_errors_and_subsets"
+    "install_plan::tests::ut_002_selection_errors_and_subsets",
+    "rust: install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
+    "install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles"
    ],
    "failed": [],
    "reason": ""
@@ -159,10 +159,10 @@
    "tests": [
     "js: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
     "UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
-    "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
-    "candidate::tests::ut_007_usage_breaks_ties_before_weight",
     "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
-    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable"
+    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
+    "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "candidate::tests::ut_007_usage_breaks_ties_before_weight"
    ],
    "failed": [],
    "reason": ""
@@ -178,10 +178,10 @@
    "tests": [
     "js: UT-008 de-duplication keeps one row and every source",
     "UT-008 de-duplication keeps one row and every source",
-    "rust: candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row",
-    "candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row",
     "rust: candidate::tests::ut_008_candidates_without_text_are_never_merged",
-    "candidate::tests::ut_008_candidates_without_text_are_never_merged"
+    "candidate::tests::ut_008_candidates_without_text_are_never_merged",
+    "rust: candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row",
+    "candidate::tests::ut_008_dedupe_keeps_all_sources_and_one_row"
    ],
    "failed": [],
    "reason": ""
@@ -448,12 +448,12 @@
    "tests": [
     "js: UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
     "UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
+    "rust: textrange::tests::ut_026_out_of_range_is_rejected",
+    "textrange::tests::ut_026_out_of_range_is_rejected",
     "rust: textrange::tests::ut_026_crlf_is_not_split",
     "textrange::tests::ut_026_crlf_is_not_split",
     "rust: textrange::tests::ut_026_offset_round_trip",
     "textrange::tests::ut_026_offset_round_trip",
-    "rust: textrange::tests::ut_026_out_of_range_is_rejected",
-    "textrange::tests::ut_026_out_of_range_is_rejected",
     "rust: textrange::tests::ut_026_positions_never_split_surrogates",
     "textrange::tests::ut_026_positions_never_split_surrogates"
    ],
@@ -471,8 +471,6 @@
    "tests": [
     "js: UT-027 nearby excerpt is minimal and wider requests are refused",
     "UT-027 nearby excerpt is minimal and wider requests are refused",
-    "js: engine: excerpts and insert previews are identical in both engines (UT-027)",
-    "engine: excerpts and insert previews are identical in both engines (UT-027)",
     "rust: context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
@@ -496,8 +494,6 @@
    "tests": [
     "js: UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
     "UT-028 / IT-014 / IT-028 snapshot hash comes from the unsaved buffer, not the disk",
-    "js: engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)",
-    "engine: snapshots, hunks, selections and previews are identical in both engines (UT-028/045)",
     "rust: context::tests::ut_028_snapshot_hash_comes_from_the_unsaved_buffer_not_the_disk",
     "context::tests::ut_028_snapshot_hash_comes_from_the_unsaved_buffer_not_the_disk"
    ],
@@ -515,10 +511,6 @@
    "tests": [
     "js: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
     "UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
-    "js: CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031)",
-    "CFG engine: settings validation accepts every effort level and reports the same problems as JS (UT-029/031)",
-    "js: engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)",
-    "engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)",
     "rust: grants::tests::ut_029_it_015_grants_any_mismatch_is_denied_revoke_stops_new_requests",
     "grants::tests::ut_029_it_015_grants_any_mismatch_is_denied_revoke_stops_new_requests"
    ],
@@ -536,8 +528,6 @@
    "tests": [
     "js: UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file",
     "UT-030 an L4 (disk) snapshot can never be written back; L1 cannot be whole-file",
-    "js: engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)",
-    "engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)",
     "rust: context::tests::ut_030_an_l4_disk_snapshot_can_never_be_written_back_and_l1_is_not_whole_file",
     "context::tests::ut_030_an_l4_disk_snapshot_can_never_be_written_back_and_l1_is_not_whole_file",
     "rust: edit::transaction::tests::ut_030_an_l4_disk_snapshot_can_never_become_a_plan",
@@ -559,8 +549,6 @@
    "tests": [
     "js: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
     "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
-    "js: AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)",
-    "AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)",
     "rust: ut_031_the_api_key_only_travels_in_the_prepared_headers",
     "ut_031_the_api_key_only_travels_in_the_prepared_headers"
    ],
@@ -590,9 +578,7 @@
    ],
    "tests": [
     "js: UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise",
-    "UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise",
-    "js: AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)",
-    "AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)"
+    "UT-033 / IT-018 / ST-017 effort is sent only when verified, and the reason is explicit otherwise"
    ],
    "failed": [],
    "reason": ""
@@ -606,9 +592,7 @@
    ],
    "tests": [
     "js: UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work",
-    "UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work",
-    "js: AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)",
-    "AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)"
+    "UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work"
    ],
    "failed": [],
    "reason": ""
@@ -641,9 +625,7 @@
    ],
    "tests": [
     "js: UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI",
-    "UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI",
-    "js: AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036)",
-    "AI engine: a rate limit pauses AI in both engines and the retry-after header is honoured (UT-036)"
+    "UT-036 / IT-020 / ST-041 provider and network errors map to precise codes; 429 pauses AI"
    ],
    "failed": [],
    "reason": ""
@@ -673,9 +655,7 @@
    ],
    "tests": [
     "js: UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled",
-    "UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled",
-    "js: scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)",
-    "scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)"
+    "UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled"
    ],
    "failed": [],
    "reason": ""
@@ -772,8 +752,6 @@
    "tests": [
     "js: UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
     "UT-044 / UT-053 / IT-035 whole-file and insert paths are independent: no bridge disables Full only",
-    "js: CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056)",
-    "CFG engine: every interface text, in every locale, is the JS text (FR-044, UT-044/056)",
     "js: UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
     "UT-056 / UT-044 UI locale is independent of the programming profile and of the OS language",
     "rust: edit::transaction::tests::ut_044_ut_053_it_035_whole_file_and_insert_paths_are_independent",
@@ -829,8 +807,6 @@
    "tests": [
     "js: UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)",
     "UT-047 / IT-030 nothing is written without explicit confirmation (cancel, close, timeout paths)",
-    "js: engine: prepare/apply give the same outcome in both engines (UT-047..052)",
-    "engine: prepare/apply give the same outcome in both engines (UT-047..052)",
     "rust: edit::transaction::tests::ut_047_it_030_nothing_is_written_without_explicit_confirmation",
     "edit::transaction::tests::ut_047_it_030_nothing_is_written_without_explicit_confirmation"
    ],
@@ -953,8 +929,6 @@
     "UT-054 / UT-076 / IT-047 / ST-042 model output is data: unknown keys and tool calls are ignored, never executed",
     "js: UT-054 / IT-036 / ST-030 only the current file can be changed",
     "UT-054 / IT-036 / ST-030 only the current file can be changed",
-    "js: AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)",
-    "AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)",
     "rust: ai::tests::ut_054_model_output_is_data_unknown_keys_are_ignored",
     "ai::tests::ut_054_model_output_is_data_unknown_keys_are_ignored",
     "rust: edit::transaction::tests::ut_054_it_036_st_030_only_the_current_file_can_be_changed",
@@ -973,8 +947,6 @@
     "tsf"
    ],
    "tests": [
-    "js: CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)",
-    "CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)",
     "js: UT-055 overlay placement stays on the caret monitor and hides when it cannot be located",
     "UT-055 overlay placement stays on the caret monitor and hides when it cannot be located",
     "rust: uimodel::tests::ut_055_the_overlay_stays_on_the_caret_monitor_and_hides_when_it_cannot_be_located",
@@ -1030,8 +1002,6 @@
     "rust"
    ],
    "tests": [
-    "js: CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046)",
-    "CFG engine: migration, export/import and rule packs give the JS answers (UT-058/059/073, FR-045/046)",
     "js: UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions",
     "UT-058 rule packs are validated as data: size, unknown fields, placeholders, collisions",
     "js: UT-058 / ST-033 user rule packs: bad packs are rejected and skipped, valid ones keep working",
@@ -1100,12 +1070,10 @@
    "tests": [
     "js: UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
     "UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
-    "js: AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)",
-    "AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)",
-    "rust: secrets::tests::ut_062_env_files_are_sensitive_by_name",
-    "secrets::tests::ut_062_env_files_are_sensitive_by_name",
     "rust: secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values",
-    "secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values"
+    "secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values",
+    "rust: secrets::tests::ut_062_env_files_are_sensitive_by_name",
+    "secrets::tests::ut_062_env_files_are_sensitive_by_name"
    ],
    "failed": [],
    "reason": ""
@@ -1119,9 +1087,7 @@
    ],
    "tests": [
     "js: UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only",
-    "UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only",
-    "js: CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071)",
-    "CFG engine: diagnostics keep the same whitelisted, filtered record and the same summary (UT-063/071)"
+    "UT-071 / UT-063 / IT-041 diagnostics keep whitelisted metadata only"
    ],
    "failed": [],
    "reason": ""
@@ -1142,10 +1108,10 @@
     "input::tests::ut_064_a_failure_while_candidates_show_hides_the_window",
     "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
     "input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
-    "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
-    "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
     "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
-    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating"
+    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
+    "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
+    "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes"
    ],
    "failed": [],
    "reason": ""
@@ -1237,9 +1203,7 @@
    ],
    "tests": [
     "js: UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens",
-    "UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens",
-    "js: AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070)",
-    "AI engine: a slow provider is cancelled by timeout or by the user in both engines (UT-070)"
+    "UT-070 / IT-045 a slow provider is cancelled by timeout or by the user and nothing else happens"
    ],
    "failed": [],
    "reason": ""
@@ -1564,9 +1528,7 @@
     "js: UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
     "UT-029 / IT-015 grants: any mismatch is denied; revoke stops new requests",
     "js: UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply",
-    "UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply",
-    "js: engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)",
-    "engine: the grant broker behaves the same in both engines and its persistence is interchangeable (UT-029, IT-015)"
+    "UT-075 / IT-015 a revoked grant or an invalidated plan can neither prepare nor apply"
    ],
    "failed": [],
    "reason": ""
@@ -1580,9 +1542,7 @@
    ],
    "tests": [
     "js: UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
-    "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors",
-    "js: AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)",
-    "AI engine: the key travels only in the Authorization header and errors never contain it or the prompt (UT-031, IT-016)"
+    "UT-031 / UT-074 / IT-016 the API key never appears in settings, exports, diagnostics or errors"
    ],
    "failed": [],
    "reason": ""
@@ -1632,8 +1592,6 @@
    "tests": [
     "js: UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work",
     "UT-034 / IT-019 / AT-023 AI off: zero provider calls while local candidates still work",
-    "js: AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)",
-    "AI engine: nothing is sent when AI is off, the workspace is untrusted, the budget is used up, or there is no authorisation (UT-034/035, IT-019)",
     "uat: UAT-08",
     "UAT-08"
    ],
@@ -1671,8 +1629,6 @@
    "tests": [
     "js: IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal",
     "IT-021 invalid model output is refused (OUTPUT_INVALID) and never becomes an applicable proposal",
-    "js: AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)",
-    "AI engine: prompts and model output validation are identical in both engines (UT-054/076, IT-021)",
     "rust: ai::tests::it_021_invalid_model_output_is_refused",
     "ai::tests::it_021_invalid_model_output_is_refused"
    ],
@@ -1709,8 +1665,6 @@
     "UT-038 / IT-023 debounce on a virtual clock: only the latest input is sent, older ones are cancelled",
     "js: UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
     "UT-039 / UT-069 / IT-023 / ST-020 stale results are discarded; at most one request is in flight",
-    "js: scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)",
-    "scheduler: debounce, one request at a time and stale-result rules are the same in the Rust engine (UT-038/039/040/069, IT-023)",
     "uat: UAT-35",
     "UAT-35"
    ],
@@ -1811,8 +1765,6 @@
     "UT-046 / IT-029 zero-length insert at line 3 col 6 with emoji changes only that range",
     "js: IT-029 insert is refused when the cursor moved after the proposal",
     "IT-029 insert is refused when the cursor moved after the proposal",
-    "js: engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)",
-    "engine: an insert plan checks the selection; whole-file plans need an L3 snapshot; one file only (UT-030/054, IT-029)",
     "rust: edit::transaction::tests::it_029_insert_is_refused_when_the_cursor_moved_after_the_proposal",
     "edit::transaction::tests::it_029_insert_is_refused_when_the_cursor_moved_after_the_proposal"
    ],
@@ -2718,12 +2670,6 @@
    "ok": true
   },
   {
-   "id": "ANN-02",
-   "kind": "JS",
-   "title": "AI engine: annotations and the symbol index are identical in both engines (ANN-02..07)",
-   "ok": true
-  },
-  {
    "id": "ANN-03",
    "kind": "JS",
    "title": "ANN-03 only comment-only replies are accepted; any code, string or Python indentation change is rejected",
@@ -3492,12 +3438,6 @@
    "ok": true
   },
   {
-   "id": "ANN-85",
-   "kind": "JS",
-   "title": "ANN-85 the Rust engine: annotate through propose, select, hunkEdits, the coordinator and the redaction of the real core",
-   "ok": true
-  },
-  {
    "id": "ANN-86",
    "kind": "JS",
    "title": "ANN-86 F1 opens on the Whole file tab when the annotate tab is unavailable only because of the language or an empty document and AI is otherwise available",
@@ -3507,12 +3447,6 @@
    "id": "API-01",
    "kind": "JS",
    "title": "API-01 provider profiles: Anthropic version header (default 2026-10-21, overridable), Chat token parameter name, new effort levels",
-   "ok": true
-  },
-  {
-   "id": "API-01",
-   "kind": "JS",
-   "title": "AI engine: the same request goes out and the same result or error comes back in both engines (UT-033/035/036, API-01)",
    "ok": true
   },
   {

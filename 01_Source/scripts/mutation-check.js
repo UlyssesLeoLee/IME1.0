@@ -52,18 +52,25 @@ const RUST_ENV = {
 delete RUST_ENV.PIME_IME_LIVE;
 delete RUST_ENV.PIME_AGENT_BRIDGE_HWND;
 
+// The machine ran out of commit charge ("os error 1455", "failed to create encoded metadata", "No space left on
+// device", "out of memory"): the other applications of the machine took the memory for a moment. The charge comes
+// back when they let it go, so this case waits longer than the usual lock and is tried again - a case that the
+// machine interrupted must not end the round as "unknown".
+const OUT_OF_MEMORY = /os error 1455|failed to create encoded metadata|no space left on device|os error 112|out of memory|heap out of memory/i;
+
 function runSuite(suite) {
   // A run that is killed by the machine (the file of the DLL is locked by the scanner, the cargo cannot get the
   // lock, the memory is gone) is not a result: it is retried, like the gate does with its own cargo runs.
   let last = {status: 0, out: ''};
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 4; attempt++) {
     last = runSuiteOnce(suite);
     const broke = last.status !== 0 && !/test result: FAILED/.test(last.out) && !/^not ok \d+/m.test(last.out);
     if (!broke) return last;
-    if (attempt < 3) {
-      const wait = attempt * 2000;
+    if (attempt < 4) {
+      // the memory runs out in waves: the wait is longer the more it happened
+      const wait = OUT_OF_MEMORY.test(last.out) ? 60000 : attempt * 2000;
       const until = Date.now() + wait;
-      while (Date.now() < until) {} // the file lock needs a moment
+      while (Date.now() < until) { /* the file lock needs a moment, the memory needs a longer one */ }
     }
   }
   return last;

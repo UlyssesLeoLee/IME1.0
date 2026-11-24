@@ -59,7 +59,7 @@
 
 ## 验证事实（最新一轮，2026-11-23；早先各轮的证据见 `02_Verification/STATUS.md` 与本文件后面的各轮）
 
-- JavaScript **357 / 357** 通过；Rust 核心 **461 / 461** 通过；Rust TSF crate **397 / 397** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **85 / 85** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
+- JavaScript **357 / 357** 通过；Rust 核心 **462 / 461** 通过；Rust TSF crate **397 / 397** 通过（`pime-tsf`，其中 11 项是输入法本体测试：21 个行为场景套件 3 项 + 27 项功能覆盖账本自检 4 项 + 宿主级 COM 测试 4 项）；Rust agent crate **85 / 85** 通过（`pime-agent`，给主流 AI 调用的三件套：MCP 服务端 / CLI / 本地命名管道与 HTTP，含真机 `WM_COPYDATA` 往返）；安装器 crate **123 / 123** 通过（单元 105 + 真实文件系统 13 + 真实链接 5）。Playwright UAT（JavaScript 引擎）**31 通过、1 跳过、0 失败**（UAT 脚本本轮已改为按 Ctrl+F1/Ctrl+F2 驱动面板，真跑需重新执行）。另有各独立 crate 的测试：`pime-ai-worker` 90 + 25 项烟雾测试、`pime-ipc` 91（含真实命名管道回环）。
 - **Rust 引擎的 UAT 没有完整的一轮**（两次被系统因内存不足中止，最近一次已通过 18 个场景），因此不宣称其通过；删除 JS 核心、把默认引擎切到 Rust 要等它通过之后。
 - 设计书用例（按用例编号映射自动化证据）：UT 76/77、IT 39/48、ST 28/43 有通过的自动化证据，0 失败；其余**未执行**（原因逐条见 `02_Verification/test-execution-report.md`）。
   **报告现在也读 TSF 那 356 项的证据**（以前只读主 workspace，TSF 的用例整段没进去）；四个子代理逐条审了 26 个「未执行」用例：
@@ -727,18 +727,15 @@ AI 客户端 ──MCP/CLI/HTTP──▶ pime-mcp / pime-ime ──WM_COPYDATA�
   **产品这边**：核心 330 项、TSF **397 项**（手工量到的真数：lib 356 + 集成 41）全绿；
      **完整的 77 条变异用例全部被抓到**（**77 caught / 0 missed / 0 stale**；实录里那几行「套件没跑起来」都是机器的额度见底，
      每一条都补跑过并最终被抓到）⇒ **发布按你的规矩押后**：门禁没全绿就不发 v0.3.3；
-* **怎么让它变绿（四步的事）**：
-  ① **先跑体检**：`node 01_Source/scripts/release-preflight.js` ⇒ 它一次量清**还差什么**（提交额度余量、杀软是否锁着
-     安装包、构建实录是否对得上产物、文档里的数字是否与产物一致），并把处置办法打出来；
-  ② **腾内存**（提交额度到顶是根因）：关掉 Edge / Chrome / claude 之类的大户，或用管理员跑
-     `wmic computersystem set AutomaticManagedPagefile=True`（页面文件交给系统管，可能要重启）；
-  ③ **杀软放开新产物**：360（`360tray` / `ZhuDongFangYu`）对本项目新链接出来的二进制按**内容**下判决，不放行 ⇒
-     **先试轻的**：在 360 的托盘上退出它；不行就**重开一次机器**；再不行就把 `E:\IME1.0` 与 `C:\cargo-target-ime`
-     加进它的信任区 ⇒ 然后重跑构建，实录里才会有「大小 + 摘要」那段摘要；
-  ④ 然后 `node 01_Source/scripts/gate-log.js` 重跑一轮（约 25 分钟，其中变异轮占 17 分钟），
-     再 `node 01_Source/scripts/refresh-claims.js`（文档里的数字与 claims **从产物和日志自动写**，日志不完整时它拒绝写）
-     + `node 01_Source/scripts/traceability-report.js` + `node 01_Source/scripts/update-manifest.js`
-     对齐数字、追溯报告与清单，最后打标签发布。
+* **这一轮已经变绿了（2026-11-24 下午）**：杀软自己放开了判决、额度回到 5～6 GB ⇒ **整轮门禁一次全绿**
+  （core **462** / TSF **397** / TASE **1055** / agent **85** / JS **357**；**红绿轮 77 条一轮全抓**：0 missed / 0 unknown / 0 stale），
+  安装包重建成功（**10,416,270 字节 / sha256 `ccea37237ca2ccb4f89e9c31dfa9e360ad28cc7fa1f12f1d3fd81439b8bebe30`**，
+  `--dry-run` exit 0）⇒ **v0.3.3 已发布**。这一轮用掉的命令是：
+  ① `node 01_Source/scripts/build-installer.js`（把 stdout 重定向进 `02_Verification/installer-build.log`），
+  ② `node 01_Source/scripts/gate-log.js`，
+  ③ `node 01_Source/scripts/refresh-claims.js`（文档里的数字与 claims **从产物和日志自动写**），
+  ④ `node 01_Source/scripts/traceability-report.js` + `node 01_Source/scripts/update-manifest.js`，
+  ⑤ 提交 → 打标签 → 发 Release。
   **判断有没有腾够**：`Get-Counter '\Memory\Commit Limit'` 与 `'\Memory\Committed Bytes'` 的差值要留出 **2 GB 以上**；
   **本轮已经做到的**（不依赖那台机器）：**完整的 77 条变异用例 77 caught / 0 missed / 0 stale** ✓；
      核心 330、TSF 397 全绿 ✓；门禁工具已经能在杀软封锁下自己跑起来（并且如实区分「机器红」与「代码红」）✓；

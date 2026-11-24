@@ -1,4 +1,4 @@
-# The red-green check of 2026-11-23T20:19:50.903Z
+# The red-green check of 2026-11-24T04:19:33.670Z
 # all 77 mutations of the implementation were checked in this round; every one of them is restored right after it is applied.
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -57,7 +57,7 @@ CAUGHT overlay-the-window-flips-above-only-without-room [FR-043（候选窗口�
 CAUGHT overlay-the-scaling-is-capped-at-250 [FR-043（DPI/多屏适配）/ UT-055] the display scaling is clamped to 100-250 %
 CAUGHT secrets-the-env-file-is-sensitive [FR-049（外发敏感信息筛查）/ UT-062] a file named .env is credential-like and is never sent
 CAUGHT secrets-the-github-prefix-is-a-token [FR-049（外发敏感信息筛查）/ UT-062] the ghp_ prefix marks a GitHub token
-ERROR symbols-the-cap-is-the-max [FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）] the symbol table never returns more symbols than the caller asked for  <-- the suite did not run (exit 101): the result is unknown
+CAUGHT symbols-the-cap-is-the-max [FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）] the symbol table never returns more symbols than the caller asked for
 CAUGHT transaction-a-read-only-document-is-refused [IT-035（编辑事务：只读文档被拒）/ UT-052] a read-only document is refused, a writable one is not
 CAUGHT validators-the-rust-raw-string-is-masked [FR-046（声明式语法规则）/ UT-023] a Rust raw string is masked like any other literal
 CAUGHT validators-a-nested-block-comment-is-one-comment [FR-046（声明式语法规则）/ UT-023] a nested block comment in Rust stays one comment
@@ -66,26 +66,25 @@ CAUGHT x86-the-non-hex-character-is-refused [FR-052（机器码：只编码确�
 CAUGHT transaction-the-content-hash-is-part-of-the-baseline [IT-031（文档变了就是陈旧的）/ ST-027] the content hash is part of the baseline the plan was reviewed against
 CAUGHT x86-a-high-register-needs-the-rex-prefix [FR-052（机器码：只编码确定的形式）/ UT-023] a register above r7 needs the REX prefix, otherwise the bytes are another instruction
 CAUGHT mode-the-mouth-of-the-human-is-amber [D-177（Ctrl+F12 的可见指示器）] the mouth of the human is amber in the natural language input
-ERROR mode-the-natural-mouth-is-open [D-177（Ctrl+F12 的可见指示器）] the mouth of the human is a double line in the natural language input (the mouth is open)  <-- the suite did not run (exit 101): the result is unknown
-ERROR mode-the-mouth-follows-the-mode [D-177（Ctrl+F12 的可见指示器）] the mouth of the human takes the colour of the mode at once, even when it is already on the screen  <-- the suite did not run (exit 101): the result is unknown
+CAUGHT mode-the-natural-mouth-is-open [D-177（Ctrl+F12 的可见指示器）] the mouth of the human is a double line in the natural language input (the mouth is open)
+CAUGHT mode-the-mouth-follows-the-mode [D-177（Ctrl+F12 的可见指示器）] the mouth of the human takes the colour of the mode at once, even when it is already on the screen
 CAUGHT mode-no-agent-takes-the-colour-of-the-human [D-177（Ctrl+F12 的可见指示器）] the colour of the human is pale: an agent (whose colour is vivid) can never be mistaken for the keyboard
 CAUGHT mode-the-two-lines-fall-on-pixel-centres [D-177（Ctrl+F12 的可见指示器）] the two lines of the open mouth fall on the centre of a pixel (a line between two pixels lights both)
 CAUGHT mode-the-painter-draws-the-open-mouth [D-177（Ctrl+F12 的可见指示器）] the painter draws the two lines of the open mouth in the natural language input
-ERROR mode-the-screen-knows-the-mode [D-177（Ctrl+F12 的可见指示器）] the model of the screen carries the mode of the human (the painter reads it from there)  <-- the suite did not run (exit 101): the result is unknown
-ERROR mode-the-key-tells-the-interface [D-177（Ctrl+F12 的可见指示器）/ D-95] the mode key tells the interface, so that the sign of the mode follows the mode  <-- the suite did not run (exit 101): the result is unknown
-ERROR mode-the-panel-names-the-mode [D-177（Ctrl+F12 的可见指示器）] the row of the panel names the thing the switch turns on (the natural language input)  <-- the suite did not run (exit 101): the result is unknown
-ERROR mode-the-panel-says-the-mode-in-words [D-177（Ctrl+F12 的可见指示器）] the panel says in words which mode the human is in  <-- the suite did not run (exit 101): the result is unknown
-ERROR mode-the-settings-do-not-carry-the-mode-of-the-session [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the settings of the file do not carry the mode of the session (a save must not undo the switch of the user)  <-- the suite did not run (exit 101): the result is unknown
-ERROR mode-the-mode-is-not-written-to-the-file [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the mode is a state of the text service, not a setting of the file (it must not survive a restart)  <-- the suite did not run (exit 101): the result is unknown
+CAUGHT mode-the-screen-knows-the-mode [D-177（Ctrl+F12 的可见指示器）] the model of the screen carries the mode of the human (the painter reads it from there)
+CAUGHT mode-the-key-tells-the-interface [D-177（Ctrl+F12 的可见指示器）/ D-95] the mode key tells the interface, so that the sign of the mode follows the mode
+CAUGHT mode-the-panel-names-the-mode [D-177（Ctrl+F12 的可见指示器）] the row of the panel names the thing the switch turns on (the natural language input)
+CAUGHT mode-the-panel-says-the-mode-in-words [D-177（Ctrl+F12 的可见指示器）] the panel says in words which mode the human is in
+CAUGHT mode-the-settings-do-not-carry-the-mode-of-the-session [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the settings of the file do not carry the mode of the session (a save must not undo the switch of the user)
+CAUGHT mode-the-mode-is-not-written-to-the-file [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the mode is a state of the text service, not a setting of the file (it must not survive a restart)
 
-the run checked 77 mutations: 68 caught, 0 missed, 9 unknown (the suite did not run), 0 stale
-the result of 9 mutation(s) is unknown: symbols-the-cap-is-the-max, mode-the-natural-mouth-is-open, mode-the-mouth-follows-the-mode, mode-the-screen-knows-the-mode, mode-the-key-tells-the-interface, mode-the-panel-names-the-mode, mode-the-panel-says-the-mode-in-words, mode-the-settings-do-not-carry-the-mode-of-the-session, mode-the-mode-is-not-written-to-the-file
+the run checked 77 mutations: 77 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
 
 by the design entry (what the round says about each requirement):
   D-103（激光口贴边，命中区跟着光缝走）/ FR-041: 1 caught
-  D-177（Ctrl+F12 的可见指示器）: 4 caught, 5 unknown
-  D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）: 2 unknown
-  D-177（Ctrl+F12 的可见指示器）/ D-95: 1 unknown
+  D-177（Ctrl+F12 的可见指示器）: 9 caught
+  D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）: 2 caught
+  D-177（Ctrl+F12 的可见指示器）/ D-95: 1 caught
   D-90（没有领域头时补的那一行是说明行）: 1 caught
   D-90~D-92（多 Agent 演示：光口是它自己的颜色）/ FR-041: 1 caught
   D-90~D-92（多 Agent 演示）: 5 caught
@@ -101,7 +100,7 @@ by the design entry (what the round says about each requirement):
   FR-041 / D-97（D-120）（剪贴板工具的那一行）: 1 caught
   FR-041 / UT-055: 1 caught
   FR-041 / UT-055（悬浮框与它的行）: 3 caught
-  FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）: 1 unknown
+  FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）: 1 caught
   FR-041（悬浮框里的 Effort 入口）: 1 caught
   FR-041（悬浮框显示的就是产品现在的状态）: 1 caught
   FR-042 / FR-041（从悬浮下拉选择语言）: 1 caught
@@ -128,34 +127,4 @@ by the design entry (what the round says about each requirement):
   UT-052 / FR-038: 1 caught
   UT-070 / NFR-203: 1 caught
   基本设计 §信任边界（宿主应用 ↔ TSF DLL：TSF 拒绝同一 client id 的第二个键事件接收器）: 1 caught
-
-the round is RED (exit 3)
-# note: 9 of the 77 cases are selected
-ERROR symbols-the-cap-is-the-max [FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）] the symbol table never returns more symbols than the caller asked for  <-- the suite did not run (exit 101): the result is unknown
-CAUGHT mode-the-natural-mouth-is-open [D-177（Ctrl+F12 的可见指示器）] the mouth of the human is a double line in the natural language input (the mouth is open)
-CAUGHT mode-the-mouth-follows-the-mode [D-177（Ctrl+F12 的可见指示器）] the mouth of the human takes the colour of the mode at once, even when it is already on the screen
-CAUGHT mode-the-screen-knows-the-mode [D-177（Ctrl+F12 的可见指示器）] the model of the screen carries the mode of the human (the painter reads it from there)
-CAUGHT mode-the-key-tells-the-interface [D-177（Ctrl+F12 的可见指示器）/ D-95] the mode key tells the interface, so that the sign of the mode follows the mode
-CAUGHT mode-the-panel-names-the-mode [D-177（Ctrl+F12 的可见指示器）] the row of the panel names the thing the switch turns on (the natural language input)
-CAUGHT mode-the-panel-says-the-mode-in-words [D-177（Ctrl+F12 的可见指示器）] the panel says in words which mode the human is in
-CAUGHT mode-the-settings-do-not-carry-the-mode-of-the-session [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the settings of the file do not carry the mode of the session (a save must not undo the switch of the user)
-CAUGHT mode-the-mode-is-not-written-to-the-file [D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）] the mode is a state of the text service, not a setting of the file (it must not survive a restart)
-
-the run checked 9 mutations: 8 caught, 0 missed, 1 unknown (the suite did not run), 0 stale
-the result of 1 mutation(s) is unknown: symbols-the-cap-is-the-max
-
-by the design entry (what the round says about each requirement):
-  D-177（Ctrl+F12 的可见指示器）: 5 caught
-  D-177（Ctrl+F12 的可见指示器）/ D-94（出厂 = 代码输入）: 2 caught
-  D-177（Ctrl+F12 的可见指示器）/ D-95: 1 caught
-  FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）: 1 unknown
-
-the round is RED (exit 3)
-# note: 1 of the 77 cases are selected
-CAUGHT symbols-the-cap-is-the-max [FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）] the symbol table never returns more symbols than the caller asked for
-
-the run checked 1 mutations: 1 caught, 0 missed, 0 unknown (the suite did not run), 0 stale
-
-by the design entry (what the round says about each requirement):
-  FR-041（悬浮框的行）+ D-96（面板里的三个本地工具：符号表）: 1 caught
 every mutation was caught: the suite really pins these behaviours
