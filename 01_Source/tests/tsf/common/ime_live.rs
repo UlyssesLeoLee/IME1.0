@@ -1907,15 +1907,35 @@ pub fn the_text_added_at_the_end(before: &str, after: &str) -> Option<String> {
     }
 }
 
-/// Whether the pinyin of the natural language input leaked into the document.
+/// How many Chinese characters the document holds.
+///
+/// The candidate that a commit takes is **not** always the same one: the digit takes the candidate of its page
+/// (the drive types "1", and the first candidate of the page may be another character). What every commit has in
+/// common is that it adds a **character** - so the count of the characters is what the test watches.
+pub fn the_count_of_characters(document: &str) -> usize {
+    document
+        .chars()
+        .filter(|c| ('\u{4e00}'..='\u{9fff}').contains(c))
+        .count()
+}
+
+/// Whether the pinyin of the natural language input stands next to the character in the document.
 ///
 /// The user picks a character and **only** the character goes into the document: the pinyin and the character must
 /// never stand next to each other there (the complaint of the user on 2026-11-24). The check is skipped when the
 /// character itself carries the pinyin (a character that is a latin word): the pinyin in the document would then be
 /// part of the character and not a leak, and the check would report a defect that is not there.
+///
+/// Only the **pair** is a defect. A document that holds the pinyin and no character is a different thing: the
+/// candidate did not land at all (D-171, the known open defect) - that is measured by the count of the character,
+/// not here.
 pub fn the_pinyin_leaked_into(document: &str, pinyin: &str, candidate: &str) -> bool {
     if pinyin.is_empty() || candidate.to_lowercase().contains(&pinyin.to_lowercase()) {
         return false;
     }
-    document.to_lowercase().contains(&pinyin.to_lowercase())
+    let document = document.to_lowercase();
+    let pinyin = pinyin.to_lowercase();
+    let candidate = candidate.to_lowercase();
+    // the pinyin right before the character ("wo我") or right after it ("我wo")
+    document.contains(&format!("{pinyin}{candidate}")) || document.contains(&format!("{candidate}{pinyin}"))
 }

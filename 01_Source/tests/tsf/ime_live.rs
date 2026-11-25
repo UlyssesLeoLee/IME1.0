@@ -316,8 +316,8 @@ fn the_plain_edit_control_receives_the_input_method() {
         .unwrap_or_else(|| "<the report has no doc_before_click>".to_string());
     let document_after_the_click = common::ime_live::the_field_of_the_report(&report, "doc_after_click")
         .unwrap_or_else(|| "<the report has no doc_after_click>".to_string());
-    let characters_before_the_click = document_before_the_click.matches(CANDIDATE).count();
-    let characters_after_the_click = document_after_the_click.matches(CANDIDATE).count();
+    let characters_before_the_click = common::ime_live::the_count_of_characters(&document_before_the_click);
+    let characters_after_the_click = common::ime_live::the_count_of_characters(&document_after_the_click);
     assert!(
         characters_after_the_click > characters_before_the_click,
         "the click must add the character of the row to the document of the application (the document held \
@@ -331,7 +331,7 @@ fn the_plain_edit_control_receives_the_input_method() {
     );
     let document_after_the_space = common::ime_live::the_field_of_the_report(&report, "doc_after_space")
         .unwrap_or_else(|| "<the report has no doc_after_space>".to_string());
-    let characters_after_the_space = document_after_the_space.matches(CANDIDATE).count();
+    let characters_after_the_space = common::ime_live::the_count_of_characters(&document_after_the_space);
     assert!(
         characters_after_the_space > characters_after_the_click,
         "the space must add the character it took to the document of the application (the document held \
@@ -345,7 +345,7 @@ fn the_plain_edit_control_receives_the_input_method() {
     );
     let document_after_the_digit = common::ime_live::the_field_of_the_report(&report, "doc_after_digit")
         .unwrap_or_else(|| "<the report has no doc_after_digit>".to_string());
-    let characters_after_the_digit = document_after_the_digit.matches(CANDIDATE).count();
+    let characters_after_the_digit = common::ime_live::the_count_of_characters(&document_after_the_digit);
     assert!(
         characters_after_the_digit > characters_after_the_space,
         "the digit must add the character it took to the document of the application (the document held \

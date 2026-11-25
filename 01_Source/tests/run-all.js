@@ -78,6 +78,13 @@ try {
 // A freshly linked binary can be refused once (the scanner of the machine, or a locked file). That is not a failure
 // of the code, so the run is repeated (D-138: the old check only knew "os error 5" and did not see the other forms).
 const CANNOT_EXECUTE = /os error 5|could not execute process|never executed|no such file or directory/i;
+// The machine ran out of memory while compiling ("rustc-LLVM ERROR: out of memory", "Allocation failed", the
+// Win32 error 1455 "the paging file is too small"): that is the machine, not the code (D-180). The other
+// applications of the machine come and go, so the step is tried again after a longer pause instead of turning
+// the whole round red.
+const OUT_OF_MEMORY = /out of memory|allocation failed|os error 1455|paging file is too small|unable to commit/i;
+const RETRY_PAUSE_MS = 20000;
+const RETRY_PAUSE_MEMORY_MS = 60000;
 
 // The raw output of a test run, kept as evidence: the traceability report maps the design case ids by the ids
 // in the test titles, and it reads these files. Without them it would map against a stale run.
@@ -110,7 +117,6 @@ const sh = (cmd, cmdArgs, opts = {}) => {
 // A freshly linked binary can be refused by the scanner of the machine for a moment ("could not execute process").
 // The run is repeated then - and the retries WAIT a little: without the pause the scanner catches every new binary
 // as well, because the three attempts follow each other within seconds (D-138).
-const RETRY_PAUSE_MS = 20000;
 const sleepSync = ms => { try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch { /* the pause is a nicety */ } };
 
 // A step is tried again when its binary could not be executed: the scanner of the machine quarantines a freshly
@@ -122,9 +128,11 @@ function step(name, fn) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try { const r = fn(); ok = r.ok; note = r.note || ''; out = r.out || ''; } catch (e) { note = String(e.message || e); }
     if (ok) break;
-    if (!CANNOT_EXECUTE.test(out) || attempt === 3) break;
-    console.log(`note: the step could not execute its binary (the scanner of the machine?); it is tried again in ${RETRY_PAUSE_MS / 1000} s`);
-    sleepSync(RETRY_PAUSE_MS);
+    const memory = OUT_OF_MEMORY.test(out) || OUT_OF_MEMORY.test(note);
+    if ((!CANNOT_EXECUTE.test(out) && !memory) || attempt === 3) break;
+    const pause = memory ? RETRY_PAUSE_MEMORY_MS : RETRY_PAUSE_MS;
+    console.log(`note: the step could not ${memory ? 'get the memory it needs' : 'execute its binary (the scanner of the machine?)'}; it is tried again in ${pause / 1000} s`);
+    sleepSync(pause);
   }
   results.push({name, ok, note, seconds: ((Date.now() - t0) / 1000).toFixed(1)});
   console.log(`--- ${name}: ${ok ? 'PASS' : 'FAIL'} ${note}`);
@@ -145,8 +153,8 @@ if (want('rust')) {
       if (r.note) console.log(`note: ${r.note}`);
       saveEvidence('rust', r.out || '');
       if (r.status === 0) return {ok: true, note: ((r.out || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-      if (!CANNOT_EXECUTE.test(r.out || '')) break;
-      if (attempt < 3) sleepSync(RETRY_PAUSE_MS);
+      if (!CANNOT_EXECUTE.test(r.out || '') && !OUT_OF_MEMORY.test(r.out || '')) break;
+      if (attempt < 3) sleepSync(OUT_OF_MEMORY.test(r.out || '') ? RETRY_PAUSE_MEMORY_MS : RETRY_PAUSE_MS);
     }
     // A test binary that could not be started at all is the machine, not the code: the step says so.
     if (last && last.status === -1) return {ok: false, note: `the scanner of the machine blocked a test binary (${last.note || 'the binary could not be started'})`};
@@ -188,8 +196,8 @@ const cargoRetry = (crate, cargoArgs, extraEnv = {}, evidenceName = '') => {
     if (r.note) console.log(`note: ${r.note}`);
     if (evidenceName) saveEvidence(evidenceName, r.out || '');
     if (r.status === 0) return {ok: true, note: ((r.out || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-    if (!CANNOT_EXECUTE.test(r.out || '')) break;
-    if (attempt < 3) sleepSync(RETRY_PAUSE_MS);
+    if (!CANNOT_EXECUTE.test(r.out || '') && !OUT_OF_MEMORY.test(r.out || '')) break;
+    if (attempt < 3) sleepSync(OUT_OF_MEMORY.test(r.out || '') ? RETRY_PAUSE_MEMORY_MS : RETRY_PAUSE_MS);
   }
   if (last && last.status === -1) return {ok: false, note: `the scanner of the machine blocked a test binary in crates/${crate} (${last.note || 'the binary could not be started'})`};
   return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
