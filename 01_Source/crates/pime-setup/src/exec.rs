@@ -822,6 +822,12 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
                 }
             }
             Step::UnregisterTextService { dll } => {
+                if registrations_removed {
+                    // The registrations are already gone (the step above removed them): asking the DLL to unload
+                    // itself would only repeat that work - and it needs to **load** the DLL, which a scanner on
+                    // this machine can refuse to do.
+                    continue;
+                }
                 if !b.exists(dll) {
                     out.warnings.push(unregister_skipped(
                         dll,
@@ -1531,8 +1537,12 @@ mod tests {
                 .position(|e| e.contains(needle))
                 .unwrap_or_else(|| panic!("{needle} not in {:?}", b.events))
         };
-        assert!(at("regsvr32.exe /u /s") < at("remove c:\\program files\\ime1.0\\pime_tsf.dll"));
-        assert!(at("--uninstall-extension") < at("regsvr32.exe /u /s"));
+        assert!(
+            at("unregister the input method") < at("remove c:\\program files\\ime1.0\\pime_tsf.dll"),
+            "the input method leaves the system before the files are deleted: {:?}",
+            b.events
+        );
+        assert!(at("--uninstall-extension") < at("unregister the input method"));
         assert!(
             at("pime_tsf.dll") < at("uninstall.exe")
                 && at("remove c:\\program files\\ime1.0\\uninstall.exe")
@@ -2160,23 +2170,39 @@ mod tests {
 
     #[test]
     fn st_035_a_failing_unregistration_does_not_block_the_uninstall_but_is_reported() {
+        // The installer removes the registrations of the input method itself (D-181): the DLL does not have to
+        // unregister itself any more, so its exit code says nothing about the uninstall.
         let mut b = machine();
         install(&mut b, "0.2.0").unwrap();
         b.unregister_exit = 5; // DllUnregisterServer is E_NOTIMPL in the current DLL
         let out = uninstall(&mut b, VscodeMode::Skip);
         assert!(
-            out.warnings
+            !out
+                .warnings
                 .iter()
-                .any(|w| w.contains("regsvr32 /u exited with code 5"))
+                .any(|w| w.contains("regsvr32 /u exited with code 5")),
+            "the DLL does not have to unregister itself any more: {:?}",
+            out.warnings
         );
         assert!(b.state.files.is_empty() && b.state.registry.is_empty());
-        // a DLL that is already gone cannot be unregistered: also a warning, and the rest still happens
+        // When the installer cannot remove the registrations itself, `regsvr32 /u` is still tried - and its failure
+        // is reported, and the program is kept so that the uninstall can be tried again.
         let mut c = machine();
         install(&mut c, "0.2.0").unwrap();
-        c.state.files.remove(&k(DLL));
+        c.input_method_failure = Some("the key could not be deleted".to_string());
+        c.unregister_exit = 5;
         let out = uninstall(&mut c, VscodeMode::Skip);
-        assert!(out.warnings.iter().any(|w| w.contains("already gone")));
-        assert!(c.state.files.is_empty());
+        assert!(
+            out.warnings
+                .iter()
+                .any(|w| w.contains("regsvr32 /u exited with code 5")),
+            "the failure of regsvr32 /u is reported: {:?}",
+            out.warnings
+        );
+        assert!(
+            c.state.files.contains_key(&k(DLL)),
+            "the program was kept, so that the uninstall can be tried again"
+        );
     }
 
     #[test]
