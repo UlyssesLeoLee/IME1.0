@@ -63,6 +63,8 @@
 * **模式是每个文本服务（每个窗口）各自**的：切到别的应用，那边还是**代码输入**（这是既有设计，现在标志把它显出来了）。
 * **密码框里**：那里一个字母都不吃（`is_secure_field`），所以标志**回落到代码输入的样子**，键也留给宿主。
 * 面板里的「自然语言输入」那一行是同一个动作的第二条路，走的是同一份状态。
+* **两条硬不变量**（2026-11-24 的裁定）：自然语言输入里选中候选 ⇒ **拼音被候选替换**（文档里只剩那个候选）；
+  代码输入 ⇒ **字母归宿主、代码原样进编辑器**。条款与覆盖它的测试见 **§3.5**。
 
 ### 3.2 Alt+F1：同一切换的第二条路
 
@@ -86,6 +88,52 @@
 * 设计、设置、边界条件见 `docs/F1_ANNOTATE.md` 与 `docs/F2_PROMPT.md`；本文只归档**快捷键层面的约定**。
 * 两个键都用 `Ctrl` 变体，**不抢** `F1`（命令面板）与 `F2`（重命名）。
 * 绑定可以搬走：`programmingIme.f1Binding` / `programmingIme.f2Binding` = `ctrl+f1` / `ctrl+shift+f1` / `none`（F2 同理）。
+
+### 3.5 两条硬不变量：自然语言输入的「拼音被替换」与代码输入的「字母归宿主」
+
+> **2026-11-24 产品负责人的裁定**（原话）：
+> ① 「输入自然语言时，如果选择了汉字，绝不要让拼音和汉字一起输出。」
+> ② 「代码输入模式，应该输出代码，这个是最早期的功能，不要丢失。」
+>
+> 这两条是**行为契约**，不是口味：**任何改动都不许让它们变假**。与 §1 的「不抢编辑器的原生键」同一条纪律：
+> 键的归属是**承诺**，不是实现细节。
+
+**不变量 A —— 自然语言输入：选中的候选必须替换拼音**
+
+- **条款**：在**自然语言输入**里选中一个汉字候选后，宿主文档里出现的**只有那个候选**。
+  拼音**必须被替换掉**，绝不允许「拼音 ＋ 汉字」同时在场（例：拼音 `fn` 之后又出现 `你` ⇒ `fn你` 是不许的）。
+- **可核对的判据**：选候选之前，文档里是拼音；按数字键选中之后，文档里是**候选本身**、**没有**残留的拼音，
+  而且组合串**结束**（不再处于组合态）。
+- **覆盖它的测试**：
+  - `crates/pime-tsf/src/controller.rs::the_natural_language_input_replaces_the_pinyin_with_the_candidate`
+    （断言文档变成 `"T0:fn"`——候选**替换**了拼音，**不是**追加在它后面）；
+  - `crates/pime-tsf/src/controller.rs::the_natural_language_input_takes_a_candidate_with_the_mainstream_keys`、
+    `crates/pime-tsf/src/controller.rs::the_natural_language_input_walks_the_list_with_the_arrows`；
+  - 场景层：`01_Source/tests/tsf/common/scenarios.rs` 的 `IME-S03` / `IME-S04` / `IME-S06` / `IME-S06B`
+    （进程内宿主里选候选；见 `01_Source/docs/IME_TEST_MATRIX.md`）；
+  - 真机层：`01_Source/tests/tsf/ime_live.rs::the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document`
+    （要 `PIME_IME_LIVE=1` 且装的是**新的 DLL**；**这台机器上还没跑过新的 DLL**）。
+
+**不变量 B —— 代码输入：字母不进组合串，代码原样交给宿主**
+
+- **条款**：在**代码输入**（出厂默认）里，字母**一个字都不进组合串**，宿主拿到的就是**用户敲的代码**
+  （敲 `fn`，文档里仍是 `fn`）。输入法**不吃字母**、不把它换成候选；
+  候选窗**可以显示**（那是**预览**），但**键的归属**不变。
+- **可核对的判据**：敲完 `fn` 之后，文档里是 `fn`（不是候选）；**组合串没有开**（`composing == false`）；
+  而候选**仍然可见**（候选可见 ＝ 预览，不等于输入法吃了键）。
+- **覆盖它的测试**：
+  - `crates/pime-tsf/src/controller.rs::the_code_input_leaves_the_letters_to_the_host`
+    （断言文档是 `fn`、**没有组合串**、候选可见）；
+  - `crates/pime-tsf/src/controller.rs::the_code_input_is_the_one_that_eats_nothing_and_it_is_the_default`、
+    `crates/pime-tsf/src/controller.rs::typing_code_in_the_direct_mode_eats_and_commits_nothing`、
+    `crates/pime-tsf/src/controller.rs::the_real_engine_suggests_without_taking_a_key_in_the_direct_mode`；
+  - 真机层：`01_Source/tests/tsf/ime_live.rs::the_plain_edit_control_receives_the_input_method`
+    （普通 EDIT 控件里字母必须**原样到达**；同样要 `PIME_IME_LIVE=1` 且装的是**新的 DLL**）。
+
+**这两条与其它文档的关系**：`01_Source/docs/IME_TEST_MATRIX.md` 的场景表、
+`02_Verification/IME_FRAMEWORK_MATRIX.md` §2.4 的模式行、以及 `01_Source/docs/REFACTOR_PLAN.md` §0 判据 7
+（「注释说的是真话」）说的都是同一件事：**实现的行为必须与本节一致**。
+本节是**条款**，实现改了先改这里；本文与代码不一致时，**以本文为准并立即修正代码或本文**（同本文开头的规矩）。
 
 ## 4. 冲突与处置
 

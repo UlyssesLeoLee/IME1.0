@@ -299,6 +299,80 @@ fn the_plain_edit_control_receives_the_input_method() {
         "a click on a row of the floating window has to take that candidate and write it into the document (the \
          report of the user: the floating window cannot be interacted with); the report is:\n{report}"
     );
+    // The **content** of the document after every commit: the report used to say only "a candidate landed", and that
+    // cannot tell a character from a character that stands next to the pinyin. The two invariants of the user
+    // (2026-11-24) are measured here: the pinyin and the character must never be written into the document together,
+    // and the code input must write the code into the document exactly as it was typed.
+    // The word the drive types in the natural language input, and the character its first candidate is.
+    const PINYIN: &str = "wo";
+    const CANDIDATE: &str = "我";
+    // The code the drive types in the code input phase.
+    const CODE: &str = "wo";
+    // The document before the click (the document of the composition) and the documents after every commit: the
+    // commit has to **add** the character, so the document of the phase before it is the measure - a character that
+    // was already there must not make the check pass (the click is the first commit; the space and the digit come
+    // after it and would find the character of the click in the document already).
+    let document_before_the_click = common::ime_live::the_field_of_the_report(&report, "doc_before_click")
+        .unwrap_or_else(|| "<the report has no doc_before_click>".to_string());
+    let document_after_the_click = common::ime_live::the_field_of_the_report(&report, "doc_after_click")
+        .unwrap_or_else(|| "<the report has no doc_after_click>".to_string());
+    let characters_before_the_click = document_before_the_click.matches(CANDIDATE).count();
+    let characters_after_the_click = document_after_the_click.matches(CANDIDATE).count();
+    assert!(
+        characters_after_the_click > characters_before_the_click,
+        "the click must add the character of the row to the document of the application (the document held \
+         {characters_before_the_click} of them before the click and {characters_after_the_click} after it); the \
+         document is {document_after_the_click:?}; the report is:\n{report}"
+    );
+    assert!(
+        !common::ime_live::the_pinyin_leaked_into(&document_after_the_click, PINYIN, CANDIDATE),
+        "the pinyin must not stand next to the character in the document (the click may only write the character): \
+         the document is {document_after_the_click:?}; the report is:\n{report}"
+    );
+    let document_after_the_space = common::ime_live::the_field_of_the_report(&report, "doc_after_space")
+        .unwrap_or_else(|| "<the report has no doc_after_space>".to_string());
+    let characters_after_the_space = document_after_the_space.matches(CANDIDATE).count();
+    assert!(
+        characters_after_the_space > characters_after_the_click,
+        "the space must add the character it took to the document of the application (the document held \
+         {characters_after_the_click} of them before the space and {characters_after_the_space} after it); the \
+         document is {document_after_the_space:?}; the report is:\n{report}"
+    );
+    assert!(
+        !common::ime_live::the_pinyin_leaked_into(&document_after_the_space, PINYIN, CANDIDATE),
+        "the pinyin must not stand next to the character in the document (the space may only write the character): \
+         the document is {document_after_the_space:?}; the report is:\n{report}"
+    );
+    let document_after_the_digit = common::ime_live::the_field_of_the_report(&report, "doc_after_digit")
+        .unwrap_or_else(|| "<the report has no doc_after_digit>".to_string());
+    let characters_after_the_digit = document_after_the_digit.matches(CANDIDATE).count();
+    assert!(
+        characters_after_the_digit > characters_after_the_space,
+        "the digit must add the character it took to the document of the application (the document held \
+         {characters_after_the_space} of them before the digit and {characters_after_the_digit} after it); the \
+         document is {document_after_the_digit:?}; the report is:\n{report}"
+    );
+    assert!(
+        !common::ime_live::the_pinyin_leaked_into(&document_after_the_digit, PINYIN, CANDIDATE),
+        "the pinyin must not stand next to the character in the document (the digit may only write the character): \
+         the document is {document_after_the_digit:?}; the report is:\n{report}"
+    );
+    // The code input: the code goes into the document exactly as it was typed - nothing rewritten, no candidate
+    // added, no letter lost. The phase runs only when the drive could switch into the code input; when it did not run,
+// the measurement of the code is missing and the report says so (`code_phase=skipped`).
+    if report.contains("code_phase=ran") {
+        let doc_code = common::ime_live::the_field_of_the_report(&report, "doc_code").unwrap_or_default();
+        assert_eq!(
+            doc_code, CODE,
+            "the code input must write the code into the document exactly as it was typed - nothing rewritten, no \
+             candidate added, no letter lost; the text the code phase added is {doc_code:?}; the report is:\n{report}"
+        );
+    } else {
+        eprintln!(
+            "the code phase did not run (the machine was already in the natural language input when the drive \
+             started): the code input was not measured by this run"
+        );
+    }
 }
 
 /// The real Notepad: the application the user types in.
@@ -490,6 +564,9 @@ fn drive_the_edit_control() {
     // does nothing"). The click comes first: it takes the candidate and ends the list.
     let panel = common::ime_live::the_panel_of_the_input_method();
     let panel_is_on_the_screen = panel.is_some();
+    // The document is read after the click: the click has to put the character into the document, and only the
+    // character (the pinyin must not stay next to it in the document of the application).
+    let mut document_after_the_click = String::new();
     let click_landed = match panel {
         Some((_, left, top, width, _)) => {
             // the first row of the panel is under its handle
@@ -498,7 +575,8 @@ fn drive_the_edit_control() {
                 top + pime_tsf::laser_ui::PANEL_HANDLE + pime_tsf::laser_ui::PANEL_ROW_HEIGHT / 2,
             );
             std::thread::sleep(std::time::Duration::from_millis(700));
-            host.read().contains('我')
+            document_after_the_click = host.read();
+            document_after_the_click.contains('我')
         }
         None => false,
     };
@@ -544,6 +622,9 @@ fn drive_the_edit_control() {
     let mut document_of_the_code_input = String::new();
     let mut document_after_the_code_w = String::new();
     let mut code_phase_ran = false;
+    // The document before the code input: the code phase is measured by what it adds to it (the code must land in the
+    // document exactly as it was typed - nothing rewritten, no candidate added, no letter lost).
+    let document_before_the_code = host.read();
     if switched {
         code_phase_ran = true;
         host.press_ctrl_f12(); // the code input
@@ -560,6 +641,16 @@ fn drive_the_edit_control() {
             None => "absent",
         };
     }
+    // The text the code phase added at the end of the document: the code itself, and nothing else.
+    let text_added_by_the_code = common::ime_live::the_text_added_at_the_end(
+        &document_before_the_code,
+        &document_of_the_code_input,
+    );
+    let (doc_code, doc_code_delta) = match (text_added_by_the_code, code_phase_ran) {
+        (Some(text), _) => (text, "ok"),
+        (None, false) => (String::new(), "skipped"),
+        (None, true) => (String::new(), "not-at-the-end"),
+    };
     // The document at the end: it says where the text the bridge wrote landed.
     let document_at_the_end = host.read();
     if switched && !code_phase_ran {
@@ -579,7 +670,9 @@ fn drive_the_edit_control() {
          document_after_the_w={:?} document_after_the_o={:?} edit_window={:#x} \
          panel={} click={} commit={} digit={} write={} math={} document_after_the_digit={:?} \
          document_of_the_input_method={:?} bridge={:?} document_at_the_end={:?} code_panel={} \
-         document_after_the_code_w={:?} document_of_the_code_input={:?}",
+         document_after_the_code_w={:?} document_of_the_code_input={:?} \
+         doc_before_click={} doc_after_click={} doc_after_space={} doc_after_digit={} doc_code={} doc_code_delta={} \
+         code_phase={}",
         if natural_language { "natural" } else { "code" },
         language,
         if focus_before_typing { "ok" } else { "lost" },
@@ -602,7 +695,14 @@ fn drive_the_edit_control() {
         document_at_the_end,
         code_panel,
         document_after_the_code_w,
-        document_of_the_code_input
+        document_of_the_code_input,
+        common::ime_live::quoted(&composition),
+        common::ime_live::quoted(&document_after_the_click),
+        common::ime_live::quoted(&after_space),
+        common::ime_live::quoted(&after_digit),
+        common::ime_live::quoted(&doc_code),
+        doc_code_delta,
+        if code_phase_ran { "ran" } else { "skipped" }
     );
 }
 

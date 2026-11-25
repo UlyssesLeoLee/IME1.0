@@ -421,6 +421,112 @@ impl TsfHost {
         })
         .ok()
     }
+
+    /// The range of the open composition: the position of the typed text, when the composition holds it.
+    ///
+    /// The composition owns the text that was typed into it (the text service wrote it there, or the host
+    /// inserted it into the composition), so this range is where the typed text is - without reading the
+    /// document.
+    fn composition_range(&self) -> Option<ITfRange> {
+        let (_, composition) = self.composition.as_ref()?;
+        // SAFETY: the composition is a live COM object.
+        unsafe { composition.GetRange() }.ok()
+    }
+
+    /// Write the candidate over `range` and put the caret after it.
+    fn write_over(
+        &self,
+        ctx: &ITfContext,
+        range: ITfRange,
+        text: &str,
+    ) -> std::result::Result<(), HostError> {
+        let wide: Vec<u16> = text.encode_utf16().collect();
+        let ctx2 = ctx.clone();
+        run_session(ctx, self.client_id, SYNC_WRITE, move |ec| {
+            // SAFETY: `ec` belongs to the running session on `ctx2`.
+            unsafe {
+                range.SetText(ec, 0, &wide).map_err(refused)?;
+                // the caret goes after the candidate
+                let mut caret = range.Clone().map_err(refused)?;
+                caret.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
+                let selection = selection_of(caret);
+                let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
+                drop(ManuallyDrop::into_inner(selection.range));
+                set.map_err(refused)
+            }
+        })
+    }
+
+    /// Replace the typed text that the document holds before the caret with the candidate.
+    ///
+    /// The typed text is read back and verified against what was typed, so the write never lands on text the
+    /// user did not type. A document that cannot be read back (a host that does not sync its text to the text
+    /// service) makes this fail: the typed text cannot be located, and the candidate must not be written next to
+    /// it.
+    fn write_over_typed(
+        &self,
+        ctx: &ITfContext,
+        typed: &str,
+        text: &str,
+    ) -> std::result::Result<(), HostError> {
+        let wide: Vec<u16> = text.encode_utf16().collect();
+        let (ctx2, typed) = (ctx.clone(), typed.to_string());
+        run_session(ctx, self.client_id, SYNC_WRITE, move |ec| {
+            // SAFETY: `ec` belongs to the running session on `ctx2`.
+            unsafe {
+                let range = typed_range(&ctx2, ec, &typed)?;
+                range.SetText(ec, 0, &wide).map_err(refused)?;
+                // the caret goes after the inserted text
+                range.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
+                let selection = selection_of(range);
+                let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
+                drop(ManuallyDrop::into_inner(selection.range));
+                set.map_err(refused)
+            }
+        })
+    }
+}
+
+/// What a commit does: where the candidate replaces the typed text.
+///
+/// The typed text is in exactly one place and the candidate replaces it there. When it cannot be found at all, the
+/// plan is [`CommitPlan::Fail`] and **nothing is written**: the candidate is never written at the caret next to
+/// the typed text - that is exactly how "pinyin + candidate" reaches the document (the report of the user on
+/// 2026-11-24).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CommitPlan {
+    /// The candidate replaces the typed text in the range the text service wrote it into.
+    Owned,
+    /// The candidate replaces the typed text in the range of the open composition: the typed text is in it
+    /// (the text service wrote it there, or the host inserted it into the composition).
+    Composition,
+    /// The candidate replaces the typed text that the document holds before the caret: that text is read back and
+    /// verified against what was typed.
+    Document,
+    /// The typed text cannot be located: nothing is written and the commit fails.
+    Fail,
+}
+
+/// Decide what a commit does, from what the text service knows about the typed text.
+///
+/// - `owned`: the text service wrote the typed text into a range it owns (the range of the composition, or the
+///   range it wrote into when the host refused the composition).
+/// - `composition`: a composition is open; its range holds the typed text.
+/// - `document`: the typed text may be in the document (the host wrote it there): it is then found before the
+///   caret and verified against what was typed.
+///
+/// The function is pure so that the rule can be broken on purpose by the tests of this file: it is the one place
+/// that decides where a candidate goes.
+fn plan_commit(owned: bool, composition: bool, document: bool) -> CommitPlan {
+    if owned {
+        CommitPlan::Owned
+    } else if composition {
+        CommitPlan::Composition
+    } else if document {
+        CommitPlan::Document
+    } else {
+        CommitPlan::Fail
+    }
 }
 
 impl HostText for TsfHost {
@@ -573,89 +679,68 @@ impl HostText for TsfHost {
         requested
     }
 
+    /// Replace the typed text with the candidate: the document holds the candidate and nothing else.
+    ///
+    /// The typed text is in exactly one place and the candidate replaces it there:
+    ///
+    /// - the range the text service wrote it into ([`TsfHost::owned`]), or
+    /// - the range of the open composition: the typed text is in it, whether the text service wrote it there or
+    ///   the host inserted it into the composition. That range is the position of the typed text by construction:
+    ///   nothing is read from the document, so this works on a host that does not sync its text to the text
+    ///   service (measured on a plain edit control on 2026-11-21), or
+    /// - the document: the host wrote the typed text there (the candidate preview of the code input is exactly
+    ///   this case). The text before the caret is read back and verified against what was typed.
+    ///
+    /// When the typed text cannot be located at all, the commit **fails** and nothing is written. The candidate is
+    /// never written at the caret next to the typed text: that is exactly how "pinyin + candidate" reaches the
+    /// document (the report of the user on 2026-11-24). A failed commit hands the key back to the host and the
+    /// machine degrades: the user sees the pinyin alone, never the pinyin and the candidate together.
     fn commit(&mut self, typed: &str, text: &str) -> std::result::Result<(), HostError> {
         let ctx = self.context.clone().ok_or(HostError::Refused)?;
-        // The text service owns the range it wrote the typed text into: the candidate replaces the typed text
-        // **there**. Nothing is read from the document: a host that does not sync its text to the text service reads
-        // empty (measured on a plain edit control on 2026-11-21), and a write that depends on reading never lands -
-        // the candidate landed after the pinyin ("wo我", the report of the user on 2026-11-23).
-        if let Some(range) = self.owned.clone() {
-            let wide: Vec<u16> = text.encode_utf16().collect();
-            let ctx2 = ctx.clone();
-            run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
-                // SAFETY: `ec` belongs to the running session on `ctx2`.
-                unsafe {
-                    range.SetText(ec, 0, &wide).map_err(refused)?;
-                    // the caret goes after the candidate
-                    let mut caret = range.Clone().map_err(refused)?;
-                    caret.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
-                    let selection = selection_of(caret);
-                    let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
-                    drop(ManuallyDrop::into_inner(selection.range));
-                    set.map_err(refused)
-                }
-            })?;
-            // The composition ends after the text is written (the order of the platform).
-            let _ = self.end_composition();
-            self.owned = None;
-            return Ok(());
-        }
-        // The composition still holds the typed text. The platform refuses a write that overlaps an open
-        // composition, and a refused write degrades the input method (every key after that falls through to the
-        // host). The composition is therefore ended first: its text stays in the document as ordinary text, so the
-        // verified range below still finds exactly what the user typed.
-        let composition = self.composition.take();
-        if let Some((composition_ctx, ending)) = composition.clone() {
-            let ended = run_session(&composition_ctx, self.client_id, SYNC_WRITE, move |ec| {
-                // SAFETY: `ec` belongs to the running session on the composition's own context.
-                unsafe { ending.EndComposition(ec) }.map_err(refused)
-            });
-            if ended.is_err() {
-                // the composition is still open in that document: give the handle back, the controller ends it
-                self.composition = composition;
-            }
-        }
-        let (ctx2, typed, wide) = (
-            ctx.clone(),
-            typed.to_string(),
-            text.encode_utf16().collect::<Vec<u16>>(),
+        // The plan: where the candidate replaces the typed text. The decision is the pure function
+        // `plan_commit`; the code below only wires it to the COM calls.
+        let plan = plan_commit(
+            self.owned.is_some(),
+            self.composition.is_some(),
+            // The document is the last chance: the typed text may be there (the host wrote it there).
+            true,
         );
-        // The typed text before the caret is replaced when the host lets the text service read it (the application
-        // that syncs its text to the text service).
-        let replaced = run_session(&ctx, self.client_id, SYNC_WRITE, {
-            let (ctx2, typed, wide) = (ctx2.clone(), typed.clone(), wide.clone());
-            move |ec| {
-                // SAFETY: `ec` belongs to the running session on `ctx2`.
-                unsafe {
-                    let range = typed_range(&ctx2, ec, &typed)?;
-                    range.SetText(ec, 0, &wide).map_err(refused)?;
-                    // the caret goes after the inserted text
-                    range.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
-                    let selection = selection_of(range);
-                    let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
-                    drop(ManuallyDrop::into_inner(selection.range));
-                    set.map_err(refused)
+        match plan {
+            CommitPlan::Owned | CommitPlan::Composition => {
+                let range = match plan {
+                    CommitPlan::Owned => self.owned.clone(),
+                    CommitPlan::Composition => self.composition_range(),
+                    _ => None,
+                }
+                .ok_or(HostError::Refused)?;
+                // The candidate replaces the typed text **there**; the caret goes after it. Nothing is read from
+                // the document: a host that does not sync its text to the text service reads empty (measured on a
+                // plain edit control on 2026-11-21), and a write that depends on reading never lands - the
+                // candidate landed after the pinyin ("wo我", the report of the user on 2026-11-23).
+                self.write_over(&ctx, range, text)?;
+                // The composition ends after the text is written (the order of the platform).
+                let _ = self.end_composition();
+                self.owned = None;
+                Ok(())
+            }
+            CommitPlan::Document => {
+                // The typed text is in the document (the host wrote it there): it is read back, verified against
+                // what was typed, and the candidate replaces it there.
+                match self.write_over_typed(&ctx, typed, text) {
+                    Ok(()) => Ok(()),
+                    Err(error) => {
+                        // The document cannot be read back: the typed text is nowhere the text service can reach.
+                        // The plan for these facts is `Fail`: **nothing is written**. The key goes back to the host
+                        // and the machine degrades - the pinyin stays alone in the document, the candidate is never
+                        // written next to it.
+                        debug_assert_eq!(plan_commit(false, false, false), CommitPlan::Fail);
+                        trace("the typed text could not be located: the candidate is not written");
+                        Err(error)
+                    }
                 }
             }
-        });
-        if replaced.is_ok() {
-            return Ok(());
+            CommitPlan::Fail => Err(HostError::Refused),
         }
-        // The host does not let the text service read the document: the text lands at the caret, after the text the
-        // host owns (the code input is exactly this case: the code goes into the editor as it was typed).
-        run_session(&ctx, self.client_id, SYNC_WRITE, move |ec| {
-            // SAFETY: `ec` belongs to the running session on `ctx2`.
-            unsafe {
-                let range = caret_range(&ctx2, ec).map_err(refused)?;
-                range.SetText(ec, 0, &wide).map_err(refused)?;
-                // the caret goes after the inserted text
-                range.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
-                let selection = selection_of(range);
-                let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
-                drop(ManuallyDrop::into_inner(selection.range));
-                set.map_err(refused)
-            }
-        })
     }
 }
 
@@ -1176,5 +1261,153 @@ mod tests {
             assert!(create_instance(&GUID::from_u128(7), &mut out).is_err());
             assert!(out.is_null());
         }
+    }
+
+    /// A model of the document and of the ranges the text service holds, so that the plan of a commit can be
+    /// tested without Windows.
+    ///
+    /// The spans are the positions of the typed text in the text: the range the text service owns and the range of
+    /// the open composition. The model does with the plan what the COM code of `TsfHost::commit` does with it.
+    struct Model {
+        text: String,
+        /// The range the text service wrote the typed text into.
+        owned: Option<(usize, usize)>,
+        /// The range of the open composition.
+        composition: Option<(usize, usize)>,
+        /// Whether the document can be read back (a host that syncs its text to the text service).
+        readable: bool,
+    }
+
+    impl Model {
+        fn new(text: &str) -> Model {
+            Model {
+                text: text.to_string(),
+                owned: None,
+                composition: None,
+                readable: false,
+            }
+        }
+
+        /// The span of `typed` at the end of the text.
+        fn span_of(text: &str, typed: &str) -> (usize, usize) {
+            (text.len() - typed.len(), text.len())
+        }
+
+        /// Do what the plan of the commit says. `Err` means: nothing was written.
+        fn commit(&mut self, typed: &str, candidate: &str) -> std::result::Result<String, ()> {
+            match plan_commit(
+                self.owned.is_some(),
+                self.composition.is_some(),
+                self.readable,
+            ) {
+                CommitPlan::Owned => {
+                    let (start, end) = self.owned.expect("the plan says the range is there");
+                    self.replace(start, end, candidate);
+                    Ok(self.text.clone())
+                }
+                CommitPlan::Composition => {
+                    let (start, end) = self
+                        .composition
+                        .expect("the plan says the composition is there");
+                    self.replace(start, end, candidate);
+                    Ok(self.text.clone())
+                }
+                CommitPlan::Document => {
+                    // the typed text is read back and verified against what was typed
+                    if !self.readable || !self.text.ends_with(typed) {
+                        return Err(()); // the typed text cannot be located
+                    }
+                    let (start, end) = Model::span_of(&self.text, typed);
+                    self.replace(start, end, candidate);
+                    Ok(self.text.clone())
+                }
+                CommitPlan::Fail => Err(()),
+            }
+        }
+
+        fn replace(&mut self, start: usize, end: usize, text: &str) {
+            self.text.replace_range(start..end, text);
+        }
+    }
+
+    /// The decision of a commit: the range of the text service first, then the composition, then the document.
+    ///
+    /// There is no plan that writes the candidate at the caret: the pinyin and the candidate can never end up side
+    /// by side because of a commit.
+    #[test]
+    fn the_plan_of_a_commit_has_no_way_to_write_the_candidate_at_the_caret() {
+        assert_eq!(plan_commit(true, true, true), CommitPlan::Owned);
+        assert_eq!(plan_commit(false, true, true), CommitPlan::Composition);
+        assert_eq!(plan_commit(false, false, true), CommitPlan::Document);
+        assert_eq!(plan_commit(false, false, false), CommitPlan::Fail);
+    }
+
+    /// The pinyin is replaced by the candidate: the document never holds the pinyin and the candidate together.
+    #[test]
+    fn a_commit_replaces_the_pinyin_instead_of_writing_the_candidate_next_to_it() {
+        // The text service wrote the pinyin into the range it owns (the composition holds it).
+        let mut model = Model::new("wo");
+        model.owned = Some((0, 2));
+        model.composition = Some((0, 2));
+        let written = model.commit("wo", "我").expect("the commit writes the candidate");
+        assert_eq!(written, "我", "the candidate is alone in the document");
+        assert!(!model.text.contains("wo"), "the pinyin is gone");
+        assert!(
+            !model.text.contains("wo我"),
+            "the pinyin is never left next to the candidate"
+        );
+    }
+
+    /// Without a range of its own, the text service replaces the typed text in the range of the composition: the
+    /// position of the pinyin is known without reading the document.
+    #[test]
+    fn a_commit_without_an_owned_range_replaces_the_typed_text_in_the_composition() {
+        let mut model = Model::new("wo");
+        model.composition = Some((0, 2));
+        let written = model.commit("wo", "我").expect("the commit writes the candidate");
+        assert_eq!(written, "我");
+        assert!(
+            !model.text.contains("wo我"),
+            "the pinyin is never left next to the candidate"
+        );
+    }
+
+    /// The typed text cannot be located: nothing is written. The candidate is never written at the caret.
+    #[test]
+    fn a_commit_that_cannot_locate_the_typed_text_writes_nothing() {
+        let mut model = Model::new("wo");
+        // no range of our own, no composition, and the document cannot be read back
+        assert_eq!(plan_commit(false, false, false), CommitPlan::Fail);
+        assert!(
+            model.commit("wo", "我").is_err(),
+            "the commit fails instead of writing the candidate"
+        );
+        assert_eq!(
+            model.text, "wo",
+            "the document is untouched: no candidate next to the pinyin"
+        );
+    }
+
+    /// The code input: the text service opens no composition, the letters belong to the host (they are in the
+    /// document as they were typed) and the machine never asks for a commit - the code goes into the editor as it
+    /// was typed.
+    #[test]
+    fn the_code_input_keeps_its_code_and_writes_no_candidate() {
+        let mut model = Model::new("fn main()");
+        assert!(model.composition.is_none(), "the code input opens no composition");
+        assert!(model.owned.is_none(), "the code input writes no range of its own");
+        // The candidate preview of the code input, when the host lets the text service read the document: the
+        // code is replaced by the candidate, and it is never left next to it.
+        model.readable = true;
+        let written = model.commit("fn main()", "函数").expect("the code is replaced");
+        assert_eq!(written, "函数");
+        // The same, with a host that does not let the text service read the document: the commit fails, the code
+        // stays as it was typed, and the candidate is not written next to it.
+        let mut model = Model::new("fn main()");
+        assert!(
+            model.commit("fn main()", "函数").is_err(),
+            "the commit fails instead of writing the candidate next to the code"
+        );
+        assert_eq!(model.text, "fn main()", "the code is as it was typed");
     }
 }

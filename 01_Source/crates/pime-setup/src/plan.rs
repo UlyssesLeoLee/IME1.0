@@ -183,6 +183,11 @@ pub enum Step {
     UnregisterTextService {
         dll: PathBuf,
     },
+    /// Removes the language profiles, the categories and the text service entry of our input method from the
+    /// system. The uninstall does this itself: `regsvr32 /u` has to load the DLL, and a scanner can refuse to
+    /// load it - then the entries of our input method stay in the language list of Windows with the program
+    /// already deleted, and there is no way to remove them any more (the report of the user on 2026-11-24).
+    UnregisterInputMethod,
     DeleteArp {
         key: String,
     },
@@ -228,6 +233,9 @@ impl Step {
                 "unregister the text service: regsvr32.exe /u /s \"{}\"",
                 dll.display()
             ),
+            Step::UnregisterInputMethod => "remove the input method from the system: its language profiles, its \
+                 categories and its entry in the language list of Windows"
+                .to_string(),
             Step::DeleteArp { key } => format!("delete the registry key HKLM\\{key}"),
             Step::RemoveFile(p) => format!("remove file {}", p.display()),
             Step::RemoveDir(p) => format!("remove folder {} (only if it is empty)", p.display()),
@@ -802,6 +810,10 @@ pub fn uninstall_plan(manifest: &Manifest, options: &UninstallOptions) -> Result
             extension_id: id.clone(),
         });
     }
+    // The input method itself comes out of the system **first**: the language profiles, the categories and the
+    // entry in the language list of Windows. This does not need the DLL (a scanner can refuse to load it), and it
+    // is the part the user sees: the entries of our input method in the list of Windows.
+    steps.push(Step::UnregisterInputMethod);
     for dll in &manifest.text_service_dlls {
         steps.push(Step::UnregisterTextService { dll: dll.clone() });
     }
@@ -1442,6 +1454,7 @@ pub mod tests {
             Step::UninstallVscodeExtension {
                 extension_id: "pub.ext".into(),
             },
+            Step::UnregisterInputMethod,
             Step::UnregisterTextService { dll },
             Step::DeleteArp {
                 key: ARP_KEY.to_string(),

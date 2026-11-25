@@ -2350,3 +2350,87 @@ laser.set_input_mode`）**没有单元测试**——`Inner` 需要真的 `ITfThr
 
 **登记**：D-180（已处置：机器自己松开了；工具侧已自愈）。
 
+### 5.41 第四十四轮（2026-11-25）：**卸载没有把注册进系统的 IME1.0 语言档删掉**（D-181）＋ 两条模式不变量写进文档
+
+这一轮是你（产品负责人）给了三条**行为的裁决**，其中第 1 条是**真缺陷**（不是取舍）。
+本轮我做的是**文档**：缺陷登记、这份缺口台账、快捷键档案里的行为条款、框架矩阵里的两行；
+**代码由主代理实现**（`crates/pime-setup/src/**`）。**本轮没有跑 cargo，也没有跑整门禁。**
+
+#### 5.41.1 你的三条裁决（2026-11-24）
+
+| # | 你的原话 | 性质 | 这一轮落到哪里 |
+|---|---|---|---|
+| 1 | 「卸载时应该把添加到输入法里的 IME1.0 都删掉，目前没能删掉。」 | **真缺陷** ⇒ 登记为 **D-181**（高，已定位） | `crates/pime-setup/src/tsf.rs`（新增）、`backend.rs`、`real.rs`、`plan.rs`、`exec.rs` |
+| 2 | 「输入自然语言时，如果选择了汉字，绝不要让拼音和汉字一起输出。」 | **硬不变量**（行为契约，不是取舍） | `01_Source/docs/HOTKEYS.md` §3.5；`crates/pime-tsf/src/controller.rs::the_natural_language_input_replaces_the_pinyin_with_the_candidate` |
+| 3 | 「代码输入模式，应该输出代码，这个是最早期的功能，不要丢失。」 | **硬不变量**（行为契约，不是取舍） | `01_Source/docs/HOTKEYS.md` §3.5；`crates/pime-tsf/src/controller.rs::the_code_input_leaves_the_letters_to_the_host` |
+
+**为什么 2 和 3 是「硬不变量」而不是「取舍」**：取舍是**口味**（两种都成立、要你挑一个），硬不变量是**行为契约**
+（两条同时成立、任何改动都不许让它们变假）。这两条的判据都能**机器核对**：
+
+- 第 2 条：选候选之前文档里是拼音；按数字键选中之后，文档里**只有那个候选**
+  （`fn你` 这种「拼音+汉字」一起出现是不许的），而且组合串**结束**
+  ⇒ `controller.rs::the_natural_language_input_replaces_the_pinyin_with_the_candidate` 断言文档变成 `"T0:fn"`
+  （候选**替换**了拼音，不是追加在它后面）；
+- 第 3 条：敲 `fn` 之后文档里**仍是 `fn`**，**组合串没有开**（`composing == false`），而候选**仍然可见**
+  ⇒ `controller.rs::the_code_input_leaves_the_letters_to_the_host`。
+  这正是「代码输入是**最早期的功能**，不要丢失」的技术含义：**输入法一个字母都不吃**，代码原样交给宿主。
+
+#### 5.41.2 D-181 的根因（事实）
+
+旧实现里，卸载把「注销失败」当成**一条警告**处理：
+
+- `01_Source/crates/pime-setup/src/exec.rs` 的 `uninstall()`，`Step::UnregisterTextService` 分支：
+  `regsvr32 /u` 退出码非 0 ⇒ 只 `out.warnings.push(...)`，文案是
+  `「regsvr32 /u exited with code {code} (…); the files are removed anyway so that the uninstall can finish」`；
+- 随后的 `Step::RemoveFile` / `Step::DeleteArp` **照旧执行** ⇒ **文件被删掉**；
+- 安装器**自己不碰**注册表里的语言档：`unregister_skipped()` 的注释写明
+  「The installer does not remove registry keys of the text service itself (that is the DLL's own `DllUnregisterServer`, in crates/pime-tsf);
+  it tells the person how to finish by hand」⇒ 只给一段**手工 `reg delete`** 的指引。
+
+⇒ **失败被吞成警告 ＋ 文件照删 ＝ 假成功**：程序没了，注册项还在。
+
+**为什么 `regsvr32 /u` 在这台机器上会失败**：它必须**加载 DLL**；360 主动防御（`ZhuDongFangYu`，见 §5.39 / D-180）
+会拒绝加载刚装上的二进制 ⇒ 加载失败 ⇒ 退出码非 0 ⇒ 正好走进「只记警告」那条分支。
+
+#### 5.41.3 机器上的证据（只读复核，2026-11-25）
+
+注册表路径与读到的内容：
+
+- `HKLM\SOFTWARE\Microsoft\CTF\TIP\{43F95ED1-95B4-421D-8F5A-837128C2D854}\LanguageProfile`
+  ⇒ 三个语言档**都在**：`0x00000804`、`0x00000409`、`0x00000411`；
+- 每个档下面的 profile GUID：`0x00000804` → `{223FD919-F8CB-476C-A852-351E7381C801}`（zh-CN）、
+  `0x00000409` → `{68ED92DE-77CF-43B1-A7B2-D3BE2686E2A0}`（en-US）、
+  `0x00000411` → `{22E54B52-5082-42D3-9E41-1C2E0CE74DFB}`（ja-JP）；
+  与 `crates/pime-tsf/src/lib.rs:56-60` 的 `CLSID_PIME` / `PROFILE_ZH` / `PROFILE_EN` / `PROFILE_JA` **逐字一致**；
+- 同一个 TIP 键下的 `Category\Category` 与 `Category\Item` 也在；
+- `HKLM\SOFTWARE\Classes\CLSID\{43F95ED1-95B4-421D-8F5A-837128C2D854}` 也在；
+- Windows 语言列表里显示的那三条（IME1.0 中文 / English / 日本語）读的就是这个 `LanguageProfile` 键。
+
+复核时的程序状态：`C:\Program Files\IME1.0` 里的文件与 ARP 条目（`IME1.0`）**又都在**（已重装）——
+「文件没了、档还在」是你 2026-11-24 报的那一次；这次只读复核确认的是**那三个档确实还留在系统里**。
+
+#### 5.41.4 修法（本次改动里，主代理实现）
+
+1. **安装器自己把输入法从系统里注销**，不再依赖能加载 DLL 的 `regsvr32 /u`：
+   - 新增 `01_Source/crates/pime-setup/src/tsf.rs`：`TEXT_SERVICE_CLSID` / `TIP_KEY` / `COM_CLASS_KEY` / `KEYS`
+     （两把钥匙：`Software\Microsoft\CTF\TIP\{43F95ED1-95B4-421D-8F5A-837128C2D854}` 与
+     `Software\Classes\CLSID\{43F95ED1-95B4-421D-8F5A-837128C2D854}`），
+     有测试**读 `crates/pime-tsf/src/lib.rs` 钉住两边不漂移**；
+   - `Backend` 新增 `unregister_the_input_method()`（`crates/pime-setup/src/backend.rs:54-61`），
+     真实实现见 `crates/pime-setup/src/real.rs`（删那两把钥匙）。
+2. 卸载计划加一步 `Step::UnregisterInputMethod`（`crates/pime-setup/src/plan.rs`），执行见 `exec.rs` 的 `uninstall()`。
+3. **失败要大声报出来并保留程序**（可重试）：注销失败 ⇒ 记警告并**不删文件、不删 ARP 条目**，
+   文案写明「程序被保留，可以再卸一次」。
+4. `regsvr32 /u` 只剩下「注销 COM 类」这一件事（它失败仍只是警告，不再牵连文件删除）。
+
+#### 5.41.5 这一轮没有验证的（不虚报）
+
+- **整轮门禁没跑**（本轮不跑 cargo）；`MANIFEST_SHA256.txt` 会因本轮的代码改动与文档改动**过期**，
+  需要主代理在代码定稿后统一 `node 01_Source/scripts/update-manifest.js` 刷新
+  （并把新增的 `01_Source/crates/pime-setup/src/tsf.rs` 登记进清单）；
+- **真机的「卸载之后，语言列表里那三个档真的消失」没有看到过**；
+- D-181 的状态是**已定位**，**不是已验证通过**；
+- 两条硬不变量有单元测试钉着（见 §5.41.1），但**真机侧一次都没跑过**。
+
+**登记**：D-181（已定位；修法在本次改动里，主代理实现；未验证）。
+

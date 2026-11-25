@@ -788,6 +788,10 @@ fn check_root(plan: &Plan) -> &Path {
 fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Outcome {
     let root = check_root(plan);
     let mut out = Outcome::default();
+    // Whether the input method could be removed from the system. When it could not, the program is **kept**: the
+    // files are the only way left to try again, and deleting them would leave the entries of our input method in
+    // the language list of Windows with nothing to remove them with (the report of the user on 2026-11-24).
+    let mut registrations_removed = true;
     // Files and folders that Windows will delete at the next restart; a folder that only holds those is scheduled too.
     let mut pending: Vec<PathBuf> = Vec::new();
     for (i, step) in plan.steps.iter().enumerate() {
@@ -800,6 +804,22 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
         match step {
             Step::UninstallVscodeExtension { extension_id } => {
                 out.vscode = uninstall_vscode_extension(b, extension_id, log, &mut out.warnings);
+            }
+            Step::UnregisterInputMethod => {
+                // The language profiles, the categories and the entry in the language list of Windows: this is the
+                // part the user sees, and it does not need the DLL.
+                match b.unregister_the_input_method() {
+                    Ok(()) => {}
+                    Err(why) => {
+                        out.warnings.push(format!(
+                            "the input method could not be removed from the system ({}); the program was kept so \
+                             that the uninstall can be tried again - close the programs that use the input method \
+                             (the text service is loaded in them) and run the uninstaller again",
+                            why
+                        ));
+                        registrations_removed = false;
+                    }
+                }
             }
             Step::UnregisterTextService { dll } => {
                 if !b.exists(dll) {
@@ -831,12 +851,25 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
                 }
             }
             Step::DeleteArp { key } => {
+                if !registrations_removed {
+                    out.warnings.push(format!(
+                        "the registry key HKLM\\{key} was kept: the input method is still registered in the system"
+                    ));
+                    continue;
+                }
                 if let Err(e) = b.reg_delete_key(key) {
                     out.warnings
                         .push(format!("could not delete HKLM\\{key}: {}", io_text(&e)));
                 }
             }
             Step::RemoveFile(path) => {
+                if !registrations_removed {
+                    out.warnings.push(format!(
+                        "{} was kept: the input method is still registered in the system",
+                        path.display()
+                    ));
+                    continue;
+                }
                 if !b.exists(path) {
                     continue;
                 }
@@ -854,6 +887,13 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
                 }
             }
             Step::RemoveDir(dir) => {
+                if !registrations_removed {
+                    out.warnings.push(format!(
+                        "{} was kept: the input method is still registered in the system",
+                        dir.display()
+                    ));
+                    continue;
+                }
                 if !b.exists(dir) {
                     continue;
                 }
@@ -1500,9 +1540,57 @@ mod tests {
         );
     }
 
+    /// The input method leaves the system **before** the files are deleted: the entries of our input method in the
+    /// language list of Windows are the part the user sees, and they are gone even when the DLL cannot be loaded
+    /// (the report of the user on 2026-11-24).
     #[test]
-    fn ut_061_uninstall_leaves_foreign_files_other_products_and_unrelated_registry_keys_alone() {
+    fn the_uninstall_removes_the_input_method_from_the_system_before_the_files() {
         let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.events.clear();
+        let out = uninstall(&mut b, VscodeMode::Skip);
+        assert!(
+            out.warnings.is_empty(),
+            "the uninstall was clean: {:?}",
+            out.warnings
+        );
+        let at = |needle: &str| {
+            b.events
+                .iter()
+                .position(|e| e.contains(needle))
+                .unwrap_or_else(|| panic!("{needle} not in {:?}", b.events))
+        };
+        assert!(
+            at("unregister the input method") < at("remove c:\\program files\\ime1.0\\pime_tsf.dll"),
+            "the input method leaves the system before the files are deleted: {:?}",
+            b.events
+        );
+    }
+
+    /// When the input method cannot be removed from the system, the program is **kept**: the files are the only
+    /// way left to try again, and deleting them would leave the entries of our input method in the language list
+    /// of Windows with nothing to remove them with.
+    #[test]
+    fn a_failing_removal_of_the_input_method_keeps_the_program_and_says_so() {
+        let mut b = machine();
+        install(&mut b, "0.2.0").unwrap();
+        b.input_method_failure = Some("the profile manager could not be created".to_string());
+        let out = uninstall(&mut b, VscodeMode::Skip);
+        assert!(
+            out.warnings
+                .iter()
+                .any(|w| w.contains("could not be removed from the system")),
+            "the uninstall says that the input method is still registered: {:?}",
+            out.warnings
+        );
+        assert!(
+            b.state.files.contains_key(&k(&format!(r"{PREFIX}\pime_tsf.dll"))),
+            "the program was kept, so that the uninstall can be tried again"
+        );
+    }
+
+    #[test]
+    fn ut_061_uninstall_leaves_foreign_files_other_products_and_unrelated_registry_keys_alone() {        let mut b = machine();
         install(&mut b, "0.2.0").unwrap();
         b.put(&format!(r"{PREFIX}\my-notes.txt"), b"user data");
         b.put(r"C:\Program Files\Other\other.dll", b"x");

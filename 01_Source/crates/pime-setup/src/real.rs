@@ -817,6 +817,21 @@ impl Backend for RealBackend {
             &|p| p.is_file(),
         )
     }
+
+    /// The input method leaves the system here: its language profiles (the entries "IME1.0 ..." in the list of
+    /// Windows), its categories and its COM class.
+    ///
+    /// The keys are deleted **by the installer itself**, not by `regsvr32 /u`: that one has to load the DLL of
+    /// the text service, and a scanner on this machine can refuse to load a freshly installed binary - then the
+    /// entries would stay in the list of Windows while the program is already deleted, and there would be no way
+    /// left to remove them (the report of the user on 2026-11-24).
+    fn unregister_the_input_method(&mut self) -> Result<(), String> {
+        for key in crate::tsf::KEYS {
+            self.reg_delete_key(key)
+                .map_err(|error| format!("{key} could not be deleted: {error}"))?;
+        }
+        Ok(())
+    }
 }
 
 /// VS Code's launcher is `code.cmd` (a batch file), which `Command` does not find by the bare name `code`, so it is

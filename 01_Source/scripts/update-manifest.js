@@ -271,6 +271,9 @@ const ADDITIONS = [
   // the numbers of the documents are written from the products on the disk (the size and the digest of the
   // installer, the test counts of the logs) - nothing is typed in by hand
   '01_Source/scripts/refresh-claims.js',
+  // the keys of our own input method in the registry: the uninstall removes them itself, so that the entries of
+  // our input method in the language list of Windows do not stay behind (D-181)
+  '01_Source/crates/pime-setup/src/tsf.rs',
 ];
 
 const isBinary = bytes => bytes.includes(0);

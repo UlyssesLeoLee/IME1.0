@@ -1833,3 +1833,89 @@ fn send_real_key(vk: u32, scan: u32) -> bool {
     let sent = unsafe { SendInput(&[down, up], std::mem::size_of::<INPUT>() as i32) };
     sent == 2
 }
+
+// ---------------------------------------------------------------- the report of the drive
+
+/// A value of the report, quoted and escaped.
+///
+/// The report is **one line**, and every field of it is a `key=value` pair: a value with a space, a quote or a line
+/// break in it would break that shape (and the assertions read the values back out of the report), so the value is
+/// quoted and the characters that would break the line are escaped.
+pub fn quoted(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 2);
+    out.push('"');
+    for ch in text.chars() {
+        match ch {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 || c as u32 == 0x7f => {
+                out.push_str(&format!("\\x{:02x}", c as u32));
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// The value of the field `name` of a report.
+///
+/// The fields of the report are `name="value"` pairs, one after the other, separated by a space: the name is looked
+/// up **with the space in front of it** (every field of the report is separated by a space), and the value is read
+/// until its closing quote (the escapes of `quoted` are read back). `None` when the report does not have that field.
+pub fn the_field_of_the_report(report: &str, name: &str) -> Option<String> {
+    let needle = format!(" {name}=\"");
+    let start = report.find(&needle)? + needle.len();
+    let mut out = String::new();
+    let mut rest = report[start..].chars();
+    while let Some(ch) = rest.next() {
+        match ch {
+            '\\' => match rest.next()? {
+                'n' => out.push('\n'),
+                'r' => out.push('\r'),
+                't' => out.push('\t'),
+                '\\' => out.push('\\'),
+                '"' => out.push('"'),
+                'x' => {
+                    let mut code = 0u32;
+                    for _ in 0..2 {
+                        code = code * 16 + rest.next()?.to_digit(16)?;
+                    }
+                    out.push(char::from_u32(code)?);
+                }
+                other => out.push(other),
+            },
+            '"' => return Some(out),
+            c => out.push(c),
+        }
+    }
+    None
+}
+
+/// The text the document gained at its end: what the last commit added.
+///
+/// `None` when the text before is not the beginning of the text after - the caret was not at the end of the
+/// document then, and the text that was added cannot be told from the text that was there.
+pub fn the_text_added_at_the_end(before: &str, after: &str) -> Option<String> {
+    if after.starts_with(before) {
+        Some(after[before.len()..].to_string())
+    } else {
+        None
+    }
+}
+
+/// Whether the pinyin of the natural language input leaked into the document.
+///
+/// The user picks a character and **only** the character goes into the document: the pinyin and the character must
+/// never stand next to each other there (the complaint of the user on 2026-11-24). The check is skipped when the
+/// character itself carries the pinyin (a character that is a latin word): the pinyin in the document would then be
+/// part of the character and not a leak, and the check would report a defect that is not there.
+pub fn the_pinyin_leaked_into(document: &str, pinyin: &str, candidate: &str) -> bool {
+    if pinyin.is_empty() || candidate.to_lowercase().contains(&pinyin.to_lowercase()) {
+        return false;
+    }
+    document.to_lowercase().contains(&pinyin.to_lowercase())
+}

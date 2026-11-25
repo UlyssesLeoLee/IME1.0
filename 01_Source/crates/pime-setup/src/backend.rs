@@ -51,6 +51,14 @@ pub trait Backend {
 
     /// Runs a program to completion without a window and returns its exit code.
     fn run(&mut self, program: &Path, args: &[String]) -> io::Result<i32>;
+    /// Removes the language profiles, the categories and the text service entry of our input method from the
+    /// system.
+    ///
+    /// The uninstall does this **itself** instead of leaving it to `regsvr32 /u`: that one has to load the DLL, and
+    /// a scanner on this machine can refuse to load a freshly installed binary - then the entries of our input
+    /// method stay in the language list of Windows, and with the program already deleted there is no way to remove
+    /// them any more (the report of the user on 2026-11-24).
+    fn unregister_the_input_method(&mut self) -> Result<(), String>;
     /// Path of VS Code's `code` command line launcher, if it is installed.
     fn find_vscode(&self) -> Option<PathBuf>;
 }
@@ -104,6 +112,9 @@ pub mod fake {
         pub links: BTreeSet<String>,
         /// Every `check_plain` question: (root, path).
         pub checks: std::cell::RefCell<Vec<(String, String)>>,
+        /// When set, the removal of the language profiles fails with this reason (the uninstall keeps the program
+        /// then, so that it can be tried again).
+        pub input_method_failure: Option<String>,
     }
 
     fn k(p: &Path) -> String {
@@ -401,6 +412,24 @@ pub mod fake {
 
         fn find_vscode(&self) -> Option<PathBuf> {
             self.vscode.clone()
+        }
+
+        /// The fake removes the registration of the input method (the language profiles are gone with the text
+        /// service entry) and writes it into the log, so a test can see that the uninstall did it **before** the
+        /// files are deleted.
+        fn unregister_the_input_method(&mut self) -> Result<(), String> {
+            self.tick()?;
+            self.events.push("unregister the input method".to_string());
+            self.write_log
+                .push("remove the language profiles and the text service".to_string());
+            if let Some(failure) = self.input_method_failure.clone() {
+                return Err(failure);
+            }
+            for key in crate::tsf::KEYS {
+                self.state.registry.remove(&key.to_lowercase());
+            }
+            self.state.registered.clear();
+            Ok(())
         }
     }
 }

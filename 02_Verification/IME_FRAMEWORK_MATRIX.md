@@ -116,7 +116,7 @@ node scripts/build-installer.js --dry-run # 只打印安装计划，不改任何
 | DPI（按宿主的感知模式选基准） | `popup.rs:694-760` | **已实现**（2026-11-02） | `choose_dpi` 决策表测试 | 否（未跑多屏/缩放） |
 | 系统配色 / 高对比度主题 | `popup.rs:11-12` | 已实现 | — | 否 |
 | 键位映射（Backspace/Tab/Enter/Esc/PageUp/PageDown/方向键/Space、修饰键不吞、Ctrl+Alt+Space 进组合、Shift 轻点暂停） | `keymap.rs:83-175` | 已实现 | `keymap.rs` 13 项 + `pime-core` `key_01..key_13` | 否 |
-| 输入状态机（Direct/Observing/Candidates/Composing/Suspended/FaultFallback） | `pime-core/src/input.rs:27-34`、`controller.rs:202-225` | 已实现 | `controller.rs` 约 60 项 | 否 |
+| 输入状态机（Direct/Observing/Candidates/Composing/Suspended/FaultFallback）＋ **两种输入模式的两条硬不变量**（2026-11-24 裁定）：**自然语言输入里选中候选 ⇒ 拼音被候选替换**（文档里只剩那个候选，绝不出现「拼音＋汉字」）；**代码输入 ⇒ 字母不进组合串、代码原样交给宿主** | `pime-core/src/input.rs:27-34`、`controller.rs:202-225` | 已实现（两条不变量写成条款见 `01_Source/docs/HOTKEYS.md` §3.5） | `controller.rs` 约 60 项，其中 `the_natural_language_input_replaces_the_pinyin_with_the_candidate`（拼音被**替换**）与 `the_code_input_leaves_the_letters_to_the_host`（字母归宿主）钉住这两条 | 否（真机侧**一次都没跑过**） |
 | 安全字段（密码框）静默 | `tip.rs:242-278`、`controller.rs` | 已实现 | 有 | 否 |
 | 组合串文本写入（读回校验，不盲写） | `tip.rs:196-236,420-440` | 已实现 | `controller.rs:1626,1658` | 否 |
 | **悬浮窗（搜狗拼音式工具条）**：**已于第十五轮整块删除**（`floating.rs` 与 `bar_skin.rs` 两个文件连同 21 项单测一起删掉，登记在缺口台账 §5.13.2 第 2 条待你追认）；**打字时不再显示任何搜狗式悬浮窗**——悬浮界面统一到左侧蓝色微光激光口区域，候选列表也搬进那块面板（见下行） | `menus.rs`（下拉/可搜索菜单，仍在用）；`floating.rs`（**已删除**） | **已删除**（2026-11-04 第十五轮） | 过滤/翻转的单测仍在 `menus.rs` | 否（窗口从未在真实宿主里显示过） |
@@ -144,7 +144,7 @@ node scripts/build-installer.js --dry-run # 只打印安装计划，不改任何
 | 载荷自校验（整体 + 逐条目 SHA-256），失败即不做任何事 | `payload.rs:134-141,252-260`、`cli.rs:261-272` | 已实现 | `payload.rs:324-330` | 否 |
 | 事务式安装：每步先压逆操作，失败逆序回滚 | `exec.rs:260-268,441-487` | 已实现 | `exec.rs:1128-1136`（逐操作注入故障） | 否 |
 | 升级（含被占用 DLL、陈旧文件） | `exec.rs` | 已实现 | 有 | 否 |
-| 卸载（只删清单内容、保留用户文件） | `exec.rs` | 已实现 | 有 | 否 |
+| **卸载（只删清单内容、保留用户文件）＋ 移除注册进系统的三个语言档**（`0x0804` / `0x0409` / `0x0411`，即 Windows 语言列表里 IME1.0 的那三条）与文本服务项：安装器**自己**注销注册表里的两把钥匙（`Software\Microsoft\CTF\TIP\{43F95ED1-95B4-421D-8F5A-837128C2D854}` 与 `Software\Classes\CLSID\{43F95ED1-95B4-421D-8F5A-837128C2D854}`），**不依赖能加载 DLL 的 `regsvr32 /u`**；注销失败 ⇒ **保留程序**并大声报错（可重试），不再「删完文件假装成功」 | `exec.rs` 的 `uninstall()`、`crates/pime-setup/src/tsf.rs`（新增）、`backend.rs` 的 `unregister_the_input_method()`、`plan.rs` 的 `Step::UnregisterInputMethod` | **已实现**（**2026-11-25 本轮，D-181**） | 有（**本轮未跑门禁**） | 否（**真机未验**：卸载之后语言列表里那三条真的消失，这件事还没在真机上看到过） |
 | 重启时删除（先改名再排队，不对原路径排队） | `exec.rs` | 已实现 | 有 | 否 |
 | 安全检查：拒绝系统根 / `..` / 重解析点 / 短名 / 保留名 | `real.rs`、`plan.rs` | 已实现 | `real_fs.rs` 12 项、`real_links.rs` 5 项 | 否 |
 | `regsvr32` 注册文本服务（64 位，路径取自 `GetSystemDirectoryW`） | `plan.rs:612-615` | 已实现 | `exec.rs:1286-1326` | 否 |
