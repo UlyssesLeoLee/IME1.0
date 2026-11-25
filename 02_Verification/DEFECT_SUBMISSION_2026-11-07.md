@@ -565,6 +565,6 @@ D-131 只是文档口径。①②③④⑤ 各组互不影响，**你可以只�
 |---|---|
 | 每条缺陷的原始证据 | `02_Verification/FRAMEWORK_GAPS.md`，按 D 编号搜；本轮的新登记在 §5.26~§5.29 |
 | 门禁跑得干不干净 | `02_Verification/run-all-2026-11-04.log`（**当前这一份是红的**：它是 2026-11-24 被机器卡住、被打断的一轮 ⇒ 日志里的数字对不上 claims；**原因与处置见 D-180**：退掉 360 杀软 + 腾出提交额度，再跑一轮整门禁就恢复） |
-| 产物与数字对不对得上 | `02_Verification/IME_FRAMEWORK_MATRIX.md` 的 `installer-claims` 块 + 仓库根目录的 `MANIFEST_SHA256.txt`（**862 条**，`update-manifest.js --check` 通过） |
+| 产物与数字对不对得上 | `02_Verification/IME_FRAMEWORK_MATRIX.md` 的 `installer-claims` 块 + 仓库根目录的 `MANIFEST_SHA256.txt`（**863 条**，`update-manifest.js --check` 通过） |
 | 红绿轮查得全不全 | `02_Verification/mutation-report.txt`（**77 条变异用例全部 CAUGHT，0 missed / 0 stale**；实录里另有 10 行「套件没跑起来」的机器故障，每一次都对应一次补跑并最终被抓到 —— 见 D-180） |
 | 缺陷提交单本身 | 本文件；改了请告诉我编号，我同步回 FRAMEWORK_GAPS 的状态列 |
