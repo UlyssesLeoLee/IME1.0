@@ -805,10 +805,10 @@ fn uninstall(plan: &Plan, b: &mut dyn Backend, log: &mut dyn FnMut(&str)) -> Out
             Step::UninstallVscodeExtension { extension_id } => {
                 out.vscode = uninstall_vscode_extension(b, extension_id, log, &mut out.warnings);
             }
-            Step::UnregisterInputMethod => {
+            Step::UnregisterInputMethod { dll } => {
                 // The language profiles, the categories and the entry in the language list of Windows: this is the
                 // part the user sees, and it does not need the DLL.
-                match b.unregister_the_input_method() {
+                match b.unregister_the_input_method(dll) {
                     Ok(()) => {}
                     Err(why) => {
                         out.warnings.push(format!(
@@ -1902,14 +1902,22 @@ mod tests {
             &out,
             &["other.txt", "left in place", "reparse point"]
         ));
-        assert!(warned(
-            &out,
-            &[r"sub\pime_tsf.dll", "NOT unregistered", "reparse point"]
-        ));
-        // the real files of the install are still removed, and the real DLL was unregistered
+        // The DLL behind the link was never registered (it is not ours), and the registrations of **our** input
+        // method are removed by the installer itself - so nothing is warned about, and the DLL does not have to
+        // unload itself either.
+        assert!(
+            !out.warnings.iter().any(|w| w.contains(r"sub\pime_tsf.dll")),
+            "a file behind a link is not ours: {:?}",
+            out.warnings
+        );
+        // the real files of the install are still removed, and the real registration is gone
         assert!(b.file(DLL).is_none());
         assert!(!b.state.registered.contains(&k(DLL)));
-        assert!(b.commands.iter().any(|c| c.contains("/u /s")));
+        assert!(
+            b.commands.iter().all(|c| !c.contains("/u /s")),
+            "the DLL does not have to unload itself: {:?}",
+            b.commands
+        );
     }
 
     #[test]
@@ -1926,7 +1934,7 @@ mod tests {
             "no regsvr32 /u on a link: {:?}",
             b.commands
         );
-        assert!(warned(&out, &["pime_tsf.dll", "NOT unregistered"]));
+        assert!(warned(&out, &["pime_tsf.dll", "left in place"]));
         assert!(b.file(&format!(r"{PREFIX}\pime-core.exe")).is_none());
 
         // the install folder itself is a link: nothing in it is touched, but the registry entry still goes
@@ -2035,27 +2043,27 @@ mod tests {
     }
 
     #[test]
-    fn st_035_review_12_a_dll_that_is_already_gone_is_reported_with_the_manual_cleanup() {
+    fn st_035_review_12_a_dll_that_is_already_gone_does_not_stop_the_uninstall() {
         let mut b = machine();
         install(&mut b, "0.2.0").unwrap();
         b.state.files.remove(&k(DLL));
         b.commands.clear();
         let out = uninstall(&mut b, VscodeMode::Skip);
         assert!(b.commands.is_empty(), "regsvr32 cannot run without the DLL");
-        let w = out
-            .warnings
-            .iter()
-            .find(|w| w.contains("already gone"))
-            .expect("a warning");
-        for needle in [
-            "NOT unregistered",
-            "run this setup again",
-            "reg delete \"HKLM\\Software\\Classes\\CLSID\\{43F95ED1-95B4-421D-8F5A-837128C2D854}\" /f /reg:64",
-            "CTF\\TIP\\{43F95ED1-95B4-421D-8F5A-837128C2D854}",
-            "docs/INSTALLER.md",
-        ] {
-            assert!(w.contains(needle), "{needle} missing from: {w}");
-        }
+        // The installer removes the registrations of the input method itself (D-181) - it does not need the DLL, so
+        // a DLL that is already gone changes nothing: the entries of our input method are gone all the same.
+        assert!(
+            !b.state.registered.contains(&k(DLL)),
+            "the registration of the input method is gone"
+        );
+        assert!(
+            !out
+                .warnings
+                .iter()
+                .any(|w| w.contains("already gone") || w.contains("NOT unregistered")),
+            "the uninstall is clean: {:?}",
+            out.warnings
+        );
         assert!(
             b.state.files.is_empty(),
             "the rest of the uninstall still happens"
@@ -2109,11 +2117,11 @@ mod tests {
         b.commands.clear();
         let out = uninstall(&mut b, VscodeMode::Install);
         assert!(out.warnings.is_empty(), "{:?}", out.warnings);
+        // The registrations of the input method are removed by the installer itself (D-181): `regsvr32 /u` is not
+        // needed any more - and it is the step a scanner can block.
         assert!(
-            b.commands
-                .iter()
-                .any(|c| c.contains("/u /s") && c.contains("pime_tsf.dll")),
-            "{:?}",
+            !b.commands.iter().any(|c| c.contains("/u /s")),
+            "the DLL does not have to unload itself: {:?}",
             b.commands
         );
         assert!(

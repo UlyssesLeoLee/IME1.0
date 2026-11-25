@@ -825,7 +825,7 @@ impl Backend for RealBackend {
     /// the text service, and a scanner on this machine can refuse to load a freshly installed binary - then the
     /// entries would stay in the list of Windows while the program is already deleted, and there would be no way
     /// left to remove them (the report of the user on 2026-11-24).
-    fn unregister_the_input_method(&mut self) -> Result<(), String> {
+    fn unregister_the_input_method(&mut self, _dll: &Path) -> Result<(), String> {
         for key in crate::tsf::KEYS {
             self.reg_delete_key(key)
                 .map_err(|error| format!("{key} could not be deleted: {error}"))?;

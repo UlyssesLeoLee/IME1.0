@@ -42,7 +42,7 @@ mod tests {
         let hex = line
             .split("0x")
             .nth(1)
-            .and_then(|rest| rest.split(|c: char| !c.is_ascii_hexdigit()).next())
+            .map(|rest| rest.split(|c: char| !c.is_ascii_hexdigit()).collect::<String>())
             .expect("the value of the constant");
         let expected = format!(
             "{{{}-{}-{}-{}-{:}}}",

@@ -58,7 +58,9 @@ pub trait Backend {
     /// a scanner on this machine can refuse to load a freshly installed binary - then the entries of our input
     /// method stay in the language list of Windows, and with the program already deleted there is no way to remove
     /// them any more (the report of the user on 2026-11-24).
-    fn unregister_the_input_method(&mut self) -> Result<(), String>;
+    ///
+    /// `dll` is the text service of **this** installation: nothing else of another product may be touched.
+    fn unregister_the_input_method(&mut self, dll: &Path) -> Result<(), String>;
     /// Path of VS Code's `code` command line launcher, if it is installed.
     fn find_vscode(&self) -> Option<PathBuf>;
 }
@@ -417,8 +419,8 @@ pub mod fake {
         /// The fake removes the registration of the input method (the language profiles are gone with the text
         /// service entry) and writes it into the log, so a test can see that the uninstall did it **before** the
         /// files are deleted.
-        fn unregister_the_input_method(&mut self) -> Result<(), String> {
-            self.tick()?;
+        fn unregister_the_input_method(&mut self, dll: &Path) -> Result<(), String> {
+            self.tick().map_err(|error| error.to_string())?;
             self.events.push("unregister the input method".to_string());
             self.write_log
                 .push("remove the language profiles and the text service".to_string());
@@ -428,7 +430,8 @@ pub mod fake {
             for key in crate::tsf::KEYS {
                 self.state.registry.remove(&key.to_lowercase());
             }
-            self.state.registered.clear();
+            // only the registration of **this** installation goes; another product's stays (UT-061)
+            self.state.registered.remove(&k(dll));
             Ok(())
         }
     }
