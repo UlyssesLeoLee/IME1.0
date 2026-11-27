@@ -747,6 +747,39 @@ fn interpret_child(code: i32, log: &str) -> Result<Finish, Failure> {
     }
 }
 
+/// The folders that are looked at for the install manifest.
+///
+/// A folder that was named on the command line is the **only** one that is looked at: the person said which install to
+/// remove, and another install on the machine (the default folder, the folder of an installation from before the
+/// rename) is a different program with its own files and its own registration. Removing that one instead would
+/// destroy something the person never named - and on the machine of a developer that is the very install they are
+/// working on (D-182).
+///
+/// Without a named folder the search is: the folder this program runs from (the uninstaller copy), the default folder
+/// and the folder of an installation from before the rename. The first one that has a manifest wins.
+fn uninstall_candidates(
+    named: Option<&Path>,
+    system: &SystemPaths,
+    beside: Option<PathBuf>,
+) -> Vec<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Some(p) = named {
+        candidates.push(p.to_path_buf());
+        if let Ok(resolved) = plan::resolve_install_dir(p, system)
+            && !candidates.iter().any(|c| plan::same_path(c, &resolved))
+        {
+            candidates.push(resolved);
+        }
+        return candidates;
+    }
+    if let Some(b) = beside {
+        candidates.push(b);
+    }
+    candidates.push(system.default_prefix());
+    candidates.push(system.legacy_prefix());
+    candidates
+}
+
 fn uninstall_flow(
     args: &Args,
     system: &SystemPaths,
@@ -756,25 +789,14 @@ fn uninstall_flow(
 ) -> Flow {
     let exe = std::env::current_exe()
         .map_err(|e| failure(EXIT_FAILED, format!("cannot locate this program: {e}")))?;
-    // Where to look for the install manifest: the folder that was named, the folder the program goes to when the
-    // product folder is appended to it, the folder this program runs from (the uninstaller copy), the default
-    // folder and the folder of an installation from before the rename. The first one that has a manifest wins.
+    // Where to look for the install manifest: the folder that was named wins and wins alone, otherwise the folder this
+    // program runs from (the uninstaller copy), the default folder and the folder of an installation from before the
+    // rename. The first one that has a manifest wins.
     let beside = exe
         .parent()
         .filter(|d| d.join(MANIFEST_NAME).is_file())
         .map(Path::to_path_buf);
-    let mut candidates: Vec<PathBuf> = Vec::new();
-    if let Some(p) = &args.prefix {
-        candidates.push(p.clone());
-        if let Ok(resolved) = plan::resolve_install_dir(p, system) {
-            candidates.push(resolved);
-        }
-    }
-    if let Some(b) = beside {
-        candidates.push(b);
-    }
-    candidates.push(system.default_prefix());
-    candidates.push(system.legacy_prefix());
+    let candidates = uninstall_candidates(args.prefix.as_deref(), system, beside);
     let mut found: Option<(PathBuf, String)> = None;
     for candidate in &candidates {
         let manifest_path = candidate.join(MANIFEST_NAME);
@@ -1084,5 +1106,62 @@ mod tests {
         // a dry run changes nothing, and an uninstall has no IME to add
         assert!(next_steps("0.2.0", Lang::En, &parse("--dry-run").unwrap()).is_none());
         assert!(next_steps("0.2.0", Lang::En, &parse("--uninstall").unwrap()).is_none());
+    }
+
+    fn a_machine() -> SystemPaths {
+        SystemPaths {
+            system_root: PathBuf::from("C:\\Windows"),
+            system_dir: PathBuf::from("C:\\Windows\\System32"),
+            program_files: PathBuf::from("C:\\Program Files"),
+            program_files_x86: Some(PathBuf::from("C:\\Program Files (x86)")),
+            program_data: Some(PathBuf::from("C:\\ProgramData")),
+            user_profile: Some(PathBuf::from("C:\\Users\\tester")),
+            local_time: plan::LocalTime {
+                year: 2026,
+                month: 11,
+                day: 25,
+                hour: 12,
+                minute: 0,
+                second: 0,
+            },
+        }
+    }
+
+    #[test]
+    fn st_035_a_named_folder_is_the_only_place_that_is_looked_at() {
+        let system = a_machine();
+        let beside = Some(PathBuf::from("C:\\Program Files\\IME1.0"));
+
+        // The folder that was named wins - and nothing else is looked at: another install on the machine is a
+        // different program, and removing it instead of the named one destroys what the person never named (D-182).
+        let named = uninstall_candidates(Some(Path::new("D:\\Tools\\IME1.0")), &system, beside.clone());
+        assert_eq!(named, [PathBuf::from("D:\\Tools\\IME1.0")]);
+        assert!(
+            !named.iter().any(|p| p.starts_with("C:\\Program Files")),
+            "the default folder must not be looked at when a folder was named"
+        );
+
+        // The folder the program runs from (the uninstaller copy) is the same place: no second copy of it.
+        let named_copy = uninstall_candidates(Some(Path::new("C:\\Program Files\\IME1.0")), &system, beside.clone());
+        assert_eq!(named_copy, [PathBuf::from("C:\\Program Files\\IME1.0")]);
+
+        // Without a named folder the search is the one that has always been there.
+        let everywhere = uninstall_candidates(None, &system, beside.clone());
+        assert_eq!(
+            everywhere,
+            [
+                PathBuf::from("C:\\Program Files\\IME1.0"),
+                PathBuf::from("C:\\Program Files\\IME1.0"),
+                PathBuf::from("C:\\Program Files\\Programming IME"),
+            ]
+        );
+        let no_beside = uninstall_candidates(None, &system, None);
+        assert_eq!(
+            no_beside,
+            [
+                PathBuf::from("C:\\Program Files\\IME1.0"),
+                PathBuf::from("C:\\Program Files\\Programming IME"),
+            ]
+        );
     }
 }

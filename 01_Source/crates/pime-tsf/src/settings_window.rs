@@ -337,7 +337,7 @@ fn rows_of(page: SettingsPage) -> Vec<ControlKind> {
         ],
         SettingsPage::About => vec![
             ControlKind::Label("编程输入法 IME1.0"),
-            ControlKind::Label("版本 0.3.2"),
+            ControlKind::Label(concat!("版本 ", env!("CARGO_PKG_VERSION"))),
             ControlKind::Label("设置文件：%LOCALAPPDATA%\\Programming IME\\settings.json"),
             ControlKind::Label("快捷键与按键方案：01_Source/docs/HOTKEYS.md"),
         ],

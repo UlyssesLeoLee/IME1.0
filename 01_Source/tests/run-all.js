@@ -39,7 +39,7 @@ const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-l
 // (`node tests/run-all.js --uat`) and its evidence stays in 02_Verification/uat, but it is no longer a gate.
 // What watches the input method itself is the step that drives the real TSF DLL through the real msctf
 // (`--ime-live`: the installed DLL, a real window with the keyboard focus, the real keyboard).
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'installer'];
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'setup', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -77,13 +77,17 @@ try {
 
 // A freshly linked binary can be refused once (the scanner of the machine, or a locked file). That is not a failure
 // of the code, so the run is repeated (D-138: the old check only knew "os error 5" and did not see the other forms).
-const CANNOT_EXECUTE = /os error 5|could not execute process|never executed|no such file or directory/i;
+const CANNOT_EXECUTE = /os error 5|could not execute process|never executed|no such file or directory|could not be started/i;
 // The machine ran out of memory while compiling ("rustc-LLVM ERROR: out of memory", "Allocation failed", the
 // Win32 error 1455 "the paging file is too small"): that is the machine, not the code (D-180). The other
 // applications of the machine come and go, so the step is tried again after a longer pause instead of turning
 // the whole round red.
 const OUT_OF_MEMORY = /out of memory|allocation failed|os error 1455|paging file is too small|unable to commit/i;
-const RETRY_PAUSE_MS = 20000;
+// The machine refused to START the program at all ("spawn EPERM", the commit limit is exhausted): that is the
+// machine, not the code (D-180, 2026-11-25 的门禁实录里出现过一次). It is retried like the other machine faults,
+// otherwise one hiccup of the machine turns the whole round red.
+const SPAWN_REFUSED = /the command could not be started/i;
+const RETRY_PAUSE_MS = 45000;
 const RETRY_PAUSE_MEMORY_MS = 60000;
 
 // The raw output of a test run, kept as evidence: the traceability report maps the design case ids by the ids
@@ -153,8 +157,8 @@ if (want('rust')) {
       if (r.note) console.log(`note: ${r.note}`);
       saveEvidence('rust', r.out || '');
       if (r.status === 0) return {ok: true, note: ((r.out || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-      if (!CANNOT_EXECUTE.test(r.out || '') && !OUT_OF_MEMORY.test(r.out || '')) break;
-      if (attempt < 3) sleepSync(OUT_OF_MEMORY.test(r.out || '') ? RETRY_PAUSE_MEMORY_MS : RETRY_PAUSE_MS);
+      if (!CANNOT_EXECUTE.test(r.out || '') && !OUT_OF_MEMORY.test(r.out || '') && !SPAWN_REFUSED.test(r.out || '')) break;
+      if (attempt < 3) sleepSync(OUT_OF_MEMORY.test(r.out || '') || SPAWN_REFUSED.test(r.out || '') ? RETRY_PAUSE_MEMORY_MS : RETRY_PAUSE_MS);
     }
     // A test binary that could not be started at all is the machine, not the code: the step says so.
     if (last && last.status === -1) return {ok: false, note: `the scanner of the machine blocked a test binary (${last.note || 'the binary could not be started'})`};
@@ -196,8 +200,8 @@ const cargoRetry = (crate, cargoArgs, extraEnv = {}, evidenceName = '') => {
     if (r.note) console.log(`note: ${r.note}`);
     if (evidenceName) saveEvidence(evidenceName, r.out || '');
     if (r.status === 0) return {ok: true, note: ((r.out || '').match(/test result: ok\. (\d+) passed/g) || []).map(x => Number(x.match(/(\d+)/)[1])).reduce((a, b) => a + b, 0) + ' tests'};
-    if (!CANNOT_EXECUTE.test(r.out || '') && !OUT_OF_MEMORY.test(r.out || '')) break;
-    if (attempt < 3) sleepSync(OUT_OF_MEMORY.test(r.out || '') ? RETRY_PAUSE_MEMORY_MS : RETRY_PAUSE_MS);
+    if (!CANNOT_EXECUTE.test(r.out || '') && !OUT_OF_MEMORY.test(r.out || '') && !SPAWN_REFUSED.test(r.out || '')) break;
+    if (attempt < 3) sleepSync(OUT_OF_MEMORY.test(r.out || '') || SPAWN_REFUSED.test(r.out || '') ? RETRY_PAUSE_MEMORY_MS : RETRY_PAUSE_MS);
   }
   if (last && last.status === -1) return {ok: false, note: `the scanner of the machine blocked a test binary in crates/${crate} (${last.note || 'the binary could not be started'})`};
   return {ok: false, note: `cargo ${cargoArgs[0]} failed in crates/${crate}`};
@@ -306,7 +310,11 @@ if (want('ipc')) step('IPC (crates/pime-ipc): unit + loopback tests on real name
 // 02_Verification/mutation-report.txt.
 if (want('mutation')) step('red-green check: the implementation is broken on purpose and the suite has to notice it', () =>
   sh(process.execPath, [path.join(src, 'scripts', 'mutation-check.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}));
-if (want('setup')) step('Installer (crates/pime-setup): cargo test (temp-folder integration tests only)', () => cargoRetry('pime-setup', ['test']));
+// The installer crate is part of the gate: its tests are the evidence for the numbers the documents quote about the
+// installer (the claims block reads `02_Verification/setup-test-result.txt`, which this step writes) - a log from an
+// older build would be evidence for code that is not the code under test (the verifier's point, 2026-11-25).
+if (want('setup')) step('Installer (crates/pime-setup): cargo test (temp-folder integration tests only)', () =>
+  cargoRetry('pime-setup', ['test'], {}, 'setup'));
 // The claims checks run AFTER the UAT (it runs early, see above): they read the evidence of the acceptance run (the
 // numbers of the scenarios, their result and the time the report was written), so they have to see the run of this
 // round and not the one of the previous round.

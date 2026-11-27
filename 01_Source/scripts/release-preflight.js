@@ -1,5 +1,5 @@
 'use strict';
-// The preflight of the release: what is still missing before v0.3.3 can be published.
+// The preflight of the release: what is still missing before v0.3.4 can be published.
 //
 //   node scripts/release-preflight.js
 //
@@ -57,7 +57,7 @@ if (limit === null || charged === null) {
 const claims = read('02_Verification/IME_FRAMEWORK_MATRIX.md').match(
   /installer_file = ([^\r\n]+)/,
 );
-const installerName = claims ? claims[1].trim() : 'ProgrammingIME-0.3.3-win-x64-setup.exe';
+const installerName = claims ? claims[1].trim() : 'ProgrammingIME-0.3.4-win-x64-setup.exe';
 const installer = path.join(root, '01_Source', 'dist', installerName);
 if (!fs.existsSync(installer)) {
   check(false, `the installer is on the disk: ${installerName}`);
@@ -132,7 +132,7 @@ for (const script of ['tests/smoke/installer-claims-check.js', 'tests/smoke/evid
 const releaseFiles = [
   ['01_Source/dist', installerName],
   ['01_Source/dist', `${installerName}.sha256`],
-  ['01_Source/dist', 'programming-ime-vscode-bridge-0.3.3.vsix'],
+  ['01_Source/dist', 'programming-ime-vscode-bridge-0.3.4.vsix'],
 ];
 for (const [directory, name] of releaseFiles) {
   const file = path.join(root, directory, name);

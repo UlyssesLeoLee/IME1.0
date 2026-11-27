@@ -361,8 +361,12 @@ fn st_035_the_real_exe_installs_and_uninstalls_in_a_temp_folder_with_all_three_n
             prefix_arg,
         ],
     );
-    assert_eq!(code, 1);
+    assert_eq!(code, 1, "{text}");
     assert!(text.contains("no install manifest"), "{text}");
+    assert!(
+        !text.contains("Program Files"),
+        "an uninstall that names a folder never looks at another install on the machine: {text}"
+    );
 }
 
 /// The rule of the install folder: the product folder is the last part of it. A place that is chosen gets the

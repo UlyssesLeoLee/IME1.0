@@ -220,6 +220,8 @@ const ADDITIONS = [
   '01_Source/scripts/mutation-check.js',
   '01_Source/scripts/mutation-cases.js',
   '02_Verification/mutation-report.txt',
+  // the evidence of the installer crate (the claims block cites it: evidence_setup_log)
+  '02_Verification/setup-test-result.txt',
   // the plan of the refactor and the checkable bar of "commercial grade"
   '01_Source/docs/REFACTOR_PLAN.md',
   // the modules of the first refactor phase: the two god-files of the text service were split into these
@@ -350,3 +352,27 @@ const sorted = [...listed.entries()].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b
 const text = sorted.map(([relative, digest]) => `${digest}  ${relative}`).join('\n') + '\n';
 fs.writeFileSync(manifestPath, text, 'utf8');
 console.log(`MANIFEST_SHA256.txt: ${sorted.length} entries (${stale} refreshed, ${ADDITIONS.length} candidates)`);
+
+// The number of the entries is quoted in three places. It is written here, where the number is known: a hand-written
+// number there is a number that drifts (the same rule as the claims of the installer: no number is typed in by hand).
+const count = sorted.length;
+function writeTheCount(file, re, build) {
+  const p = path.join(root, file);
+  if (!fs.existsSync(p)) {
+    console.log(`note: ${file} is not on the disk: the number of the manifest entries is not written there`);
+    return;
+  }
+  const t = fs.readFileSync(p, 'utf8');
+  const m = t.match(re);
+  if (!m) {
+    console.log(`note: the number of the manifest entries is not in ${file} (the pattern changed)`);
+    return;
+  }
+  const next = build(m);
+  if (m[0] === next) return;
+  fs.writeFileSync(p, t.replace(m[0], next), 'utf8');
+  console.log(`  ${file}: the number of the manifest entries -> ${count}`);
+}
+writeTheCount('README_交付说明.md', /全量刷新，(\d+) 条全部对得上/, m => `全量刷新，${count} 条全部对得上`);
+writeTheCount('README_交付说明.md', /清单 \*\*(\d+) 条/, m => `清单 **${count} 条`);
+writeTheCount('02_Verification/IME_FRAMEWORK_MATRIX.md', /\*\*(\d+) \/ \d+ 对得上\*\*/, () => `**${count} / ${count} 对得上**`);

@@ -266,6 +266,21 @@ fn the_plain_edit_control_receives_the_input_method() {
         "the_plain_edit_control_receives_the_input_method",
     ]);
     println!("--- the drive of the edit control ---\n{report}");
+    // The measurement is kept on disk: the two invariants of the user (the pinyin must not stand next to the
+    // character, the code must go into the document as it was typed) are claims about the **real** input method, so
+    // the report of a real run belongs in the repository next to the other evidence (2026-11-25).
+    {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("..")
+            .join("02_Verification");
+        let _ = std::fs::create_dir_all(&root);
+        let _ = std::fs::write(
+            root.join("ime-live-report.txt"),
+            format!("# the real input method in a plain edit control\n{report}\n"),
+        );
+    }
     assert!(
         report.contains("write=ok"),
         "the write path of the input method must work (the bridge writes into the document); the report is:\n{report}"

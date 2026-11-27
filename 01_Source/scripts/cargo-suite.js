@@ -29,7 +29,9 @@ const os = require('node:os');
 const path = require('node:path');
 
 // The execution of a binary was refused (the scanner quarantines it).
-const BLOCKED_EXECUTION = /could not execute process|never executed|os error 5|アクセスが拒否/i;
+// "could not be started" is the form the scanner takes on this machine when it blocks a copy in the temporary
+// folder: the file is there, the process never runs (spawn EPERM) - the same class of machine fault.
+const BLOCKED_EXECUTION = /could not execute process|never executed|os error 5|access was denied|アクセスが拒否|could not be started/i;
 // The linker could not write the output file (the scanner replaced its ACL).
 const BLOCKED_WRITE = /cannot open output file\s+([^\r\n"]+?):\s*Permission denied/i;
 
@@ -43,7 +45,13 @@ function cargo(args, cwd, env) {
     // no shell: cargo.exe is a program, and a shell would concatenate the arguments without escaping them
     maxBuffer: 256 * 1024 * 1024,
   });
-  return {status: r.status === null ? -1 : r.status, out: `${r.stdout || ''}${r.stderr || ''}`};
+  // A command that could not even be STARTED (the commit limit is exhausted, the scanner refuses the program) is a
+  // property of the machine, not of the code. The reason goes into the output, otherwise the gate reads an empty
+  // output as "the scanner blocked it" and never says what really happened (D-180).
+  const startError = r.error
+    ? `\n[the command could not be started: ${r.error.code || ''} ${r.error.message}]`
+    : '';
+  return {status: r.status === null ? -1 : r.status, out: `${r.stdout || ''}${r.stderr || ''}${startError}`};
 }
 
 // The owner of a file may always change its ACL: that is what undoes the protection of the scanner.
@@ -128,11 +136,16 @@ function runCopies(binaries, env, attempts = 3) {
       let run = start(copy);
       const out = `${run.stdout || ''}${run.stderr || ''}`;
       if (run.status !== 0 && run.status !== null && BLOCKED_EXECUTION.test(out) && attempts > 1) {
-        // the copy was quarantined as well: wait a little and try once more
-        const wait = 15000 * (attempts - 1);
-        const until = Date.now() + wait;
-        while (Date.now() < until) { /* the scanner needs a moment */ }
-        run = start(copy);
+        // The copy was quarantined as well. The scanner holds a file for a while and then lets it go, so the copy
+        // is tried again a few times (2026-11-25: seven copies were blocked at once, and the hold did not last
+        // forever - the gate must not call that a test result either way).
+        for (let i = 2; i <= attempts; i++) {
+          const wait = 20000;
+          const until = Date.now() + wait;
+          while (Date.now() < until) { /* the scanner needs a moment */ }
+          run = start(copy);
+          if (run.status === 0) break;
+        }
       }
       parts.push(`${run.stdout || ''}${run.stderr || ''}`);
       if (run.status === null) {

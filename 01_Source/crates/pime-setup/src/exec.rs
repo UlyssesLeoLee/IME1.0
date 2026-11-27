@@ -763,12 +763,18 @@ pub fn uninstall_vscode_extension(
     }
 }
 
-/// `regsvr32 /u` could not be run on `dll`, so its registration may still be in the registry. The installer does not
-/// remove registry keys of the text service itself (that is the DLL's own `DllUnregisterServer`, in crates/pime-tsf);
-/// it tells the person how to finish by hand.
+/// `regsvr32 /u` could not be run on `dll`. The registrations of the text service itself (the language profiles, the
+/// categories and the COM class) the installer removes **by itself** - see `crate::tsf` and the step
+/// `UnregisterInputMethod` - so this is only about the DLL unloading itself; the person is told how to finish by
+/// hand if the registration of the COM class is still there.
 fn unregister_skipped(dll: &Path, why: &str) -> String {
     format!(
-        "{}: {why}, so the text service was NOT unregistered and its registration may still be in the registry. To clean up, either run this setup again (it puts the DLL back and registers it) and then uninstall again, or, as administrator: reg delete \"HKLM\\Software\\Classes\\CLSID\\{TEXT_SERVICE_CLSID}\" /f /reg:64 and, as a last resort for the input method entries that Windows keeps for it: reg delete \"HKLM\\SOFTWARE\\Microsoft\\CTF\\TIP\\{TEXT_SERVICE_CLSID}\" /f /reg:64 (see docs/INSTALLER.md, section 6)",
+        "{}: {why}, so the DLL did not unload itself. The registrations of the input method (the language profiles \
+         and the text service entry) are removed by the installer itself; to remove what the DLL still holds, either \
+         run this setup again (it puts the DLL back and registers it) and then uninstall again, or, as administrator: \
+         reg delete \"HKLM\\Software\\Classes\\CLSID\\{TEXT_SERVICE_CLSID}\" /f /reg:64 and, as a last resort for the \
+         input method entries that Windows keeps for it: reg delete \
+         \"HKLM\\SOFTWARE\\Microsoft\\CTF\\TIP\\{TEXT_SERVICE_CLSID}\" /f /reg:64 (see docs/INSTALLER.md, section 6)",
         dll.display()
     )
 }
