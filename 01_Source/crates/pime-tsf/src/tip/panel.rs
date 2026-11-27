@@ -360,7 +360,8 @@ impl Inner {
     }
 
     /// Open one of the lists of the laser panel under the row the user clicked.
-    fn open_laser_menu(&mut self, key: &str) {        let which = match key {
+    fn open_laser_menu(&mut self, key: &str) {
+        let which = match key {
             "language" => MenuKind::Language,
             "effort" => MenuKind::Effort,
             "skin" => MenuKind::Skin,

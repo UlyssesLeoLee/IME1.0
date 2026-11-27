@@ -8,6 +8,7 @@
 //   node scripts/mutation-check.js                 # every case
 //   node scripts/mutation-check.js --only nema     # the cases whose id starts with "nema"
 //   node scripts/mutation-check.js --list          # only list the cases
+//   node scripts/mutation-check.js --help          # the usage and the exit codes of the gate
 //
 // The original file is restored after every single mutation, and the run verifies at the end that every file is
 // byte for byte the one it found (the restore is not taken on trust).
@@ -249,6 +250,30 @@ for (const kept of restoredAtStart.kept) {
   console.log(`note: ${kept.target} was changed after a killed run: your version was kept, the copy of the run is in ${kept.aside}`);
 }
 
+// The usage and the exit codes are printed on demand: the exit code is part of the contract of the gate, so a reader
+// has to be able to see it without reading the source. It comes **after** the restore above, like the listing: even a
+// run that only prints something must not leave a broken implementation in the tree.
+if (args.includes('--help') || args.includes('-h')) {
+  console.log([
+    'usage: node scripts/mutation-check.js [--only <prefix,...>] [--list] [--append] [--help]',
+    '',
+    '  (no flag)   break every case on purpose and ask the matching suite whether it notices',
+    '  --only      only the cases whose id starts with one of the prefixes (comma separated)',
+    '  --list      only list the cases (nothing is broken)',
+    '  --append    append to the report instead of writing a new header',
+    '  --help      this text',
+    '',
+    'exit codes (every one of them except 0 means "the round is red"):',
+    '  0  every mutation was caught',
+    '  1  the suite does not notice a mutation (a hole in the test suite)',
+    '  2  a file was not restored (the tree is not the one the round found)',
+    '  3  the result of a mutation is unknown (the suite did not run: the machine, not the code)',
+    '  4  a mutation is stale (the text to break is not in the file any more: it verified nothing - D-111)',
+    '  5  the round checked nothing, or the restore of a file was refused (the tree has to be put back by hand)',
+  ].join('\n'));
+  process.exit(0);
+}
+
 // A listing is a read of the cases - but it comes **after** the restore above: even a listing must not leave a broken
 // implementation in the tree.
 if (list) {
@@ -458,6 +483,8 @@ write(`the run checked ${caught + missed + errors.length + stale} mutations: ${c
 //   2  a file was not restored (the tree is not the one the round found)
 //   3  the result of a mutation is unknown (the suite did not run: the machine, not the code)
 //   4  a mutation is stale (the text to break is not in the file any more: it verified nothing - D-111)
+//   5  the round checked nothing (a prefix that matches no case), or the restore of a file was refused (the tree
+//      has to be put back by hand)
 // The order below is the order of severity: a damaged tree first (nothing else can be believed), then the unknown
 // results, then the missed ones, then the stale ones.
 let exitCode = 0;

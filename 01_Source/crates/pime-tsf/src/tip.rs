@@ -1182,7 +1182,8 @@ mod tests {
     use windows::Win32::UI::TextServices::ITfTextInputProcessor;
 
     #[test]
-    fn guard_passes_a_value_through_and_turns_a_panic_into_the_fallback() {        assert_eq!(guard(7, || 42), 42);
+    fn guard_passes_a_value_through_and_turns_a_panic_into_the_fallback() {
+        assert_eq!(guard(7, || 42), 42);
         assert!(!guard(false, || panic!("host callback panicked (test)")));
         let got: Result<BOOL> = guard(Ok(BOOL(0)), || -> Result<BOOL> { panic!("again (test)") });
         assert_eq!(

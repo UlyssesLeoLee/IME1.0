@@ -1223,7 +1223,8 @@ mod tests {
     }
 
     #[test]
-    fn the_sum_of_the_breakdown_is_the_score() {        let index = real_index();
+    fn the_sum_of_the_breakdown_is_the_score() {
+        let index = real_index();
         let implementations = real_implementations();
         let result = recommend(&index, &implementations, &request("最短路径")).expect("the answer is there");
         assert!(!result.recommended.is_empty());

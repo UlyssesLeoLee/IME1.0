@@ -1835,7 +1835,8 @@ mod tests {
     }
 
     #[test]
-    fn only_http_send_may_use_the_bulk_line_size() {        let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
+    fn only_http_send_may_use_the_bulk_line_size() {
+        let h = Harness::new(|_, _| Ok(response(200, &[], "{}")));
         let body = "b".repeat(200_000);
         h.line(&send_line(
             1,
