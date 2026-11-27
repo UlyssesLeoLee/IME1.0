@@ -99,6 +99,23 @@ if (!probe) {
   }
 }
 
+// ---- 2c. the live step of the real input method ---------------------------------------------------------------
+// The live part of the suite (the real text service, a real keyboard, a real window) is opt-in: it needs the profile
+// of this product to be registered on this machine, and it takes the focus of the desktop. When the product is not
+// installed, the step skips itself and **leaves no evidence**: that is worth saying out loud, because the two
+// invariants of the user (the pinyin must not stand next to the character, the code must go in as it was typed) are
+// claims about the real input method.
+const zhCnProfile = 'HKLM\\SOFTWARE\\Microsoft\\CTF\\TIP\\{43F95ED1-95B4-421D-8F5A-837128C2D854}\\LanguageProfile\\0x00000804';
+const profile = spawnSync('reg', ['query', zhCnProfile], {encoding: 'utf8', timeout: 30000});
+if (profile.status === 0) {
+  console.log('ok    the live step can run on this machine (the zh-CN profile of this product is registered)');
+} else {
+  console.log('note  the live step cannot run on this machine: the zh-CN profile of this product is not registered');
+  console.log('      (the product is not installed here) => a live run leaves no evidence; install it and run');
+  console.log('      `node 01_Source/tests/run-all.js --tsf-live` with PIME_IME_LIVE=1: the report is written to');
+  console.log('      02_Verification/ime-live-report.txt');
+}
+
 // ---- 3. the build transcript and the artefact -------------------------------------------------------------------
 // The transcript has to describe the artefact that is on the disk (the evidence cross-check compares the two).
 const logPath = path.join(root, '02_Verification', 'installer-build.log');

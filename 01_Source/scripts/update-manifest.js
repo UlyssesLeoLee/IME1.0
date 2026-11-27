@@ -222,6 +222,8 @@ const ADDITIONS = [
   '02_Verification/mutation-report.txt',
   // the evidence of the installer crate (the claims block cites it: evidence_setup_log)
   '02_Verification/setup-test-result.txt',
+  // the record of the live step (the real input method) and of what is still missing there
+  '02_Verification/ime-live-log.md',
   // the plan of the refactor and the checkable bar of "commercial grade"
   '01_Source/docs/REFACTOR_PLAN.md',
   // the modules of the first refactor phase: the two god-files of the text service were split into these

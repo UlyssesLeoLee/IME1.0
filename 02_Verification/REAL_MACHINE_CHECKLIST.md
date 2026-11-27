@@ -150,6 +150,13 @@
 >
 > **4.2.15 的前提**：装的是 **0.3.4**（旧 DLL 不会自己摘语言档）；而且 §「怎么换上新 DLL」里那份
 > **每用户 COM 覆盖**（`%LOCALAPPDATA%\IME1.0-dev16\pime_tsf.dll`）也要换成 0.3.4 的，否则测的是旧行为。
+>
+> **自动化能不能代劳**：4.2.13 / 4.2.14 有**真机**用例（`tests/tsf/ime_live.rs`），但它是 opt-in 的
+> （要抢桌面焦点、且机器上装了这个产品才跑得起来）⇒ **装好之后跑一次**：
+> `set PIME_IME_LIVE=1` → `node 01_Source/tests/run-all.js --tsf-live`
+> ⇒ 报告会写进 `02_Verification/ime-live-report.txt`。
+> **为什么这一条还需要人**：卸载之后语言列表里那三个档到底还在不在，**自动化看不到**（它要看 Windows 的语言列表）⇒ 4.2.15 只能靠人。
+> 这一步现在是什么状态、差什么，见 `02_Verification/ime-live-log.md`。
 
 ## 四之三、三个本地工具（面板里那三行）
 
