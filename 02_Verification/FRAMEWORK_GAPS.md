@@ -2647,7 +2647,7 @@ D-49 说「`pime-ipc` 的 DACL 掩码含 `FILE_CREATE_PIPE_INSTANCE` ⇒ 同用�
 
 #### 5.45.4 这一轮的门禁（2026-11-27 23:39 → 2026-11-28 00:09）
 
-**17 步全绿**：core **462** / TSF **410** / TASE + pime-ipc **16 crates 1206** / agent **85** / JavaScript **357** /
+**18 步全绿**：core **462** / TSF **410** / TASE + pime-ipc **16 crates 1206** / agent **85** / JavaScript **357** /
 安装器 crate **127**；红绿轮**一轮全抓**（0 missed / 0 unknown / 0 stale；报告头自己写
 「all 77 mutations of the implementation were checked in this round」，**个数只由工具说**，文档不手抄）；
 三道 claims 校验、交付数字校验（**0 problem(s)**）、语法检查（**103/103**）、
