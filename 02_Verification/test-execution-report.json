@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-27T19:59:06.551Z",
+  "generated": "2026-11-27T21:51:34.037Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -70,10 +70,10 @@
     "rust"
    ],
    "tests": [
-    "rust: install_plan::tests::ut_002_selection_errors_and_subsets",
-    "install_plan::tests::ut_002_selection_errors_and_subsets",
     "rust: install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
-    "install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles"
+    "install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
+    "rust: install_plan::tests::ut_002_selection_errors_and_subsets",
+    "install_plan::tests::ut_002_selection_errors_and_subsets"
    ],
    "failed": [],
    "reason": ""
@@ -156,10 +156,10 @@
    "tests": [
     "js: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
     "UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
-    "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
-    "candidate::tests::ut_007_usage_breaks_ties_before_weight",
     "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
-    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable"
+    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
+    "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "candidate::tests::ut_007_usage_breaks_ties_before_weight"
    ],
    "failed": [],
    "reason": ""

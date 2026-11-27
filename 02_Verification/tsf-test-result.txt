@@ -1,85 +1,13 @@
 
-running 3 tests
-test the_window_goes_above_the_caret_when_there_is_no_room_below ... ok
-test the_candidates_stay_inside_the_work_area_at_two_hundred_percent ... ok
-test the_language_of_the_code_does_not_follow_the_language_of_the_interface ... ok
-
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-
 running 6 tests
-test the_natural_language_input_takes_the_row_a_digit_names ... ok
-test the_natural_language_input_selects_with_tab_and_takes_with_enter ... ok
 test the_code_input_leaves_the_code_characters_to_the_host ... ok
+test the_natural_language_input_selects_with_tab_and_takes_with_enter ... ok
 test ctrl_f12_switches_the_mode_and_the_keys_follow ... ok
-test the_natural_language_input_walks_the_list_with_the_arrows ... ok
+test the_natural_language_input_takes_the_row_a_digit_names ... ok
 test the_natural_language_input_takes_a_candidate_with_space_and_enter ... ok
+test the_natural_language_input_walks_the_list_with_the_arrows ... ok
 
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-
-running 3 tests
-test an_answered_request_never_triggers_the_watchdog ... ok
-test a_core_that_does_not_answer_does_not_interrupt_the_raw_keystrokes ... ok
-test the_core_isolates_a_request_that_never_gets_an_answer ... ok
-
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
-
-
-
-running 4 tests
-test a_keystroke_of_a_real_application_reaches_the_text_service ... ok
-test an_unknown_class_is_refused_and_nothing_is_left_behind ... ok
-test the_text_service_survives_an_activation_without_a_host ... ok
-test the_class_object_of_the_dll_yields_the_text_service ... ok
-
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-
-running 4 tests
-test every_scenario_of_the_table_is_reachable_from_the_ledger ... ok
-test the_ledger_covers_every_module_of_the_text_service ... ok
-test the_function_ids_are_unique ... ok
-test every_function_of_the_input_method_names_a_test_that_exists ... ok
-
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-
-running 4 tests
-test the_plan_of_the_installation_names_only_our_own_keys ... ok
-test the_three_profiles_of_the_product_are_the_same_before_and_after_the_installation ... ok
-test a_failed_installation_leaves_the_other_input_methods_untouched ... ok
-test it_002_installing_switching_and_removing_leaves_every_other_input_method_untouched ... ok
-
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-
-running 9 tests
-test the_input_method_comes_alive_when_its_profile_is_activated ... ok
-test the_context_of_the_client_that_owns_the_sink_receives_the_keys ... ok
-test the_input_method_is_the_input_processor_of_the_real_notepad ... ok
-test the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document ... ok
-test the_plain_edit_control_receives_the_input_method ... ok
-test the_microsoft_text_service_takes_the_keys_in_the_same_host ... ok
-test the_mode_chord_is_eaten_by_the_text_service ... ok
-test the_real_keyboard_reaches_the_window_procedure_of_the_host ... ok
-test the_text_service_of_this_build_cannot_take_the_key_sink ... ok
-
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-
-running 3 tests
-test the_secure_desktop_collects_nothing_either ... ok
-test it_005_a_secure_field_sends_no_context_asks_no_ai_and_caches_no_text ... ok
-test a_field_that_turns_into_a_password_field_clears_the_candidates_and_the_text ... ok
-
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 
 
@@ -97,4 +25,76 @@ test it_013_with_the_bridge_the_write_needs_l3 ... ok
 test it_013_without_the_bridge_only_the_nearby_part_is_held ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+
+
+running 4 tests
+test a_keystroke_of_a_real_application_reaches_the_text_service ... ok
+test an_unknown_class_is_refused_and_nothing_is_left_behind ... ok
+test the_class_object_of_the_dll_yields_the_text_service ... ok
+test the_text_service_survives_an_activation_without_a_host ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+
+running 3 tests
+test the_secure_desktop_collects_nothing_either ... ok
+test it_005_a_secure_field_sends_no_context_asks_no_ai_and_caches_no_text ... ok
+test a_field_that_turns_into_a_password_field_clears_the_candidates_and_the_text ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+
+running 4 tests
+test every_scenario_of_the_table_is_reachable_from_the_ledger ... ok
+test the_ledger_covers_every_module_of_the_text_service ... ok
+test the_function_ids_are_unique ... ok
+test every_function_of_the_input_method_names_a_test_that_exists ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+
+running 3 tests
+test an_answered_request_never_triggers_the_watchdog ... ok
+test a_core_that_does_not_answer_does_not_interrupt_the_raw_keystrokes ... ok
+test the_core_isolates_a_request_that_never_gets_an_answer ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+
+running 4 tests
+test the_three_profiles_of_the_product_are_the_same_before_and_after_the_installation ... ok
+test the_plan_of_the_installation_names_only_our_own_keys ... ok
+test a_failed_installation_leaves_the_other_input_methods_untouched ... ok
+test it_002_installing_switching_and_removing_leaves_every_other_input_method_untouched ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+
+running 3 tests
+test the_window_goes_above_the_caret_when_there_is_no_room_below ... ok
+test the_candidates_stay_inside_the_work_area_at_two_hundred_percent ... ok
+test the_language_of_the_code_does_not_follow_the_language_of_the_interface ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+
+running 9 tests
+test the_input_method_comes_alive_when_its_profile_is_activated ... ok
+test the_context_of_the_client_that_owns_the_sink_receives_the_keys ... ok
+test the_real_keyboard_reaches_the_window_procedure_of_the_host ... ok
+test the_keys_reach_the_text_service_and_the_candidate_lands_in_the_document ... ok
+test the_microsoft_text_service_takes_the_keys_in_the_same_host ... ok
+test the_mode_chord_is_eaten_by_the_text_service ... ok
+test the_plain_edit_control_receives_the_input_method ... ok
+test the_input_method_is_the_input_processor_of_the_real_notepad ... ok
+test the_text_service_of_this_build_cannot_take_the_key_sink ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 

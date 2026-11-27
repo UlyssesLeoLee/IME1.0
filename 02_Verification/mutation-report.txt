@@ -1,4 +1,4 @@
-# The red-green check of 2026-11-27T19:29:27.825Z
+# The red-green check of 2026-11-27T21:21:54.955Z
 # all 77 mutations of the implementation were checked in this round; every one of them is restored right after it is applied.
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -35,10 +35,11 @@ CAUGHT f1-progress [NFR-203 / ST-040] the tab says that it is working while the 
 CAUGHT f1-first-candidate [NFR-203 / ST-040] the first candidate of the F1 path becomes ready
 CAUGHT f1-cancel [UT-070 / NFR-203] a cancelled F1 request leaves the tab idle, not in error
 CAUGHT ime-context-window [IT-013 / FR-013] the text service keeps a window of what was typed, not all of it
+note: ime-context-window: the test binaries were copied out of the directory the scanner watches and ran there (10 binaries); 1 binary/binaries were damaged by the scanner and linked again
 CAUGHT ime-context-collect [IT-013 / FR-013] the text service collects the characters the user typed
 CAUGHT ime-direct-observing [IT-013 / FR-015] the host that grants the nearby range switches the machine to observing
 CAUGHT grants-scope [IT-013 / UT-029] a grant of one level does not stand in for another one
-note: grants-scope: the test binaries were copied out of the directory the scanner watches and ran there (10 binaries); 2 binary/binaries were damaged by the scanner and linked again
+note: grants-scope: the test binaries were copied out of the directory the scanner watches and ran there (10 binaries); 1 binary/binaries were damaged by the scanner and linked again
 CAUGHT clipboard-clean [D-97 / D-120（剪贴板）] the text of the clipboard is trimmed: no NUL at the end of the buffer, no spaces around it
 CAUGHT hit-lens-is-not-the-light [D-103（激光口贴边，命中区跟着光缝走）/ FR-041] the lens is the round opening of the mouth; the light is the slit on the edge of the screen
 CAUGHT hit-row-under-the-mouse [FR-041 / UT-055（悬浮框与它的行）] the row under the mouse is the one whose rectangle holds the point
