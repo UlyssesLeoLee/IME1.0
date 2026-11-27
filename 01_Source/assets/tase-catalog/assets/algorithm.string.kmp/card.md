@@ -73,7 +73,7 @@ kmp_search(text, pattern):
 
 ## 实现注意
 
-- 优先标准库/成熟库：Rust 标准库提供 `str::find`/`str::match_indices`（内部即为高效实现），生产代码不要手写 KMP
+- 优先标准库/成熟库：生产代码优先用 Rust 标准库的 `str::find`/`str::match_indices`（内部即为高效实现）；但本 catalog 里的实现仍要手写——这个 catalog 的定位正是把前缀函数与失配回退写清楚并测出来，不是为了替换标准库；本资产登记的 Rust 实现在 `01_Source/crates/tase-impls/src/algorithm/string.rs`（`pub fn kmp<T: PartialEq>(text: &[T], pattern: &[T]) -> Result<Vec<usize>, String>`），manifest 登记其状态为 `TESTED`（有测试清单，尚未人工认证）
 - 复杂度：时间 O(n + m)，额外空间 O(m)（前缀表）
 - 稳定性：不适用
 - 内存：前缀表 O(m)；模式串很大时表也要相应增大

@@ -68,7 +68,7 @@ pub fn binary_search<T: Ord>(a: &[T], target: &T) -> Result<usize, usize> {
 
 ## 实现注意
 
-- 优先标准库：Rust 的 `slice::binary_search` / `binary_search_by` 已实现且经过验证，不要手写
+- 优先标准库：生产代码优先用 Rust 的 `slice::binary_search` / `binary_search_by`，它们已实现且经过验证；但本 catalog 里的实现仍要手写——这个 catalog 的定位正是把二分的中点选取与区间收缩写清楚并测出来，不是为了替换标准库；本资产登记的 Rust 实现在 `01_Source/crates/tase-impls/src/algorithm/searching.rs`（`pub fn binary_search<T: Ord>(items: &[T], target: &T) -> Result<Option<usize>, SearchingError>`），manifest 登记其状态为 `TESTED`（有测试清单，尚未人工认证）
 - 复杂度：时间 O(log n)，额外空间 O(1)
 - 稳定性：不适用
 - 内存：O(1) 额外空间，不需要复制数据

@@ -62,7 +62,7 @@ quickselect(a, k):                   // 第 k 小（0 基）
 
 ## 实现注意
 
-- 优先标准库：Rust 的 `slice::select_nth_unstable`（自 1.49 起）就是 quickselect 的实现，不要手写
+- 优先标准库：生产代码优先用 Rust 的 `slice::select_nth_unstable`（自 1.49 起），它就是 quickselect 的实现；但本 catalog 里的实现仍要手写——这个 catalog 的定位正是把分区与枢轴选择写清楚并测出来，不是为了替换标准库；本资产登记的 Rust 实现在 `01_Source/crates/tase-impls/src/algorithm/sorting.rs`（`pub fn quickselect<T: Ord + Clone>(items: &mut [T], k: usize) -> Result<T, SortingError>`），manifest 登记其状态为 `TESTED`（有测试清单，尚未人工认证）
 - 复杂度：平均 O(n)，最坏 O(n²)，额外空间 O(1)（迭代写法）
 - 稳定性：不适用（只返回单个元素）
 - 内存：原地，几乎不额外分配

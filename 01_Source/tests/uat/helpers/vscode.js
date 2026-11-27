@@ -85,10 +85,43 @@ class VsCode {
   // ---------------------------------------------------------------- quick input (command palette, pick lists, input boxes)
   get quick() { return this.page.locator('.quick-input-widget'); }
   async quickVisible() { return this.quick.isVisible().catch(() => false); }
-  async quickRows() { return (await this.page.locator('.quick-input-list .monaco-list-row').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim()); }
+  // Only the rows that are on screen: the quick input keeps the rows of the previous run in the DOM, and a stale
+  // row would be read as if it were the current list (07-secret-files reads the FIRST row of the list).
+  async quickRows() { return (await this.page.locator('.quick-input-list .monaco-list-row:visible').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim()); }
   async quickTitle() { return (await this.page.locator('.quick-input-title').innerText().catch(() => '')).trim(); }
+  // The quick input keeps the rows of the previous run in the DOM. They are hidden, but they still carry the text
+  // of the command that ran last - and the same command runs twice in a row all the time (every test closes the
+  // editors first). A locator that ignores visibility therefore resolves to a row that is not on screen, and
+  // waiting for it never ends: the 8 s timeout used to fire on a command that was on screen all along.
+  quickRow(text) { return this.page.locator('.quick-input-list .monaco-list-row:visible', {hasText: text}).first(); }
+  // VS Code draws the description of the row under the pointer in a floating context view (div.context-view), and
+  // that overlay lands right on top of the NEXT row: the rows are 22 px apart, the overlay is 25 px tall. A click
+  // then hits the overlay instead of the row and Playwright retries the click until the whole spec times out.
+  // Move the pointer off the list first - what a user does - and wait until the overlay is gone. Escape is NOT the
+  // way to close it: the overlay has no focus, so Escape would close the quick input instead.
+  async clearFloatingOverlay(timeout = 3000) {
+    await this.page.mouse.move(4, 4);
+    await this.page.locator('.context-view:visible').first().waitFor({state: 'hidden', timeout}).catch(() => {});
+  }
+  // Clicking a row of the quick input: the list is rebuilt when its items change, so the row is looked up again for
+  // every try instead of keeping a node that may be gone. A click that is swallowed must fail fast - with the
+  // element that was in the way - instead of blocking until the whole spec times out.
+  async clickQuickRow(row, label, {timeout = 8000} = {}) {
+    const end = Date.now() + timeout;
+    let last = null;
+    while (Date.now() < end) {
+      try {
+        await row.waitFor({state: 'visible', timeout: Math.max(500, end - Date.now())});
+        await this.clearFloatingOverlay();
+        await row.click({timeout: 5000});
+        return;
+      } catch (e) { last = e; await sleep(250); }
+    }
+    throw new Error(`could not click the quick-input row "${label}": ${String(last && last.message).split('\n').slice(0, 6).join(' | ')}`);
+  }
   // A shortcut can be lost while focus is in limbo (for example right after a webview panel was closed): retry, giving the workbench focus.
   async openQuick(keys) {
+    await this.clearFloatingOverlay();    // a floating widget would eat the shortcut and the Enter below
     for (let attempt = 1; attempt <= 4; attempt++) {
       await this.page.keyboard.press(keys);
       try { await this.quick.waitFor({state: 'visible', timeout: 3000}); return; }
@@ -104,7 +137,7 @@ class VsCode {
   async cmd(title) {
     await this.openQuick('Control+Shift+P');
     await this.page.keyboard.type(title, {delay: 5});
-    await this.page.locator('.quick-input-list .monaco-list-row', {hasText: title}).first().waitFor({timeout: 8000});
+    await this.quickRow(title).waitFor({state: 'visible', timeout: 8000});
     await this.page.keyboard.press('Enter');
     // The palette can stay on screen for a moment after Enter (seen on VS Code 1.144): wait until it is gone or has been replaced
     // by the picker/input the command opens, so callers never read the palette rows by mistake.
@@ -116,8 +149,7 @@ class VsCode {
     }, undefined, {timeout: 6000}).catch(() => {});
   }
   async pickRow(text, {timeout = 8000} = {}) {
-    const row = this.page.locator('.quick-input-list .monaco-list-row', {hasText: text}).first();
-    await row.waitFor({timeout}); await row.click();
+    await this.clickQuickRow(this.quickRow(text), text, {timeout});
   }
   async inputBox(value, {timeout = 8000} = {}) {
     const box = this.page.locator('.quick-input-box input');
@@ -144,9 +176,8 @@ class VsCode {
     await this.openQuick('Control+P');
     await this.page.keyboard.type(name, {delay: 5});
     const base = path.basename(name);
-    const exact = this.page.locator('.quick-input-list .monaco-list-row').filter({has: this.page.locator('.label-name', {hasText: new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)})}).first();
-    await exact.waitFor({timeout: 8000});
-    await exact.click();
+    const exact = this.page.locator('.quick-input-list .monaco-list-row:visible').filter({has: this.page.locator('.label-name', {hasText: new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)})}).first();
+    await this.clickQuickRow(exact, base, {timeout: 8000});
     await this.page.locator('.tab.active', {hasText: base}).first().waitFor({timeout: 10000});
     // Wait for a VISIBLE editor: a closed editor group can still be in the DOM, and waiting for a hidden one
     // never ends (no timeout on a plain waitFor). Bounded, so a transient state is an error, not a hang.
@@ -182,10 +213,43 @@ class VsCode {
   }
   async goto(line, col = 1) { await this.openQuick('Control+G'); await this.page.keyboard.type(`${line}:${col}`); await this.page.keyboard.press('Enter'); await sleep(150); }
   async end() { await this.page.keyboard.press('Control+End'); }
-  async type(text, delay = 12) { await this.page.keyboard.type(text, {delay}); }
+  // The keystrokes are queued in the renderer: when VS Code is busy, the document is updated a moment after the keys
+  // were sent, so a read right after them still shows the old text - a typing that seems to have lost its last
+  // characters. Wait until the text is really in the editor.
+  async type(text, delay = 12) {
+    await this.page.keyboard.type(text, {delay});
+    const needle = text.replace(/\n+$/, '');            // a trailing line break is not a character of the text
+    if (!needle) return;
+    const end = Date.now() + 5000;
+    let t = '';
+    while (Date.now() < end) { t = await this.editorText(); if (t.includes(needle)) return t; await sleep(100); }
+    throw new Error(`the typed text did not reach the editor: ${JSON.stringify(text)}; the editor shows ${JSON.stringify(t.slice(-160))}`);
+  }
   async isActiveTabDirty() { return this.page.locator('.tab.active.dirty').count().then(n => n > 0); }
   async dirtyTabs() { return this.page.locator('.tab.dirty').count(); }
-  async undo() { await this.page.keyboard.press('Control+Z'); await sleep(250); }
+  async undo() {
+    // The undo reaches the model first and the rendered lines a tick later, so a read right after the keystroke can
+    // still show the text from before the undo - the "one Ctrl+Z did not undo" flake. Wait until the rendered text
+    // has changed and stopped changing again; the assertions of the callers stay exactly as strict as they were.
+    const before = await this.editorText().catch(() => '');
+    await this.page.keyboard.press('Control+Z');
+    const end = Date.now() + 8000;
+    let last = before, changed = false, stableSince = Date.now();
+    while (Date.now() < end) {
+      await sleep(150);
+      const now = await this.editorText().catch(() => last);   // a read that fails is not a change
+      if (now !== last) { last = now; changed = true; stableSince = Date.now(); continue; }
+      if (Date.now() - stableSince >= (changed ? 400 : 600)) return now;   // settled: a change, or nothing to undo
+    }
+    return last;
+  }
+  // Monaco applies an edit to the model and repaints the lines a tick later, so "the editor shows X" has to be
+  // waited for, not read once. The wait is bounded and says what was on screen when it gave up.
+  async waitEditorTextEquals(expected, timeout = 8000) {
+    const end = Date.now() + timeout; let t = '';
+    while (Date.now() < end) { t = await this.editorText(); if (t === expected) return t; await sleep(150); }
+    throw new Error(`editor text never became the expected text; last: ${JSON.stringify(t.slice(0, 300))}`);
+  }
   async save() { await this.page.keyboard.press('Control+S'); await sleep(400); }
   ghostText() { return this.page.evaluate(() => [...document.querySelectorAll('.ghost-text-decoration, .ghost-text')].map(e => e.textContent).join('')); }
   // ---------------------------------------------------------------- F1 panel (webview)

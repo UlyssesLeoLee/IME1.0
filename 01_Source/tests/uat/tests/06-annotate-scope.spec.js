@@ -75,6 +75,17 @@ async function highlightedLines() {
 }
 const range = (a, b) => Array.from({length: b - a + 1}, (_, i) => a + i);
 const withoutComments = text => text.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+// Monaco repaints the decoration overlay a tick after the model changes, so a read right after Apply can still show
+// the old highlight. Wait until the overlay really shows the expected lines; the assertion below stays as strict.
+async function waitHighlightedLines(expected, timeout = 8000) {
+  const end = Date.now() + timeout; let last = [];
+  while (Date.now() < end) {
+    last = await highlightedLines();
+    if (last.length === expected.length && last.every((n, i) => n === expected[i])) return last;
+    await sleep(150);
+  }
+  throw new Error(`highlighted lines never became ${JSON.stringify(expected)}; last: ${JSON.stringify(last)}`);
+}
 
 test('UAT-42 [ANN-77] AI off: the annotate tab says so, nothing is asked, nothing is sent', async () => {
   await openF1('sc1.rs');
@@ -102,7 +113,7 @@ test('UAT-43 [ANN-60] no selection inside a function: that function is the scope
   expect(req.input.scope).toEqual({kind: 'declaration', label: 'fn parse_header', startLine: 12, endLine: 22});
   expect(req.input.numbered.split('\n').length).toBe(11); expect(req.input.file).toBe(RUST);
   expect(req.body.max_output_tokens).toBeGreaterThanOrEqual(3000);
-  expect(await highlightedLines()).toEqual(range(12, 22));
+  expect(await waitHighlightedLines(range(12, 22))).toEqual(range(12, 22));
   // the proposal: comment lines only, nothing removed, nothing written yet
   const lines = await hunkLines();
   expect(lines.filter(l => l.del).length).toBe(0);
@@ -122,7 +133,7 @@ test('UAT-44 [ANN-61] a selection: exactly the selected lines are the scope, wha
   const req = scopeRequests()[0];
   expect(req.input.scope).toEqual({kind: 'selection', label: 'selection', startLine: 14, endLine: 18});
   expect(req.input.numbered.split('\n').length).toBe(5);
-  expect(await highlightedLines()).toEqual(range(14, 18));
+  expect(await waitHighlightedLines(range(14, 18))).toEqual(range(14, 18));
   await app.panelFrame.locator('#apply-annotate').click();
   await expect(app.panelFrame.locator('#banner')).toContainText(/Applied to the editor buffer \(not saved\)/);
   await app.openFile('sc3.rs');
@@ -144,7 +155,7 @@ test('UAT-45 [ANN-62] Wider moves up the chain without sending anything; Generat
   await app.waitPanelStatus('annotate', /idle/);
   await expectScope('Scope: impl Parser (lines 7-23, 17 lines)');
   expect(scopeRequests().length).toBe(1);                                      // changing the scope sends nothing
-  expect(await highlightedLines()).toEqual(range(7, 23));
+  expect(await waitHighlightedLines(range(7, 23))).toEqual(range(7, 23));
   await app.panelFrame.locator('#ann-wider').click();
   await expectScope('Whole file: lines 1-23 (23 lines)');
   await expect(app.panelFrame.locator('#ann-wider')).toBeDisabled();           // the end of the chain
@@ -167,7 +178,7 @@ test('UAT-46 [ANN-69] Apply writes the selected blocks as ONE undo step: the cod
   await app.panelFrame.locator(`#cb-annotate-${ids[0]}`).uncheck();            // leave the first block out
   await app.panelFrame.locator('#apply-annotate').click();
   await expect(app.panelFrame.locator('#banner')).toContainText(/Applied to the editor buffer \(not saved\)/);
-  expect(await highlightedLines()).toEqual([]);                                // the highlight is cleared after Apply
+  expect(await waitHighlightedLines([])).toEqual([]);                          // the highlight is cleared after Apply
   await app.openFile('sc5.rs');
   const text = await app.editorText();
   expect(text).toContain('// Explains line 3 of this scope for a beginner.');
@@ -176,7 +187,8 @@ test('UAT-46 [ANN-69] Apply writes the selected blocks as ONE undo step: the cod
   expect(await app.isActiveTabDirty()).toBe(true);
   expect(fs.readFileSync(app.userFile('sc5.rs'), 'utf8')).toBe(RUST);          // disk untouched
   await app.undo();                                                            // ONE Ctrl+Z
-  expect(await app.editorText()).toBe(RUST);
+  await app.waitEditorTextEquals(RUST);                                        // the undo reaches the rendered lines a tick later
+  expect(await app.editorText()).toBe(RUST);                                   // ONE Ctrl+Z restored the original
   await app.screenshot('annotate-after-undo');
 });
 

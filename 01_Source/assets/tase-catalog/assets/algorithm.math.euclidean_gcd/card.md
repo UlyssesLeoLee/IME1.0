@@ -61,7 +61,7 @@ pub fn gcd(mut a: u64, mut b: u64) -> u64 {
 
 ## 实现注意
 
-- 优先标准库：Rust 有 `u64::gcd`（`num_integer` trait，Rust 1.x 起内置于 `std::num`），不要手写
+- 优先标准库：生产代码优先用 Rust 的 `u64::gcd`（整数的**固有方法**，Rust 1.7 起稳定；`num_integer` 是第三方 crate 的 trait，`std::num` 里并没有 `gcd`），它已是成熟实现；但本 catalog 里的实现仍要手写——这个 catalog 的定位正是把辗转相除的取余与规模收缩写清楚并测出来，不是为了替换标准库；本资产登记的 Rust 实现在 `01_Source/crates/tase-impls/src/algorithm/math.rs`（`pub fn euclidean_gcd(a: u64, b: u64) -> u64`），manifest 登记其状态为 `TESTED`（有测试清单，尚未人工认证）
 - 复杂度：时间 O(log min(a, b))（最坏情况为斐波那契输入），空间 O(1)
 - 稳定性：不适用
 - 内存：常数

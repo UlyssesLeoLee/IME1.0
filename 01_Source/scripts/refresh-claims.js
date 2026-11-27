@@ -10,7 +10,9 @@
 //   - the size of the stub and of every entry of the payload (read out of the installer itself, by an independent
 //     reader of the payload format - a hand-written number there is a number that drifts);
 //   - the test counts of the evidence logs (the core, the TSF crate, the agent crate, the TASE crates, the
-//     JavaScript suite and the installer crate).
+//     JavaScript suite and the installer crate);
+//   - the counts of the acceptance table of the refactor plan (the same numbers: a number written by hand there
+//     drifts the moment a test is added, and the delivery check then fails on a document that is merely stale).
 //
 // Every number is read from a product: the artefact on the disk and the logs of the last gate round. A pattern
 // that is not found is an error, not a silent skip: a renamed section must not leave a stale number behind.
@@ -26,6 +28,7 @@ const FILES = {
   readme: path.join(root, 'README_交付说明.md'),
   installer: path.join(root, '01_Source', 'docs', 'INSTALLER.md'),
   checklist: path.join(root, '02_Verification', 'REAL_MACHINE_CHECKLIST.md'),
+  plan: path.join(root, '01_Source', 'docs', 'REFACTOR_PLAN.md'),
 };
 
 // ---- the claims block says which artefact and which logs are meant ---------------------------------------------
@@ -234,6 +237,14 @@ prose('readme', /安装器 crate \*\*(\d+)( \/ \d+\*\*)/, totalSetup(), 'README 
 
 // INSTALLER.md: the count of the installer crate
 prose('installer', /安装器 \*\*(\d+)( 项\*\*)/, totalSetup(), 'INSTALLER.md installer count');
+
+// the refactor plan: the acceptance table quotes the counts of the last round (a number written by hand here
+// drifts the moment a test is added, and the delivery check then fails on a document that is merely out of date)
+prose('plan', /Rust 核心 (\d+) 项/, counts.rust_core_tests, 'plan core count');
+prose('plan', /TSF (\d+) 项/, counts.rust_tsf_tests, 'plan tsf count');
+prose('plan', /TASE (\d+) 项/, counts.rust_tase_tests, 'plan tase count');
+prose('plan', /agent (\d+) 项/, counts.rust_agent_tests, 'plan agent count');
+prose('plan', /JS (\d+) 项/, counts.js_tests, 'plan js count');
 
 // the checklist: the digest the human checks before installing
 prose('checklist', /(（)([\d,]+)( 字节，sha256 `)[0-9a-f]{64}(`；)/, sizeText, 'checklist size', 2);

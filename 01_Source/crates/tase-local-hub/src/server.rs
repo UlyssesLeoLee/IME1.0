@@ -224,9 +224,9 @@ pub struct ConnectionInfo {
 /// What the Hub knows about a job that is not finished.
 ///
 /// The record carries the request of the job (the worker needs it to run the job) and its result
-/// (the client needs it to show the diff). The JSON of the request and of the result is not `Eq`
-/// (a number is a float), so the record is `PartialEq` and not `Eq`.
-#[derive(Clone, Debug, PartialEq)]
+/// (the client needs it to show the diff). The record is `Eq`: its payload is compared by a rule
+/// that is total, so a record is always equal to itself.
+#[derive(Clone, Debug)]
 pub struct JobRecord {
     /// The id of the job.
     pub job_id: JobId,
@@ -281,6 +281,36 @@ impl JobRecord {
         }
     }
 }
+
+/// The record is compared field by field, and its payload by `Json::eq_total`.
+///
+/// The comparison is not derived, because the derived one is not reflexive: `Json` is not `Eq` (a
+/// number can be NaN), and a record that carries such a number would not be equal to itself.
+impl PartialEq for JobRecord {
+    fn eq(&self, other: &Self) -> bool {
+        let same_result = match (&self.result, &other.result) {
+            (None, None) => true,
+            (Some(left), Some(right)) => left.eq_total(right),
+            _ => false,
+        };
+        self.job_id == other.job_id
+            && self.job_type == other.job_type
+            && self.agent_id == other.agent_id
+            && self.session_id == other.session_id
+            && self.workspace_id == other.workspace_id
+            && self.idempotency_key == other.idempotency_key
+            && self.request_digest == other.request_digest
+            && self.status == other.status
+            && self.created_at_ms == other.created_at_ms
+            && self.updated_at_ms == other.updated_at_ms
+            && self.request.eq_total(&other.request)
+            && same_result
+    }
+}
+
+/// `Eq` is sound here: every field compares by value, and the payload of the job compares by a
+/// rule that is total, so a record is always equal to itself.
+impl Eq for JobRecord {}
 
 /// The record of a job that the Hub handed to a worker and that is not reported yet.
 ///
@@ -2867,6 +2897,55 @@ mod tests {
                 .and_then(|request| request.get("plan_digest")),
             Some(&Json::str("sha256:plan")),
             "the worker finds the request of the job in the handout"
+        );
+    }
+
+    /// The record of a job, with the payload that the test needs.
+    fn record_with(request: Json, result: Option<Json>) -> JobRecord {
+        JobRecord {
+            job_id: JobId::new("job_one").expect("a legal id"),
+            job_type: "preview".to_string(),
+            agent_id: AgentId::new("agent_one").expect("a legal id"),
+            session_id: SessionId::new("sess_one").expect("a legal id"),
+            workspace_id: WorkspaceId::new("ws_one").expect("a legal id"),
+            idempotency_key: "key_one".to_string(),
+            request_digest: "digest_one".to_string(),
+            status: "QUEUED".to_string(),
+            created_at_ms: 1000,
+            updated_at_ms: 1000,
+            request,
+            result,
+        }
+    }
+
+    /// A record that carries a number that is not a number is still equal to itself.
+    ///
+    /// `Eq` promises that a value is equal to itself. `Json` is not `Eq` (a number can be NaN), so
+    /// the record compares its payload by a rule that is total.
+    #[test]
+    fn a_record_with_a_not_a_number_is_equal_to_itself() {
+        let record = record_with(Json::Num(f64::NAN), Some(Json::Num(f64::NAN)));
+        let same = record.clone();
+        assert_eq!(record, same, "a record is equal to itself");
+    }
+
+    /// Two records are equal when they carry the same payload, and are not when they do not.
+    #[test]
+    fn two_records_are_equal_when_their_payloads_are() {
+        assert_eq!(
+            record_with(Json::Num(f64::NAN), None),
+            record_with(Json::Num(f64::NAN), None),
+            "two records that carry the same payload are equal"
+        );
+        assert_ne!(
+            record_with(Json::Num(f64::NAN), None),
+            record_with(Json::Num(0.0), None),
+            "a number that is not a number is not the zero"
+        );
+        assert_ne!(
+            record_with(Json::str("a"), Some(Json::str("b"))),
+            record_with(Json::str("a"), Some(Json::str("c"))),
+            "two records that carry different results are not equal"
         );
     }
 }

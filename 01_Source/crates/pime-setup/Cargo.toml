@@ -21,6 +21,10 @@ path = "src/lib.rs"
 [[bin]]
 name = "pime-setup"
 path = "src/main.rs"
+# This binary has no unit tests (src/main.rs is a thin shim over the lib), but cargo still builds and runs a test harness for
+# every bin target. On this machine the antivirus damages that freshly linked harness exe, and the installer test step then
+# loses its whole run. `test = false` stops cargo from producing that harness, so the installer test run stays complete.
+test = false
 
 [[test]]
 name = "real_fs"

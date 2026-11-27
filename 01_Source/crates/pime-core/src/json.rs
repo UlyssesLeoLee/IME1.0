@@ -401,6 +401,34 @@ impl Json {
         matches!(self, Json::Null)
     }
 
+    /// Compares two values by a rule that is **total**: a value is always equal to itself.
+    ///
+    /// The derived `PartialEq` is not reflexive, because a number can be NaN and NaN is not equal
+    /// to itself. The parser never builds such a number (a non-finite number is a syntax error) and
+    /// the serializer writes one as `null`, but the variant of the number is public, so a value
+    /// that was built outside of the parser can carry one. Here two numbers that are both not
+    /// numbers are equal, and everything else compares as it does everywhere else.
+    ///
+    /// This is the comparison to use when a value has to be hashable or comparable inside a set:
+    /// the derived one would break the promise that a value equals itself.
+    pub fn eq_total(&self, other: &Json) -> bool {
+        match (self, other) {
+            (Json::Num(a), Json::Num(b)) => a == b || (a.is_nan() && b.is_nan()),
+            (Json::Arr(a), Json::Arr(b)) => {
+                a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.eq_total(y))
+            }
+            (Json::Obj(a), Json::Obj(b)) => {
+                a.len() == b.len()
+                    && a.iter()
+                        .zip(b)
+                        .all(|((a_key, a_value), (b_key, b_value))| {
+                            a_key == b_key && a_value.eq_total(b_value)
+                        })
+            }
+            _ => self == other,
+        }
+    }
+
     pub fn to_json_string(&self) -> String {
         let mut out = String::new();
         self.write(&mut out);
@@ -541,5 +569,25 @@ mod tests {
         );
         assert_eq!(Json::int(5).to_json_string(), "5");
         assert_eq!(Json::Num(0.5).to_json_string(), "0.5");
+    }
+
+    #[test]
+    fn the_total_comparison_says_a_value_equals_itself() {
+        // The derived comparison is not reflexive here: a number that is not a number is not equal
+        // to itself, so the derived `PartialEq` would break the promise of `Eq`.
+        let not_a_number = Json::Num(f64::NAN);
+        assert_ne!(not_a_number, not_a_number);
+        assert!(not_a_number.eq_total(&not_a_number));
+        assert!(Json::str("a").eq_total(&Json::str("a")));
+        assert!(!Json::str("a").eq_total(&Json::str("b")));
+    }
+
+    #[test]
+    fn the_total_comparison_walks_into_the_payload() {
+        let left = Json::obj(vec![("a", Json::Arr(vec![Json::Num(f64::NAN)]))]);
+        let right = Json::obj(vec![("a", Json::Arr(vec![Json::Num(f64::NAN)]))]);
+        assert!(left.eq_total(&right));
+        let other = Json::obj(vec![("a", Json::Arr(vec![Json::int(0)]))]);
+        assert!(!left.eq_total(&other));
     }
 }
