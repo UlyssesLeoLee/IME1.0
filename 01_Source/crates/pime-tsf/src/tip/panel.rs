@@ -30,7 +30,7 @@ enum MenuKind {
     Keymap,
     /// The symbol table: the symbols of the core, written into the document by a click.
     Symbols,
-    /// The text that is on the clipboard.
+    /// The text that is on the clipboard, and the texts that were copied before it.
     Clipboard,
     /// The date and the time of the machine.
     DateTime,
@@ -181,13 +181,7 @@ impl Inner {
                     )
                 })
                 .collect(),
-            MenuKind::Clipboard => crate::clipboard::entries()
-                .into_iter()
-                .map(|text| {
-                    let label: String = text.chars().take(40).collect();
-                    MenuItem::new(&label, MenuAction::InsertText(text))
-                })
-                .collect(),
+            MenuKind::Clipboard => crate::clipboard_history::menu_items(),
             MenuKind::DateTime => {
                 let now = now_text();
                 vec![MenuItem::new(&now, MenuAction::InsertText(now.clone()))]

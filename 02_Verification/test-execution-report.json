@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-27T12:42:52.195Z",
+  "generated": "2026-11-27T14:18:20.185Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -11,8 +11,8 @@
    "pass": 462
   },
   "tsf": {
-   "total": 402,
-   "pass": 402
+   "total": 410,
+   "pass": 410
   },
   "uat": {
    "total": 59,
@@ -87,10 +87,10 @@
     "rust"
    ],
    "tests": [
-    "rust: input::tests::ut_003_observing_does_not_consume_ordinary_characters_either",
-    "input::tests::ut_003_observing_does_not_consume_ordinary_characters_either",
     "rust: input::tests::ut_003_direct_never_consumes_ascii",
-    "input::tests::ut_003_direct_never_consumes_ascii"
+    "input::tests::ut_003_direct_never_consumes_ascii",
+    "rust: input::tests::ut_003_observing_does_not_consume_ordinary_characters_either",
+    "input::tests::ut_003_observing_does_not_consume_ordinary_characters_either"
    ],
    "failed": [],
    "reason": ""
@@ -448,10 +448,10 @@
    "tests": [
     "js: UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
     "UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
-    "rust: textrange::tests::ut_026_out_of_range_is_rejected",
-    "textrange::tests::ut_026_out_of_range_is_rejected",
     "rust: textrange::tests::ut_026_crlf_is_not_split",
     "textrange::tests::ut_026_crlf_is_not_split",
+    "rust: textrange::tests::ut_026_out_of_range_is_rejected",
+    "textrange::tests::ut_026_out_of_range_is_rejected",
     "rust: textrange::tests::ut_026_offset_round_trip",
     "textrange::tests::ut_026_offset_round_trip",
     "rust: textrange::tests::ut_026_positions_never_split_surrogates",
@@ -1079,10 +1079,10 @@
    "tests": [
     "rust: install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
     "install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
-    "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
-    "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
     "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
     "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
+    "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
+    "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
     "rust: install_plan::tests::ut_061_uninstall_removes_only_own_guids",
     "install_plan::tests::ut_061_uninstall_removes_only_own_guids"
    ],

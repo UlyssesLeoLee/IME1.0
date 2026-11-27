@@ -136,11 +136,11 @@ function runCopies(binaries, env, attempts = 3) {
       let run = start(copy);
       const out = `${run.stdout || ''}${run.stderr || ''}`;
       if (run.status !== 0 && run.status !== null && BLOCKED_EXECUTION.test(out) && attempts > 1) {
-        // The copy was quarantined as well. The scanner holds a file for a while and then lets it go, so the copy
-        // is tried again a few times (2026-11-25: seven copies were blocked at once, and the hold did not last
-        // forever - the gate must not call that a test result either way).
+        // The copy was quarantined as well. The scanner holds a file for **tens of seconds** (it is looking at it), so
+        // the wait has to be longer than that - a wait of a couple of seconds is always too short, and the retry then
+        // only repeats the failure (2026-11-27: the gate was red for that reason alone).
         for (let i = 2; i <= attempts; i++) {
-          const wait = 20000;
+          const wait = 45000 * i;
           const until = Date.now() + wait;
           while (Date.now() < until) { /* the scanner needs a moment */ }
           run = start(copy);

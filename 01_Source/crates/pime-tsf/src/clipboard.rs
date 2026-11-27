@@ -1,8 +1,8 @@
-//! The clipboard of Windows: the text that was copied, read on demand.
+//! The clipboard of Windows: the text that is on it, read on demand.
 //!
-//! The row 「剪贴板」 of the panel opens this: the text on the clipboard is offered and a click writes it into the
-//! document. **Nothing is written to the clipboard** and nothing is watched: the clipboard is read when the user
-//! asks for it, and only then.
+//! The row 「剪贴板」 of the panel opens the menu of [`crate::clipboard_history`]: the text that is on the clipboard
+//! now, and the texts that were copied before it (the history of the listener). **Nothing is written to the
+//! clipboard** and nothing is stored here: the clipboard is read when the user asks for it, and only then.
 
 use std::sync::Mutex;
 
@@ -19,7 +19,10 @@ static CLIPBOARD: Mutex<()> = Mutex::new(());
 ///
 /// It is a pure function of the raw text, so that the rule can be tested without touching the clipboard of the
 /// machine (the read itself is not a function of its arguments - the clipboard is the machine's).
-fn clean(raw: &str) -> Option<String> {
+///
+/// The history of the clipboard uses the same rule (`crate::clipboard_history`), so that a text of the history and
+/// the text of the clipboard are the same text.
+pub(crate) fn clean(raw: &str) -> Option<String> {
     let text = raw.trim_end_matches('\0').trim();
     if text.is_empty() {
         None
@@ -69,28 +72,14 @@ pub fn text() -> Option<String> {
     }
 }
 
-/// The entries of the clipboard: the text that is on it now, and the ones that were written before.
-///
-/// The history of a real clipboard needs a listener (a window that hears every change of the clipboard); this
-/// build has none, so the history is what the text service has seen itself. That is registered as a gap
-/// (D-97) and not hidden.
-pub fn entries() -> Vec<String> {
-    let mut out: Vec<String> = Vec::new();
-    if let Some(text) = text() {
-        out.push(text);
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Reading the clipboard never panics and never invents an entry.
+    /// Reading the clipboard never panics and never invents a text.
     #[test]
     fn the_clipboard_is_read_without_panicking() {
         let _ = text();
-        let _ = entries();
     }
 
     /// The text of the clipboard is the text the user copied: no NUL at the end of the buffer, no spaces around it.
@@ -114,23 +103,5 @@ mod tests {
         assert_eq!(clean("   "), None, "spaces are no text");
         assert_eq!(clean("\0"), None, "a NUL is no text");
         assert_eq!(clean(""), None);
-    }
-
-    /// The entries are the text of the clipboard, and there is at least none when the clipboard is empty.
-    #[test]
-    fn the_entries_are_the_text_of_the_clipboard() {
-        let entries = entries();
-        assert!(
-            entries.len() <= 1,
-            "without a listener there is only the current text"
-        );
-        for entry in &entries {
-            assert!(!entry.is_empty(), "an empty text is not an entry");
-            assert_eq!(
-                Some(entry.clone()),
-                clean(entry),
-                "an entry is the cleaned text of the clipboard"
-            );
-        }
     }
 }

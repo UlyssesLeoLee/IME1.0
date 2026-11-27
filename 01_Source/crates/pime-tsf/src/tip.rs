@@ -784,6 +784,10 @@ struct Inner {
     /// The window an AI agent sends its requests to. It exists exactly while the text service of this process is
     /// active, so an agent that finds it finds a running input method.
     bridge: Option<Bridge>,
+    /// The window that hears every change of the clipboard, so that the row 「剪贴板」 of the panel can offer what
+    /// the user copied and not only what is on the clipboard now. It exists exactly while the text service of this
+    /// process is active.
+    clipboard_listener: Option<crate::clipboard_history::ClipboardListener>,
     /// How many times the demonstration of the laser interface has run (the seed of the places of its mouths).
     demo_runs: u32,
 }

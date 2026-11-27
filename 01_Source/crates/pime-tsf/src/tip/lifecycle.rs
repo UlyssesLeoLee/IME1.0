@@ -242,6 +242,11 @@ impl Tip {
                     }
                 }))
             };
+            // The listener of the clipboard: a hidden window that hears every change of the clipboard, so that the
+            // row 「剪贴板」 of the panel can offer what the user copied and not only what is on the clipboard now.
+            // It is created with the text service and dies with it: no window of ours stays in the process when the
+            // input method is not running.
+            let clipboard_listener = crate::clipboard_history::ClipboardListener::start();
             *self.inner.borrow_mut() = Some(Inner {
                 thread_mgr: thread_mgr.clone(),
                 client_id,
@@ -262,6 +267,7 @@ impl Tip {
                 laser,
                 laser_hide,
                 bridge,
+                clipboard_listener,
                 demo_runs: 0,
             });
             // The laser interface comes on the screen with the text service.
@@ -389,6 +395,9 @@ impl Inner {
         // The bridge window of the AI agents goes with the text service: an agent that looks for it finds nothing and
         // says so. The window is destroyed here, on the thread that created it.
         self.bridge = None;
+        // The listener of the clipboard goes with the text service as well: the window that hears the changes of the
+        // clipboard must not stay in the process when the input method is not running.
+        self.clipboard_listener = None;
         // SAFETY: the advises made in `activate`; failures here cannot be acted on (the thread is going away).
         unsafe {
             if let Ok(keystrokes) = self.thread_mgr.cast::<ITfKeystrokeMgr>() {
