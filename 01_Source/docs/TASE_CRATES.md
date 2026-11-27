@@ -90,7 +90,7 @@ $env:CARGO_TARGET_DIR="C:\cargo-target-ime\tase-executor"
 $env:CARGO_BUILD_JOBS="1"; $env:CARGO_PROFILE_DEV_DEBUG="0"; $env:CARGO_INCREMENTAL="0"
 cd 01_Source\crates\tase-executor; cargo test; cargo clippy --all-targets -- -D warnings
 
-# 全部十四个 TASE crate（门禁的那一步）
+# 全部十五个 TASE crate 与 pime-ipc（门禁的那一步：每个 crate 各跑一遍）
 node 01_Source\tests\run-all.js --tase
 ```
 

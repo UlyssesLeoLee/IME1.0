@@ -134,12 +134,28 @@ Server (`Listener::bind` / `bind_current_user`):
 
   Test `it_003_pipe_acl_names_only_the_current_user` reads the DACL back from the live pipe (`GetSecurityInfo` + SDDL conversion) and asserts: protected DACL, a single ACE, this SID, this mask.
   Not `GA`: no `WRITE_DAC`, `WRITE_OWNER`, `DELETE`.
+- **Login session as the namespace (D-47, D-48).** The design book wants the pipe name to be namespaced by the **login session**
+  (DD 2.1 / TASE DD 17.2: "以 Windows 登录 SID 作为 namespace 计算本用户管道名"), not only by the user.
+  The crate can therefore bind in two ways:
+  - `Listener::bind_current_user` (the default): the name is `\\.\pipe\PIME-IPC-1-<user SID>` and the DACL names the **user SID** (above);
+  - `Listener::bind_logon_session[_with_prefix]`: the name is `\\.\pipe\<prefix>-<logon SID>` and the DACL names the **logon SID**
+    (`TokenLogonSid`, class 28, read with `GetTokenInformation`; the SID string is validated by the same strict validator).
+  `PipeName::with_prefix(prefix, sid)` builds a name for **any** namespace (the prefix is 1..=64 of `[A-Za-z0-9-]`),
+  so several subsystems can have their own pipe namespace without colliding.
 - **Measured trade-off (do not "tighten" without reading this).** The mask had to include `FILE_CREATE_PIPE_INSTANCE`: Windows checks the creation of every
   further instance against this DACL for the server's own token, and with `0x120083` (read/write data) and `0x120087` (plus create-instance) the server's
   second instance could not be created (`ERROR_ACCESS_DENIED` was observed with `0x120083`; clients after the first one got `Unavailable`). Consequence: another process **of the same user** can add an
   instance to the live pipe (test `it_003_same_user_process_can_add_an_instance_to_a_live_pipe_so_trust_rests_on_the_handshake`). Other users still cannot. What this lets a
-  same-user process do is limited by the handshake, see section 6. A hardened alternative (not done): create the instance pool at start-up, remove the right with
-  `SetSecurityInfo`, recycle instances with `DisconnectNamedPipe`; it needs a bounded flush before disconnecting.
+  same-user process do is limited by the handshake, see section 6.
+  **Measured further (2026-11-27, D-49)**: a pipe has **one** DACL — the one of the **first** instance. The `SECURITY_ATTRIBUTES` of the
+  later instances are ignored (read back: still the first instance's `0x12019f`), and the first instance's DACL cannot be changed afterwards
+  (`SetSecurityInfo` reports success and changes nothing). So "nobody of the same session may add an instance" and "the server serves in parallel"
+  **exclude each other on Windows**: removing `FILE_CREATE_PIPE_INSTANCE` leaves the server unable to create its own replacement instance
+  (`ERROR_ACCESS_DENIED`, pinned as the regression test `ut_ipc_the_server_needs_the_create_pipe_instance_right_to_replace_its_instance`),
+  and the concurrency drops to 1 (against NFR-016's "≥64 concurrent"). The three ways out are for the user to choose:
+  (a) pre-create the instance pool (the first instance still carries the right, so the exposure does not shrink);
+  (b) a single instance recycled with `DisconnectNamedPipe` (concurrency 1, needs a bounded flush before disconnecting);
+  (c) write it into the design book as a **known trade-off**.
 - **Session check.** After `ConnectNamedPipe` the server compares `GetNamedPipeClientSessionId` with its own session (`ProcessIdToSessionId`) and drops other-session
   clients (`ServerConfig::require_same_session`, default on; DD 2.1: "连接拒绝其他用户/会话"). Fail closed: if the client's session cannot be read, the client is refused.
 - PID, window title or a localhost address are not used for any decision (DD 2.1).
@@ -160,9 +176,9 @@ What the **ACL + endpoint flags** defend against:
 
 | Threat | Defence |
 |---|---|
-| another Windows user connecting (DD 16.1 "跨用户 IPC 访问") | DACL names only the user's SID (read back from the live pipe: tested). The refusal itself is NOT RUN (needs a second user) |
+| another Windows user connecting (DD 16.1 "跨用户 IPC 访问") | DACL names only the user's SID (read back from the live pipe: tested). With `bind_logon_session` it names the **login session's** SID instead, so the namespace is the session (DD 2.1 / TASE DD 17.2). The refusal itself is NOT RUN (needs a second user) |
 | a network client reaching the pipe | `PIPE_REJECT_REMOTE_CLIENTS` is set; its effect is NOT RUN (needs a second machine) |
-| another logon session of the same user | session id comparison; the refusal is NOT RUN (needs a second session) |
+| another logon session of the same user | session id comparison; **and** the logon-session binding puts the session into the pipe name and the DACL (the two are independent; the session comparison is the default on). The refusal is NOT RUN (needs a second session) |
 | pre-creating the pipe name before Core starts (squatting) | `FILE_FLAG_FIRST_PIPE_INSTANCE`: the real server refuses to start on a taken name; the client additionally refuses a server without the key (test with a rogue first instance) |
 | the server impersonating the connecting client | `SECURITY_IDENTIFICATION` |
 | oversize/garbage from any connected peer | limits before allocation, 4 KiB before authentication |
