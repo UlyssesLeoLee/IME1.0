@@ -222,6 +222,8 @@ const ADDITIONS = [
   '02_Verification/mutation-report.txt',
   // the evidence of the installer crate (the claims block cites it: evidence_setup_log)
   '02_Verification/setup-test-result.txt',
+  // the tool that runs the live part of the suite and writes its report into the repository
+  '01_Source/scripts/live-evidence.js',
   // the record of the live step (the real input method) and of what is still missing there
   '02_Verification/ime-live-log.md',
   // the plan of the refactor and the checkable bar of "commercial grade"

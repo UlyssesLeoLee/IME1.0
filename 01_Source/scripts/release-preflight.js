@@ -112,7 +112,7 @@ if (profile.status === 0) {
 } else {
   console.log('note  the live step cannot run on this machine: the zh-CN profile of this product is not registered');
   console.log('      (the product is not installed here) => a live run leaves no evidence; install it and run');
-  console.log('      `node 01_Source/tests/run-all.js --tsf-live` with PIME_IME_LIVE=1: the report is written to');
+  console.log('      `node 01_Source/scripts/live-evidence.js --copy-dll`: the report is written to');
   console.log('      02_Verification/ime-live-report.txt');
 }
 

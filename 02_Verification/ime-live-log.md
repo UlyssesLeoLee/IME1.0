@@ -41,14 +41,15 @@
 2. **注销或重启**（换 DLL 必须重开应用）；
 3. 跑这一条（**它会抢桌面的焦点**：那几秒别动鼠标键盘）：
    ```
-   set PIME_IME_LIVE=1
-   node 01_Source/tests/run-all.js --tsf-live
+   node 01_Source/scripts/live-evidence.js --copy-dll
    ```
-   （或直接 `cargo test --manifest-path 01_Source/crates/pime-tsf/Cargo.toml --test ime_live -- --nocapture --test-threads=1`）
+   （`--copy-dll` 会把装好的那份 `pime_tsf.dll` 盖到**每用户 COM 覆盖**上——那是优先于安装目录的那一份；
+   不带这个参数就只是跑，不动你的覆盖。）
 
 跑完看两处：
 - `02_Verification/ime-live-report.txt` —— **这一次有文件了**（就是上面那张表里缺的那一格）；
 - 控制台里那行 `REPORT ...`：应当看到 `doc_after_click="我"`（拼音不在旁边）与 `doc_code` / `doc_code_delta` 是代码本身。
+  （脚本会把这两个字段单独打出来，省得自己找。）
 
 > `node 01_Source/scripts/release-preflight.js` 也会报这件事：
 > 机器上装了就报「the live step can run on this machine」，没装就报「the live step cannot run on this machine」。
