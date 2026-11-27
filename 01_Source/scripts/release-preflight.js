@@ -107,6 +107,9 @@ if (!probe) {
 // claims about the real input method.
 const zhCnProfile = 'HKLM\\SOFTWARE\\Microsoft\\CTF\\TIP\\{43F95ED1-95B4-421D-8F5A-837128C2D854}\\LanguageProfile\\0x00000804';
 const profile = spawnSync('reg', ['query', zhCnProfile], {encoding: 'utf8', timeout: 30000});
+// the report of a live run, when there is one: it is the only artefact that proves the two invariants on the real
+// input method. Its absence is worth saying out loud, with its date, because the live run is opt-in.
+const liveReport = path.join(root, '02_Verification', 'ime-live-report.txt');
 if (profile.status === 0) {
   console.log('ok    the live step can run on this machine (the zh-CN profile of this product is registered)');
 } else {
@@ -114,6 +117,15 @@ if (profile.status === 0) {
   console.log('      (the product is not installed here) => a live run leaves no evidence; install it and run');
   console.log('      `node 01_Source/scripts/live-evidence.js --copy-dll`: the report is written to');
   console.log('      02_Verification/ime-live-report.txt');
+}
+if (fs.existsSync(liveReport)) {
+  const when = fs.statSync(liveReport).mtime.toISOString().replace('T', ' ').slice(0, 16);
+  console.log(`ok    the live report of the real input method is in the repository (written ${when} UTC)`);
+} else {
+  console.log('note  the repository holds NO live report of the real input method (02_Verification/ime-live-report.txt');
+  console.log('      => the two invariants (the pinyin must not stand next to the character, the code must go in as it');
+  console.log('         was typed) are still claims about the real input method, not evidence. Whether a release may');
+  console.log('         go out without that file is the owner\'s call (D-184).');
 }
 
 // ---- 3. the build transcript and the artefact -------------------------------------------------------------------

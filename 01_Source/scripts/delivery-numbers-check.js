@@ -4,7 +4,10 @@
 // The repository already has this discipline for the claims of the framework matrix
 // (tests/smoke/installer-claims-check.js, tests/smoke/evidence-cross-check.js). This script covers the OTHER
 // numbers the documents quote: the coverage of the design cases, the size of the manifest, the number of the
-// defects on the ledger and the test counts of the acceptance table of the refactor plan.
+// defects on the ledger and the test counts of the acceptance table of the refactor plan. It also makes sure that
+// the gate really ran the installer crate in the round whose evidence is persisted - there was a round in which the
+// gate was green without that crate in it, and the installer evidence in the repository was weeks older than the code
+// under test. The numbers still matched, so nothing said so; now they cannot.
 //
 //   node scripts/delivery-numbers-check.js
 //
@@ -80,6 +83,24 @@ check(/TSF (\d+) 项/.exec(plan)?.[1] === String(logCounts.tsf), 'the refactor p
   `plan says ${/TSF (\d+) 项/.exec(plan)?.[1]}, the log says ${logCounts.tsf}`);
 check(/Rust 核心 (\d+) 项/.exec(plan)?.[1] === String(logCounts.rust), 'the refactor plan: the core count is the one of the last gate run',
   `plan says ${/Rust 核心 (\d+) 项/.exec(plan)?.[1]}, the log says ${logCounts.rust}`);
+
+// 5. the gate must have run the installer crate in THIS round, and the installer evidence that is persisted in the
+//    repository must be the evidence of that round. There was a round in which the gate was green without the
+//    installer crate in it, and the persisted installer evidence was weeks older than the code under test - the
+//    the numbers still matched, so nothing said so. The log's summary says how many installer tests the round ran,
+//    and the evidence file says how many it recorded: the two have to be the same sum, and the evidence has to carry
+//    the three targets of the crate (the unit tests, the real file system tests, the real link tests).
+//    Only the summary line counts: the step prints its own output above it, and that output is not a verdict.
+const setupEvidence = read('02_Verification/setup-test-result.txt');
+// the doc-tests of the crate print a "0 passed" line of their own; the three targets are the ones that ran tests
+const setupCounts = [...setupEvidence.matchAll(/test result: ok\. (\d+) passed/g)].map(m => Number(m[1])).filter(n => n > 0);
+const setupSum = setupCounts.reduce((a, b) => a + b, 0);
+const logInstaller = Number(/^(?:PASS|FAIL)\s+Installer \(crates\/pime-setup\): cargo test.*?(\d+) tests/m.exec(log)?.[1] ?? 0);
+check(setupCounts.length === 3, 'the installer evidence carries the three targets of the installer crate',
+  setupCounts.length ? setupCounts.join(' + ') : 'the evidence has no test result at all');
+check(logInstaller === setupSum && logInstaller > 0,
+  'the gate ran the installer crate in this round: the log and the persisted evidence agree',
+  `the log says ${logInstaller}, the evidence says ${setupSum}`);
 
 console.log(`\n${problems} problem(s)`);
 process.exit(problems ? 1 : 0);
