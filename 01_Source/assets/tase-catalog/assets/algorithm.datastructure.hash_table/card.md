@@ -62,7 +62,7 @@ let old = counts.insert("a", 2);        // 返回旧值，便于覆盖计数
 
 ## 实现注意
 
-- 优先标准库：Rust 的 `std::collections::HashMap`（SipHash-1-3，默认随机种子抗 HashDoS）与 `BTreeMap`（有序）已经成熟，不要手写
+- 优先标准库：生产代码优先用 Rust 的 `std::collections::HashMap`（SipHash-1-3，默认随机种子抗 HashDoS）与 `BTreeMap`（有序），它们已经成熟；但本 catalog 里的实现仍要手写——这个 catalog 的定位正是把哈希与冲突处理的机制写清楚并测出来，不是为了替换标准库
 - 复杂度：期望 O(1) 每次操作，最坏 O(n)（全部冲突），空间 O(n)
 - 稳定性：不适用（遍历顺序不确定）
 - 内存：约每个条目 2-3 倍键值开销（哈希表元数据 + 负载因子预留空间）

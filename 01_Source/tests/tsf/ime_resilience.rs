@@ -82,10 +82,10 @@ impl Rig {
         let eaten = self.ctl.on_test_key_down(down) && self.ctl.on_key_down(down);
         if !eaten {
             // what the host does with a key the input method did not eat
-            if let Some(c) = ch {
-                if !c.is_control() {
-                    self.ctl.host_mut().doc.push(c);
-                }
+            if let Some(c) = ch
+                && !c.is_control()
+            {
+                self.ctl.host_mut().doc.push(c);
             }
         }
         self.clock += 20;

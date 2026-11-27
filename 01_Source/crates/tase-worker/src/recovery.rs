@@ -486,7 +486,9 @@ mod tests {
             .expect("the job is read")
             .expect("the job is there");
         assert_eq!(again.status, JobStatus::Queued);
-        assert_eq!(again.attempt, 1);
+        // The claim is not a try and the reclaim is not a try either: the worker died before the work started, so
+        // the number of the tries of the job is still the one it had (detailed design §6.2).
+        assert_eq!(again.attempt, 0);
 
         // and the job may be taken again, with a greater token
         let second = store
@@ -495,6 +497,46 @@ mod tests {
         assert!(second.fencing_token > lease.fencing_token);
 
         // the store holds the file of the database: it has to let go of it before the directory goes away
+        drop(store);
+        std::fs::remove_dir_all(&dir).expect("the directory of the test is removed");
+    }
+
+    #[test]
+    fn a_job_that_really_ran_keeps_its_attempt_when_the_lease_is_taken_back() {
+        let dir = temp_dir("recover-attempt");
+        let mut store = store_of(&dir);
+        let job = job_of(&mut store, "key-1", 1_000);
+
+        // the worker takes the job and the work really starts: the try is counted (detailed design §6.2)
+        let _lease = store
+            .lease_job(&job.job_id, "worker-1", 30_000, 1_000)
+            .expect("the job is leased");
+        let claimed = store
+            .get_job(&job.job_id)
+            .expect("the job is read")
+            .expect("the job is there");
+        assert_eq!(claimed.attempt, 0, "the claim is not a try");
+        let started = store
+            .begin_execution(&job.job_id, claimed.lease_epoch, 1_100)
+            .expect("the execution begins");
+        assert!(started);
+        let running = store
+            .get_job(&job.job_id)
+            .expect("the job is read")
+            .expect("the job is there");
+        assert_eq!(running.attempt, 1, "the work that started is a try");
+
+        // the worker dies and the lease is taken back: the reclaim is not a try
+        let report = reconcile_store(&mut store, 31_001).expect("the reconciliation runs");
+        assert!(report.expired_leases >= 1, "the lease was taken back");
+        assert!(report.requeued_jobs >= 1, "the job waits again");
+        let again = store
+            .get_job(&job.job_id)
+            .expect("the job is read")
+            .expect("the job is there");
+        assert_eq!(again.status, JobStatus::Queued);
+        assert_eq!(again.attempt, 1, "the try that really ran is still counted");
+
         drop(store);
         std::fs::remove_dir_all(&dir).expect("the directory of the test is removed");
     }

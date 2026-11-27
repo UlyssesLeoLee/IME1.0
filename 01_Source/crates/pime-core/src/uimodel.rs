@@ -1,10 +1,10 @@
 //! UI models that are independent of the editor, port of `core/uimodel.js`: accessible candidate rows (UT-057),
-//! overlay placement (UT-055) and the environment check (UT-077). Meaning is always carried by text (source,
-//! validation, position), never by colour.
+//! overlay placement (UT-055), the environment check (UT-077) and the status bar / menu texts (SCR-01). Meaning is
+//! always carried by text (source, validation, position), never by colour.
 //!
-//! The status bar and the menu of the extension are not here: the reference keeps them inside `extension.js` (they
-//! are VS Code objects assembled from `i18n` texts, with no logic beyond choosing a key), so there is nothing in
-//! `uimodel.js` to port for them.
+//! The status bar and the menu of the extension are ported here as well: `status_model` and `menu_model` are the
+//! two texts the reference keeps in `core/uimodel.js` (VS Code objects assembled from `i18n` texts, with no logic
+//! beyond choosing a key).
 
 use crate::i18n;
 use crate::json::Json;

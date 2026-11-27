@@ -82,6 +82,7 @@ impl Op {
     }
 
     /// The operation of a name; an unknown name is refused.
+    #[allow(clippy::should_implement_trait)] // the name is a wire value: an unknown one is refused, not an error
     pub fn from_str(name: &str) -> Option<Op> {
         match name {
             "insert" => Some(Op::Insert),
@@ -146,6 +147,7 @@ impl Error {
     }
 
     /// The error of a code; an unknown code is refused.
+    #[allow(clippy::should_implement_trait)] // the code is a wire value: an unknown one is refused, not an error
     pub fn from_str(code: &str) -> Option<Error> {
         match code {
             "NO_IME" => Some(Error::NoIme),
@@ -185,6 +187,7 @@ impl SourceKind {
     }
 
     /// The kind out of its name. `None` when the name is not one of ours.
+    #[allow(clippy::should_implement_trait)] // the name is a wire value: an unknown one is refused, not an error
     pub fn from_str(name: &str) -> Option<SourceKind> {
         match name {
             "user" => Some(SourceKind::User),

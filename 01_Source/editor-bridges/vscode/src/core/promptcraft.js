@@ -293,8 +293,8 @@ function cutSelection(text) {
   return {text: text.slice(0, head) + '\n' + '\u0000' + '\n' + text.slice(tailAt), omitted: tailAt - head, head, tail: text.length - tailAt};
 }
 
-// The part of the file the review request carries: about 400 lines around the selection (the whole file when it is shorter), never more
-// than WINDOW.chars characters. Line numbers are always file line numbers. -> {from, to, truncated}
+// The part of the file the review request carries: 400 lines around the selection by default, at most 800 (the whole file
+// when it is shorter), never more than WINDOW.chars characters. Line numbers are always file line numbers. -> {from, to, truncated}
 function windowOf(lines, startLine, endLine) {
   const n = lines.length;
   const s = Math.min(n, Math.max(1, lineNo(startLine) || 1)), e = Math.min(n, Math.max(s, lineNo(endLine) || s));

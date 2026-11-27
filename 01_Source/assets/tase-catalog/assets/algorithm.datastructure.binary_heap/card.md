@@ -63,7 +63,7 @@ let popped = heap.pop();       // O(log n)，返回最大元素
 
 ## 实现注意
 
-- 优先标准库：Rust 的 `std::collections::BinaryHeap` 已是成熟实现（最大堆，用 `Reverse` 可得最小堆），不要手写
+- 优先标准库：生产代码优先用 Rust 的 `std::collections::BinaryHeap`（最大堆，用 `Reverse` 可得最小堆），它已是成熟实现；但本 catalog 里的实现仍要手写——这个 catalog 的定位正是把堆的上下标调整与堆序写清楚并测出来，不是为了替换标准库
 - 复杂度：插入 O(log n)、弹出 O(log n)、取顶 O(1)、建堆 O(n)（自底向上）、空间 O(n)
 - 稳定性：不适用（堆不是稳定结构）
 - 内存：连续数组，O(n)；容量翻倍策略会有一时的额外占用

@@ -99,7 +99,7 @@ pub struct Candidate {
 }
 
 impl Candidate {
-    /// Defaults of `makeCandidate`: syntax / rule / unchecked.
+    /// The defaults of `Candidate::new` (the Rust counterpart of the JS `makeCandidate`): syntax / rule / unchecked.
     pub fn new(id: &str) -> Candidate {
         Candidate {
             id: id.to_string(),

@@ -2932,7 +2932,8 @@ mod tests {
         assert!(!explicit.candidate_capture && !explicit.auto_compose && !explicit.input_mode);
     }
 
-    /// The direct mode is the one that never eats a code character: it is opt-in (Alt+F1), not the default.
+    /// The direct mode is the one that never eats a code character: it is the factory mode (the shipped default);
+    /// Alt+F1 and Ctrl+F12 switch to the other direction (the natural language input).
     #[test]
     fn the_direct_mode_is_the_one_that_eats_nothing() {
         let c = TipConfig {
@@ -3078,8 +3079,10 @@ mod tests {
         assert!(rig.ctl.input_mode(), "the natural language input is on");
         assert_eq!(*told.borrow(), 1, "the interface was told once");
         // the settings window saves something (the file says the natural language input for the next start)
-        let mut settings = crate::imesettings::LanguageSettings::default();
-        settings.input_mode = true;
+        let settings = crate::imesettings::LanguageSettings {
+            input_mode: true,
+            ..Default::default()
+        };
         rig.ctl.apply_settings(&settings);
         assert!(
             rig.ctl.input_mode(),

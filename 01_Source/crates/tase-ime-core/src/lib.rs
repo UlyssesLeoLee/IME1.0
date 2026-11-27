@@ -4,7 +4,7 @@
 //! to look at. It is deliberately free of any platform dependency:
 //!
 //! * no COM, no TSF, no `windows` crate, no `unsafe` - the adapter that talks to the Windows text service lives in
-//!   its own crate (`tase-ime-tsf`), so this one compiles and is tested on every target;
+//!   its own crate (`pime-tsf`, which absorbed `tase-ime-tsf`), so this one compiles and is tested on every target;
 //! * no clock, no random, no file, no network - the ranking is a pure function of the candidates and of the request,
 //!   so the same input always gives the same order;
 //! * no way out around a protected context: the model has no field for the position of the candidate window, for a

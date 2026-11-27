@@ -35,7 +35,10 @@ use crate::lease::LeaseTable;
 pub struct Task {
     /// The id of the task: the id of the job of the store.
     pub task_id: String,
-    /// How many times the task was tried already.
+    /// How many times the task was tried: the try that is running now is counted.
+    ///
+    /// A claim is not a try: the try is counted when the work really starts, so the number of the tries of a task
+    /// that was taken and put back into the queue without being run does not grow (detailed design §6.2).
     pub attempt: u32,
     /// The fencing token of the lease of the task.
     ///
@@ -459,6 +462,8 @@ impl TaskSource for MemoryTaskSource {
                     return None;
                 }
             };
+            // The take of the memory queue is the moment the work starts: the worker runs the task it just took,
+            // so the try is counted here (detailed design §6.2).
             task.attempt = task.attempt.saturating_add(1);
             Some((task, lease))
         };
@@ -520,14 +525,29 @@ impl TaskSource for MemoryTaskSource {
 
 /// The queue of the worker when the jobs live in the store of the local hub.
 ///
-/// The claim of a job is the transaction of the store: the job is only given to one holder, the number of the tries
-/// grows, the epoch of the job grows and the fencing token of the lease grows (detailed design §6.2).
+/// The claim of a job is the transaction of the store: the job is only given to one holder, the epoch of the job
+/// grows and the fencing token of the lease grows (detailed design §6.2). The attempt of the job does not grow at
+/// the claim: the claim is not a try, and the try is counted when the work really starts.
 pub struct StoreTaskSource {
     store: Store,
     holder: String,
     ttl_ms: u64,
     policy: RetryPolicy,
-    held: Option<(JobId, Lease)>,
+    held: Option<HeldJob>,
+}
+
+/// The job the worker holds: its id, its lease and the epoch of the claim.
+///
+/// The epoch is the fence of the store: it is the epoch the claim wrote, and the worker reports with it, so a
+/// worker whose lease ran out is refused by the store (detailed design §6.2).
+#[derive(Clone, Debug)]
+struct HeldJob {
+    /// The id of the job.
+    job_id: JobId,
+    /// The lease of the job.
+    lease: Lease,
+    /// The epoch of the claim: the epoch the worker holds until it reports.
+    lease_epoch: u64,
 }
 
 impl StoreTaskSource {
@@ -587,9 +607,29 @@ impl TaskSource for StoreTaskSource {
             .store
             .lease_job(&job.job_id, &self.holder, self.ttl_ms, now_ms)
             .ok()?;
+
+        // The epoch of the claim is the fence of the worker: it is read here, at the claim, and it is carried to the
+        // report. An epoch that is read when the worker reports is the epoch of whoever holds the job now, and it
+        // fences nothing.
+        let lease_epoch = self.store.get_job(&job.job_id).ok()??.lease_epoch;
+
+        // The claim is not a try: the attempt of the job grows when the work really starts (detailed design §6.2).
+        if self
+            .store
+            .begin_execution(&job.job_id, lease_epoch, now_ms)
+            .is_err()
+        {
+            // the claim is not ours any more: the lease is given back and the job is left to its holder
+            let _released = self.store.release_lease(&lease.lease_id, &self.holder, now_ms);
+            return None;
+        }
         let job = self.store.get_job(&job.job_id).ok()??;
 
-        self.held = Some((job.job_id.clone(), lease.clone()));
+        self.held = Some(HeldJob {
+            job_id: job.job_id.clone(),
+            lease: lease.clone(),
+            lease_epoch,
+        });
         Some(Task {
             task_id: job.job_id.as_str().to_string(),
             attempt: job.attempt,
@@ -601,13 +641,18 @@ impl TaskSource for StoreTaskSource {
 
     fn report(&mut self, report: &TaskReport, now_ms: u64) -> Result<(), TaseError> {
         let job_id = JobId::new(report.task_id.clone())?;
-        let job = self
-            .store
-            .get_job(&job_id)?
-            .ok_or_else(|| TaseError::not_found(format!("there is no job {}", report.task_id)))?;
 
-        // The epoch of the job is the fencing of the store: a worker whose lease ran out may not move the job. The
-        // move to a state that is not final is the check of the epoch; the final state is written by `finish_job`,
+        // The epoch of the claim is the fence of the store: the worker reports with the epoch it got when it took
+        // the job, and the store refuses the report of a worker whose lease ran out (detailed design §6.2).
+        let Some(held) = self.held.as_ref() else {
+            return Err(self.stale_job(&report.task_id));
+        };
+        if held.job_id != job_id {
+            return Err(self.stale_job(&report.task_id));
+        }
+        let lease_epoch = held.lease_epoch;
+
+        // The move to a state that is not final is the check of the epoch; the final state is written by `finish_job`,
         // which refuses a job that is already final.
         match &report.result {
             TaskResult::Succeeded { result_digest } => {
@@ -615,7 +660,7 @@ impl TaskSource for StoreTaskSource {
                     &job_id,
                     JobStatus::Running,
                     JobStatus::Verifying,
-                    job.lease_epoch,
+                    lease_epoch,
                     now_ms,
                 )?;
                 if !moved {
@@ -626,6 +671,7 @@ impl TaskSource for StoreTaskSource {
                     JobStatus::Committed,
                     Some(result_digest.clone()),
                     None,
+                    lease_epoch,
                     now_ms,
                 )?;
             }
@@ -635,7 +681,7 @@ impl TaskSource for StoreTaskSource {
                     &job_id,
                     JobStatus::Running,
                     JobStatus::Queued,
-                    job.lease_epoch,
+                    lease_epoch,
                     now_ms,
                 )?;
                 if !moved {
@@ -647,20 +693,28 @@ impl TaskSource for StoreTaskSource {
                     &job_id,
                     JobStatus::Running,
                     JobStatus::Verifying,
-                    job.lease_epoch,
+                    lease_epoch,
                     now_ms,
                 )?;
                 if !moved {
                     return Err(self.stale_job(&report.task_id));
                 }
-                self.store
-                    .finish_job(&job_id, JobStatus::Failed, None, Some(*code), now_ms)?;
+                self.store.finish_job(
+                    &job_id,
+                    JobStatus::Failed,
+                    None,
+                    Some(*code),
+                    lease_epoch,
+                    now_ms,
+                )?;
             }
         }
 
         // the lease of the job is given back: another worker may take the job when it is ready
-        if let Some((_, lease)) = self.held.take() {
-            let _released = self.store.release_lease(&lease.lease_id, &self.holder);
+        if let Some(held) = self.held.take() {
+            let _released = self
+                .store
+                .release_lease(&held.lease.lease_id, &self.holder, now_ms);
         }
         Ok(())
     }
@@ -781,6 +835,46 @@ mod tests {
             }
         }
         queue
+    }
+
+    /// A store of the disk with the steps of the schema, a session and a job of the store.
+    fn store_with_job(dir: &std::path::Path) -> (Store, JobId) {
+        let mut store = Store::open(dir.join("worker.sqlite3")).expect("the store opens");
+        tase_local_store::migrations::apply(&mut store).expect("the steps run");
+
+        let session_id =
+            tase_contract::ids::SessionId::new("session-1").expect("the session id is valid");
+        store
+            .open_session(tase_local_store::NewSession {
+                session_id: session_id.clone(),
+                agent_id: tase_contract::ids::AgentId::new("agent-1")
+                    .expect("the agent id is valid"),
+                provider: "test".to_string(),
+                instance_id: "instance-1".to_string(),
+                workspace_id: tase_contract::ids::WorkspaceId::new("workspace-1")
+                    .expect("the workspace id is valid"),
+                owner_logon_sid_hash: "sha256:logon".to_string(),
+                granted_scopes: vec!["tase.code.apply".to_string()],
+                capabilities: Vec::new(),
+                now_ms: 1_000,
+            })
+            .expect("the session is registered");
+        let submission = store
+            .submit_job(tase_local_store::NewJob {
+                job_type: "tase.code.apply".to_string(),
+                workspace_id: tase_contract::ids::WorkspaceId::new("workspace-1")
+                    .expect("the workspace id is valid"),
+                agent_id: tase_contract::ids::AgentId::new("agent-1")
+                    .expect("the agent id is valid"),
+                session_id,
+                idempotency_key: "key-1".to_string(),
+                request_digest: "sha256:request".to_string(),
+                base_snapshot_digest: "sha256:base".to_string(),
+                priority: 0,
+                now_ms: 1_000,
+            })
+            .expect("the job is registered");
+        (store, submission.job_id)
     }
 
     #[test]
@@ -1061,45 +1155,12 @@ mod tests {
     #[test]
     fn the_queue_of_the_store_gives_the_job_to_the_worker_and_waits_for_the_backoff() {
         let dir = temp_dir("store-source");
-        let mut store = Store::open(dir.join("worker.sqlite3")).expect("the store opens");
-        tase_local_store::migrations::apply(&mut store).expect("the steps run");
-
-        let session_id =
-            tase_contract::ids::SessionId::new("session-1").expect("the session id is valid");
-        store
-            .open_session(tase_local_store::NewSession {
-                session_id: session_id.clone(),
-                agent_id: tase_contract::ids::AgentId::new("agent-1")
-                    .expect("the agent id is valid"),
-                provider: "test".to_string(),
-                instance_id: "instance-1".to_string(),
-                workspace_id: tase_contract::ids::WorkspaceId::new("workspace-1")
-                    .expect("the workspace id is valid"),
-                owner_logon_sid_hash: "sha256:logon".to_string(),
-                granted_scopes: vec!["tase.code.apply".to_string()],
-                capabilities: Vec::new(),
-                now_ms: 1_000,
-            })
-            .expect("the session is registered");
-        let submission = store
-            .submit_job(tase_local_store::NewJob {
-                job_type: "tase.code.apply".to_string(),
-                workspace_id: tase_contract::ids::WorkspaceId::new("workspace-1")
-                    .expect("the workspace id is valid"),
-                agent_id: tase_contract::ids::AgentId::new("agent-1")
-                    .expect("the agent id is valid"),
-                session_id,
-                idempotency_key: "key-1".to_string(),
-                request_digest: "sha256:request".to_string(),
-                base_snapshot_digest: "sha256:base".to_string(),
-                priority: 0,
-                now_ms: 1_000,
-            })
-            .expect("the job is registered");
+        let (store, job_id) = store_with_job(&dir);
 
         let mut source = StoreTaskSource::new(store, "worker-1", 30_000, policy());
         let task = source.next_task(1_000).expect("the job is taken");
-        assert_eq!(task.task_id, submission.job_id.as_str());
+        assert_eq!(task.task_id, job_id.as_str());
+        // the work starts now, so the try is counted (detailed design §6.2)
         assert_eq!(task.attempt, 1);
         assert_eq!(task.idempotency_key, "key-1");
 
@@ -1127,6 +1188,52 @@ mod tests {
         assert!(
             again.fencing_token > task.fencing_token,
             "the token of the second take is greater than the token of the first one"
+        );
+
+        drop(source);
+        std::fs::remove_dir_all(&dir).expect("the directory of the test is removed");
+    }
+
+    /// The report of a worker whose lease ran out is refused: the epoch of the claim is the fence, and the job
+    /// was taken by somebody else in the meantime (detailed design §6.2, §8.1).
+    #[test]
+    fn the_report_of_a_worker_whose_lease_was_taken_back_is_refused() {
+        let dir = temp_dir("store-stale");
+        let (store, job_id) = store_with_job(&dir);
+
+        let mut source = StoreTaskSource::new(store, "worker-1", 30_000, policy());
+        let task = source.next_task(1_000).expect("the job is taken");
+
+        // the lease of the job runs out and another worker takes the job back
+        let _second = source
+            .store_mut()
+            .lease_job(&job_id, "worker-2", 30_000, 31_001)
+            .expect("the job is taken back");
+
+        // the worker that comes back late may not write the end of the job
+        let report = TaskReport {
+            task_id: task.task_id.clone(),
+            attempt: task.attempt,
+            fencing_token: task.fencing_token,
+            result: TaskResult::Succeeded {
+                result_digest: "sha256:done".to_string(),
+            },
+            retry_at_ms: None,
+        };
+        let error = source
+            .report(&report, 31_002)
+            .expect_err("the report of an old worker is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+
+        // and the job is not finished by the report of the old worker
+        let job = source
+            .store()
+            .get_job(&job_id)
+            .expect("the job is read")
+            .expect("the job is there");
+        assert!(
+            !job.status.is_terminal(),
+            "the job was not finished by the worker that came back late"
         );
 
         drop(source);

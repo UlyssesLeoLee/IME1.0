@@ -87,12 +87,14 @@ pub fn language_for_id(langid: u16) -> Option<&'static str> {
 ///
 /// The defaults are the ones the product ships with: the input method starts in direct mode (it eats no code
 /// character), the candidate page holds five rows, the Tab key moves the highlight of the list (the programmer
-/// habit: Tab selects, Enter/Space/digit take the candidate) and the space key is a space (in code it usually is).
+/// habit: Tab selects, Enter/Space/digit take the candidate) and the space key confirms the highlighted candidate
+/// while the candidate list is on screen.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LanguageSettings {
     /// Candidates per page (1..=9). The digits 1..=page_size pick within the page.
     pub page_size: usize,
-    /// Space confirms the highlighted candidate. Off by default: in code a space is a space.
+    /// Space confirms the highlighted candidate. **On** by default: while the candidate list is on screen, Space
+    /// takes the highlighted candidate (the mainstream behaviour).
     pub space_confirms: bool,
     /// Tab walks the candidate list instead of taking the highlighted candidate. **On** by default: the programmer
     /// habit is that Tab moves the highlight (it selects) and that Enter, Space or a digit take the candidate.
@@ -308,7 +310,7 @@ pub struct ImeSettings {
     /// The skin of the floating bar (a global setting).
     pub skin: String,
     /// Where the mouth of the light is on the screen (a global setting): "left:520", "top:700" or "right:480".
-    /// Empty is the default place: the left edge, in the middle of the screen.
+    /// Empty is the default place: the left edge, in the middle of the work area.
     pub mouth_place: String,
     /// The plugin languages that are on (a global setting: a plugin is a language, not a way of typing).
     ///

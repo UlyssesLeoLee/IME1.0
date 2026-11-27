@@ -615,7 +615,7 @@ impl<'a> Canvas<'a> {
 
     /// Make every pixel of the picture fully transparent.
     pub fn clear(&mut self) {
-        for pixel in self.pixels.chunks_exact_mut(4) {
+        for pixel in self.pixels.as_chunks_mut::<4>().0 {
             pixel[0] = 0;
             pixel[1] = 0;
             pixel[2] = 0;
@@ -625,7 +625,7 @@ impl<'a> Canvas<'a> {
 
     /// Make every pixel of the picture opaque (the picture is then shown without any transparency).
     pub fn make_opaque(&mut self) {
-        for pixel in self.pixels.chunks_exact_mut(4) {
+        for pixel in self.pixels.as_chunks_mut::<4>().0 {
             pixel[3] = 255;
         }
     }
@@ -716,12 +716,6 @@ impl<'a> Canvas<'a> {
             rect.right - inset,
             rect.bottom - inset,
         );
-        let grown = PixelRect::new(
-            shape.left - blur as i32,
-            shape.top - blur as i32,
-            shape.right + blur as i32,
-            shape.bottom + blur as i32,
-        );
         // The shadow falls where the offset puts it, but it is measured from the outline of the panel: the penumbra
         // is the shadow of the panel, not of a bigger shape.
         let fallen = PixelRect::new(
@@ -791,6 +785,7 @@ impl<'a> Canvas<'a> {
     }
 
     /// Draw a line with a given width (the edge is smooth).
+    #[allow(clippy::too_many_arguments)] // the two ends of the line, its width, its colour and its alpha
     pub fn stroke_segment(
         &mut self,
         ax: f64,
@@ -1140,6 +1135,7 @@ impl<'a> Canvas<'a> {
     ///
     /// `progress` is how far the beam has travelled (0 = at the mouth, 1 = at the character) and `strength` how
     /// bright it is overall.
+    #[allow(clippy::too_many_arguments)] // the two ends of the beam, how far it has come, how bright it is and its colour
     pub fn fill_beam_coloured(
         &mut self,
         ax: f64,

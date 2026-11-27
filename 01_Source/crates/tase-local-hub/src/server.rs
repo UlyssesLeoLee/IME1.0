@@ -105,9 +105,9 @@ pub trait JobScheduler: Send {
     /// The token of the lease of a job, when the scheduler keeps a lease for it.
     ///
     /// The Hub hands this token to the worker that takes the job and checks it when the worker
-    /// reports: the store does not check the epoch of a job, so this token is the fence of the
-    /// split brain (detailed design §17.6). A scheduler that keeps no lease of its own says
-    /// `None`, and the Hub mints a token for the handout.
+    /// reports: the store fences the job with the epoch of the job, and this token is the fence of
+    /// the split brain of the Hub (detailed design §17.6). A scheduler that keeps no lease of its
+    /// own says `None`, and the Hub mints a token for the handout.
     fn lease_token(&self, _job_id: &JobId) -> Option<u64> {
         None
     }
@@ -285,13 +285,20 @@ impl JobRecord {
 /// The record of a job that the Hub handed to a worker and that is not reported yet.
 ///
 /// The token of the handout is the fence of the split brain: a worker that was replaced carries an
-/// old token, and the Hub refuses its report (the store does not check the epoch of a job).
+/// old token, and the Hub refuses its report. The epoch of the job in the store is the fence of the
+/// store: it is read at the handout and carried to the report, so that the store refuses the report
+/// of a worker whose lease ran out.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Handoff {
     /// The job that was handed out.
     pub job_id: JobId,
     /// The token the worker has to send back with its report.
     pub fencing_token: u64,
+    /// The epoch of the job in the store, read at the handout.
+    ///
+    /// The store fences its writes with the epoch of the job: the report of the worker that holds the
+    /// handout carries it, and the store refuses the report of a worker that does not hold it.
+    pub lease_epoch: u64,
     /// The agent the job belongs to.
     pub agent_id: AgentId,
     /// The session that asked for the job.
@@ -825,11 +832,21 @@ impl HubInner {
             .get(job.job_id.as_str())
             .map(|record| record.request.clone())
             .unwrap_or(Json::Null);
+        // The epoch of the job in the store is read at the handout and carried to the report: the store fences
+        // its writes with it, and an epoch that is read when the worker reports would fence nothing.
+        let lease_epoch = match state.store.as_ref() {
+            Some(store) => store
+                .get_job(&job.job_id)?
+                .map(|job| job.lease_epoch)
+                .unwrap_or(0),
+            None => 0,
+        };
         state.handoffs.insert(
             job.job_id.as_str().to_string(),
             Handoff {
                 job_id: job.job_id.clone(),
                 fencing_token: token,
+                lease_epoch,
                 agent_id: job.agent_id.clone(),
                 session_id: job.session_id.clone(),
                 at_ms: now_ms,
@@ -840,7 +857,7 @@ impl HubInner {
             record.updated_at_ms = now_ms;
         }
         // The store knows the state of the job too. The epoch of the store is not the token of the
-        // Hub: the store does not fence a job, the Hub does.
+        // Hub: the store fences the job with its epoch, the Hub fences it with its token.
         if let Some(store) = state.store.as_mut()
             && store.get_job(&job.job_id)?.is_some()
         {
@@ -848,7 +865,7 @@ impl HubInner {
                 &job.job_id,
                 JobStatus::Queued,
                 JobStatus::Running,
-                0,
+                lease_epoch,
                 now_ms,
             )?;
         }
@@ -881,9 +898,9 @@ impl HubInner {
     ///
     /// The report carries the token of the handout: a report whose token is not the current one of
     /// the job comes from a worker that was replaced (the lease of the job ran out and the job was
-    /// handed out again), and it is refused. The job is **not** finished by such a report: the
-    /// store does not check the epoch of a job, so this is the only fence against the split brain
-    /// (detailed design §17.6).
+    /// handed out again), and it is refused. The job is **not** finished by such a report. The store
+    /// has a fence of its own: it writes the end of the job only for the worker that holds the epoch
+    /// of the job (detailed design §17.6).
     fn job_complete(
         &self,
         _session_id: &SessionId,
@@ -947,7 +964,16 @@ impl HubInner {
             record.updated_at_ms = now_ms;
         }
         if let Some(store) = state.store.as_mut() {
-            store.finish_job(&job_id, status, digest, error_code, now_ms)?;
+            // The store fences the write with the epoch of the job: the epoch that was read at the handout is
+            // the one the worker holds, and the store refuses the report of a worker that does not hold it.
+            store.finish_job(
+                &job_id,
+                status,
+                digest,
+                error_code,
+                handoff.lease_epoch,
+                now_ms,
+            )?;
         }
         state.telemetry.push(HubEvent::JobFinished {
             job_id: job_id.as_str().to_string(),

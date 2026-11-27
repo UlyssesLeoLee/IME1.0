@@ -2,8 +2,9 @@
 //!
 //! Protocol 0.3 is a superset of 0.2: the seven stateless 0.2 operations behave exactly as before (at most
 //! 64 KiB per request line), and the stateful session operations of `ops.rs` are added. Operations that carry
-//! document text (`ctx.snapshot`, `edit.propose`, `edit.prepare`, `edit.begin_apply`, `edit.finish_apply`) may use
-//! lines up to [`MAX_BULK_LINE_BYTES`]; every other operation keeps the 64 KiB limit.
+//! document text may use lines up to [`MAX_BULK_LINE_BYTES`]: the ones listed in `BULK_OPS` (`ctx.snapshot`,
+//! `ctx.validate`, `edit.propose`, `edit.plan`, `edit.prepare`, `edit.begin_apply`, `edit.finish_apply`) and the
+//! text-carrying operations of `ops_ai` and `ops_cfg`. Every other operation keeps the 64 KiB limit.
 //!
 //! Every request may carry an integer `id` that is echoed as `id` in the response. The core never executes
 //! anything, never opens files or the network (no operation takes a path; the settings file's atomic write in

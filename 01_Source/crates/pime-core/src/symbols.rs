@@ -13,8 +13,9 @@ use std::sync::OnceLock;
 
 /// Only the first 200 KiB (UTF-16 units) of a file are scanned.
 pub const MAX_SCAN: usize = 200 * 1024;
-/// Default and largest number of symbols one call returns.
+/// The default number of symbols one call returns (the request may ask for more, up to [`LIMIT_MAX`]).
 pub const DEFAULT_MAX: usize = 60;
+/// The largest number of symbols one call may return.
 pub const LIMIT_MAX: usize = 1000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

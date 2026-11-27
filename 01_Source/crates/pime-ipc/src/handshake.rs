@@ -48,7 +48,7 @@ pub struct RolePolicy {
 pub struct ServerPolicy {
     master_key: Secret,
     roles: Vec<RolePolicy>,
-    /// Version this server speaks (default `PIME-IPC/1.0`); tests lower or change it.
+    /// Version this server speaks (default `PIME-IPC/1`, minor 0); tests lower or change it.
     pub version: Version,
     /// Lifetime of the capability token (DD 2.1: "短时范围令牌").
     pub token_ttl: Duration,

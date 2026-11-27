@@ -108,13 +108,12 @@ impl Tip {
             {
                 laser.close_panel_unless_list();
             }
-            let eaten = match kind {
+            match kind {
                 KeyKind::TestDown => inner.controller.on_test_key_down(input),
                 KeyKind::Down => inner.controller.on_key_down(input),
                 KeyKind::TestUp => inner.controller.on_test_key_up(input),
                 KeyKind::Up => inner.controller.on_key_up(input),
-            };
-            eaten
+            }
         })
     }
 }

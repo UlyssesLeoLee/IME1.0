@@ -68,7 +68,7 @@ edit_distance(a, b):
 
 ## 实现注意
 
-- 优先标准库/成熟库：Rust 有 `str::edit_distance`（`std::str` 的 unstable/实验性 API，视工具链而定）；成熟 crate 有 `strsim`/`levenshtein`，引入前核查许可
+- 标准库没有这个方法：Rust 标准库不提供编辑距离，`str::edit_distance` 这样的 API 从未稳定存在（本机 rustc 1.99.1 实测编译报 `no method named 'edit_distance' found`）；要现成的就引成熟 crate `strsim`/`levenshtein`（引入前核查许可），不引第三方 crate 就按上面的 DP 自己写（本 catalog 的实现就是自己写的）
 - 复杂度：时间 O(n * m)，额外空间 O(min(n, m))（滚动数组）
 - 稳定性：不适用
 - 内存：两行滚动数组；完整矩阵 O(n·m) 只在需要回溯路径时使用

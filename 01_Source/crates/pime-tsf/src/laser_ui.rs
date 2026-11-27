@@ -170,7 +170,7 @@ pub struct LaserUi {
     /// Whether the interface is on the screen.
     visible: bool,
     /// Where the mouth of the human is on the screen (the edge it is on and how far along it). `None` is the
-    /// default place: the left edge, in the middle of the screen.
+    /// default place: the left edge, in the middle of the work area.
     place: Option<MouthPlace>,
     /// The drag that is going on right now.
     drag: Option<Drag>,

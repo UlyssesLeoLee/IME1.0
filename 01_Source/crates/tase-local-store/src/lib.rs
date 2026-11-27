@@ -281,7 +281,8 @@ pub struct Job {
     pub base_snapshot_digest: String,
     /// The state of the job.
     pub status: JobStatus,
-    /// The number of times the job was tried.
+    /// The number of times the job was really run: a job that was taken and put back into the queue without being
+    /// run does not count.
     pub attempt: u32,
     /// The epoch of the lease of the job: it grows at every claim.
     pub lease_epoch: u64,
@@ -770,6 +771,11 @@ impl Store {
 
     /// Finishes a job: it writes the result and the business code of the failure.
     ///
+    /// The epoch of the job is the fence of the write: the caller has to hold the epoch of the job, so a worker
+    /// whose lease ran out and was taken back is refused and writes nothing at all (detailed design §6.3, §8.1).
+    /// The caller has to pass the epoch it got when it took the job, not the epoch it reads when it reports: an
+    /// epoch that is read at the last moment is the epoch of whoever holds the job now, and it fences nothing.
+    ///
     /// A job that is already in a terminal state is not touched again: the same notification may be accepted, but
     /// a job in a terminal state is never run again (detailed design §6.3).
     pub fn finish_job(
@@ -778,12 +784,22 @@ impl Store {
         status: JobStatus,
         result_digest: Option<String>,
         error_code: Option<ErrorCode>,
+        lease_epoch: u64,
         now_ms: u64,
     ) -> Result<bool, TaseError> {
         let tx = self.transaction()?;
         let mut row = row_job(&tx, job_id.as_str())?.ok_or_else(|| {
             TaseError::not_found(format!("there is no job {}", job_id.as_str()))
         })?;
+        if row.lease_epoch != lease_epoch {
+            // the caller does not hold the epoch of the job: it is old, and it may not write anything
+            return Err(TaseError::permission_denied(format!(
+                "the job {} is at the epoch {} and not at the epoch {} of the caller",
+                job_id.as_str(),
+                row.lease_epoch,
+                lease_epoch
+            )));
+        }
         if row.status.is_terminal() {
             tx.commit()?;
             return Ok(false);
@@ -833,9 +849,12 @@ impl Store {
 
     /// Takes the lease of a job and starts the job.
     ///
-    /// The claim is atomic: the job is only given to one holder. The number of attempts of the job grows, the
-    /// epoch of the job grows and the fencing token of the lease grows, so a worker that comes back late is told
-    /// that it is old (detailed design §6.2).
+    /// The claim is atomic: the job is only given to one holder. The epoch of the job grows and the fencing token of
+    /// the lease grows, so a worker that comes back late is told that it is old (detailed design §6.2).
+    ///
+    /// The number of attempts of the job does not grow here: a claim is not a try. A worker that takes a job and puts
+    /// it back into the queue without running it does not count, and the attempt is counted by `begin_execution`,
+    /// when the work really starts (detailed design §6.2).
     pub fn lease_job(
         &mut self,
         job_id: &JobId,
@@ -890,7 +909,6 @@ impl Store {
             released_at_ms: None,
             state: LeaseState::Held,
         };
-        job.attempt = job.attempt.saturating_add(1);
         job.lease_epoch = job.lease_epoch.saturating_add(1);
         job.status = JobStatus::Running;
         job.worker_id = Some(holder.to_string());
@@ -901,6 +919,45 @@ impl Store {
         journal_job(&tx, &job, now_ms)?;
         tx.commit()?;
         Ok(lease)
+    }
+
+    /// Starts the execution of a job: the number of attempts of the job grows.
+    ///
+    /// This is the moment the work really begins, and it is the only moment that counts a try: a job that is taken
+    /// and put back into the queue without being run keeps the number of attempts it had (detailed design §6.2).
+    ///
+    /// The epoch of the job is the fence: the caller has to hold the epoch of the job, so a worker whose lease ran
+    /// out is refused and counts nothing.
+    pub fn begin_execution(
+        &mut self,
+        job_id: &JobId,
+        lease_epoch: u64,
+        now_ms: u64,
+    ) -> Result<bool, TaseError> {
+        let tx = self.transaction()?;
+        let mut row = row_job(&tx, job_id.as_str())?.ok_or_else(|| {
+            TaseError::not_found(format!("there is no job {}", job_id.as_str()))
+        })?;
+        if row.lease_epoch != lease_epoch {
+            // the caller does not hold the epoch of the job: it is old, and it may not start the job
+            return Err(TaseError::permission_denied(format!(
+                "the job {} is at the epoch {} and not at the epoch {} of the caller",
+                job_id.as_str(),
+                row.lease_epoch,
+                lease_epoch
+            )));
+        }
+        if row.status.is_terminal() {
+            // a job in a terminal state is never run again (detailed design §6.3)
+            tx.commit()?;
+            return Ok(false);
+        }
+        row.attempt = row.attempt.saturating_add(1);
+        row.updated_at_ms = now_ms;
+        upsert_job(&tx, &row)?;
+        journal_job(&tx, &row, now_ms)?;
+        tx.commit()?;
+        Ok(true)
     }
 
     /// Renews a lease: the holder asks for more time.
@@ -945,8 +1002,16 @@ impl Store {
 
     /// Gives a lease back.
     ///
+    /// The lease keeps the time it was given back: the length of the holding is read from the lease itself, and the
+    /// journal of the release carries the same time, so a recovery knows when the lease was really given back.
+    ///
     /// A lease that is not held any more is accepted again and keeps its state: the call changes nothing.
-    pub fn release_lease(&mut self, lease_id: &str, holder: &str) -> Result<Lease, TaseError> {
+    pub fn release_lease(
+        &mut self,
+        lease_id: &str,
+        holder: &str,
+        now_ms: u64,
+    ) -> Result<Lease, TaseError> {
         let tx = self.transaction()?;
         let mut row = row_lease(&tx, lease_id)?.ok_or_else(|| {
             TaseError::not_found(format!("there is no lease {lease_id}"))
@@ -959,9 +1024,9 @@ impl Store {
         }
         if row.state == LeaseState::Held {
             row.state = LeaseState::Released;
-            row.released_at_ms = Some(row.acquired_at_ms);
+            row.released_at_ms = Some(now_ms);
             upsert_lease(&tx, &row)?;
-            journal_lease(&tx, &row, 0)?;
+            journal_lease(&tx, &row, now_ms)?;
         }
         tx.commit()?;
         Ok(row)
@@ -2476,13 +2541,75 @@ mod tests {
         let session = new_session(&mut store, "sess_1", "agent_1", 1_000);
         let job_id = new_job(&mut store, &session, "key_1", "dig_1", 1_100);
         let finished = store
-            .finish_job(&job_id, JobStatus::Committed, Some("dig_out".into()), None, 1_200)
+            .finish_job(
+                &job_id,
+                JobStatus::Committed,
+                Some("dig_out".into()),
+                None,
+                0,
+                1_200,
+            )
             .expect("the job is finished");
         assert!(finished);
         let again = store
-            .finish_job(&job_id, JobStatus::Failed, None, Some(ErrorCode::ValidationFailed), 1_300)
+            .finish_job(
+                &job_id,
+                JobStatus::Failed,
+                None,
+                Some(ErrorCode::ValidationFailed),
+                0,
+                1_300,
+            )
             .expect("the second notification is accepted");
         assert!(!again);
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.status, JobStatus::Committed);
+        assert_eq!(job.result_digest.as_deref(), Some("dig_out"));
+        test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn a_worker_that_does_not_hold_the_epoch_may_not_finish_the_job() {
+        let dir = temp_dir("job-finish-epoch");
+        let mut store = new_store(&dir);
+        let session = new_session(&mut store, "sess_1", "agent_1", 1_000);
+        let job_id = new_job(&mut store, &session, "key_1", "dig_1", 1_100);
+        let _lease = store
+            .lease_job(&job_id, "worker_1", 5_000, 1_200)
+            .expect("the job is leased");
+        let epoch = store.get_job(&job_id).unwrap().unwrap().lease_epoch;
+        assert_eq!(epoch, 1);
+
+        // a worker that comes back late and holds another epoch may not write the end of the job
+        let error = store
+            .finish_job(
+                &job_id,
+                JobStatus::Committed,
+                Some("dig_out".into()),
+                None,
+                epoch + 1,
+                1_300,
+            )
+            .expect_err("the report of a stale worker is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+        // nothing is written: the job keeps its state and it has no result
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.status, JobStatus::Running);
+        assert_eq!(job.result_digest, None);
+        assert_eq!(job.error_code, None);
+
+        // the holder of the epoch of the job finishes it
+        let finished = store
+            .finish_job(
+                &job_id,
+                JobStatus::Committed,
+                Some("dig_out".into()),
+                None,
+                epoch,
+                1_400,
+            )
+            .expect("the job is finished");
+        assert!(finished);
         let job = store.get_job(&job_id).unwrap().unwrap();
         assert_eq!(job.status, JobStatus::Committed);
         assert_eq!(job.result_digest.as_deref(), Some("dig_out"));
@@ -2737,7 +2864,7 @@ mod tests {
             })
             .expect("the lease is taken");
         let released = store
-            .release_lease(&lease.lease_id, "worker_1")
+            .release_lease(&lease.lease_id, "worker_1", 1_500)
             .expect("the lease is released");
         assert_eq!(released.state, LeaseState::Released);
         // the resource is free again
@@ -2750,6 +2877,79 @@ mod tests {
                 now_ms: 2_000,
             })
             .expect("the lease is taken again");
+        test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn a_released_lease_keeps_the_time_it_was_released() {
+        let dir = temp_dir("lease-release-time");
+        let mut store = new_store(&dir);
+        let lease = store
+            .acquire_lease(NewLease {
+                resource: "res_1".into(),
+                holder: "worker_1".into(),
+                session_id: None,
+                ttl_ms: 5_000,
+                now_ms: 1_000,
+            })
+            .expect("the lease is taken");
+        assert_eq!(lease.acquired_at_ms, 1_000);
+        let released = store
+            .release_lease(&lease.lease_id, "worker_1", 4_200)
+            .expect("the lease is released");
+        // the lease keeps the moment it was given back, not the moment it was taken
+        assert_eq!(released.released_at_ms, Some(4_200));
+        assert_ne!(released.released_at_ms, Some(lease.acquired_at_ms));
+        let row = store
+            .get_lease(&lease.lease_id)
+            .expect("the lease is read")
+            .expect("the lease is there");
+        assert_eq!(row.released_at_ms, Some(4_200));
+        test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn the_journal_of_a_released_lease_carries_the_time_of_the_release() {
+        let dir = temp_dir("lease-release-journal");
+        let mut store = new_store(&dir);
+        let lease = store
+            .acquire_lease(NewLease {
+                resource: "res_1".into(),
+                holder: "worker_1".into(),
+                session_id: None,
+                ttl_ms: 5_000,
+                now_ms: 1_000,
+            })
+            .expect("the lease is taken");
+        store
+            .release_lease(&lease.lease_id, "worker_1", 4_200)
+            .expect("the lease is released");
+
+        // the journal of the lease carries the time of the release: it is not the epoch of the Unix clock
+        let path = dir.join("hub.sqlite3");
+        let connection = rusqlite::Connection::open(&path).expect("the database opens");
+        let mut statement = connection
+            .prepare("SELECT created_at_ms FROM local_journal WHERE kind = 'lease' ORDER BY seq")
+            .expect("the statement is prepared");
+        let times: Vec<i64> = statement
+            .query_map([], |row| row.get::<_, i64>(0))
+            .expect("the rows are read")
+            .map(|row| row.expect("the row is read"))
+            .collect();
+        assert!(
+            !times.is_empty(),
+            "the journal has the entries of the lease"
+        );
+        assert!(
+            times.iter().all(|time| *time != 0),
+            "no entry of the journal of the lease is at the epoch of the Unix clock: {times:?}"
+        );
+        let last = *times
+            .last()
+            .expect("the journal has the entry of the release");
+        assert_eq!(last, 4_200);
+        // the time of the release is in the window of the lease
+        assert!((1_000..=4_200).contains(&last));
         test_support::remove_dir(&dir);
     }
 
@@ -2774,7 +2974,7 @@ mod tests {
     }
 
     #[test]
-    fn a_job_that_is_leased_counts_the_attempt_and_the_epoch() {
+    fn a_job_that_is_leased_counts_the_epoch_and_not_yet_the_attempt() {
         let dir = temp_dir("lease-job");
         let mut store = new_store(&dir);
         let session = new_session(&mut store, "sess_1", "agent_1", 1_000);
@@ -2785,9 +2985,17 @@ mod tests {
         assert_eq!(lease.resource, job_id.as_str());
         let job = store.get_job(&job_id).unwrap().unwrap();
         assert_eq!(job.status, JobStatus::Running);
-        assert_eq!(job.attempt, 1);
+        // the claim is not a try: the attempt grows when the work really starts
+        assert_eq!(job.attempt, 0);
         assert_eq!(job.lease_epoch, 1);
         assert_eq!(job.worker_id.as_deref(), Some("worker_1"));
+        // the epoch of the claim is the fence of the job
+        let started = store
+            .begin_execution(&job_id, 1, 1_300)
+            .expect("the execution begins");
+        assert!(started);
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.attempt, 1);
         test_support::remove_dir(&dir);
     }
 
@@ -2804,6 +3012,69 @@ mod tests {
             .lease_job(&job_id, "worker_2", 5_000, 1_300)
             .expect_err("the second holder must be refused");
         assert_eq!(error.code, ErrorCode::RateLimited);
+        test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn a_job_that_is_put_back_into_the_queue_does_not_count_an_attempt() {
+        let dir = temp_dir("lease-job-put-back");
+        let mut store = new_store(&dir);
+        let session = new_session(&mut store, "sess_1", "agent_1", 1_000);
+        let job_id = new_job(&mut store, &session, "key_1", "dig_1", 1_100);
+
+        // the worker takes the job: the claim is not a try
+        let lease = store
+            .lease_job(&job_id, "worker_1", 5_000, 1_200)
+            .expect("the job is leased");
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.attempt, 0);
+        assert_eq!(job.lease_epoch, 1);
+
+        // the job goes back into the queue without being run: it waits for the window of the backoff
+        let moved = store
+            .transition_job(&job_id, JobStatus::Running, JobStatus::Queued, 1, 1_300)
+            .expect("the job moves");
+        assert!(moved);
+        store
+            .release_lease(&lease.lease_id, "worker_1", 1_300)
+            .expect("the lease is given back");
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.status, JobStatus::Queued);
+        assert_eq!(job.attempt, 0);
+
+        // the job is taken again: the put back did not count a try
+        let _ = store
+            .lease_job(&job_id, "worker_2", 5_000, 1_400)
+            .expect("the job is leased again");
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.attempt, 0);
+        assert_eq!(job.lease_epoch, 2);
+
+        // the work really starts: now the attempt is counted
+        let started = store
+            .begin_execution(&job_id, 2, 1_500)
+            .expect("the execution begins");
+        assert!(started);
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.attempt, 1);
+        test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn a_worker_that_does_not_hold_the_epoch_may_not_start_the_job() {
+        let dir = temp_dir("begin-execution-epoch");
+        let mut store = new_store(&dir);
+        let session = new_session(&mut store, "sess_1", "agent_1", 1_000);
+        let job_id = new_job(&mut store, &session, "key_1", "dig_1", 1_100);
+        let _ = store
+            .lease_job(&job_id, "worker_1", 5_000, 1_200)
+            .expect("the job is leased");
+        let error = store
+            .begin_execution(&job_id, 7, 1_300)
+            .expect_err("the worker that does not hold the epoch is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.attempt, 0);
         test_support::remove_dir(&dir);
     }
 

@@ -396,7 +396,7 @@ pub fn run_the_drive_in_a_child(arguments: &[&str]) -> String {
     command.env("PIME_IME_LIVE", "1");
     command.stdout(std::process::Stdio::piped());
     command.stderr(std::process::Stdio::piped());
-    let mut child = match command.spawn() {
+    let child = match command.spawn() {
         Ok(child) => child,
         Err(e) => return format!("the child could not be started: {e}"),
     };
@@ -433,7 +433,7 @@ impl NotepadHost {
         let child = std::process::Command::new("C:\\Windows\\System32\\notepad.exe")
             .arg(&file)
             .spawn()
-            .map_err(|e| windows::core::Error::from_win32())?;
+            .map_err(|_e| windows::core::Error::from_win32())?;
         // The Notepad needs a moment; its window carries the name of the file.
         let name = file
             .file_name()
@@ -830,7 +830,7 @@ impl FocusWindow {
                 hwnd,
                 WM_INPUTLANGCHANGEREQUEST,
                 WPARAM(1),
-                LPARAM(unsafe { GetKeyboardLayout(0) }.0 as isize),
+                LPARAM(GetKeyboardLayout(0).0 as isize),
             );
         }
         Ok(Self { hwnd })
@@ -1257,7 +1257,7 @@ impl EditHost {
             ("rwin", 0x5C),
         ] {
             // SAFETY: the call has no preconditions.
-            let down = unsafe { GetAsyncKeyState(vk as i32) } < 0;
+            let down = unsafe { GetAsyncKeyState(vk) } < 0;
             out.push_str(&format!("{name}={} ", if down { "down" } else { "up" }));
         }
         out
@@ -1627,10 +1627,7 @@ pub fn focus_is_our_document_manager(&self) -> bool {
 /// If the text service advised its sink under a different id, the keystroke manager cannot find it: the key goes
 /// nowhere. This probe walks the ids that could be the one and reports which of them can be unadvised.
 pub fn client_id_that_holds_the_sink(&self) -> Option<u32> {
-    let keys: ITfKeystrokeMgr = match self.thread_mgr.as_ref().and_then(|m| m.cast().ok()) {
-        Some(keys) => keys,
-        None => return None,
-    };
+    let keys: ITfKeystrokeMgr = self.thread_mgr.as_ref().and_then(|m| m.cast().ok())?;
     // SAFETY: the call has no preconditions.
     let thread_id = unsafe { GetCurrentThreadId() };
     // The scan is wide on purpose: the keystroke manager of TSF hands the key to the sink that belongs to the **owner
@@ -1752,8 +1749,8 @@ impl Drop for LiveHost {
 ///
 /// The drives press chords (Ctrl+F12, Ctrl+A, Ctrl+S) with `SendInput`. A modifier that goes down and never comes up
 /// - because the drive was interrupted, or because the process died in between - stays down for **the whole machine**:
-/// every key of the user then behaves as if that key were held (the user of the machine sees it as "the input is
-/// broken"). Nothing of that kind may survive a drive.
+///   every key of the user then behaves as if that key were held (the user of the machine sees it as "the input is
+///   broken"). Nothing of that kind may survive a drive.
 pub fn release_every_modifier() {
     for vk in [0x10, 0x11, 0x12, 0x5B, 0x5C] {
         send_virtual_key(vk, true);
@@ -1900,11 +1897,7 @@ pub fn the_field_of_the_report(report: &str, name: &str) -> Option<String> {
 /// `None` when the text before is not the beginning of the text after - the caret was not at the end of the
 /// document then, and the text that was added cannot be told from the text that was there.
 pub fn the_text_added_at_the_end(before: &str, after: &str) -> Option<String> {
-    if after.starts_with(before) {
-        Some(after[before.len()..].to_string())
-    } else {
-        None
-    }
+    after.strip_prefix(before).map(str::to_string)
 }
 
 /// How many Chinese characters the document holds.

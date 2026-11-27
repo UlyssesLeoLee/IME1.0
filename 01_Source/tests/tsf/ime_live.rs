@@ -464,7 +464,7 @@ fn drive_the_real_notepad() {
     // The positive control: the bridge of the input method writes a character into the focused document of the
     // Notepad. If that character is there afterwards, the path works and the missing candidate is the input
     // method's.
-    let control = ask("insert").map(|_| ()).is_some();
+    let _control = ask("insert").map(|_| ()).is_some();
     let write_answer = reply.as_ref().and_then(|r| {
         r.ask(&format!(
             "{{\"v\":1,\"op\":\"insert\",\"text\":\"X\",\"reply\":{}}}",

@@ -149,7 +149,8 @@ pub struct SystemState {
 
 impl SystemState {
     /// Applies a plan like an installer would. Refuses plans that mention foreign GUIDs; never touches
-    /// `default_keyboard` except for dropping an entry whose profile no longer exists (OS fallback behaviour).
+    /// `default_keyboard` except for dropping an entry of this product whose profile no longer exists (OS fallback
+    /// behaviour) - an entry that belongs to another IME is always kept.
     pub fn apply(&mut self, plan: &Plan) -> Result<(), PlanError> {
         plan.validate_own_only()?;
         for op in &plan.ops {

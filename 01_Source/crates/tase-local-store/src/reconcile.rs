@@ -443,7 +443,8 @@ mod tests {
             .expect("the job is leased");
         let job = store.get_job(&job_id).expect("the job is read").unwrap();
         assert_eq!(job.status, JobStatus::Running);
-        assert_eq!(job.attempt, 1);
+        // the claim is not a try: the attempt grows when the work really starts
+        assert_eq!(job.attempt, 0);
 
         let report = reconcile(&mut store, 5_000).expect("the reconciliation runs");
         assert_eq!(report.expired_leases, 1);
@@ -454,6 +455,35 @@ mod tests {
         let job = store.get_job(&job_id).expect("the job is read").unwrap();
         assert_eq!(job.status, JobStatus::Queued);
         assert_eq!(job.worker_id, None);
+        // the job that was never run does not count an attempt
+        assert_eq!(job.attempt, 0);
+        crate::test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn a_job_that_goes_back_to_the_queue_does_not_count_an_attempt() {
+        let dir = temp_dir("reconcile-attempt");
+        let (mut store, job_id) = store_with_job(&dir);
+        store
+            .lease_job(&job_id, "worker_1", 1_000, 200)
+            .expect("the job is leased");
+
+        // the worker dies: its lease runs out and the job goes back into the queue
+        let report = reconcile(&mut store, 5_000).expect("the reconciliation runs");
+        assert_eq!(report.expired_leases, 1);
+        assert_eq!(report.requeued_jobs, 1);
+        let job = store.get_job(&job_id).expect("the job is read").unwrap();
+        assert_eq!(job.status, JobStatus::Queued);
+        // the try that never happened is not counted
+        assert_eq!(job.attempt, 0);
+
+        // the job is taken again: the attempt is still the one of the tries that really ran
+        store
+            .lease_job(&job_id, "worker_2", 1_000, 6_000)
+            .expect("the job is leased again");
+        let job = store.get_job(&job_id).expect("the job is read").unwrap();
+        assert_eq!(job.attempt, 0);
+        assert_eq!(job.lease_epoch, 2);
         crate::test_support::remove_dir(&dir);
     }
 
@@ -613,7 +643,14 @@ mod tests {
         let dir = temp_dir("reconcile-terminal");
         let (mut store, job_id) = store_with_job(&dir);
         store
-            .finish_job(&job_id, JobStatus::Committed, Some("dig".into()), None, 300)
+            .finish_job(
+                &job_id,
+                JobStatus::Committed,
+                Some("dig".into()),
+                None,
+                0,
+                300,
+            )
             .expect("the job is finished");
         store
             .lease_job(&job_id, "worker_1", 1_000, 200)

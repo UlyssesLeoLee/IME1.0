@@ -18,6 +18,10 @@ pub struct PluginPredictor {
 
 impl PluginPredictor {
     /// A predictor that offers the language of the code and the plugin languages that are on.
+    ///
+    /// The lint `clippy::new_without_default` is allowed on purpose: a `Default` implementation would put a new
+    /// trait on the public API of this crate, and the predictor has exactly one form (the engine of the core).
+    #[allow(clippy::new_without_default)]
     pub fn new() -> PluginPredictor {
         PluginPredictor { base: LocalPredictor }
     }

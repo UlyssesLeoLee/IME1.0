@@ -190,6 +190,32 @@ function touch(file) {
   try { fs.utimesSync(file, now, now); } catch { /* a file that cannot be touched is reported by the restore check */ }
 }
 
+// A pause without a dependency (the script must run on a bare Node.js).
+const sleepSync = ms => { try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch { /* the pause is a nicety */ } };
+
+// Writing a source file can be **refused for a moment**: the scanner of the machine holds the file while it looks at
+// it, and the write comes back with "UNKNOWN" or "EPERM" (D-180). The write is tried again - the hold lasts seconds,
+// not minutes.
+//
+// This matters most for the **restore**: a round that dies in the middle of a case leaves the **broken** source in the
+// tree (that happened on 2026-11-27: the restore of `keymap.rs` was refused, the script died with a stack trace and
+// the tree kept the mutation). So the restore is retried, and if it still cannot be written, the round says so
+// loudly and ends red instead of dying quietly.
+function writeWithRetry(file, text, attempts = 8) {
+  let last = null;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      fs.writeFileSync(file, text, 'utf8');
+      return true;
+    } catch (error) {
+      last = error;
+      if (i === attempts) break;
+      sleepSync(1500 * i);
+    }
+  }
+  throw last;
+}
+
 function backup(relative, original, mutated) {
   fs.mkdirSync(BACKUP_DIR, {recursive: true});
   // **Both** versions go into one file and it is renamed **once**: two renames would leave a backup without its
@@ -330,7 +356,7 @@ for (const item of selected) {
   // tree **and no backup at all**, and the next run would take the broken bytes for the original, report that every
   // file was restored and end green with a broken implementation in the tree (D-178).
   backup(item.file, Buffer.from(original, 'utf8'), Buffer.from(mutated, 'utf8'));
-  fs.writeFileSync(file, mutated, 'utf8');
+  writeWithRetry(file, mutated);
   let status = 0;
   let out = '';
   let note = '';
@@ -348,9 +374,18 @@ for (const item of selected) {
     // is dropped (it must not come back at the next run either) and the round says so.
     const current = fs.readFileSync(file, 'utf8');
     if (current === mutated) {
-      fs.writeFileSync(file, original, 'utf8');
-      undoBackup(item.file);
-      touch(file); // the artefact of the broken source is the newer one: cargo has to rebuild it (D-133)
+      try {
+        writeWithRetry(file, original);
+        undoBackup(item.file);
+        touch(file); // the artefact of the broken source is the newer one: cargo has to rebuild it (D-133)
+      } catch (error) {
+        // The restore is the one write that must not be lost: the tree keeps the **broken** source otherwise, and the
+        // next round would take the broken bytes for the original (that happened on 2026-11-27 - the restore of
+        // `keymap.rs` was refused by the scanner, the script died with a stack trace and the tree kept the mutation).
+        write(`FAILED the restore of ${item.file}: the machine refused the write (${error.code || ''} ${error.message || error})`);
+        write(`       the tree keeps the mutation of this case: restore it by hand (the backup is in ${BACKUP_DIR})`);
+        if (!exitCode) exitCode = 5;
+      }
     } else {
       const leftover = path.join(BACKUP_DIR, backupName(item.file));
       if (fs.existsSync(leftover)) fs.unlinkSync(leftover);

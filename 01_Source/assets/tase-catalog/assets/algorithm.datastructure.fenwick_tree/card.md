@@ -23,14 +23,14 @@ impl Fenwick {
         i += 1;
         while i <= self.n {
             self.tree[i] += delta;
-            i += i & i.wrapping_neg();      // i += lowbit(i)
+            i += i & i.wrapping_neg();      // i += lowbit(i)；等价写法 i += i.isolate_lowest_one()
         }
     }
     pub fn prefix_sum(&self, mut i: usize) -> i64 {    // [0, i)
         let mut s = 0;
         while i > 0 {
             s += self.tree[i];
-            i -= i & i.wrapping_neg();
+            i -= i & i.wrapping_neg();      // 等价写法：i -= i.isolate_lowest_one()
         }
         s
     }
@@ -78,7 +78,7 @@ impl Fenwick {
 - 复杂度：建树 O(n)，查询与更新 O(log n)，空间 O(n)
 - 稳定性：不适用
 - 内存：O(n)；`i64` 下 n = 10^6 约 8 MB，比线段树省一半
-- 溢出：`lowbit` 用 `i & i.wrapping_neg()` 避免对 0 取负导致 panic；累加值可能溢出 `i64`
+- 溢出：`lowbit`（最低位的那个 1）有两种等价写法——`i & i.wrapping_neg()` 与 `i.isolate_lowest_one()`，两者运算结果相同；后者不对 0 取负，因此不会碰到取负的溢出。门禁关系：在 `-D warnings` 下 `clippy::manual_isolate_lowest_one` 会把手写的前一种判红，所以新代码推荐 `isolate_lowest_one`（本仓库的实现用的就是它）；累加值另需注意 `i64` 溢出
 - 极端输入：n = 0、n = 1、最大索引、极大累加值
 - 并发安全：只读共享安全；写需独占
 - 限制：只支持可由前缀差分得到的聚合；不支持区间更新（需变通）

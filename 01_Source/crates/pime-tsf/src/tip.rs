@@ -447,7 +447,7 @@ impl TsfHost {
             unsafe {
                 range.SetText(ec, 0, &wide).map_err(refused)?;
                 // the caret goes after the candidate
-                let mut caret = range.Clone().map_err(refused)?;
+                let caret = range.Clone().map_err(refused)?;
                 caret.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
                 let selection = selection_of(caret);
                 let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));
@@ -626,7 +626,7 @@ impl HostText for TsfHost {
                 };
                 range.SetText(ec, 0, &wide).map_err(refused)?;
                 // the caret goes after the typed text
-                let mut caret = range.Clone().map_err(refused)?;
+                let caret = range.Clone().map_err(refused)?;
                 caret.Collapse(ec, TF_ANCHOR_END).map_err(refused)?;
                 let selection = selection_of(caret);
                 let set = ctx2.SetSelection(ec, std::slice::from_ref(&selection));

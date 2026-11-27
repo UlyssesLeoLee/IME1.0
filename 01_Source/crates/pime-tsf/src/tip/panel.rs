@@ -585,9 +585,11 @@ mod tests {
     /// menu that shows "zh-CN" where it should show "中文", misleads the user about the product itself.
     #[test]
     fn the_rows_of_the_panel_show_the_state_of_the_product() {
-        let mut settings = LanguageSettings::default();
-        settings.space_confirms = false; // the space does not confirm in this setup
-        settings.auto_compose = true; // the composition opens on its own in this setup
+        let settings = LanguageSettings {
+            space_confirms: false, // the space does not confirm in this setup
+            auto_compose: true,    // the composition opens on its own in this setup
+            ..Default::default()
+        };
         let items = laser_items("zh-CN", &settings, "auto", "laser", true);
 
         // the first row is the switch of the input mode, and it shows the mode that is on
@@ -601,8 +603,10 @@ mod tests {
 
         // a switch shows the setting that is really in force - and that holds in both states
         for (space_confirms, expected) in [(true, "开"), (false, "关")] {
-            let mut settings = LanguageSettings::default();
-            settings.space_confirms = space_confirms;
+            let settings = LanguageSettings {
+                space_confirms,
+                ..Default::default()
+            };
             let items = laser_items("zh-CN", &settings, "auto", "laser", true);
             let space = items
                 .iter()
@@ -616,8 +620,10 @@ mod tests {
         }
 
         // the switch of the composition shows its own setting
-        let mut settings = LanguageSettings::default();
-        settings.auto_compose = true; // the composition opens on its own in this setup
+        let settings = LanguageSettings {
+            auto_compose: true, // the composition opens on its own in this setup
+            ..Default::default()
+        };
         let items = laser_items("zh-CN", &settings, "auto", "laser", true);
         let compose = items
             .iter()

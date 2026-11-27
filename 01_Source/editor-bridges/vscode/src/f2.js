@@ -1,7 +1,7 @@
 'use strict';
 // F2 prompt (command programmingIme.f2Prompt): the selection becomes a complete 5W1H prompt on the clipboard (docs/F2_PROMPT.md).
 //  - prose selection: the user's own AI turns the text into a prompt     (scenario f1Insert, grant L1: only the selection is sent);
-//  - code selection:  the user's own AI reviews the file around it       (scenario f1Full,   grant L3: up to ~400 lines of the file are sent)
+//  - code selection:  the user's own AI reviews the file around it       (scenario f1Full,   grant L3: 400 lines of the file are sent by default, at most 800)
 //    and the result is an optimisation-plan prompt; nothing to fix -> a transient notice and the clipboard is NOT touched;
 //  - AI not available (off, untrusted workspace, no key, consent declined, file over 2 MiB): the UNREVIEWED local template is copied and the
 //    notice says so and why. A sensitive selection / file is never copied.
