@@ -2568,4 +2568,47 @@ laser.set_input_mode`）**没有单元测试**——`Inner` 需要真的 `ITfThr
 
 **登记**：本轮修掉的 22 条已在台账 §2 逐行标为「已修」；D-182 与 TASE 围栏的行为改动在 §1 等你追认。
 
+### 5.44 第四十七轮（2026-11-27 傍晚）：**第二波子代理** —— 设计书写死的那几条，一次补齐
+
+§5.43 修的是「答案已经唯一」的一批（注释、clippy、卡、租约围栏）。这一波继续用同样的办法：
+把台账里**由设计书写死、实现没跟上**的条目挑出来，分给子代理并行补齐。仍然是**每个子代理只碰自己那几个 crate**。
+
+#### 5.44.1 这一波六组做了什么
+
+| 组 | 范围 | 做了什么 | 验证 |
+|---|---|---|---|
+| pime-ipc | `crates/pime-ipc` | **D-47**（管道名的命名空间：新增 `PipeName::with_prefix(prefix, sid)`）、**D-48**（读 `TokenLogonSid`，DACL 主体改成**登录 SID**，新增 `bind_logon_session`） | **91 → 96** 全过、clippy 零告警 |
+| executor | `crates/tase-executor` | **D-71**（`GitRepo` 新增 `message_of` ⇒ 设计书要求的「按 `TASE-Job-ID` trailer 找 commit」做得出）、**D-72**（apply 路径加围栏参数：**持锁期间**比对活 epoch，不一致就 `PERMISSION_DENIED`、一个文档都不写） | **68 → 74** 全过 |
+| hub | `crates/tase-local-hub` | **D-63**（文件锁加**围栏 token**（`FileLock.epoch`，单调发号）与**写前守卫**（守卫在落库之前 ⇒ 没有半写）） | **119 → 126** 全过 |
+| metrics | `crates/tase-metrics` | **D-74**（`.aci.json` 真写设计书 §10.1 的字段：新增 `TestLayer`（`uat`→`e2e`）、`AssertionEvidence`、`aci_version`；十个键不少，**没测过的仍写 `null`**） | **50 → 61** 全过、下游 worker 照常编译 |
+| contract | `crates/tase-contract` | **D-59**（`symbol_signature_hash` 的定义固定在契约层，**照抄 executor 现有形状**）、**D-60**（`Target.symbol_kind` 的**封闭词表**（13 项，取自 `tase-semantic`），词表外的值**明确被拒**） | **60 → 72** 全过、schema 与 Rust 逐项相等 |
+| store+worker | `crates/tase-local-store` + `crates/tase-worker` | **D-70**（`Job` 加 `ready_at_ms` 并**落库**；worker 的 `is_ready` 只看它，不再用 `updated_at_ms + 策略` 推导）、**D-73**（契约 8 态 → store 7 态的**映射层**，并标出 store 没有自有状态的那两个）、**③**（适配 executor 的新围栏参数：worker 传**领取时**的 epoch + 新的 `Fence` 实现） | store **78 → 80**、worker **77 → 86** 全过 |
+
+#### 5.44.2 这一波里被**实测推翻**的一条（D-49，交你裁定）
+
+D-49 说「`pime-ipc` 的 DACL 掩码含 `FILE_CREATE_PIPE_INSTANCE` ⇒ 同用户同会话就能搭话」。
+子代理写了十来个小 C 程序去量 Windows 的真实行为，结论是：**这条在 Windows 上做不到**——
+一根管道**只有一份 DACL**（第一个实例的）：后续实例的 `SECURITY_ATTRIBUTES` 被忽略、第一个实例的 DACL 创建后改不掉；
+去掉 `FILE_CREATE_PIPE_INSTANCE` ⇒ **服务端自己也建不出替换实例**（ERROR_ACCESS_DENIED），
+并发降到 **1**（与 NFR-016 的「≥64 并发」冲突）。
+⇒ **三个选项**：**(a)** 预建实例池（第一个实例仍带 0x4）；**(b)** 服务端改单实例 + `DisconnectNamedPipe` 回收（并发 1）；
+**(c)** 写进设计书当**已知取舍**。**掩码因此一个字没改**，实测已钉成回归用例。
+
+#### 5.44.3 门禁的两处补强
+
+- **`pime-ipc` 进了门禁**：它此前**根本不在门禁里**（它是 TASE 那些 crate 依赖的 IPC 层）⇒
+  它的改动可以「一道门禁都不经过自己的测试」就提交。现在 TASE 步是 **16 个 crate**（含 `pime-ipc`）。
+- **claims 校验的正则**跟着门禁步的标签走：TASE 步改名后，正则仍写死旧标签 ⇒ 门禁里那一步误报「日志里什么都没有」
+  （连锁把 evidence cross-check 也带红）。已把正则放宽（`TASE crates \(…\)` 后面不写死 `: cargo test`）。
+
+#### 5.44.4 这一轮的门禁
+
+**全绿**：core **462** / TSF **402** / **TASE + pime-ipc 16 crates 1206** / agent **85** / JavaScript **357** /
+安装器 crate **127**；红绿轮 **77 caught / 0 missed / 0 unknown / 0 stale**；三道 claims 校验、交付数字校验、
+语法检查、知识卡校验（93 assets / 0 problems）全过；清单 **866** 条。
+
+**登记**：D-47 / D-48 / D-59 / D-60 / D-63 / D-70 / D-71 / D-72 / D-73 / D-74 与 D-61 已标「已修」；
+**D-49 未实施**（实测后交你裁定）；**映射层放在 worker 还是 store**（D-73）与 **`aci_version` 的取值**（D-74）也归你。
+
+
 

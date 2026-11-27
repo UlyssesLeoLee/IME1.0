@@ -1,4 +1,4 @@
-# The red-green check of 2026-11-27T07:56:57.833Z
+# The red-green check of 2026-11-27T12:15:33.316Z
 # all 77 mutations of the implementation were checked in this round; every one of them is restored right after it is applied.
 CAUGHT nema-tab [D-90~D-92（多 Agent 演示的 .NEMA 口径）] a domain header needs a real tab (a space is not one)
 CAUGHT nema-revision-zero [D-92（修订号）] the revision of a domain is a positive integer
@@ -36,6 +36,7 @@ CAUGHT f1-first-candidate [NFR-203 / ST-040] the first candidate of the F1 path 
 CAUGHT f1-cancel [UT-070 / NFR-203] a cancelled F1 request leaves the tab idle, not in error
 CAUGHT ime-context-window [IT-013 / FR-013] the text service keeps a window of what was typed, not all of it
 CAUGHT ime-context-collect [IT-013 / FR-013] the text service collects the characters the user typed
+note: ime-context-collect: the write access of ime_live-a24fbe8627ce213b.exe was restored (the scanner of the machine had taken it away)
 CAUGHT ime-direct-observing [IT-013 / FR-015] the host that grants the nearby range switches the machine to observing
 CAUGHT grants-scope [IT-013 / UT-029] a grant of one level does not stand in for another one
 CAUGHT clipboard-clean [D-97 / D-120（剪贴板）] the text of the clipboard is trimmed: no NUL at the end of the buffer, no spaces around it

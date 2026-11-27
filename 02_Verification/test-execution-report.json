@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-27T08:28:49.687Z",
+  "generated": "2026-11-27T12:42:52.195Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -87,10 +87,10 @@
     "rust"
    ],
    "tests": [
-    "rust: input::tests::ut_003_direct_never_consumes_ascii",
-    "input::tests::ut_003_direct_never_consumes_ascii",
     "rust: input::tests::ut_003_observing_does_not_consume_ordinary_characters_either",
-    "input::tests::ut_003_observing_does_not_consume_ordinary_characters_either"
+    "input::tests::ut_003_observing_does_not_consume_ordinary_characters_either",
+    "rust: input::tests::ut_003_direct_never_consumes_ascii",
+    "input::tests::ut_003_direct_never_consumes_ascii"
    ],
    "failed": [],
    "reason": ""
@@ -448,14 +448,14 @@
    "tests": [
     "js: UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
     "UT-026 UTF-16 positions never split surrogate pairs or CRLF; out of range is rejected",
-    "rust: textrange::tests::ut_026_crlf_is_not_split",
-    "textrange::tests::ut_026_crlf_is_not_split",
     "rust: textrange::tests::ut_026_out_of_range_is_rejected",
     "textrange::tests::ut_026_out_of_range_is_rejected",
-    "rust: textrange::tests::ut_026_positions_never_split_surrogates",
-    "textrange::tests::ut_026_positions_never_split_surrogates",
+    "rust: textrange::tests::ut_026_crlf_is_not_split",
+    "textrange::tests::ut_026_crlf_is_not_split",
     "rust: textrange::tests::ut_026_offset_round_trip",
-    "textrange::tests::ut_026_offset_round_trip"
+    "textrange::tests::ut_026_offset_round_trip",
+    "rust: textrange::tests::ut_026_positions_never_split_surrogates",
+    "textrange::tests::ut_026_positions_never_split_surrogates"
    ],
    "failed": [],
    "reason": ""
@@ -475,10 +475,10 @@
     "engine: excerpts and insert previews are identical in both engines (UT-027)",
     "rust: context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
     "context::tests::ut_027_nearby_excerpt_is_minimal_and_wider_requests_are_refused",
-    "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
-    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "rust: scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
     "scope::tests::ut_027_excerpt_never_splits_surrogates_or_crlf",
+    "rust: scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
+    "scope::tests::ut_027_only_the_allowed_nearby_fragment_is_returned",
     "rust: scope::tests::ut_027_wider_requests_are_refused_not_trimmed",
     "scope::tests::ut_027_wider_requests_are_refused_not_trimmed"
    ],
@@ -1079,10 +1079,10 @@
    "tests": [
     "rust: install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
     "install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
-    "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
-    "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
     "rust: install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
     "install_plan::tests::ut_061_uninstall_on_a_clean_system_is_empty_and_idempotent",
+    "rust: install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
+    "install_plan::tests::ut_061_plans_mentioning_foreign_guids_are_refused",
     "rust: install_plan::tests::ut_061_uninstall_removes_only_own_guids",
     "install_plan::tests::ut_061_uninstall_removes_only_own_guids"
    ],
