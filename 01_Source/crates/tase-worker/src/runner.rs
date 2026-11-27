@@ -20,6 +20,10 @@
 //! write to the host and may not move the ref (detailed design §6.2). The check is the [`FenceGuard`] of the caller,
 //! and the time of the check is the time of the caller: the runner never reads the clock.
 //!
+//! The apply is fenced too: the epoch of the lease that the worker got when it took the job is compared with the live
+//! epoch of the job **while the lock of the fence is held**, so a worker that was replaced writes nothing at all
+//! (detailed design §5.5, §17.6). The fence of the worker is the [`crate::fence::StoreFence`].
+//!
 //! # The rebase
 //!
 //! The decision of the rebase needs the symbol index of the new head, and the symbol index belongs to `tase-semantic`,
@@ -29,7 +33,7 @@
 use tase_contract::TaseError;
 use tase_contract::api::PlanRequest;
 use tase_executor::apply::{
-    ApplyOutcome, ApplyPlan, DocumentEditAdapter, apply_to_host, document_of, rollback,
+    ApplyOutcome, ApplyPlan, DocumentEditAdapter, Fence, apply_to_host, document_of, rollback,
 };
 use tase_executor::git_tx::{FileWrite, GitRepo, commit_message};
 use tase_executor::preview::{ChangeKind, FileChange, Preview};
@@ -172,19 +176,29 @@ impl Runner {
 
     /// Hands a job to the host.
     ///
-    /// The lease of the job is checked first: a worker that is not the holder any more writes nothing. When the host
-    /// refuses a document or does not confirm the write, the documents that were written are rolled back and the
-    /// outcome names what happened.
+    /// The lease of the job is checked first: a worker that is not the holder any more writes nothing. The apply is
+    /// fenced too: the epoch of the lease that the worker got when it took the job is compared with the live epoch
+    /// **while the lock of the fence is held**, so a worker whose lease ran out writes nothing at all (detailed
+    /// design §5.5, §17.6).
+    ///
+    /// The epoch is the epoch of the claim and not the epoch that is read when the job is reported: an epoch that is
+    /// read at the last moment is the epoch of whoever holds the job now, and it fences nothing (detailed design
+    /// §6.2).
+    ///
+    /// When the host refuses a document or does not confirm the write, the documents that were written are rolled
+    /// back and the outcome names what happened.
     pub fn apply(
         &self,
         request: &RunRequest,
         adapter: &mut dyn DocumentEditAdapter,
         guard: &dyn FenceGuard,
+        fence: &mut dyn Fence,
+        lease_epoch: u64,
         now_ms: u64,
     ) -> Result<RunOutcome, TaseError> {
         guard.check(now_ms).map_err(|error| error.to_error())?;
         let plan = Runner::plan_of(request)?;
-        let outcome = apply_to_host(adapter, &plan)?;
+        let outcome = apply_to_host(adapter, &plan, fence, lease_epoch)?;
         let rolled_back = if outcome.is_applied() {
             0
         } else {
@@ -234,16 +248,23 @@ impl Runner {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use std::sync::Mutex;
 
-    use tase_executor::apply::{HostEditOutcome, HostEditRequest};
+    use tase_contract::ids::{AgentId, JobId, SessionId, WorkspaceId};
+    use tase_executor::apply::{FenceHandle, HostEditOutcome, HostEditRequest};
     use tase_executor::git_tx::MemoryGit;
     use tase_executor::workspace::DocumentSnapshot;
+    use tase_local_store::{NewJob, NewSession, Store};
 
     use super::*;
-    use crate::lease::{LeaseGuard, LeaseTable};
+    use crate::fence::StoreFence;
+    use crate::lease::{LeaseGuard, LeaseTable, Unguarded};
 
     const BASE: &str = "fn main() {\n    println!(\"hello\");\n}\n";
     const NEW: &str = "fn main() {\n    println!(\"hello, world\");\n}\n";
+
+    /// The epoch of the lease of the job of the tests.
+    const EPOCH: u64 = 1;
 
     /// The host of the tests: it holds the documents and it writes the edits it is given.
     #[derive(Clone, Debug, Default)]
@@ -313,6 +334,77 @@ mod tests {
         }
     }
 
+    /// The fence of the tests: it holds the epoch of the lease of the job and it says whether it was locked.
+    struct TestFence {
+        live_epoch: u64,
+        locked: bool,
+    }
+
+    impl TestFence {
+        fn new(live_epoch: u64) -> TestFence {
+            TestFence {
+                live_epoch,
+                locked: false,
+            }
+        }
+    }
+
+    /// The handle of the lock of the fence of the tests.
+    struct TestFenceHandle<'a> {
+        fence: &'a mut TestFence,
+    }
+
+    impl Fence for TestFence {
+        fn lock(&mut self) -> Result<Box<dyn FenceHandle + '_>, TaseError> {
+            self.locked = true;
+            Ok(Box::new(TestFenceHandle { fence: self }))
+        }
+    }
+
+    impl FenceHandle for TestFenceHandle<'_> {
+        fn live_epoch(&mut self) -> Result<u64, TaseError> {
+            if !self.fence.locked {
+                // the comparison was made outside the critical section: the fence does not hold
+                return Err(TaseError::internal("the epoch was read outside the lock"));
+            }
+            Ok(self.fence.live_epoch)
+        }
+    }
+
+    /// A store with a session and a job, and the id of the job.
+    fn store_with_a_job() -> (Mutex<Store>, JobId) {
+        let mut store = Store::open_in_memory().expect("the store opens");
+        tase_local_store::migrations::apply(&mut store).expect("the steps run");
+        let session_id = SessionId::new("session-1").expect("the session id is valid");
+        store
+            .open_session(NewSession {
+                session_id: session_id.clone(),
+                agent_id: AgentId::new("agent-1").expect("the agent id is valid"),
+                provider: "test".to_string(),
+                instance_id: "instance-1".to_string(),
+                workspace_id: WorkspaceId::new("workspace-1").expect("the workspace id is valid"),
+                owner_logon_sid_hash: "sha256:logon".to_string(),
+                granted_scopes: vec!["tase.code.apply".to_string()],
+                capabilities: Vec::new(),
+                now_ms: 1_000,
+            })
+            .expect("the session is registered");
+        let submission = store
+            .submit_job(NewJob {
+                job_type: "tase.code.apply".to_string(),
+                workspace_id: WorkspaceId::new("workspace-1").expect("the workspace id is valid"),
+                agent_id: AgentId::new("agent-1").expect("the agent id is valid"),
+                session_id,
+                idempotency_key: "key-1".to_string(),
+                request_digest: "sha256:request".to_string(),
+                base_snapshot_digest: "sha256:base".to_string(),
+                priority: 0,
+                now_ms: 1_000,
+            })
+            .expect("the job is registered");
+        (Mutex::new(store), submission.job_id)
+    }
+
     fn request() -> RunRequest {
         RunRequest {
             job_id: "job_000000000001".to_string(),
@@ -347,10 +439,11 @@ mod tests {
         let (table, token) = lease_table();
         let guard = LeaseGuard::new(&table, "job_000000000001", token);
         let mut host = FakeHost::with("src/main.rs", BASE);
+        let mut fence = TestFence::new(EPOCH);
         let runner = Runner::new();
 
         let outcome = runner
-            .apply(&request(), &mut host, &guard, 2_000)
+            .apply(&request(), &mut host, &guard, &mut fence, EPOCH, 2_000)
             .expect("the job is handed to the host");
 
         assert!(outcome.is_applied());
@@ -366,10 +459,11 @@ mod tests {
         let (table, token) = lease_table();
         let guard = LeaseGuard::new(&table, "job_000000000001", token);
         let mut host = FakeHost::refusing("src/main.rs", BASE);
+        let mut fence = TestFence::new(EPOCH);
         let runner = Runner::new();
 
         let outcome = runner
-            .apply(&request(), &mut host, &guard, 2_000)
+            .apply(&request(), &mut host, &guard, &mut fence, EPOCH, 2_000)
             .expect("the job is handed to the host");
 
         assert!(!outcome.is_applied());
@@ -383,6 +477,7 @@ mod tests {
         let (table, token) = lease_table();
         let guard = LeaseGuard::new(&table, "job_000000000001", token);
         let mut host = FakeHost::with("src/main.rs", BASE);
+        let mut fence = TestFence::new(EPOCH);
         let runner = Runner::new();
 
         // the first document is written, the second one is refused
@@ -400,7 +495,7 @@ mod tests {
         host.refuse = Some("src/lib.rs".to_string());
 
         let outcome = runner
-            .apply(&job, &mut host, &guard, 2_000)
+            .apply(&job, &mut host, &guard, &mut fence, EPOCH, 2_000)
             .expect("the job is handed to the host");
 
         assert!(!outcome.is_applied());
@@ -428,13 +523,66 @@ mod tests {
 
         let guard = LeaseGuard::new(&table, "job_000000000001", token);
         let mut host = FakeHost::with("src/main.rs", BASE);
+        let mut fence = TestFence::new(EPOCH);
         let runner = Runner::new();
 
         let error = runner
-            .apply(&request(), &mut host, &guard, 2_500)
+            .apply(&request(), &mut host, &guard, &mut fence, EPOCH, 2_500)
             .expect_err("the write of the old holder is refused");
         assert_eq!(error.code, tase_contract::ErrorCode::PermissionDenied);
         assert!(host.requests.is_empty(), "the host was not asked to write");
+    }
+
+    #[test]
+    fn the_runner_writes_nothing_when_the_epoch_of_the_claim_is_old() {
+        // the job is in the store and it is taken by a worker
+        let (store, job_id) = store_with_a_job();
+        {
+            let _lease = store
+                .lock()
+                .unwrap()
+                .lease_job(&job_id, "worker-1", 30_000, 1_000)
+                .expect("the job is leased");
+        }
+        let epoch_of_the_claim = store
+            .lock()
+            .unwrap()
+            .get_job(&job_id)
+            .unwrap()
+            .expect("the job is there")
+            .lease_epoch;
+
+        // the lease of the job runs out and another worker takes the job back: the epoch of the job moves
+        {
+            let _lease = store
+                .lock()
+                .unwrap()
+                .lease_job(&job_id, "worker-2", 30_000, 31_001)
+                .expect("the job is taken back");
+        }
+
+        let mut host = FakeHost::with("src/main.rs", BASE);
+        let mut fence = StoreFence::new(&store, &job_id);
+        let runner = Runner::new();
+
+        // the worker that reports with the epoch of its claim writes nothing at all
+        let error = runner
+            .apply(
+                &request(),
+                &mut host,
+                &Unguarded,
+                &mut fence,
+                epoch_of_the_claim,
+                31_002,
+            )
+            .expect_err("the write of the old holder is refused");
+        assert_eq!(error.code, tase_contract::ErrorCode::PermissionDenied);
+        assert!(host.requests.is_empty(), "the host was not asked to write");
+        assert_eq!(
+            host.text_of("src/main.rs"),
+            BASE,
+            "the document of the user was not touched"
+        );
     }
 
     #[test]

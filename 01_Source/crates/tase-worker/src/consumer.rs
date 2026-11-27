@@ -528,11 +528,13 @@ impl TaskSource for MemoryTaskSource {
 /// The claim of a job is the transaction of the store: the job is only given to one holder, the epoch of the job
 /// grows and the fencing token of the lease grows (detailed design §6.2). The attempt of the job does not grow at
 /// the claim: the claim is not a try, and the try is counted when the work really starts.
+///
+/// The queue does not know the policy of the retries: the moment a job may be taken again is written in the row of
+/// the job, and every worker that reads the row reads the same moment (detailed design §6.2).
 pub struct StoreTaskSource {
     store: Store,
     holder: String,
     ttl_ms: u64,
-    policy: RetryPolicy,
     held: Option<HeldJob>,
 }
 
@@ -552,12 +554,11 @@ struct HeldJob {
 
 impl StoreTaskSource {
     /// A worker of the jobs of the store.
-    pub fn new(store: Store, holder: &str, ttl_ms: u64, policy: RetryPolicy) -> StoreTaskSource {
+    pub fn new(store: Store, holder: &str, ttl_ms: u64) -> StoreTaskSource {
         StoreTaskSource {
             store,
             holder: holder.to_string(),
             ttl_ms,
-            policy,
             held: None,
         }
     }
@@ -574,16 +575,11 @@ impl StoreTaskSource {
 
     /// Whether the job may be taken now.
     ///
-    /// A job that was never tried is ready at once; a job that failed waits for the window of the backoff of the
-    /// policy, counted from the moment it went back into the queue.
+    /// The moment the job may be taken again is written in the row of the job (`ready_at_ms`): the worker does not
+    /// derive it from the time of the last change and from its own policy, because two workers with two policies
+    /// would not agree on it (detailed design §6.2).
     fn is_ready(&self, job: &Job, now_ms: u64) -> bool {
-        if job.attempt == 0 {
-            return true;
-        }
-        let ready_at_ms = job
-            .updated_at_ms
-            .saturating_add(self.policy.delay_for(job.attempt));
-        ready_at_ms <= now_ms
+        job.ready_at_ms <= now_ms
     }
 
     /// The refusal of a worker that is not the holder of the job any more.
@@ -675,39 +671,44 @@ impl TaskSource for StoreTaskSource {
                     now_ms,
                 )?;
             }
-            TaskResult::Failed { code, .. } if report.retry_at_ms.is_some() => {
-                // the job goes back into the queue and waits for the window of the backoff
-                let moved = self.store.transition_job(
-                    &job_id,
-                    JobStatus::Running,
-                    JobStatus::Queued,
-                    lease_epoch,
-                    now_ms,
-                )?;
-                if !moved {
-                    return Err(self.stale_job(&report.task_id));
+            TaskResult::Failed { code, .. } => match report.retry_at_ms {
+                Some(ready_at_ms) => {
+                    // The job goes back into the queue and waits for the window of the backoff. The window is
+                    // written in the row of the job: the moment the job may be taken again does not depend on the
+                    // policy of the worker that reads the row (detailed design §6.2).
+                    let moved = self.store.requeue_job(
+                        &job_id,
+                        JobStatus::Running,
+                        lease_epoch,
+                        ready_at_ms,
+                        now_ms,
+                    )?;
+                    if !moved {
+                        return Err(self.stale_job(&report.task_id));
+                    }
                 }
-            }
-            TaskResult::Failed { code, .. } => {
-                let moved = self.store.transition_job(
-                    &job_id,
-                    JobStatus::Running,
-                    JobStatus::Verifying,
-                    lease_epoch,
-                    now_ms,
-                )?;
-                if !moved {
-                    return Err(self.stale_job(&report.task_id));
+                None => {
+                    // the failure is final: the job ends with the code of the failure
+                    let moved = self.store.transition_job(
+                        &job_id,
+                        JobStatus::Running,
+                        JobStatus::Verifying,
+                        lease_epoch,
+                        now_ms,
+                    )?;
+                    if !moved {
+                        return Err(self.stale_job(&report.task_id));
+                    }
+                    self.store.finish_job(
+                        &job_id,
+                        JobStatus::Failed,
+                        None,
+                        Some(*code),
+                        lease_epoch,
+                        now_ms,
+                    )?;
                 }
-                self.store.finish_job(
-                    &job_id,
-                    JobStatus::Failed,
-                    None,
-                    Some(*code),
-                    lease_epoch,
-                    now_ms,
-                )?;
-            }
+            },
         }
 
         // the lease of the job is given back: another worker may take the job when it is ready
@@ -1157,7 +1158,7 @@ mod tests {
         let dir = temp_dir("store-source");
         let (store, job_id) = store_with_job(&dir);
 
-        let mut source = StoreTaskSource::new(store, "worker-1", 30_000, policy());
+        let mut source = StoreTaskSource::new(store, "worker-1", 30_000);
         let task = source.next_task(1_000).expect("the job is taken");
         assert_eq!(task.task_id, job_id.as_str());
         // the work starts now, so the try is counted (detailed design §6.2)
@@ -1179,6 +1180,15 @@ mod tests {
             .report(&report, 1_000)
             .expect("the report is accepted");
 
+        // the window of the backoff is written in the row of the job: the row says when the job may be taken again
+        let job = source
+            .store()
+            .get_job(&job_id)
+            .expect("the job is read")
+            .expect("the job is there");
+        assert_eq!(job.ready_at_ms, 2_000);
+        assert_eq!(job.status, JobStatus::Queued);
+
         assert!(
             source.next_task(1_500).is_none(),
             "the job waits for the window of the backoff"
@@ -1194,6 +1204,48 @@ mod tests {
         std::fs::remove_dir_all(&dir).expect("the directory of the test is removed");
     }
 
+    /// The window of the backoff is in the row of the job: every worker that reads the row reads the same moment,
+    /// and the worker does not derive it from its own policy (detailed design §6.2).
+    #[test]
+    fn the_window_of_the_backoff_is_in_the_row_of_the_job() {
+        let dir = temp_dir("store-ready-at");
+        let (store, job_id) = store_with_job(&dir);
+
+        let mut first = StoreTaskSource::new(store, "worker-1", 30_000);
+        let task = first.next_task(1_000).expect("the job is taken");
+        let report = TaskReport {
+            task_id: task.task_id.clone(),
+            attempt: task.attempt,
+            fencing_token: task.fencing_token,
+            result: TaskResult::Failed {
+                code: ErrorCode::WorkerUnavailable,
+                message: "the host is not there".to_string(),
+            },
+            retry_at_ms: Some(5_000),
+        };
+        first
+            .report(&report, 1_000)
+            .expect("the report is accepted");
+
+        // another worker reads the same row and waits for the same moment: the two workers do not disagree on the
+        // moment the job may be taken again, because the moment is in the row and not in the policy of a worker
+        let mut second = StoreTaskSource::new(
+            Store::open(dir.join("worker.sqlite3")).expect("the store opens"),
+            "worker-2",
+            30_000,
+        );
+        assert!(
+            second.next_task(4_999).is_none(),
+            "the job waits for the window of the backoff"
+        );
+        let again = second.next_task(5_000).expect("the job is taken again");
+        assert_eq!(again.task_id, job_id.as_str());
+
+        drop(first);
+        drop(second);
+        std::fs::remove_dir_all(&dir).expect("the directory of the test is removed");
+    }
+
     /// The report of a worker whose lease ran out is refused: the epoch of the claim is the fence, and the job
     /// was taken by somebody else in the meantime (detailed design §6.2, §8.1).
     #[test]
@@ -1201,7 +1253,7 @@ mod tests {
         let dir = temp_dir("store-stale");
         let (store, job_id) = store_with_job(&dir);
 
-        let mut source = StoreTaskSource::new(store, "worker-1", 30_000, policy());
+        let mut source = StoreTaskSource::new(store, "worker-1", 30_000);
         let task = source.next_task(1_000).expect("the job is taken");
 
         // the lease of the job runs out and another worker takes the job back

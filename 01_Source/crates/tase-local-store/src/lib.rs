@@ -304,6 +304,12 @@ pub struct Job {
     pub created_at_ms: u64,
     /// The time the job was touched the last time.
     pub updated_at_ms: u64,
+    /// The moment the job may be taken again.
+    ///
+    /// The window of the backoff is written down here and it is not derived from the time of the last change and
+    /// from the policy of a worker: two workers with two policies would not agree on the moment the job may be
+    /// taken again (detailed design §6.2).
+    pub ready_at_ms: u64,
 }
 
 /// A lease of a resource (a job, a branch, a file): one holder at a time, with a fencing token that only grows.
@@ -689,6 +695,8 @@ impl Store {
             priority: req.priority,
             created_at_ms: req.now_ms,
             updated_at_ms: req.now_ms,
+            // the job may be taken from the moment it is registered
+            ready_at_ms: req.now_ms,
         };
         let record = IdempotencyRecord {
             scope: scope.clone(),
@@ -763,6 +771,50 @@ impl Store {
             TaseError::internal(format!("the job {} vanished in its own transition", job_id.as_str()))
         })?;
         row.status = to;
+        row.updated_at_ms = now_ms;
+        journal_job(&tx, &row, now_ms)?;
+        tx.commit()?;
+        Ok(true)
+    }
+
+    /// Moves a job back into the queue and writes down the moment it may be taken again.
+    ///
+    /// The window of the backoff is written in the row of the job and it is not derived from the time of the last
+    /// change and from the policy of a worker: two workers with two policies would not agree on the moment the job
+    /// may be taken again (detailed design §6.2).
+    ///
+    /// The move only happens when the job is in the state the caller expects and holds the epoch the caller holds:
+    /// a worker whose lease ran out may not put the job back into the queue (detailed design §6.3).
+    pub fn requeue_job(
+        &mut self,
+        job_id: &JobId,
+        from: JobStatus,
+        lease_epoch: u64,
+        ready_at_ms: u64,
+        now_ms: u64,
+    ) -> Result<bool, TaseError> {
+        let tx = self.transaction()?;
+        let changed = tx.execute(
+            "UPDATE local_jobs SET status = ?2, ready_at_ms = ?3, updated_at_ms = ?4
+              WHERE job_id = ?1 AND status = ?5 AND lease_epoch = ?6",
+            rusqlite::params![
+                job_id.as_str(),
+                JobStatus::Queued.as_str(),
+                ready_at_ms as i64,
+                now_ms as i64,
+                from.as_str(),
+                lease_epoch as i64
+            ],
+        )?;
+        if changed == 0 {
+            tx.commit()?;
+            return Ok(false);
+        }
+        let mut row = row_job(&tx, job_id.as_str())?.ok_or_else(|| {
+            TaseError::internal(format!("the job {} vanished in its own transition", job_id.as_str()))
+        })?;
+        row.status = JobStatus::Queued;
+        row.ready_at_ms = ready_at_ms;
         row.updated_at_ms = now_ms;
         journal_job(&tx, &row, now_ms)?;
         tx.commit()?;
@@ -1227,7 +1279,7 @@ const SESSION_COLUMNS: &str = "session_id, agent_id, provider, instance_id, work
 const JOB_COLUMNS: &str = "job_id, job_type, workspace_id, agent_id, session_id, idempotency_key, \
      request_digest, base_snapshot_digest, status, attempt, lease_epoch, worker_id, result_digest, \
      commit_intent_digest, committed_ref, committed_oid, error_code, priority, created_at_ms, \
-     updated_at_ms";
+     updated_at_ms, ready_at_ms";
 
 const LEASE_COLUMNS: &str = "lease_id, resource, holder, session_id, fencing_token, acquired_at_ms, \
      expires_at_ms, released_at_ms, state";
@@ -1353,6 +1405,7 @@ fn read_job(row: &rusqlite::Row<'_>) -> Result<Job, TaseError> {
         priority: column_u64(row, 17)? as u8,
         created_at_ms: column_u64(row, 18)?,
         updated_at_ms: column_u64(row, 19)?,
+        ready_at_ms: column_u64(row, 20)?,
     })
 }
 
@@ -1527,14 +1580,14 @@ fn upsert_job(conn: &Connection, row: &Job) -> Result<(), TaseError> {
            (job_id, job_type, workspace_id, agent_id, session_id, idempotency_key, request_digest,
             base_snapshot_digest, status, attempt, lease_epoch, worker_id, result_digest,
             commit_intent_digest, committed_ref, committed_oid, error_code, priority,
-            created_at_ms, updated_at_ms)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+            created_at_ms, updated_at_ms, ready_at_ms)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)
          ON CONFLICT(job_id) DO UPDATE SET
            job_type = ?2, workspace_id = ?3, agent_id = ?4, session_id = ?5, idempotency_key = ?6,
            request_digest = ?7, base_snapshot_digest = ?8, status = ?9, attempt = ?10,
            lease_epoch = ?11, worker_id = ?12, result_digest = ?13, commit_intent_digest = ?14,
            committed_ref = ?15, committed_oid = ?16, error_code = ?17, priority = ?18,
-           created_at_ms = ?19, updated_at_ms = ?20",
+           created_at_ms = ?19, updated_at_ms = ?20, ready_at_ms = ?21",
         rusqlite::params![
             row.job_id.as_str(),
             row.job_type,
@@ -1555,7 +1608,8 @@ fn upsert_job(conn: &Connection, row: &Job) -> Result<(), TaseError> {
             row.error_code.map(|code| code.as_str()),
             row.priority as i64,
             row.created_at_ms as i64,
-            row.updated_at_ms as i64
+            row.updated_at_ms as i64,
+            row.ready_at_ms as i64
         ],
     )
     .map_err(sqlite::map_sqlite)?;
@@ -1877,6 +1931,7 @@ pub fn job_to_json(row: &Job) -> Json {
         ("priority", Json::int(row.priority as i64)),
         ("created_at_ms", Json::int(row.created_at_ms as i64)),
         ("updated_at_ms", Json::int(row.updated_at_ms as i64)),
+        ("ready_at_ms", Json::int(row.ready_at_ms as i64)),
     ])
 }
 
@@ -2074,6 +2129,13 @@ pub fn job_from_json(value: &Json) -> Result<Job, TaseError> {
         priority: json_u64(value, "priority")? as u8,
         created_at_ms: json_u64(value, "created_at_ms")?,
         updated_at_ms: json_u64(value, "updated_at_ms")?,
+        // A journal of an older build has no field: the job of that build had no window of a backoff and it was
+        // ready at once.
+        ready_at_ms: value
+            .get("ready_at_ms")
+            .and_then(Json::as_i64)
+            .and_then(|number| u64::try_from(number).ok())
+            .unwrap_or(0),
     })
 }
 
@@ -2531,6 +2593,64 @@ mod tests {
             store.get_job(&job_id).unwrap().unwrap().status,
             JobStatus::Running
         );
+        test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn a_job_keeps_the_moment_it_may_be_taken_again() {
+        let dir = temp_dir("job-ready-at");
+        let mut store = new_store(&dir);
+        let session = new_session(&mut store, "sess_1", "agent_1", 1_000);
+        let job_id = new_job(&mut store, &session, "key_1", "dig_1", 1_100);
+
+        // a job that was never tried is ready at once
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.ready_at_ms, 1_100);
+
+        // the job is taken and it goes back into the queue with a window of a backoff
+        let _ = store
+            .lease_job(&job_id, "worker_1", 10_000, 1_200)
+            .expect("the job is leased");
+        let requeued = store
+            .requeue_job(&job_id, JobStatus::Running, 1, 4_200, 1_300)
+            .expect("the job goes back into the queue");
+        assert!(requeued);
+
+        // the window is written down and it is read back from the row
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.status, JobStatus::Queued);
+        assert_eq!(job.ready_at_ms, 4_200);
+        assert_eq!(job.updated_at_ms, 1_300);
+
+        // and the state that is rebuilt from the rows carries it too
+        let state = crate::snapshots::State::load(&store).expect("the state is read");
+        let job = state
+            .jobs
+            .iter()
+            .find(|job| job.job_id == job_id)
+            .expect("the job is in the state");
+        assert_eq!(job.ready_at_ms, 4_200);
+        test_support::remove_dir(&dir);
+    }
+
+    #[test]
+    fn a_worker_with_an_old_epoch_does_not_put_the_job_back_into_the_queue() {
+        let dir = temp_dir("job-requeue-epoch");
+        let mut store = new_store(&dir);
+        let session = new_session(&mut store, "sess_1", "agent_1", 1_000);
+        let job_id = new_job(&mut store, &session, "key_1", "dig_1", 1_100);
+        let _ = store
+            .lease_job(&job_id, "worker_1", 10_000, 1_200)
+            .expect("the job is leased");
+
+        // the worker that still believes in the epoch 0 may not put the job back into the queue
+        let requeued = store
+            .requeue_job(&job_id, JobStatus::Running, 0, 4_200, 1_300)
+            .expect("the move is refused, not the call");
+        assert!(!requeued);
+        let job = store.get_job(&job_id).unwrap().unwrap();
+        assert_eq!(job.status, JobStatus::Running);
+        assert_eq!(job.ready_at_ms, 1_100, "the window was not written");
         test_support::remove_dir(&dir);
     }
 
@@ -3267,6 +3387,7 @@ mod tests {
             priority: 7,
             created_at_ms: 11,
             updated_at_ms: 12,
+            ready_at_ms: 13,
         };
         assert_eq!(job_from_json(&job_to_json(&job)).unwrap(), job);
 

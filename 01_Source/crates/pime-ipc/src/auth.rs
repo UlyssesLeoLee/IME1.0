@@ -322,10 +322,49 @@ pub struct PipeName(String);
 
 const PIPE_PREFIX: &str = r"\\.\pipe\PIME-IPC-1-";
 
+/// The root every pipe name starts with; it is always the local machine (`\\.\`).
+const PIPE_ROOT: &str = r"\\.\pipe\";
+
+/// The namespace this crate uses by default: `\\.\pipe\PIME-IPC-1-<sid>`.
+pub const PIPE_NAMESPACE: &str = "PIME-IPC-1";
+
+/// The longest prefix a namespace may have (the rest of the name is the SID).
+const MAX_PREFIX_LEN: usize = 64;
+
+/// The longest pipe name Windows accepts (the whole path, root included).
+const MAX_PIPE_NAME_LEN: usize = 256;
+
 impl PipeName {
     pub fn for_sid(sid: &str) -> Result<PipeName, IpcError> {
         validate_sid(sid)?;
         Ok(PipeName(format!("{PIPE_PREFIX}{sid}")))
+    }
+
+    /// A pipe name in any namespace: `\\.\pipe\<prefix>-<sid>`.
+    ///
+    /// The prefix is the namespace of the subsystem that owns the pipe (this crate's `PIME-IPC-1`, another
+    /// subsystem's own name such as `ide1-tase`), the SID is the isolation key: the caller decides whether it
+    /// is the user SID or the logon session SID, and two logon sessions of one user must not share a pipe.
+    /// A prefix that already ends with the separator names the same pipe, so `PIME-IPC-1` and `PIME-IPC-1-` both
+    /// name what [`PipeName::for_sid`] names.
+    pub fn with_prefix(prefix: &str, sid: &str) -> Result<PipeName, IpcError> {
+        validate_sid(sid)?;
+        let namespace = prefix.strip_suffix('-').unwrap_or(prefix);
+        if namespace.is_empty()
+            || namespace.len() > MAX_PREFIX_LEN
+            || !namespace
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+        {
+            return Err(IpcError::InvalidArgument(
+                "pipe namespace must be 1..=64 of [A-Za-z0-9-]",
+            ));
+        }
+        let name = format!("{PIPE_ROOT}{namespace}-{sid}");
+        if name.len() > MAX_PIPE_NAME_LEN {
+            return Err(IpcError::InvalidArgument("pipe name is longer than 256"));
+        }
+        Ok(PipeName(name))
     }
 
     /// A throw-away name for tests: `\\.\pipe\PIME-IPC-1-TEST-<suffix>`. Tests must pass a random suffix.
@@ -661,5 +700,58 @@ mod tests {
         for bad in ["", "a b", "a\\b", "..", &"x".repeat(65)] {
             assert!(PipeName::for_test(bad).is_err(), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn ut_ipc_pipe_name_with_prefix_builds_any_namespace() {
+        let sid = "S-1-5-21-1-2-3-1001";
+        // the design's shape: \\.\pipe\ide1-tase-{logon-sid}
+        assert_eq!(
+            PipeName::with_prefix("ide1-tase", sid).unwrap().as_str(),
+            r"\\.\pipe\ide1-tase-S-1-5-21-1-2-3-1001"
+        );
+        // a prefix that already carries the separator names the same pipe
+        assert_eq!(
+            PipeName::with_prefix("ide1-tase-", sid).unwrap().as_str(),
+            r"\\.\pipe\ide1-tase-S-1-5-21-1-2-3-1001"
+        );
+        // this crate's own namespace is unchanged: the old constructor and the new one agree
+        assert_eq!(
+            PipeName::with_prefix(PIPE_NAMESPACE, sid).unwrap(),
+            PipeName::for_sid(sid).unwrap()
+        );
+        assert_eq!(
+            PipeName::with_prefix("PIME-IPC-1-", sid).unwrap(),
+            PipeName::for_sid(sid).unwrap()
+        );
+        // two namespaces never collide
+        assert_ne!(
+            PipeName::with_prefix("ide1-tase", sid).unwrap(),
+            PipeName::with_prefix("ide1-other", sid).unwrap()
+        );
+        // the SID is validated as strictly as everywhere else
+        assert!(PipeName::with_prefix("ide1-tase", r"S-1-5-1\..\x").is_err());
+        assert!(PipeName::with_prefix("ide1-tase", "not-a-sid").is_err());
+        // the prefix is a name fragment, never a path
+        for bad in ["", "-", "a b", "a\\b", "..", "a/b", &"x".repeat(65)] {
+            assert!(PipeName::with_prefix(bad, sid).is_err(), "{bad:?}");
+        }
+        // the whole name stays inside what Windows accepts
+        let long_sid = format!(
+            "S-1-5-{}-{}-{}-{}-{}-{}-{}-{}-{}",
+            "9".repeat(20),
+            "9".repeat(20),
+            "9".repeat(20),
+            "9".repeat(20),
+            "9".repeat(20),
+            "9".repeat(20),
+            "9".repeat(20),
+            "9".repeat(20),
+            "9".repeat(10),
+        );
+        assert_eq!(long_sid.len(), 184, "the longest SID the validator accepts");
+        // 9 (the root) + the namespace + the separator + the SID must stay inside 256 characters
+        assert!(PipeName::with_prefix(&"x".repeat(63), &long_sid).is_err());
+        assert!(PipeName::with_prefix(&"x".repeat(62), &long_sid).is_ok());
     }
 }

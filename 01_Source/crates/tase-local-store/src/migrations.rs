@@ -187,6 +187,17 @@ CREATE TABLE IF NOT EXISTS local_reconcile_log (
 );
 "#;
 
+/// The fourth step: the moment a job may be taken again.
+///
+/// The window of the backoff is written down in the row of the job: it is not derived from the time of the last
+/// change and from the policy of a worker, because two workers with two policies would not agree on the moment the
+/// job may be taken again (detailed design §6.2).
+const JOB_READY_AT: &str = r#"
+ALTER TABLE local_jobs ADD COLUMN ready_at_ms INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_local_jobs_ready
+  ON local_jobs(status, ready_at_ms);
+"#;
+
 /// The steps of the schema, in the order they must run.
 pub const MIGRATIONS: &[Migration] = &[
     Migration {
@@ -203,6 +214,11 @@ pub const MIGRATIONS: &[Migration] = &[
         version: 3,
         name: "reconcile_log",
         sql: RECONCILE_LOG,
+    },
+    Migration {
+        version: 4,
+        name: "job_ready_at",
+        sql: JOB_READY_AT,
     },
 ];
 
@@ -341,7 +357,7 @@ mod tests {
         let mut store = Store::open(dir.join("hub.sqlite3")).expect("the store opens");
         assert_eq!(current_version(&store).expect("the version"), 0);
         let ran = apply(&mut store).expect("the steps run");
-        assert_eq!(ran, vec![1, 2, 3]);
+        assert_eq!(ran, vec![1, 2, 3, 4]);
         assert_eq!(
             current_version(&store).expect("the version"),
             latest_version()
@@ -353,7 +369,7 @@ mod tests {
     fn the_steps_may_be_repeated_without_a_change() {
         let dir = temp_dir("migrate-repeat");
         let mut store = Store::open(dir.join("hub.sqlite3")).expect("the store opens");
-        assert_eq!(apply(&mut store).expect("the steps run"), vec![1, 2, 3]);
+        assert_eq!(apply(&mut store).expect("the steps run"), vec![1, 2, 3, 4]);
         assert!(apply(&mut store).expect("the steps run again").is_empty());
         assert!(apply(&mut store).expect("the steps run again").is_empty());
         assert_eq!(
@@ -362,7 +378,7 @@ mod tests {
         );
         assert_eq!(
             applied_versions(&store).expect("the versions"),
-            vec![1, 2, 3]
+            vec![1, 2, 3, 4]
         );
         crate::test_support::remove_dir(&dir);
     }
@@ -401,12 +417,12 @@ mod tests {
         // the store is opened again by a build that knows more
         let mut store = Store::open(&path).expect("the store opens again");
         let ran = apply(&mut store).expect("the steps run");
-        assert_eq!(ran, vec![2, 3]);
+        assert_eq!(ran, vec![2, 3, 4]);
         assert_eq!(
             current_version(&store).expect("the version"),
             latest_version()
         );
-        assert_eq!(sqlite_user_version(&store).expect("the pragma"), 3);
+        assert_eq!(sqlite_user_version(&store).expect("the pragma"), 4);
 
         // the row of the old schema is still there
         let count: i64 = store
@@ -427,6 +443,17 @@ mod tests {
             )
             .expect("the priority is read");
         assert_eq!(priority, 5);
+
+        // and the moment the job may be taken again has its default too: the job of the old schema had no window
+        // of a backoff and it was ready at once
+        let ready_at_ms: i64 = store
+            .query_row(
+                "SELECT ready_at_ms FROM local_jobs WHERE job_id = 'job_1'",
+                rusqlite::params![],
+                |row| row.get(0),
+            )
+            .expect("the moment is read");
+        assert_eq!(ready_at_ms, 0);
 
         crate::test_support::remove_dir(&dir);
     }

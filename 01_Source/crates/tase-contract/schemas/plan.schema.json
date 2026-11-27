@@ -114,7 +114,23 @@
         },
         "symbol_kind": {
           "type": ["string", "null"],
-          "description": "The kind of the symbol: `function`, `struct`, ..."
+          "enum": [
+            null,
+            "function",
+            "method",
+            "type",
+            "struct",
+            "enum",
+            "trait",
+            "module",
+            "const",
+            "variable",
+            "interface",
+            "class",
+            "test",
+            "unknown"
+          ],
+          "description": "The kind of the symbol. The list is closed: a name that is not in it is refused (`INVALID_ARGUMENT`), it is not compared as a free string."
         }
       }
     },
@@ -147,7 +163,8 @@
         },
         "symbol_signature_hash": {
           "type": ["string", "null"],
-          "description": "The digest of the signature of the symbol."
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "The digest of the signature of the symbol: `sha256:` and the SHA-256 of the signature text, in lower-case hex. The signature text is the header of the declaration (`pub fn run(x: u32) -> bool`), with the runs of blanks collapsed into one space and the ends trimmed. A symbol whose header could not be read has the digest of the empty text."
         },
         "expected_symbol_exists": {
           "type": ["boolean", "null"],

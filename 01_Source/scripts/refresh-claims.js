@@ -112,7 +112,7 @@ const counts = {
   rust_core_tests: last(runAll, /Rust: cargo test --workspace.*?(\d+) tests/gm),
   rust_tsf_tests: last(runAll, /TSF crate \(crates\/pime-tsf\): cargo test.*?(\d+) tests/gm),
   rust_agent_tests: last(runAll, /AI agent front-ends \(crates\/pime-agent\): cargo test.*?(\d+) tests/gm),
-  rust_tase_tests: last(runAll, /TASE crates \(the template-aware semantic execution system\): cargo test.*?(\d+) tests/gm),
+  rust_tase_tests: last(runAll, /TASE crates \(the template-aware semantic execution system\).*?(\d+) tests/gm),
   js_tests: last(runAll, /^\S+ tests (\d+)\s*$/gm),
 };
 // the installer crate: the unit tests first, then the real file system tests, then the real link tests.

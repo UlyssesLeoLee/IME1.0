@@ -19,6 +19,7 @@ use crate::ids::{
     AgentId, AssetId, CommitId, ImplementationId, JobId, OperationId, PlanId, PreviewId,
     RepositoryId, RequestId, SessionId, TemplateId, TenantId, TraceId, WorkspaceId,
 };
+use crate::symbol::{SymbolKind, is_symbol_signature_hash};
 use pime_core::json::Json;
 
 /// The field of a JSON object; a missing field is an invalid argument.
@@ -650,7 +651,11 @@ pub struct Target {
     pub path: String,
     /// The symbol the operation works on.
     pub symbol: Option<String>,
-    /// The kind of the symbol (`function`, `struct`, ...).
+    /// The kind of the symbol.
+    ///
+    /// The name is one of the closed list of [`SymbolKind`] (`function`, `method`, `type`, `struct`, `enum`,
+    /// `trait`, `module`, `const`, `variable`, `interface`, `class`, `test`, `unknown`); a name that is not in
+    /// the list is refused when the target is read.
     pub symbol_kind: Option<String>,
 }
 
@@ -681,12 +686,28 @@ impl Target {
         self.to_json_value().to_json_string()
     }
 
+    /// The kind of the symbol, when the target names one.
+    ///
+    /// A name that is not in the closed list of the contract is refused: the kind is a part of the contract,
+    /// not a free string that two sides compare on their own.
+    pub fn kind(&self) -> Result<Option<SymbolKind>, TaseError> {
+        match &self.symbol_kind {
+            Some(name) => SymbolKind::from_str(name).map(Some),
+            None => Ok(None),
+        }
+    }
+
     /// The target of a JSON value.
     pub fn from_json(value: &Json) -> Result<Self, TaseError> {
+        let symbol_kind = opt_str(value, "symbol_kind")?;
+        if let Some(name) = &symbol_kind {
+            // the kind is a part of the contract: a name that is not in the list is refused here
+            SymbolKind::from_str(name)?;
+        }
         Ok(Target {
             path: req_str(value, "path")?,
             symbol: opt_str(value, "symbol")?,
-            symbol_kind: opt_str(value, "symbol_kind")?,
+            symbol_kind,
         })
     }
 }
@@ -733,6 +754,11 @@ pub struct Preconditions {
     /// The digest of the blob of the file. It may be absent for a file that does not exist yet.
     pub file_blob_sha: Option<String>,
     /// The digest of the signature of the symbol.
+    ///
+    /// The digest is the `"sha256:"` prefix and the SHA-256 of the signature text - the header of the
+    /// declaration, with the runs of blanks collapsed into one space and the ends trimmed - in lower-case hex
+    /// (see [`crate::symbol::symbol_signature_hash`]). A value of another shape is refused when the
+    /// preconditions are read, so the two sides of a rebase check the same value.
     pub symbol_signature_hash: Option<String>,
     /// Whether the symbol is expected to exist.
     pub expected_symbol_exists: Option<bool>,
@@ -773,9 +799,18 @@ impl Preconditions {
 
     /// The preconditions of a JSON value.
     pub fn from_json(value: &Json) -> Result<Self, TaseError> {
+        let symbol_signature_hash = opt_str(value, "symbol_signature_hash")?;
+        if let Some(digest) = &symbol_signature_hash
+            && !is_symbol_signature_hash(digest)
+        {
+            // the digest of a signature has one shape: a value of another shape is refused here
+            return Err(TaseError::invalid_argument(format!(
+                "the field \"symbol_signature_hash\" is not the digest of a signature: {digest:?}"
+            )));
+        }
         Ok(Preconditions {
             file_blob_sha: opt_str(value, "file_blob_sha")?,
-            symbol_signature_hash: opt_str(value, "symbol_signature_hash")?,
+            symbol_signature_hash,
             expected_symbol_exists: opt_bool(value, "expected_symbol_exists")?,
         })
     }
@@ -2089,7 +2124,11 @@ mod tests {
             ],
             preconditions: Some(Preconditions {
                 file_blob_sha: Some("GIT_BLOB_SHA".to_string()),
-                symbol_signature_hash: Some("sha256:FULL64HEX".to_string()),
+                // the digest of the signature of the symbol, as the contract defines it
+                symbol_signature_hash: Some(
+                    "sha256:5bd8375cf4df16030d7ca7dc5e1db9e47353a0a6efc037fdf0485c5a6738d3d2"
+                        .to_string(),
+                ),
                 expected_symbol_exists: Some(false),
             }),
         }
@@ -2312,6 +2351,17 @@ mod tests {
         parse(text, Limits::DEFAULT).expect("the schema must be a JSON the parser accepts")
     }
 
+    /// A property of a definition of a JSON Schema document.
+    fn schema_property(schema: &Json, definition: &str, property: &str) -> Json {
+        schema
+            .get("$defs")
+            .and_then(|defs| defs.get(definition))
+            .and_then(|def| def.get("properties"))
+            .and_then(|properties| properties.get(property))
+            .unwrap_or_else(|| panic!("the schema must have the property {definition}.{property}"))
+            .clone()
+    }
+
     #[test]
     fn the_envelope_survives_the_round_trip() {
         let envelope = sample_envelope();
@@ -2364,6 +2414,98 @@ mod tests {
         assert_eq!(round_trip(&preconditions), preconditions);
         let empty = Preconditions::default();
         assert_eq!(round_trip(&empty), empty);
+    }
+
+    #[test]
+    fn a_target_with_a_kind_that_is_not_in_the_list_is_refused() {
+        for name in ["func", "Function", "function ", "fun", "FUNCTIONS"] {
+            let value = parse(
+                &format!("{{\"path\": \"src/api/user.rs\", \"symbol_kind\": {name:?}}}"),
+                Limits::DEFAULT,
+            )
+            .expect("valid JSON");
+            let error = Target::from_json(&value).unwrap_err();
+            assert_eq!(
+                error.code,
+                crate::error::ErrorCode::InvalidArgument,
+                "{name:?}"
+            );
+            assert!(
+                error.message.contains("unknown symbol kind"),
+                "{name:?}: {}",
+                error.message
+            );
+        }
+    }
+
+    #[test]
+    fn every_kind_of_the_list_is_accepted_by_a_target() {
+        for kind in SymbolKind::ALL {
+            let value = parse(
+                &format!(
+                    "{{\"path\": \"src/api/user.rs\", \"symbol_kind\": {:?}}}",
+                    kind.as_str()
+                ),
+                Limits::DEFAULT,
+            )
+            .expect("valid JSON");
+            let target = Target::from_json(&value).expect("a kind of the list is accepted");
+            assert_eq!(target.kind().expect("the kind is known"), Some(kind));
+        }
+        // a target that names no kind is still a target
+        let value = parse("{\"path\": \"src/api/user.rs\"}", Limits::DEFAULT).expect("valid JSON");
+        let target = Target::from_json(&value).expect("a target without a kind is accepted");
+        assert_eq!(target.kind().expect("no kind is no failure"), None);
+    }
+
+    #[test]
+    fn a_precondition_with_a_digest_that_is_not_one_is_refused() {
+        for digest in [
+            "sha256:FULL64HEX",
+            "sha256:0000",
+            "sha256:5BD8375CF4DF16030D7CA7DC5E1DB9E47353A0A6EFC037FDF0485C5A6738D3D2",
+            "5bd8375cf4df16030d7ca7dc5e1db9e47353a0a6efc037fdf0485c5a6738d3d2",
+            "md5:5bd8375cf4df16030d7ca7dc5e1db9e47353a0a6efc037fdf0485c5a6738d3d2",
+        ] {
+            let value = parse(
+                &format!("{{\"symbol_signature_hash\": {digest:?}}}"),
+                Limits::DEFAULT,
+            )
+            .expect("valid JSON");
+            let error = Preconditions::from_json(&value).unwrap_err();
+            assert_eq!(
+                error.code,
+                crate::error::ErrorCode::InvalidArgument,
+                "{digest:?}"
+            );
+            assert!(
+                error.message.contains("symbol_signature_hash"),
+                "{digest:?}: {}",
+                error.message
+            );
+        }
+    }
+
+    #[test]
+    fn a_precondition_with_the_digest_of_the_contract_is_accepted() {
+        let signature = "pub fn run(x: u32) -> bool";
+        let digest = crate::symbol::symbol_signature_hash(Some(signature));
+        let value = parse(
+            &format!("{{\"symbol_signature_hash\": {digest:?}}}"),
+            Limits::DEFAULT,
+        )
+        .expect("valid JSON");
+        let preconditions =
+            Preconditions::from_json(&value).expect("the digest of the contract is accepted");
+        assert_eq!(
+            preconditions.symbol_signature_hash.as_deref(),
+            Some(digest.as_str())
+        );
+        // the digest of the contract is the digest the executor computes (`rebase::signature_hash`)
+        assert_eq!(
+            digest,
+            format!("sha256:{}", pime_core::sha256::sha256_hex(signature))
+        );
     }
 
     #[test]
@@ -2658,6 +2800,43 @@ mod tests {
         let schema = parsed_schema("plan");
         let dto = dto_field_names(&sample_plan_request().to_json_value());
         assert_eq!(schema_property_names(&schema), dto);
+    }
+
+    #[test]
+    fn the_plan_schema_carries_the_closed_list_of_the_kinds() {
+        let schema = parsed_schema("plan");
+        let property = schema_property(&schema, "target", "symbol_kind");
+        let Json::Arr(values) = property
+            .get("enum")
+            .expect("the kind of a symbol has a closed list")
+        else {
+            panic!("the list of the kinds must be an array");
+        };
+        let mut names: Vec<String> = values
+            .iter()
+            .filter_map(|value| value.as_str().map(str::to_string))
+            .collect();
+        names.sort();
+        let mut expected: Vec<String> = SymbolKind::ALL
+            .iter()
+            .map(|kind| kind.as_str().to_string())
+            .collect();
+        expected.sort();
+        // the schema and the type of the contract name the same kinds
+        assert_eq!(names, expected);
+        // the kind may be absent, and nothing else may be
+        assert_eq!(values.len(), expected.len() + 1);
+        assert!(values.iter().any(|value| value.is_null()));
+    }
+
+    #[test]
+    fn the_plan_schema_carries_the_shape_of_the_digest_of_a_signature() {
+        let schema = parsed_schema("plan");
+        let property = schema_property(&schema, "preconditions", "symbol_signature_hash");
+        assert_eq!(
+            property.get("pattern").and_then(|value| value.as_str()),
+            Some("^sha256:[0-9a-f]{64}$")
+        );
     }
 
     #[test]

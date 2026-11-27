@@ -41,6 +41,8 @@
 //!
 //! * the executor stops at the first document the host refuses and answers `Rejected`; it never answers `Applied` for
 //!   a plan whose documents are only half written;
+//! * the apply is fenced: the epoch of the lease of the caller is compared with the live epoch while the lock of the
+//!   commit coordinator is held, so a worker whose lease ran out writes nothing at all (detailed design §5.5, §17.6);
 //! * the outcome of an apply always names the documents that were written, so the caller can roll them back with
 //!   [`rollback`], which writes the inverse edits and checks the read-back;
 //! * the inverse of every document travels together in one [`crate::undo::UndoTransaction`], so the user undoes the
@@ -138,6 +140,32 @@ pub trait DocumentEditAdapter {
     fn apply_edits(&mut self, request: &HostEditRequest) -> Result<HostEditOutcome>;
 }
 
+/// The fence of an apply: the lock of the commit coordinator and the epoch of the lease of the job.
+///
+/// Detailed design §5.5 says that the commit coordinator "locks the branch row and the job lease row in the database,
+/// verifies the live lease epoch and the approval while the locks are held, and only then runs the Git ref CAS", and
+/// detailed design §17.6 says that "an old Worker whose lease epoch comparison fails must terminate". The executor
+/// does not own that lock: it asks the fence for it. The epoch is compared **inside** the critical section, so an
+/// epoch that moved while the caller was waiting for the lock is refused before anything is written.
+pub trait Fence {
+    /// Takes the lock of the target and gives the handle of the lock back.
+    ///
+    /// The lock is held until the handle is dropped: the comparison of the epoch and the write of the documents are in
+    /// one and the same critical section, and never one before the other.
+    fn lock(&mut self) -> Result<Box<dyn FenceHandle + '_>>;
+}
+
+/// The handle of the lock of the commit coordinator.
+///
+/// The handle holds the lock, so it is the only door to the live epoch while the lock is held.
+pub trait FenceHandle {
+    /// The live epoch of the lease of the job, read while the lock is held.
+    ///
+    /// The epoch is read under the lock, so it is the epoch of the job as it is now, and not the epoch the caller saw
+    /// before it waited for the lock.
+    fn live_epoch(&mut self) -> Result<u64>;
+}
+
 /// The result of an apply that went through the host.
 ///
 /// Every outcome names the documents that were written, so that a caller can roll exactly those back.
@@ -216,7 +244,25 @@ pub fn document_of(path: &str, base_version: i64, base: &str, new: &str) -> Resu
 /// The function stops at the first document that is not written: the outcome names the documents that were written
 /// before the stop, and the caller may roll them back with [`rollback`]. The read-back of every document is checked:
 /// a host that says "accepted" but writes another text gives an `Unknown`, never an `Applied`.
-pub fn apply_to_host(adapter: &mut dyn DocumentEditAdapter, plan: &ApplyPlan) -> Result<ApplyOutcome> {
+///
+/// The apply is fenced. The epoch of the lease of the caller is compared with the live epoch **while the lock of the
+/// commit coordinator is held**, so a worker whose lease ran out writes nothing at all (detailed design §5.5 and
+/// §17.6). The comparison is inside the critical section of the write and never before it: a caller that checked the
+/// epoch before it took the lock would write with an epoch that is not the live one any more.
+pub fn apply_to_host(
+    adapter: &mut dyn DocumentEditAdapter,
+    plan: &ApplyPlan,
+    fence: &mut dyn Fence,
+    lease_epoch: u64,
+) -> Result<ApplyOutcome> {
+    let mut handle = fence.lock()?;
+    // the epoch is compared inside the critical section: an old worker is refused here, before any document is written
+    let live = handle.live_epoch()?;
+    if live != lease_epoch {
+        return Err(TaseError::permission_denied(format!(
+            "the lease of the job is at the epoch {live} and not at the epoch {lease_epoch} of the caller"
+        )));
+    }
     let mut written: Vec<String> = Vec::new();
     for document in &plan.documents {
         let snapshot = adapter.snapshot(&document.path)?;
@@ -440,11 +486,16 @@ mod tests {
     const BASE: &str = "fn main() {\n    println!(\"hello\");\n}\n";
     const NEW: &str = "fn main() {\n    println!(\"hello, world\");\n}\n";
 
+    /// The epoch of the lease of the caller of the tests.
+    const EPOCH: u64 = 1;
+
     /// A host that keeps its documents in the memory.
     struct MemoryHost {
         documents: BTreeMap<String, (i64, String)>,
         refuse: bool,
         break_read_back: bool,
+        /// The number of times the host was asked to write.
+        writes: usize,
     }
 
     impl MemoryHost {
@@ -453,6 +504,7 @@ mod tests {
                 documents: BTreeMap::new(),
                 refuse: false,
                 break_read_back: false,
+                writes: 0,
             }
         }
 
@@ -469,6 +521,11 @@ mod tests {
                 .map(|(_, text)| text.clone())
                 .unwrap_or_default()
         }
+
+        /// The number of times the host was asked to write.
+        fn writes(&self) -> usize {
+            self.writes
+        }
     }
 
     impl DocumentEditAdapter for MemoryHost {
@@ -482,6 +539,7 @@ mod tests {
         }
 
         fn apply_edits(&mut self, request: &HostEditRequest) -> Result<HostEditOutcome> {
+            self.writes += 1;
             if self.refuse {
                 return Ok(HostEditOutcome::Rejected);
             }
@@ -501,6 +559,67 @@ mod tests {
             self.documents
                 .insert(request.path.clone(), (version + 1, new_text));
             Ok(HostEditOutcome::Accepted)
+        }
+    }
+
+    /// A fence of a test: the live epoch of the lease lives in the memory and the lock is a flag.
+    ///
+    /// The fence may take the lease over while the lock is taken: the live epoch then moves to the epoch of the other
+    /// worker, so the epoch of the caller is old as soon as the lock is held. That is the race of detailed design
+    /// §17.6: the epoch of the caller was the live one before the lock, and it is not any more when the lock is held.
+    struct MemoryFence {
+        /// The live epoch of the lease of the job.
+        live_epoch: u64,
+        /// Whether the lock is held.
+        locked: bool,
+        /// The epoch the live epoch becomes when the lock is taken: the takeover of another worker.
+        takeover_on_lock: Option<u64>,
+        /// Whether the epoch was read while the lock was held.
+        read_under_lock: bool,
+    }
+
+    impl MemoryFence {
+        /// A fence whose lease is at the epoch of the caller.
+        fn new() -> MemoryFence {
+            MemoryFence {
+                live_epoch: EPOCH,
+                locked: false,
+                takeover_on_lock: None,
+                read_under_lock: false,
+            }
+        }
+    }
+
+    /// The handle of the lock of the fence of the test.
+    struct MemoryFenceHandle<'a> {
+        fence: &'a mut MemoryFence,
+    }
+
+    impl Drop for MemoryFenceHandle<'_> {
+        fn drop(&mut self) {
+            self.fence.locked = false;
+        }
+    }
+
+    impl Fence for MemoryFence {
+        fn lock(&mut self) -> Result<Box<dyn FenceHandle + '_>> {
+            self.locked = true;
+            if let Some(epoch) = self.takeover_on_lock {
+                // another worker took the job while this one was waiting for the lock
+                self.live_epoch = epoch;
+            }
+            Ok(Box::new(MemoryFenceHandle { fence: self }))
+        }
+    }
+
+    impl FenceHandle for MemoryFenceHandle<'_> {
+        fn live_epoch(&mut self) -> Result<u64> {
+            if !self.fence.locked {
+                // the comparison was made outside the critical section: the fence does not hold
+                return Err(TaseError::internal("the epoch was read outside the lock"));
+            }
+            self.fence.read_under_lock = true;
+            Ok(self.fence.live_epoch)
         }
     }
 
@@ -568,17 +687,73 @@ mod tests {
     fn the_apply_hands_the_edits_to_the_host_and_checks_the_read_back() {
         let mut host = MemoryHost::with("src/main.rs", 1, BASE);
         let plan = plan_of();
-        let outcome = apply_to_host(&mut host, &plan).expect("the apply runs");
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
         assert!(outcome.is_applied());
         assert_eq!(outcome.written(), ["src/main.rs"]);
         assert_eq!(host.text("src/main.rs"), NEW);
     }
 
     #[test]
+    fn the_apply_is_refused_when_the_epoch_of_the_caller_is_not_the_live_one() {
+        let mut host = MemoryHost::with("src/main.rs", 1, BASE);
+        let plan = plan_of();
+        let mut fence = MemoryFence::new();
+        // the lease of the job was taken over: the epoch of the caller is old
+        fence.live_epoch = EPOCH + 1;
+        let error = apply_to_host(&mut host, &plan, &mut fence, EPOCH).unwrap_err();
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+        assert_eq!(host.writes(), 0, "the host was never asked to write");
+        assert_eq!(
+            host.text("src/main.rs"),
+            BASE,
+            "the document is not half written"
+        );
+        assert!(
+            fence.read_under_lock,
+            "the epoch was read while the lock was held"
+        );
+    }
+
+    #[test]
+    fn the_apply_is_refused_when_the_epoch_moves_while_the_lock_is_held() {
+        let mut host = MemoryHost::with("src/main.rs", 1, BASE);
+        let plan = plan_of();
+        let mut fence = MemoryFence::new();
+        // before the lock is taken the epoch of the caller is the live one
+        assert_eq!(fence.live_epoch, EPOCH);
+        // another worker takes the job while this one is waiting for the lock
+        fence.takeover_on_lock = Some(EPOCH + 1);
+        let error = apply_to_host(&mut host, &plan, &mut fence, EPOCH).unwrap_err();
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+        assert_eq!(host.writes(), 0, "the host was never asked to write");
+        assert_eq!(
+            host.text("src/main.rs"),
+            BASE,
+            "the document is not half written"
+        );
+        assert!(
+            fence.read_under_lock,
+            "the epoch was read while the lock was held"
+        );
+    }
+
+    #[test]
+    fn the_apply_releases_the_lock_when_it_is_done() {
+        let mut host = MemoryHost::with("src/main.rs", 1, BASE);
+        let plan = plan_of();
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
+        assert!(outcome.is_applied());
+        assert!(!fence.locked, "the lock is released");
+    }
+
+    #[test]
     fn a_document_that_changed_after_the_preview_is_not_written() {
         let mut host = MemoryHost::with("src/main.rs", 1, "fn main() { /* changed */ }\n");
         let plan = plan_of();
-        let outcome = apply_to_host(&mut host, &plan).expect("the apply runs");
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
         assert!(matches!(outcome, ApplyOutcome::Stale { .. }));
         assert!(outcome.written().is_empty());
         assert_eq!(host.text("src/main.rs"), "fn main() { /* changed */ }\n");
@@ -589,7 +764,8 @@ mod tests {
         let mut host = MemoryHost::with("src/main.rs", 1, BASE);
         host.refuse = true;
         let plan = plan_of();
-        let outcome = apply_to_host(&mut host, &plan).expect("the apply runs");
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
         match outcome {
             ApplyOutcome::Rejected { path, written } => {
                 assert_eq!(path, "src/main.rs");
@@ -604,7 +780,8 @@ mod tests {
     fn the_rollback_takes_the_documents_back_to_the_base() {
         let mut host = MemoryHost::with("src/main.rs", 1, BASE);
         let plan = plan_of();
-        let outcome = apply_to_host(&mut host, &plan).expect("the apply runs");
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
         assert!(outcome.is_applied());
         let count = rollback(&mut host, &plan, outcome.written()).expect("the rollback runs");
         assert_eq!(count, 1);
@@ -615,7 +792,8 @@ mod tests {
     fn a_document_that_changed_after_the_apply_is_not_rolled_back() {
         let mut host = MemoryHost::with("src/main.rs", 1, BASE);
         let plan = plan_of();
-        let outcome = apply_to_host(&mut host, &plan).expect("the apply runs");
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
         // the user types something after the apply
         host.documents
             .insert("src/main.rs".to_string(), (2, "the user typed".to_string()));
@@ -629,7 +807,8 @@ mod tests {
         let mut host = MemoryHost::with("src/main.rs", 1, BASE);
         host.break_read_back = true;
         let plan = plan_of();
-        let outcome = apply_to_host(&mut host, &plan).expect("the apply runs");
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
         assert!(!outcome.is_applied());
         match outcome {
             ApplyOutcome::Unknown { path, written } => {
@@ -722,7 +901,8 @@ mod tests {
     fn the_undo_transaction_is_applied_by_the_host_in_one_edit() {
         let mut host = MemoryHost::with("src/main.rs", 1, BASE);
         let plan = plan_of();
-        let outcome = apply_to_host(&mut host, &plan).expect("the apply runs");
+        let mut fence = MemoryFence::new();
+        let outcome = apply_to_host(&mut host, &plan, &mut fence, EPOCH).expect("the apply runs");
         assert!(outcome.is_applied());
         assert_eq!(host.text("src/main.rs"), NEW);
 

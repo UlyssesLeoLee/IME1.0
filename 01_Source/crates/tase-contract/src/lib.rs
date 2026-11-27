@@ -11,6 +11,11 @@
 //! * the identifiers are checked before they are used (they end up in file names, in git refs and in the audit log),
 //!   so an identifier that could leave its field is refused at the door.
 //!
+//! The values that two modules have to name the same way are fixed here as well: the kind of a symbol comes
+//! from a closed list ([`symbol::SymbolKind`]) and the digest of a signature is the `"sha256:"` prefix and
+//! the SHA-256 of the signature text ([`symbol::symbol_signature_hash`]). A value that is not one of them is
+//! refused at the door, instead of being understood half-way by the two sides.
+//!
 //! The crate has no third-party dependency: the JSON and the SHA-256 come from `pime-core`.
 
 #![forbid(unsafe_code)]
@@ -18,12 +23,16 @@
 pub mod api;
 pub mod error;
 pub mod ids;
+pub mod symbol;
 pub mod version;
 
 pub use error::{ErrorCode, TaseError};
 pub use ids::{
     AgentId, AssetId, CommitId, ImplementationId, JobId, OperationId, PlanId, PreviewId,
     RepositoryId, RequestId, SessionId, TemplateId, TenantId, TraceId, WorkspaceId,
+};
+pub use symbol::{
+    SYMBOL_SIGNATURE_HASH_PREFIX, SymbolKind, is_symbol_signature_hash, symbol_signature_hash,
 };
 pub use version::{ASSET_SCHEMA_VERSION, CONTRACT_VERSION};
 

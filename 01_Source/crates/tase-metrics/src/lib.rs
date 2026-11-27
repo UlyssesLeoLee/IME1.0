@@ -17,7 +17,8 @@
 //!
 //! * [`meter`] — the usage of the model calls of a job and the budget of the tokens;
 //! * [`pricing`] — the table of the prices of the providers and the cost of a call;
-//! * [`aci`] — the summary of a suite of assertions and the JSON of the acceptance file;
+//! * [`aci`] — the summary of a suite of assertions and the JSON of the acceptance file, with the ten fields of
+//!   detailed design §10.1;
 //! * [`telemetry`] — the stream of the events of a job.
 //!
 //! The crate has no third-party dependency: the JSON comes from `pime-core` and the states of a check from
@@ -30,7 +31,10 @@ pub mod meter;
 pub mod pricing;
 pub mod telemetry;
 
-pub use aci::{AciReport, AciSummary, Assertion, summarise, to_json};
+pub use aci::{
+    ACI_VERSION, AciReport, AciSummary, Assertion, AssertionEvidence, AssertionRecord, TestLayer, summarise,
+    to_json,
+};
 pub use meter::{BudgetVerdict, Meter, TokenBudget, Usage};
 pub use pricing::{PRICE_EPSILON, PriceEntry, PriceTable, prices_are_close};
 pub use telemetry::{Telemetry, TelemetryEvent};

@@ -14,8 +14,9 @@ use windows::Win32::Security::Cryptography::{
     BCRYPT_ALG_HANDLE, BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptGenRandom,
 };
 use windows::Win32::Security::{
-    DACL_SECURITY_INFORMATION, GetTokenInformation, PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES,
-    TOKEN_QUERY, TOKEN_USER, TokenUser,
+    DACL_SECURITY_INFORMATION, GetTokenInformation, PSECURITY_DESCRIPTOR, PSID,
+    SECURITY_ATTRIBUTES, TOKEN_INFORMATION_CLASS, TOKEN_QUERY, TOKEN_USER, TokenLogonSid,
+    TokenUser,
 };
 use windows::Win32::System::RemoteDesktop::ProcessIdToSessionId;
 use windows::Win32::System::Threading::{GetCurrentProcess, GetCurrentProcessId, OpenProcessToken};
@@ -74,8 +75,16 @@ impl Drop for LocalMem {
     }
 }
 
-/// The user SID of the process token as a string (`S-1-5-21-...`).
-pub fn current_user_sid_string() -> Result<String, IpcError> {
+/// The header of `TOKEN_LOGON_SID`: one flag word, then the SID pointer (the layout the Windows headers use;
+/// `repr(C)` puts the pointer at the platform's pointer alignment).
+#[repr(C)]
+struct TokenLogonSidHeader {
+    _is_restricted: u32,
+    sid: PSID,
+}
+
+/// The buffer Windows returns for one token information class: the structure, plus the SID it points at.
+fn token_information(class: TOKEN_INFORMATION_CLASS) -> Result<Vec<u64>, IpcError> {
     let mut token = HANDLE::default();
     // SAFETY: `token` is a valid out pointer; the current-process pseudo handle needs no cleanup.
     unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) }
@@ -84,7 +93,7 @@ pub fn current_user_sid_string() -> Result<String, IpcError> {
 
     let mut needed = 0u32;
     // SAFETY: a null buffer of length 0 is the documented size query; it fails with ERROR_INSUFFICIENT_BUFFER on purpose.
-    let _ = unsafe { GetTokenInformation(token.raw(), TokenUser, None, 0, &mut needed) };
+    let _ = unsafe { GetTokenInformation(token.raw(), class, None, 0, &mut needed) };
     if needed == 0 || needed > 4096 {
         return Err(IpcError::Os {
             op: "GetTokenInformation(size)",
@@ -97,23 +106,44 @@ pub fn current_user_sid_string() -> Result<String, IpcError> {
     unsafe {
         GetTokenInformation(
             token.raw(),
-            TokenUser,
+            class,
             Some(buf.as_mut_ptr().cast()),
             needed,
             &mut needed,
         )
     }
     .map_err(|e| os("GetTokenInformation", &e))?;
-    // SAFETY: the call above filled `buf` with a TOKEN_USER whose SID pointer targets the same buffer, still alive here.
-    let sid = unsafe { (*buf.as_ptr().cast::<TOKEN_USER>()).User.Sid };
+    Ok(buf)
+}
 
+/// The string of a SID pointer (`S-1-5-21-...`).
+fn sid_to_string(sid: PSID) -> Result<String, IpcError> {
     let mut wide = PWSTR::null();
-    // SAFETY: `sid` is a valid SID (see above); `wide` is a valid out pointer that receives LocalAlloc memory.
+    // SAFETY: `sid` is a valid SID (see the callers); `wide` is a valid out pointer that receives LocalAlloc memory.
     unsafe { ConvertSidToStringSidW(sid, &mut wide) }
         .map_err(|e| os("ConvertSidToStringSidW", &e))?;
     let _free = LocalMem(wide.0.cast());
     // SAFETY: the call succeeded, so `wide` is a NUL-terminated UTF-16 string that `_free` keeps alive until the end.
     unsafe { wide.to_string() }.map_err(|_| IpcError::InvalidArgument("SID string is not UTF-16"))
+}
+
+/// The user SID of the process token as a string (`S-1-5-21-...`).
+pub fn current_user_sid_string() -> Result<String, IpcError> {
+    let buf = token_information(TokenUser)?;
+    // SAFETY: the call above filled `buf` with a TOKEN_USER whose SID pointer targets the same buffer, still alive here.
+    let sid = unsafe { (*buf.as_ptr().cast::<TOKEN_USER>()).User.Sid };
+    sid_to_string(sid)
+}
+
+/// The logon session SID of the process token as a string (`S-1-5-5-<session>-<luid>`).
+///
+/// The logon session is the isolation key of the design: the pipe name and the ACL are built from it, so two
+/// logon sessions of the same user are two namespaces and never meet on the same pipe.
+pub fn current_logon_sid_string() -> Result<String, IpcError> {
+    let buf = token_information(TokenLogonSid)?;
+    // SAFETY: the call above filled `buf` with a TOKEN_LOGON_SID whose SID pointer targets the same buffer.
+    let sid = unsafe { (*buf.as_ptr().cast::<TokenLogonSidHeader>()).sid };
+    sid_to_string(sid)
 }
 
 /// The security descriptor of the pipe, built from an SDDL string. Freed on drop.
@@ -141,6 +171,14 @@ impl SecurityDescriptor {
     /// The descriptor that lets only the current user's SID use the pipe (`D:P(A;;mask;;;SID)`).
     pub fn for_current_user() -> Result<SecurityDescriptor, IpcError> {
         SecurityDescriptor::from_sddl(&sddl_for_sid(&current_user_sid_string()?)?)
+    }
+
+    /// The descriptor that lets only the current logon session use the pipe (`D:P(A;;mask;;;logon SID)`).
+    ///
+    /// The design binds the ACL to the logon SID, so the pipe belongs to one logon session and not to the whole
+    /// user: another session of the same user is a different namespace and gets nothing.
+    pub fn for_logon_session() -> Result<SecurityDescriptor, IpcError> {
+        SecurityDescriptor::from_sddl(&sddl_for_sid(&current_logon_sid_string()?)?)
     }
 
     /// `SECURITY_ATTRIBUTES` pointing at this descriptor (not inheritable). Valid while `self` lives.
@@ -274,5 +312,29 @@ mod tests {
     fn ut_ipc_session_id_is_available() {
         // session 0 is services, 1.. are interactive sessions; on a dev machine/CI runner any value is valid
         current_session_id().expect("ProcessIdToSessionId");
+    }
+
+    #[test]
+    fn ut_ipc_logon_sid_is_a_plain_sid_string_of_the_logon_session() {
+        let sid = current_logon_sid_string().expect("process token logon SID");
+        crate::auth::validate_sid(&sid).expect("a real SID passes the strict validator");
+        // the logon session SID is S-1-5-5-<session>-<luid>: authority 5, sub-authority 5
+        assert!(sid.starts_with("S-1-5-5-"), "{sid}");
+        assert_eq!(sid, current_logon_sid_string().unwrap());
+        // it is not the user SID: the two are different keys
+        let user = current_user_sid_string().unwrap();
+        assert_ne!(user, sid);
+    }
+
+    #[test]
+    fn ut_ipc_sddl_for_the_logon_session_names_the_logon_sid() {
+        let logon = current_logon_sid_string().unwrap();
+        let sd = SecurityDescriptor::for_logon_session().expect("the logon session descriptor");
+        assert!(!sd.attributes().lpSecurityDescriptor.is_null());
+        // the descriptor is the one of the logon session, not of the user
+        let user = current_user_sid_string().unwrap();
+        assert_ne!(logon, user);
+        let sddl = crate::auth::sddl_for_sid(&logon).unwrap();
+        assert!(sddl.ends_with(&format!(";;;{logon})")), "{sddl}");
     }
 }

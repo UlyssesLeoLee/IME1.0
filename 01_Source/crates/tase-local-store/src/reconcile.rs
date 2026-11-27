@@ -164,6 +164,9 @@ pub fn reconcile_with(
         job.status = JobStatus::Queued;
         job.worker_id = None;
         job.updated_at_ms = options.now_ms;
+        // the job goes back into the queue and it may be taken again at once: the window of a backoff belongs to
+        // the worker that put the job back into the queue, and not to the recovery (detailed design §6.2).
+        job.ready_at_ms = options.now_ms;
         crate::upsert_job(&tx, &job)?;
         crate::sqlite::append_journal(
             &tx,

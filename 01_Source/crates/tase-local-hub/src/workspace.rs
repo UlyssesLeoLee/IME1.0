@@ -13,6 +13,9 @@
 //!   next `acquire` takes the locks that ran out (detailed design §17.6).
 //! * **a generation only grows.** Every file of a workspace has a generation; a writer that expects the
 //!   generation it read and finds another one is in conflict ([`WorkspaceRegistry::conflicts`]).
+//! * **a lock carries a fencing token.** Every lock gets an epoch that only grows; the holder of a lock
+//!   has to present that epoch when it writes, and a holder whose lock ran out and was taken by somebody
+//!   else is refused before it writes anything (detailed design §17.6, §18.2).
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -93,6 +96,12 @@ pub struct FileLock {
     pub session: Option<SessionId>,
     /// The generation of the file when the lock was taken.
     pub generation: u64,
+    /// The fencing token of the lock: it only grows, so a holder that comes back late is told it is old.
+    ///
+    /// The epoch is the fence of the write: the holder of a lock has to present it when it writes, and
+    /// the epoch of a lock that ran out and was taken by somebody else is not the epoch of the caller
+    /// any more (detailed design §17.6, §18.2).
+    pub epoch: u64,
     /// The time the lock was taken.
     pub acquired_at_ms: u64,
     /// The time the lock runs out.
@@ -108,9 +117,16 @@ impl FileLock {
 }
 
 /// The workspaces of the Hub: the write locks and the generation of every file.
+///
+/// The epoch of a file is the fencing token of its lock: it only grows, and the holder of a lock has to
+/// present it when it writes (detailed design §17.6, §18.2).
 pub struct WorkspaceRegistry {
     locks: HashMap<(String, String), FileLock>,
     generations: HashMap<(String, String), u64>,
+    /// The current epoch of every file that was ever locked: the epoch of a file only grows.
+    epochs: HashMap<(String, String), u64>,
+    /// The counter of the epochs: it hands out the epochs of the locks, and it never goes backwards.
+    next_epoch: u64,
     lease_ttl_ms: u64,
     clock: Arc<dyn Clock>,
 }
@@ -120,6 +136,7 @@ impl std::fmt::Debug for WorkspaceRegistry {
         f.debug_struct("WorkspaceRegistry")
             .field("locks", &self.locks.len())
             .field("generations", &self.generations.len())
+            .field("epochs", &self.epochs.len())
             .field("lease_ttl_ms", &self.lease_ttl_ms)
             .finish()
     }
@@ -134,6 +151,8 @@ impl WorkspaceRegistry {
         WorkspaceRegistry {
             locks: HashMap::new(),
             generations: HashMap::new(),
+            epochs: HashMap::new(),
+            next_epoch: 0,
             lease_ttl_ms,
             clock,
         }
@@ -175,7 +194,8 @@ impl WorkspaceRegistry {
         let key = (workspace.clone(), path.clone());
         if let Some(lock) = self.locks.get(&key) {
             if &lock.agent == agent {
-                // the same agent comes back: the lock is renewed, not refused
+                // the same agent comes back: the lock is renewed, not refused, and it keeps its epoch:
+                // it is the same lease, so the token of the holder stays the token of the lock
                 let mut renewed = lock.clone();
                 renewed.expires_at_ms = now_ms.saturating_add(self.lease_ttl_ms);
                 self.locks.insert(key, renewed.clone());
@@ -192,6 +212,7 @@ impl WorkspaceRegistry {
             agent: agent.clone(),
             session: session.cloned(),
             generation: self.generation_of(&key.0, &key.1),
+            epoch: self.take_epoch(&key),
             acquired_at_ms: now_ms,
             expires_at_ms: now_ms.saturating_add(self.lease_ttl_ms),
         };
@@ -275,6 +296,58 @@ impl WorkspaceRegistry {
         self.generation_of(workspace, path) != generation
     }
 
+    /// Checks the fence of a write: the caller has to hold the epoch of the lock of the file.
+    ///
+    /// The epoch of the lock that is held now has to be the epoch of the caller (detailed design §18.2,
+    /// `assert_fence_epoch_is_current`). A holder whose lock ran out and was taken by somebody else holds
+    /// an old epoch, and it is refused here, before it writes anything (detailed design §17.6).
+    ///
+    /// A file that was never locked has no epoch to compare: the write of such a file goes as it went
+    /// before the fence existed. A file that was locked keeps its epoch, so a write without the epoch
+    /// of a lock is refused as well.
+    pub fn check_write_fence(
+        &self,
+        workspace: &str,
+        path: &str,
+        epoch: Option<u64>,
+        now_ms: u64,
+    ) -> Result<(), TaseError> {
+        let workspace = normalize_workspace(workspace)?;
+        let path = normalize_path(path)?;
+        let key = (workspace.clone(), path.clone());
+        let Some(lock) = self.locks.get(&key) else {
+            // no lock is held: a file that was locked before keeps its fence, a file that never was has none
+            return if self.epochs.contains_key(&key) {
+                Err(TaseError::permission_denied(format!(
+                    "the file {path} of the workspace {workspace} is not locked any more: \
+                     the write has to carry the epoch of a lock"
+                )))
+            } else {
+                Ok(())
+            };
+        };
+        if !lock.is_valid_at(now_ms) {
+            // the lease of the lock ran out: the holder of it may not write any more
+            return Err(TaseError::permission_denied(format!(
+                "the lease of the file {path} of the workspace {workspace} ran out at {}: \
+                 the write is refused",
+                lock.expires_at_ms
+            )));
+        }
+        match epoch {
+            Some(held) if held == lock.epoch => Ok(()),
+            Some(held) => Err(TaseError::permission_denied(format!(
+                "the file {path} of the workspace {workspace} is at the epoch {} and not at the \
+                 epoch {held} of the caller",
+                lock.epoch
+            ))),
+            None => Err(TaseError::permission_denied(format!(
+                "the file {path} of the workspace {workspace} is locked: \
+                 the write has to carry the epoch of the lock"
+            ))),
+        }
+    }
+
     /// The generation of a file.
     #[must_use]
     pub fn generation(&self, workspace: &str, path: &str) -> u64 {
@@ -288,6 +361,18 @@ impl WorkspaceRegistry {
             .get(&(workspace.to_string(), path))
             .copied()
             .unwrap_or(0)
+    }
+
+    /// The epoch of the next lock: it only grows, so a holder that comes back late is told it is old.
+    ///
+    /// The epoch comes from a counter of the registry, so it is bigger than the epoch of every lock that
+    /// came before it, and the epoch of a file only grows: the epoch of a lock that was given back or
+    /// that ran out stays the current epoch of the file.
+    fn take_epoch(&mut self, key: &(String, String)) -> u64 {
+        self.next_epoch = self.next_epoch.saturating_add(1);
+        let epoch = self.next_epoch;
+        self.epochs.insert(key.clone(), epoch);
+        epoch
     }
 
     /// Moves the generation of a file forward and gives the new one back.
@@ -628,5 +713,86 @@ mod tests {
     fn the_registry_knows_how_long_a_lock_lives() {
         let (registry, _clock) = registry();
         assert_eq!(registry.lease_ttl_ms(), 500);
+    }
+
+    #[test]
+    fn the_lock_carries_the_epoch_of_its_holder_and_the_holder_may_write() {
+        let (mut registry, _clock) = registry();
+        let lock = registry
+            .acquire("ws", "a.rs", &agent("one"))
+            .expect("the lock is taken");
+        assert_eq!(lock.epoch, 1, "the first lock of the hub gets the epoch 1");
+        registry
+            .check_write_fence("ws", "a.rs", Some(lock.epoch), 1000)
+            .expect("the holder of the lock may write");
+        // the epoch of a lock is bigger than the epoch of every lock that came before it
+        let other = registry
+            .acquire("ws", "b.rs", &agent("two"))
+            .expect("the second lock is taken");
+        assert!(
+            other.epoch > lock.epoch,
+            "the epoch of a new lock is always bigger"
+        );
+    }
+
+    #[test]
+    fn a_holder_whose_lock_was_taken_back_may_not_write() {
+        let (mut registry, clock) = registry();
+        let old = registry
+            .acquire("ws", "a.rs", &agent("one"))
+            .expect("the lock is taken");
+        // the lease of the lock runs out and another agent takes the lock
+        clock.advance(600);
+        let new = registry
+            .acquire("ws", "a.rs", &agent("two"))
+            .expect("the lock is taken again");
+        assert!(
+            new.epoch > old.epoch,
+            "the epoch of a new lock is always bigger"
+        );
+        // the old holder writes with the epoch of its lock: it is refused
+        let error = registry
+            .check_write_fence("ws", "a.rs", Some(old.epoch), clock.now_ms())
+            .expect_err("the write of the old holder is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+        // the new holder of the lock may write
+        registry
+            .check_write_fence("ws", "a.rs", Some(new.epoch), clock.now_ms())
+            .expect("the new holder may write");
+    }
+
+    #[test]
+    fn a_write_without_the_epoch_of_the_lock_is_refused() {
+        let (mut registry, _clock) = registry();
+        registry
+            .acquire("ws", "a.rs", &agent("one"))
+            .expect("the lock is taken");
+        let error = registry
+            .check_write_fence("ws", "a.rs", None, 1000)
+            .expect_err("the write without the epoch is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+    }
+
+    #[test]
+    fn a_write_of_a_file_whose_lock_was_given_back_is_refused() {
+        let (mut registry, _clock) = registry();
+        let lock = registry
+            .acquire("ws", "a.rs", &agent("one"))
+            .expect("the lock is taken");
+        registry
+            .release("ws", "a.rs", &agent("one"))
+            .expect("the lock is given back");
+        let error = registry
+            .check_write_fence("ws", "a.rs", Some(lock.epoch), 1000)
+            .expect_err("the write of the holder that gave the lock back is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+    }
+
+    #[test]
+    fn the_write_of_a_file_that_was_never_locked_is_not_fenced() {
+        let (registry, _clock) = registry();
+        registry
+            .check_write_fence("ws", "a.rs", None, 1000)
+            .expect("a file that was never locked has no epoch to compare");
     }
 }

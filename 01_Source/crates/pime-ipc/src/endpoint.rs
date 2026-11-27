@@ -6,7 +6,7 @@
 //! A connected client is first checked to be in the server's own session, then authenticated by the handshake; only
 //! then does the caller see a [`Connection`].
 
-use crate::auth::PipeName;
+use crate::auth::{PIPE_NAMESPACE, PipeName};
 use crate::connection::{Connection, Timeouts};
 use crate::error::IpcError;
 use crate::frame::{Limits, deadline_after};
@@ -15,7 +15,8 @@ use crate::handshake::{
 };
 use crate::pipe::{Pipe, StopHandle};
 use crate::winsec::{
-    SecurityDescriptor, SystemEntropy, current_session_id, current_user_sid_string,
+    SecurityDescriptor, SystemEntropy, current_logon_sid_string, current_session_id,
+    current_user_sid_string,
 };
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
@@ -70,9 +71,37 @@ impl Listener {
         Listener::bind(name, cfg)
     }
 
+    /// Binds `\\.\pipe\<prefix>-<current logon session SID>`, with an ACL that names the same logon session.
+    ///
+    /// The logon session is the isolation key of the design: one logon session gets one pipe, and the same user
+    /// logged in twice gets two pipes that never meet. The prefix is the namespace of the subsystem that owns
+    /// the pipe, so several subsystems can run side by side without sharing a name.
+    pub fn bind_logon_session_with_prefix(
+        prefix: &str,
+        cfg: ServerConfig,
+    ) -> Result<Listener, IpcError> {
+        let name = PipeName::with_prefix(prefix, &current_logon_sid_string()?)?;
+        let sd = SecurityDescriptor::for_logon_session()?;
+        Listener::bind_with_descriptor(name, sd, cfg)
+    }
+
+    /// Binds `\\.\pipe\PIME-IPC-1-<current logon session SID>`, with an ACL that names the same logon session.
+    pub fn bind_logon_session(cfg: ServerConfig) -> Result<Listener, IpcError> {
+        Listener::bind_logon_session_with_prefix(PIPE_NAMESPACE, cfg)
+    }
+
     /// Creates the first instance of `name`. `Err(NameInUse)` if any process already owns the name (squatting).
     pub fn bind(name: PipeName, cfg: ServerConfig) -> Result<Listener, IpcError> {
         let sd = SecurityDescriptor::for_current_user()?;
+        Listener::bind_with_descriptor(name, sd, cfg)
+    }
+
+    /// Creates the first instance of `name` with the given security descriptor.
+    pub fn bind_with_descriptor(
+        name: PipeName,
+        sd: SecurityDescriptor,
+        cfg: ServerConfig,
+    ) -> Result<Listener, IpcError> {
         let first = Pipe::create_server_instance(&name, true, &sd, cfg.max_instances)?;
         let own_session = if cfg.require_same_session {
             Some(current_session_id()?)
@@ -292,6 +321,74 @@ pub fn unique_test_pipe_name() -> Result<PipeName, IpcError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::auth::Secret;
+    use crate::handshake::RolePolicy;
+
+    fn server_config() -> ServerConfig {
+        ServerConfig::new(
+            ServerPolicy::new(
+                Secret::new(&[7u8; 32]).unwrap(),
+                vec![RolePolicy {
+                    role: "tsf".into(),
+                    capabilities: vec![],
+                }],
+            )
+            .unwrap(),
+        )
+    }
+
+    #[test]
+    fn it_004_the_logon_session_endpoint_is_namespaced_by_the_logon_sid() {
+        let listener = Listener::bind_logon_session_with_prefix("ide1-tase", server_config())
+            .expect("bind the logon session endpoint");
+        let logon = current_logon_sid_string().unwrap();
+        // the name carries the namespace and the logon session, not the user
+        assert_eq!(
+            listener.name().as_str(),
+            format!(r"\\.\pipe\ide1-tase-{logon}")
+        );
+        // and the live pipe names the same logon session in its DACL
+        let sddl = listener
+            .dacl_sddl()
+            .expect("read the DACL back from the live pipe");
+        assert!(sddl.contains(&format!(";;;{logon})")), "{sddl}");
+        let user = current_user_sid_string().unwrap();
+        assert!(!sddl.contains(&format!(";;;{user})")), "{sddl}");
+    }
+
+    #[test]
+    fn ut_ipc_the_server_needs_the_create_pipe_instance_right_to_replace_its_instance() {
+        // Measured on this machine: Windows checks the creation of a further instance of a pipe against the DACL
+        // of the pipe that already exists, for the server's own token as well - without FILE_CREATE_PIPE_INSTANCE
+        // the call fails with ERROR_ACCESS_DENIED. The right therefore cannot simply be dropped from the mask:
+        // the server would no longer be able to replace the instance it hands out. The same right is what a
+        // same-user process needs to add an instance of its own, so this is where the exposure of D-49 lives.
+        let name = unique_test_pipe_name().unwrap();
+        let sid = current_user_sid_string().unwrap();
+        let narrow = SecurityDescriptor::from_sddl(&format!("D:P(A;;0x12019b;;;{sid})"))
+            .expect("a descriptor without the create-instance right");
+        let first =
+            Pipe::create_server_instance(&name, true, &narrow, 4).expect("the first instance");
+        match Pipe::create_server_instance(&name, false, &narrow, 4) {
+            Err(IpcError::Os { code, .. }) => assert_eq!(
+                code, 5,
+                "ERROR_ACCESS_DENIED: the check uses the DACL of the pipe that exists"
+            ),
+            Err(other) => {
+                panic!("the server may not replace its instance without the right: {other}")
+            }
+            Ok(_) => panic!("the server may not replace its instance without the right"),
+        }
+        drop(first);
+        // the descriptor the crate uses keeps the right, so the server keeps working
+        let sd = SecurityDescriptor::for_current_user().unwrap();
+        let first = Pipe::create_server_instance(&name, true, &sd, 4).expect("the first instance");
+        assert!(
+            Pipe::create_server_instance(&name, false, &sd, 4).is_ok(),
+            "the server replaces the instance it hands out"
+        );
+        drop(first);
+    }
 
     #[test]
     fn it_004_connection_slot_is_released_even_when_the_worker_panics() {

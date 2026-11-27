@@ -14,6 +14,7 @@
 //! | §8.1 the local chain `CLI/HTTP -> ide-shell-protocol -> tase-executor -> DocumentEditAdapter -> ide-kernel::Document` | the middle of the chain: [`apply::DocumentEditAdapter`] is the door to the host, and the executor is what stands behind it |
 //! | §8.1 "一个 Plan 在本地编辑器显示为单一逻辑 undo 事务" | [`undo::UndoTransaction`]: the plan, its documents and the inverse of every document travel as **one** transaction, so the host can undo the plan in one gesture |
 //! | §8.1 "若批量编辑过程中失败，利用内核暂存/快照回滚并恢复 buffer dirty/cursor 状态，保证半成品不呈现为成功" | [`apply::apply_to_host`] stops at the first document the host refuses and never reports a partial apply as a success; [`apply::rollback`] writes the inverse edits of the documents that were already written |
+//! | §5.5 "持锁时验证 `lease_epoch`/有效期/批准状态并执行 Git ref CAS" | [`apply::apply_to_host`] is fenced: the epoch of the lease of the caller is compared with the live epoch **while the lock of the commit coordinator is held**, so a worker whose lease ran out writes nothing at all |
 //! | §8.2 the cloud chain `HTTP Router -> Queue -> Worker -> Staging Repository -> DocumentEditAdapter -> Git tree/commit -> CAS ref` | the last two steps: [`git_tx::GitRepo::create_commit`] builds the commit object and [`git_tx::GitRepo::compare_and_swap`] moves the ref |
 //! | §8.3 the `PositionMapper` for CRLF, BOM, CJK and emoji | **not** here: the mapping belongs to `tase-semantic` (UTF-16 is the basis of every edit of this repository) and to `pime-core::textrange`; this crate only uses their offsets |
 //!
@@ -29,7 +30,9 @@
 //! * **The single undo stack of the editor.** A "single logical undo transaction" is a *description* here, not a stack:
 //!   [`undo::UndoTransaction`] says what the host has to apply to go back. The host owns the stack.
 //! * **The queue, the lease and the fencing.** Detailed design §5.2 and §6.1 belong to `tase-worker` and to
-//!   `tase-local-store`: the executor is called by the worker, it does not schedule anything.
+//!   `tase-local-store`: the executor is called by the worker, it does not schedule anything and it does not hold a
+//!   lease. The apply path is fenced nevertheless: the caller hands the epoch of its lease to the executor, and the
+//!   executor compares it with the live epoch while the lock of the commit coordinator is held ([`apply::Fence`]).
 //! * **The database, the `CommitCoordinator` and the reconciler.** Detailed design §5.5 puts the single write door of
 //!   the branch ref in the database; this crate only offers the compare-and-swap it calls.
 //! * **The checks in the sandbox** (format, compile, test). They need the allowlist and the sandbox of detailed
@@ -62,7 +65,8 @@ pub mod undo;
 pub mod workspace;
 
 pub use apply::{
-    ApplyOutcome, ApplyPlan, DocumentEdit, DocumentEditAdapter, HostEditOutcome, HostEditRequest,
+    ApplyOutcome, ApplyPlan, DocumentEdit, DocumentEditAdapter, Fence, FenceHandle, HostEditOutcome,
+    HostEditRequest,
 };
 pub use conflict::{Conflict, ConflictKind};
 pub use git_tx::{FileWrite, GitCli, GitRepo, MemoryGit};

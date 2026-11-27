@@ -11,8 +11,12 @@
 //!
 //! * [`lease`] - the deadline of a job, the fencing token that grows with every lease and the guard that refuses the
 //!   write of a holder that came back too late;
+//! * [`fence`] - the lock of the worker and the live epoch of the lease of a job: the fence of the apply of the
+//!   executor, which compares the epoch of the claim with the live epoch while the lock is held;
 //! * [`consumer`] - the consumer of the queue: it takes a task, it runs it, it tells the queue what happened and it
 //!   waits before it tries again;
+//! * [`job_state`] - the mapping between the states of the contract layer and the states of the store: the contract
+//!   layer is a frozen surface and the store has its own states;
 //! * [`runner`] - the runner of a job: the diff of the executor, the apply to the host editor and the commit;
 //! * [`verifier`] - the gates of the sandbox, the assertions of the acceptance file and the tokens and the cost of
 //!   the job;
@@ -86,7 +90,9 @@
 #![allow(special_module_name)]
 
 pub mod consumer;
+pub mod fence;
 pub mod hub_link;
+pub mod job_state;
 pub mod lease;
 // The mapping document asks for `src/main.rs` as the module of the skeleton of the worker (the fifth row of the table
 // of the crates). The file is a module of the library and not the root of a binary: the autodiscovery of the binaries
@@ -101,10 +107,12 @@ pub use consumer::{
     ConsumeOutcome, Consumer, MemoryTaskSource, QueuedTask, RetryPolicy, StoreTaskSource, Task,
     TaskExecutor, TaskQueue, TaskReport, TaskResult, TaskSource,
 };
+pub use fence::StoreFence;
 pub use hub_link::{
     COMPLETE_METHOD, HubJobRunner, HubLink, LinkOutcome, PreviewRunner, TAKE_METHOD, TakenJob,
     WORKER_CAPABILITIES, preview_to_json, run_request_of,
 };
+pub use job_state::{MAPPINGS, StateMapping, StoreState, contract_state_of, store_status_of};
 pub use lease::{
     Clock, FenceGuard, Lease, LeaseError, LeaseGuard, LeaseState, LeaseTable, LogicalClock,
     SystemClock, Unguarded,

@@ -1138,6 +1138,8 @@ impl HubInner {
                 ("path", Json::str(&lock.path)),
                 ("agent_id", Json::str(lock.agent.as_str())),
                 ("generation", Json::int(lock.generation as i64)),
+                // the fencing token of the lock: the holder has to present it when it writes
+                ("epoch", Json::int(lock.epoch as i64)),
                 ("expires_at_ms", Json::int(lock.expires_at_ms as i64)),
             ])),
             Err(error) => {
@@ -1190,6 +1192,10 @@ impl HubInner {
             .get("expected_generation")
             .and_then(Json::as_i64)
             .and_then(|number| u64::try_from(number).ok());
+        let epoch = params
+            .get("epoch")
+            .and_then(Json::as_i64)
+            .and_then(|number| u64::try_from(number).ok());
         let mut state = self.lock();
         let agent = state
             .sessions
@@ -1198,6 +1204,20 @@ impl HubInner {
             .session
             .agent
             .clone();
+        // the write is fenced: the caller has to hold the epoch of the lock of the file, so a holder
+        // whose lock ran out and was taken by somebody else writes nothing at all (detailed design §18.2)
+        let fence = state
+            .workspaces
+            .check_write_fence(workspace.as_str(), &path, epoch, now_ms);
+        if let Err(error) = fence {
+            state.telemetry.push(HubEvent::LockDenied {
+                workspace: workspace.as_str().to_string(),
+                path: path.clone(),
+                agent_id: agent.as_str().to_string(),
+                at_ms: now_ms,
+            });
+            return Err(error);
+        }
         let generation = match state.store.as_mut() {
             Some(store) => store
                 .record_file_transaction(NewFileTransaction {
@@ -2372,6 +2392,120 @@ mod tests {
             .handle_message(&session, "workspace.write", &write, now)
             .expect_err("the second write is refused");
         assert_eq!(error.code, ErrorCode::SymbolConflict);
+    }
+
+    #[test]
+    fn the_write_of_the_holder_of_the_lock_is_recorded() {
+        let (hub, _clock) = hub();
+        let now = 1000;
+        let (_connection, session) = registered(&hub, now);
+        let params = Json::obj(vec![
+            ("workspace_id", Json::str("ws_1")),
+            ("path", Json::str("src/main.rs")),
+        ]);
+        let answer = hub
+            .handle_message(&session, "workspace.acquire", &params, now)
+            .expect("the lock is taken");
+        let epoch = answer
+            .get("epoch")
+            .and_then(Json::as_i64)
+            .expect("the epoch of the lock");
+        let write = Json::obj(vec![
+            ("workspace_id", Json::str("ws_1")),
+            ("path", Json::str("src/main.rs")),
+            ("content_digest", Json::str("sha256:abc")),
+            ("epoch", Json::int(epoch)),
+        ]);
+        let answer = hub
+            .handle_message(&session, "workspace.write", &write, now)
+            .expect("the write of the holder of the lock is recorded");
+        assert_eq!(answer.get("generation").and_then(Json::as_i64), Some(1));
+    }
+
+    #[test]
+    fn the_write_of_a_holder_whose_lock_was_taken_back_is_refused() {
+        let (hub, clock) = hub();
+        let now = 1000;
+        let (_first, first_session) = registered(&hub, now);
+        let params = Json::obj(vec![
+            ("workspace_id", Json::str("ws_1")),
+            ("path", Json::str("src/main.rs")),
+        ]);
+        let answer = hub
+            .handle_message(&first_session, "workspace.acquire", &params, now)
+            .expect("the lock is taken");
+        let old_epoch = answer
+            .get("epoch")
+            .and_then(Json::as_i64)
+            .expect("the epoch of the lock");
+        // the lease of the lock runs out and another agent takes the lock
+        clock.advance(crate::defaults::FILE_LEASE_MS + 1);
+        let later = clock.now_ms();
+        let connection = hub
+            .register_connection(&peer(), later)
+            .expect("the connection is accepted");
+        let register = Json::obj(vec![
+            ("provider", Json::str("codex")),
+            ("instance", Json::str("inst-2")),
+            ("workspace_id", Json::str("ws_1")),
+        ]);
+        hub.handle_message(
+            &connection.session.session_id,
+            "agent.register",
+            &register,
+            later,
+        )
+        .expect("the agent registers");
+        let answer = hub
+            .handle_message(
+                &connection.session.session_id,
+                "workspace.acquire",
+                &params,
+                later,
+            )
+            .expect("the lock is taken again");
+        let new_epoch = answer
+            .get("epoch")
+            .and_then(Json::as_i64)
+            .expect("the epoch of the lock");
+        assert!(
+            new_epoch > old_epoch,
+            "the epoch of a new lock is always bigger"
+        );
+        // the old holder writes with the epoch of its lock: the write is refused
+        let write = Json::obj(vec![
+            ("workspace_id", Json::str("ws_1")),
+            ("path", Json::str("src/main.rs")),
+            ("content_digest", Json::str("sha256:abc")),
+            ("epoch", Json::int(old_epoch)),
+        ]);
+        let error = hub
+            .handle_message(&first_session, "workspace.write", &write, later)
+            .expect_err("the write of the old holder is refused");
+        assert_eq!(error.code, ErrorCode::PermissionDenied);
+        // nothing was written at all: the generation of the file did not move
+        let snapshot = hub
+            .handle_message(
+                &first_session,
+                "workspace.snapshot",
+                &Json::obj(vec![
+                    ("workspace_id", Json::str("ws_1")),
+                    ("path", Json::str("src/main.rs")),
+                ]),
+                later,
+            )
+            .expect("the snapshot is taken");
+        assert_eq!(snapshot.get("generation").and_then(Json::as_i64), Some(0));
+        // the refusal is written down
+        let kinds: Vec<&str> = hub
+            .state()
+            .telemetry
+            .events()
+            .iter()
+            .map(HubEvent::kind)
+            .map(HubEventKind::as_str)
+            .collect();
+        assert!(kinds.contains(&"lock_denied"), "{kinds:?}");
     }
 
     #[test]

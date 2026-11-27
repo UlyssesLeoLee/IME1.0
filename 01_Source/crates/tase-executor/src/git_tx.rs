@@ -9,7 +9,8 @@
 //!
 //! This module holds the last two steps: [`GitRepo::create_commit`] builds the commit object (every file of the plan
 //! goes into **one** commit) and [`GitRepo::compare_and_swap`] moves the ref, but only when the ref still is where the
-//! plan expects it.
+//! plan expects it. [`GitRepo::message_of`] reads the message of a commit back, so that the job of a commit is found
+//! by the trailer `TASE-Job-ID` of that message (detailed design §5.2 and §5.5).
 //!
 //! # The atomicity of a multi-file change
 //!
@@ -70,6 +71,15 @@ pub trait GitRepo {
 
     /// The files that changed between two commits.
     fn changed_files(&self, from: &str, to: &str) -> Result<Vec<ChangedFile>>;
+
+    /// The message of a commit.
+    ///
+    /// The message is the way to the job of a commit: the commit of the executor carries the trailer
+    /// of detailed design §5.2 (`TASE-Job-ID`), so the reconciler of detailed design §5.5 finds the
+    /// job of a commit in the history of the repository itself and not only in a table of the
+    /// database. The trailer is written by [`commit_message`], and the commit of a job is the commit
+    /// whose message carries the trailer of that job.
+    fn message_of(&self, commit: &str) -> Result<String>;
 
     /// Creates a commit object that holds every change on top of `parent`.
     ///
@@ -263,6 +273,18 @@ impl GitRepo for GitCli {
         Ok(changed)
     }
 
+    fn message_of(&self, commit: &str) -> Result<String> {
+        // the raw body of the message, so that the trailer of the job is read as it was written
+        let output = self.output(&["log", "-1", "--format=%B", commit], &[], None)?;
+        if !output.status.success() {
+            return Err(TaseError::not_found(format!(
+                "the commit {commit} does not exist: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
+        Ok(String::from_utf8_lossy(&output.stdout).trim_end().to_string())
+    }
+
     fn create_commit(
         &mut self,
         parent: &str,
@@ -412,13 +434,6 @@ impl MemoryGit {
             .unwrap_or_default();
         Ok(id)
     }
-
-    /// The message of a commit.
-    pub fn message_of(&self, commit: &str) -> Option<&str> {
-        self.commits
-            .get(commit)
-            .map(|c| c.message.as_str())
-    }
 }
 
 impl GitRepo for MemoryGit {
@@ -473,6 +488,13 @@ impl GitRepo for MemoryGit {
             }
         }
         Ok(changed)
+    }
+
+    fn message_of(&self, commit: &str) -> Result<String> {
+        self.commits
+            .get(commit)
+            .map(|c| c.message.clone())
+            .ok_or_else(|| TaseError::not_found(format!("the commit {commit} does not exist")))
     }
 
     fn create_commit(
@@ -649,6 +671,47 @@ mod tests {
     }
 
     #[test]
+    fn the_commit_of_a_job_is_found_by_the_trailer_of_its_message() {
+        let (mut git, first) = memory_with_a_commit();
+        let commit_of_the_job = git
+            .create_commit(
+                &first,
+                &[(
+                    "src/main.rs".to_string(),
+                    FileWrite::Content("fn main() { /* the job */ }\n".to_string()),
+                )],
+                &commit_message("tase: the job job_001", "job_001"),
+            )
+            .expect("the commit of the job is created");
+        let commit_of_the_other_job = git
+            .create_commit(
+                &first,
+                &[(
+                    "src/other.rs".to_string(),
+                    FileWrite::Content("fn other() {}\n".to_string()),
+                )],
+                &commit_message("tase: the job job_002", "job_002"),
+            )
+            .expect("the commit of the other job is created");
+
+        // the reconciler walks the commits it knows and reads the message of every one of them: the
+        // commit of the job is the one whose message carries the trailer of that job
+        let history = [first, commit_of_the_other_job, commit_of_the_job.clone()];
+        let found = history.iter().find(|commit| {
+            let message = GitRepo::message_of(&git, commit.as_str()).expect("the message is read");
+            message.contains("TASE-Job-ID: job_001")
+        });
+        assert_eq!(found.map(String::as_str), Some(commit_of_the_job.as_str()));
+    }
+
+    #[test]
+    fn a_commit_that_is_not_there_has_no_message() {
+        let (git, _) = memory_with_a_commit();
+        let error = GitRepo::message_of(&git, "0000").unwrap_err();
+        assert_eq!(error.code, tase_contract::ErrorCode::NotFound);
+    }
+
+    #[test]
     fn a_file_that_is_deleted_is_gone_from_the_commit() {
         let (mut git, first) = memory_with_a_commit();
         let second = git
@@ -771,6 +834,44 @@ mod tests {
         let changed = git.changed_files(&head, &commit).expect("the diff is read");
         assert_eq!(changed.len(), 1);
         assert_eq!(changed[0].path, "file.txt");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_command_line_reads_the_message_of_a_commit() {
+        if !git_available() {
+            eprintln!("skipped: the git command line is not on this machine");
+            return;
+        }
+        let Some((dir, head)) = real_repository("message") else {
+            eprintln!("skipped: the git command line could not make a repository");
+            return;
+        };
+        let mut git = GitCli::new(&dir);
+
+        let commit = git
+            .create_commit(
+                &head,
+                &[("file.txt".to_string(), FileWrite::Content("two\n".to_string()))],
+                &commit_message("tase: the job job_001", "job_001"),
+            )
+            .expect("the commit is created");
+
+        // the message of the commit carries the trailer of the job
+        let message = GitRepo::message_of(&git, &commit).expect("the message is read");
+        assert!(
+            message.contains("tase: the job job_001"),
+            "the message is {message:?}"
+        );
+        assert!(
+            message.contains("TASE-Job-ID: job_001"),
+            "the message is {message:?}"
+        );
+
+        // a commit that is not there is not found
+        let error =
+            GitRepo::message_of(&git, "0000000000000000000000000000000000000000").unwrap_err();
+        assert_eq!(error.code, tase_contract::ErrorCode::NotFound);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

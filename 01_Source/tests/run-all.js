@@ -266,9 +266,13 @@ const TASE_CRATES = [
   'tase-catalog-mcp',
   'tase-ime-core',
   'tase-impls',
+  // pime-ipc is the IPC layer the TASE crates talk through (tase-local-ipc uses it): it is a crate of its own with
+  // its own Cargo.lock, and its own tests (the named pipe round trip) were **not** run by the gate until now -
+  // a change in it could pass the gate without a single one of its own tests running.
+  'pime-ipc',
 ];
 if (want('tase')) {
-  step('TASE crates (the template-aware semantic execution system): cargo test (every crate of its own)', () => {
+  step('TASE crates (the template-aware semantic execution system) and pime-ipc: cargo test (every crate of its own)', () => {
     let tests = 0;
     let done = 0;
     for (const crate of TASE_CRATES) {
