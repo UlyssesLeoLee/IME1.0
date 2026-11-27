@@ -6,9 +6,9 @@
 //! there is deliberately no operation that returns it. See `docs/AI_WORKER.md` for the protocol and the security
 //! properties, and which of them are verified.
 //!
-//! Layout: everything except `winhttp` and `wincred` is safe, pure Rust and is unit-tested with a fake transport and an
-//! in-memory vault; `secret` contains the volatile wipe (one `unsafe` block per primitive) and the two FFI modules
-//! contain all the remaining `unsafe`, each block with its safety argument.
+//! Layout: everything except `winhttp`, `wincred` and `secret` is safe, pure Rust and is unit-tested with a fake
+//! transport and an in-memory vault; `secret` contains the volatile wipe (one `unsafe` block per primitive) and the two
+//! FFI modules contain all the remaining `unsafe`, each block with its safety argument.
 #![deny(unsafe_code)]
 
 pub mod config;

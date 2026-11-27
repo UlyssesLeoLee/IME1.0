@@ -553,7 +553,7 @@ pub struct TemplateSummary {
     pub tags: Vec<String>,
     /// Where the schema of the parameters of the template lives.
     pub params_schema_ref: String,
-    /// The state of the approval of the template (`ACTIVE`, ...).
+    /// The state of the approval of the template (`APPROVED`, `REVIEW_REQUIRED` or `KNOWLEDGE_ONLY`).
     pub approval_status: String,
     /// The license of the template.
     pub license: String,

@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-27T21:51:34.037Z",
+  "generated": "2026-11-27T22:47:49.545Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -11,8 +11,8 @@
    "pass": 464
   },
   "tsf": {
-   "total": 41,
-   "pass": 41
+   "total": 412,
+   "pass": 412
   },
   "uat": {
    "total": 59,
@@ -27,9 +27,9 @@
    },
    "IT": {
     "total": 48,
-    "pass": 43,
+    "pass": 44,
     "fail": 0,
-    "notRun": 5
+    "notRun": 4
    },
    "ST": {
     "total": 43,
@@ -67,13 +67,14 @@
    "title": "OS 默认 IME 不可被安装计划改变",
    "status": "PASS",
    "via": [
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
-    "rust: install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
-    "install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
     "rust: install_plan::tests::ut_002_selection_errors_and_subsets",
-    "install_plan::tests::ut_002_selection_errors_and_subsets"
+    "install_plan::tests::ut_002_selection_errors_and_subsets",
+    "rust: install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles",
+    "install_plan::tests::ut_002_install_plan_never_changes_default_ime_or_other_profiles"
    ],
    "failed": [],
    "reason": ""
@@ -99,7 +100,8 @@
    "title": "Composition 取消不写入",
    "status": "PASS",
    "via": [
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
     "rust: input::tests::ut_004_composition_cancel_writes_nothing",
@@ -115,7 +117,8 @@
    "title": "敏感输入不保留文本",
    "status": "PASS",
    "via": [
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
     "rust: input::tests::ut_005_policy_disabled_behaves_like_secure_input",
@@ -156,10 +159,10 @@
    "tests": [
     "js: UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
     "UT-007 ranking: pin and deterministic rules first, stable across repeats, AI last",
-    "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
-    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
     "rust: candidate::tests::ut_007_usage_breaks_ties_before_weight",
-    "candidate::tests::ut_007_usage_breaks_ties_before_weight"
+    "candidate::tests::ut_007_usage_breaks_ties_before_weight",
+    "rust: candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable",
+    "candidate::tests::ut_007_pin_and_deterministic_rules_first_and_ranking_is_stable"
    ],
    "failed": [],
    "reason": ""
@@ -188,7 +191,8 @@
    "title": "Tab/Enter/数字键不默认吞键",
    "status": "PASS",
    "via": [
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
     "rust: input::tests::ut_009_capture_without_candidates_consumes_nothing",
@@ -965,7 +969,8 @@
    "status": "PASS",
    "via": [
     "js",
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
     "js: CFG engine: candidate rows, overlay placement, environment check, status bar and menu texts match JS (UT-055/057/077)",
@@ -1004,7 +1009,8 @@
    "status": "PASS",
    "via": [
     "js",
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
     "js: UT-057 every candidate row is described by text (source, validation, position, action), not colour",
@@ -1067,7 +1073,8 @@
    "title": "安装器仅登记本产品 GUID",
    "status": "PASS",
    "via": [
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
     "rust: install_plan::tests::ut_061_default_pointing_at_own_profile_is_only_dropped_not_reassigned",
@@ -1125,7 +1132,8 @@
    "status": "PASS",
    "via": [
     "js",
-    "rust"
+    "rust",
+    "tsf"
    ],
    "tests": [
     "js: UT-064 / UT-067 / IT-004 / ST-037 a failing core means Direct within the 2 s target; JS candidates keep flowing",
@@ -1134,10 +1142,10 @@
     "input::tests::ut_064_a_failure_while_candidates_show_hides_the_window",
     "rust: input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
     "input::tests::ut_064_failure_while_composing_ends_the_owned_composition_without_writing",
-    "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
-    "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
     "rust: input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
-    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating"
+    "input::tests::ut_064_core_failures_degrade_to_pass_through_without_propagating",
+    "rust: input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes",
+    "input::tests::ut_064_recovery_bumps_the_profile_epoch_and_refreshes"
    ],
    "failed": [],
    "reason": ""
@@ -1360,11 +1368,13 @@
   {
    "id": "IT-001",
    "title": "TSF 三 Profile 注册/枚举 API",
-   "status": "NOT RUN",
-   "via": [],
+   "status": "PASS",
+   "via": [
+    "tsf"
+   ],
    "tests": [],
    "failed": [],
-   "reason": "needs the Windows TSF DLL, a Windows 11 VM or named-pipe IPC (not built)"
+   "reason": ""
   },
   {
    "id": "IT-002",

@@ -1,10 +1,10 @@
 //! The view of an asset of the catalog: the layer, the tags and the aliases that the catalog derives from the
 //! manifest of the registry (basic design §17.1 and §17.2).
 //!
-//! The catalog of this repository holds **93 knowledge cards** and **not one language implementation**. A view is
-//! therefore always a *card*: it may be read, searched and quoted, it may not be instantiated. The view keeps that
-//! difference visible: it carries no implementation of its own, and it never pretends that an alias is a second
-//! asset.
+//! The catalog of this repository holds **93 knowledge cards** and **not one approved language implementation**
+//! (the fifty algorithm cards carry a Rust implementation whose state is `TESTED`). A view is therefore always a
+//! *card*: it may be read, searched and quoted, it may not be instantiated. The view keeps that difference visible:
+//! it carries no implementation of its own, and it never pretends that an alias is a second asset.
 //!
 //! # The layer
 //!
@@ -279,7 +279,7 @@ mod tests {
     use std::collections::BTreeMap;
     use std::path::Path;
 
-    /// The catalog of the repository: 93 knowledge cards and no implementation.
+    /// The catalog of the repository: 93 knowledge cards, none of them approved for instantiation.
     fn real_catalog() -> std::path::PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/tase-catalog")
     }

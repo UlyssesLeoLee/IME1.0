@@ -163,8 +163,8 @@ pub fn diff_of(base: &str, new: &str) -> Vec<Hunk> {
 
 /// The risk class of a set of changes.
 ///
-/// A file that appears or disappears is always a high risk; a change of many lines is high when it touches more than
-/// [`RISK_HIGH_LINES`] lines and medium when it touches more than [`RISK_MEDIUM_LINES`] lines.
+/// A file that appears or disappears is always a high risk; a change of many lines is high when it touches at least
+/// [`RISK_HIGH_LINES`] lines and medium when it touches at least [`RISK_MEDIUM_LINES`] lines.
 pub fn risk_of(changes: &[FileChange]) -> Risk {
     let mut lines = 0u32;
     for change in changes {

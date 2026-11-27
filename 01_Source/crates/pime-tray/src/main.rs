@@ -26,9 +26,9 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::{HOT_KEY_MODIFIERS, RegisterHotKey, UnregisterHotKey};
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW,
-    GetMessageW, PostQuitMessage, RegisterClassW, TranslateMessage, TrackPopupMenu, MF_CHECKED,
-    MF_STRING, MENU_ITEM_FLAGS, TPM_RETURNCMD, TPM_RIGHTBUTTON, WINDOW_EX_STYLE, WINDOW_STYLE,
-    WM_COMMAND, WM_DESTROY, WM_HOTKEY, WNDCLASSW,
+    GetMessageW, PostQuitMessage, RegisterClassW, SetTimer, TranslateMessage, TrackPopupMenu, MF_CHECKED,
+    MF_STRING, MENU_ITEM_FLAGS, TPM_RETURNCMD, TPM_RIGHTBUTTON, WINDOW_EX_STYLE, WINDOW_STYLE, WM_COMMAND,
+    WM_DESTROY, WM_HOTKEY, WM_TIMER, WNDCLASSW,
 };
 
 use crate::tray::{WM_TRAY, cursor_position};
@@ -37,6 +37,15 @@ use pime_tsf::settings_window::{SettingsEvent, SettingsSink, SettingsWindow};
 
 /// The identifier of the icon in the notification area.
 const TRAY_ID: u32 = 1;
+
+/// The timer that asks TSF which language is active.
+const TIMER_LANGUAGE: usize = 1;
+
+/// How often the tray asks (in milliseconds).
+///
+/// The tray is a program of its own: the text service cannot tell it that the language has changed, so it asks once
+/// a second. The answer is cheap and the change of a language is rare, so the wait costs nothing.
+const LANGUAGE_POLL_MS: u32 = 1000;
 
 /// The hot key that starts the voice input.
 const HOTKEY_VOICE: i32 = 2;
@@ -69,6 +78,10 @@ struct State {
     /// The settings window was closed and may be dropped. Dropping it inside the window procedure would destroy the
     /// window a second time, so it waits until the message is over.
     settings_closed: bool,
+    /// The logo in the notification area, with the language that is active.
+    tray: Option<tray::Tray>,
+    /// The language the logo carries now.
+    language: Option<icon::Language>,
 }
 
 impl State {
@@ -77,6 +90,8 @@ impl State {
             voice: None,
             settings: None,
             settings_closed: false,
+            tray: None,
+            language: None,
         }
     }
 }
@@ -100,6 +115,14 @@ unsafe extern "system" fn wnd_proc(
             let low = lparam.0 as u32 & 0xffff;
             if low == 0x0201 || low == 0x0202 || low == 0x0203 || low == 0x0205 {
                 show_menu(hwnd);
+            }
+            LRESULT(0)
+        }
+        WM_TIMER => {
+            // The language of the logo is asked once a second: the tray is a program of its own, so nothing tells it
+            // that the user has changed the language.
+            if wparam.0 == TIMER_LANGUAGE {
+                refresh_language(hwnd);
             }
             LRESULT(0)
         }
@@ -143,6 +166,45 @@ fn run_command(hwnd: HWND, id: usize) {
             unsafe { PostQuitMessage(0) };
         }
         _ => {}
+    }
+}
+
+/// The language that is active now, if TSF can say.
+///
+/// It asks TSF for **our own** text service: the question the marker needs is "which of OUR languages is our input
+/// method in right now", and the answer of the first enumerated text service may be another input method's.
+///
+/// None when TSF cannot say, and None for a language the product does not ship: the tray must never show a language
+/// that is not the active one.
+fn active_language() -> Option<icon::Language> {
+    pime_tsf::ime_switch::own_active_langid().and_then(icon::language_for_langid)
+}
+
+/// The text of the notification area entry: the name of the program and the language that is active.
+fn tray_tip(language: Option<icon::Language>) -> String {
+    match language {
+        Some(language) => format!("IME1.0 编程输入法 · {}", language.name()),
+        None => "IME1.0 编程输入法".to_string(),
+    }
+}
+
+/// Show the language that is active in the notification area.
+///
+/// Nothing happens when the language has not changed: the logo and the text are only drawn again when the answer
+/// of TSF is a different one.
+fn refresh_language(hwnd: HWND) {
+    let language = active_language();
+    let state = window_state(hwnd);
+    let changed = state.borrow().language != language;
+    if !changed {
+        return;
+    }
+    let bytes = icon::icon_resource_for(language);
+    let tip = tray_tip(language);
+    let mut borrowed = state.borrow_mut();
+    borrowed.language = language;
+    if let Some(tray) = borrowed.tray.as_mut() {
+        tray.set_icon(&bytes, &tip);
     }
 }
 
@@ -423,8 +485,24 @@ fn main() -> std::process::ExitCode {
         );
     }
 
-    // The logo in the corner.
-    let _tray = tray::Tray::add(window, TRAY_ID, "IME1.0 编程输入法", &icon::icon_resource());
+    // The logo in the corner, with the language that is active now.
+    let language = active_language();
+    let tray = tray::Tray::add(
+        window,
+        TRAY_ID,
+        &tray_tip(language),
+        &icon::icon_resource_for(language),
+    );
+    {
+        let mut borrowed = state.borrow_mut();
+        borrowed.tray = tray;
+        borrowed.language = language;
+    }
+
+    // The tray asks TSF which language is active once a second: it is a program of its own, so the text service
+    // cannot tell it that the user has changed the language.
+    // SAFETY: the window is live; the id is ours.
+    let _ = unsafe { SetTimer(window, TIMER_LANGUAGE, LANGUAGE_POLL_MS, None) };
 
     // The keys that must work even when IME1.0 is not the active input method.
     //
@@ -462,4 +540,25 @@ fn main() -> std::process::ExitCode {
         unsafe { CoUninitialize() };
     }
     std::process::ExitCode::SUCCESS
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_text_of_the_tray_names_the_language_that_is_active() {
+        assert_eq!(tray_tip(None), "IME1.0 编程输入法");
+        assert_eq!(tray_tip(Some(icon::Language::Zh)), "IME1.0 编程输入法 · 简体中文");
+        assert_eq!(tray_tip(Some(icon::Language::En)), "IME1.0 编程输入法 · 英语");
+        assert_eq!(tray_tip(Some(icon::Language::Ja)), "IME1.0 编程输入法 · 日语");
+    }
+
+    #[test]
+    fn the_text_of_the_tray_is_not_too_long_for_the_notification_area() {
+        for language in [None, Some(icon::Language::Zh), Some(icon::Language::En), Some(icon::Language::Ja)] {
+            let tip = tray_tip(language);
+            assert!(tip.encode_utf16().count() < 128, "the tip fits: {tip}");
+        }
+    }
 }

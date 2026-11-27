@@ -92,8 +92,12 @@ fn profiles() -> Option<ITfInputProcessorProfiles> {
 
 /// The profile that is active now, if TSF can say.
 ///
-/// Every text service is asked in turn, because TSF has no "who is active" call that does not need the class of the
-/// text service in question.
+/// The text services are enumerated and the **first** one is asked. The enumeration order is not the order in which
+/// the user is typing, so the answer is the profile of *that* text service and not necessarily the active one: it can
+/// be a stale profile of another input method, and the call can fail altogether. Asking every text service in turn
+/// would be closer to the truth, but the switch of the input method is built on what this answers today.
+///
+/// For the language of **our own** text service - the question the tray asks - see [`own_active_langid`].
 pub fn active_profile() -> Option<Profile> {
     let manager = profiles()?;
     // SAFETY: the manager is a live object; `EnumInputProcessorInfo` returns an owned enumerator.
@@ -116,6 +120,44 @@ pub fn active_profile() -> Option<Profile> {
         &guid_to_string(&profile),
         langid,
     ))
+}
+
+/// The language id of the profile of our own text service that is active now, as TSF sees it.
+///
+/// TSF keeps the active profile **per text service**, and ours is the one whose class we know
+/// ([`crate::CLSID_PIME`]), so the question has an exact answer: no enumeration of the other text services, no
+/// guessing. None when TSF cannot say it - our text service is not registered on this machine, or no profile of it is
+/// active.
+///
+/// The answer is the language id of that profile (0x0804 = zh-CN, 0x0409 = en-US, 0x0411 = ja-JP). Whether it is one
+/// of the three languages of the product is said by the mapping of the settings ([`crate::imesettings::language_for_id`]).
+pub fn own_active_langid() -> Option<u16> {
+    let manager = profiles()?;
+    let mut langid = 0u16;
+    let mut profile = GUID::zeroed();
+    // SAFETY: both out pointers are live locals.
+    let ok = unsafe { manager.GetActiveLanguageProfile(&CLSID_PIME, &mut langid, &mut profile) };
+    if ok.is_err() {
+        return None;
+    }
+    Some(langid)
+}
+
+/// The language of our own text service that is active now, in the words of the product.
+///
+/// "zh-CN", "en-US" or "ja-JP". None when TSF cannot say it - and None as well when the answer is not one of the three
+/// languages of the product: a language that is not ours gets no mark in the tray.
+pub fn own_active_language() -> Option<&'static str> {
+    let langid = own_active_langid()?;
+    own_language_of(langid)
+}
+
+/// The language of the product a language id names, if it is one of ours.
+///
+/// None for a language the product does not ship: the tray must never show a language that is not the active one.
+/// The mapping itself is the one of the settings, so the two cannot drift apart.
+fn own_language_of(langid: u16) -> Option<&'static str> {
+    crate::imesettings::language_for_id(langid)
 }
 
 /// Activate a profile of a text service.
@@ -340,5 +382,30 @@ mod tests {
         assert!(ours.iter().all(|p| p.is_of(&guid_to_string(&CLSID_PIME))));
         let languages: Vec<u16> = ours.iter().map(|p| p.langid).collect();
         assert_eq!(languages, vec![0x0804, 0x0409, 0x0411]);
+    }
+
+    /// The answer TSF gives for our own text service must be a language of the product: the tray shows that language
+    /// in its mark.
+    #[test]
+    fn the_language_ids_of_our_own_profiles_are_the_languages_of_the_product() {
+        for profile in own_profiles() {
+            assert!(
+                own_language_of(profile.langid).is_some(),
+                "{:#06x} is not a language of the product",
+                profile.langid
+            );
+        }
+        assert_eq!(own_language_of(0x0804), Some("zh-CN"));
+        assert_eq!(own_language_of(0x0409), Some("en-US"));
+        assert_eq!(own_language_of(0x0411), Some("ja-JP"));
+    }
+
+    /// A language that is not one of ours is no language of ours: the tray draws the plain disc then, and must never
+    /// show a language that is not the active one.
+    #[test]
+    fn a_language_that_is_not_ours_is_no_language_of_the_product() {
+        for langid in [0x0407, 0x01FF, 0x0000] {
+            assert_eq!(own_language_of(langid), None, "{langid:#06x}");
+        }
     }
 }

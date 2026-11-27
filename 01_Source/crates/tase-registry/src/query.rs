@@ -396,7 +396,8 @@ mod tests {
         let mut query = query();
         query.language = Some("rust".to_string());
         let answer = search(&registry, &query, &Policy::default()).expect("the search works");
-        // every asset of the repository is a knowledge card: it is language neutral and it matches
+        // the language filter does not exclude a card: a card without an implementation is language neutral and
+        // a card with a Rust implementation matches Rust
         assert_eq!(answer.templates.len(), DEFAULT_LIMIT);
         for template in &answer.templates {
             assert_eq!(template.approval_status, "KNOWLEDGE_ONLY");

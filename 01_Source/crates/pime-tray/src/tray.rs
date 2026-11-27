@@ -13,6 +13,8 @@ pub const WM_TRAY: u32 = 0x8000 + 20;
 
 /// `NIM_ADD`.
 const NIM_ADD: u32 = 0;
+/// `NIM_MODIFY`.
+const NIM_MODIFY: u32 = 1;
 /// `NIM_DELETE`.
 const NIM_DELETE: u32 = 2;
 /// `NIM_SETVERSION`.
@@ -34,6 +36,7 @@ const NOTIFYICON_VERSION_4: u32 = 4;
 /// `shellapi.h`; the compiler checks that the fields are in the right order and that the structure has the size
 /// Windows expects.
 #[repr(C)]
+#[derive(Clone, Copy)]
 #[allow(non_snake_case)]
 pub struct NotifyIconData {
     pub cbSize: u32,
@@ -117,6 +120,45 @@ impl Tray {
     pub fn remove(&self) {
         // SAFETY: the data is a live local that describes the icon that is there.
         let _ = unsafe { Shell_NotifyIconW(NIM_DELETE, &self.data) };
+    }
+
+    /// Replace the logo and the text of the notification area.
+    ///
+    /// This is how the tray follows the language that is active: the logo of the corner carries its mark and the
+    /// text names it. The old logo is only thrown away when Windows has taken the new one, so a failure leaves the
+    /// notification area as it was.
+    pub fn set_icon(&mut self, icon_bytes: &[u8], tip: &str) -> bool {
+        // SAFETY: the bytes are the picture of an icon, as the resource functions want it.
+        let Ok(icon) = (unsafe {
+            CreateIconFromResourceEx(
+                icon_bytes,
+                true,
+                0x0003_0000,
+                0,
+                0,
+                LR_DEFAULTCOLOR,
+            )
+        }) else {
+            return false;
+        };
+        let mut data = self.data;
+        data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+        data.hIcon = icon;
+        data.szTip = [0; 128];
+        let tip: Vec<u16> = tip.encode_utf16().take(127).collect();
+        data.szTip[..tip.len()].copy_from_slice(&tip);
+        // SAFETY: the data is a live local that describes the icon that is there.
+        let done = unsafe { Shell_NotifyIconW(NIM_MODIFY, &data) } != 0;
+        if done {
+            // SAFETY: the old logo is not used any more.
+            let _ = unsafe { DestroyIcon(self.icon) };
+            self.icon = icon;
+            self.data = data;
+        } else {
+            // SAFETY: the new logo was not taken.
+            let _ = unsafe { DestroyIcon(icon) };
+        }
+        done
     }
 }
 

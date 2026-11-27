@@ -12,12 +12,13 @@
 //!
 //! # The one hard rule: a knowledge card is not a certified implementation
 //!
-//! The catalog of this repository holds **93 knowledge cards** and **not one certified language implementation**
-//! (`status = DOCUMENTED`, `implementations = []`). A card may be read, searched and quoted; it may not be
-//! instantiated. The registry keeps that difference visible everywhere:
+//! The catalog of this repository holds **93 knowledge cards** and **not one approved language implementation**
+//! (`status = DOCUMENTED`; the fifty algorithm cards carry one Rust implementation whose state is `TESTED`, the
+//! forty-three pattern cards carry none). A card may be read, searched and quoted; it may not be instantiated,
+//! because no implementation of the catalog is `APPROVED`. The registry keeps that difference visible everywhere:
 //!
 //! * [`policy::Approval`] has three values, and an asset without an approved implementation is never more than
-//!   [`policy::Approval::KnowledgeOnly`] - the state of the card says nothing about the state of an implementation;
+//!   [`policy::Approval::ReviewRequired`] - the state of the card says nothing about the state of an implementation;
 //! * [`policy::Policy::may_instantiate`] only lets an asset through when an implementation of the **requested
 //!   language** carries the state `APPROVED` (requirements §14.4). An implementation that is approved for Rust
 //!   says nothing about TypeScript;
@@ -27,7 +28,7 @@
 //!   every asset of this repository, before any other rule is even looked at.
 //!
 //! The rule is also tested against the real catalog: the tests of [`loader`] and [`policy`] load the 93 assets
-//! of `assets/tase-catalog` and assert that every one of them is a knowledge card and nothing else.
+//! of `assets/tase-catalog` and assert that not one of them may be instantiated.
 //!
 //! The crate has no third-party dependency: the strict JSON parser and the SHA-256 come from `pime-core`, the
 //! DTOs, the identifiers and the error codes from `tase-contract`.

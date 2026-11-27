@@ -16,15 +16,17 @@
 //!
 //! # A knowledge card is not an executable implementation
 //!
-//! **The catalog of this repository holds 93 knowledge cards and not one language implementation.** Every asset is
-//! `DOCUMENTED` and every `implementations` list is empty. The crate keeps that difference visible everywhere:
+//! **The catalog of this repository holds 93 knowledge cards and not one approved language implementation.** Every
+//! asset is `DOCUMENTED`; the fifty algorithm cards carry one Rust implementation whose state is `TESTED`, the
+//! forty-three pattern cards carry none. The crate keeps that difference visible everywhere:
 //!
 //! * [`governance::ImplementationStatus::Approved`] is the only state that opens the gate of the instantiation, and
 //!   no asset of this repository is in that state;
 //! * the answer of [`recommend::recommend`] carries `instantiable: false` and the reason for every one of the 93
 //!   assets;
-//! * [`implementation::ImplementationRegistry::from_registry`] returns an **empty** registry for this repository:
-//!   the catalog never invents an implementation that was not written.
+//! * [`implementation::ImplementationRegistry::from_registry`] returns the fifty implementations of the algorithms
+//!   for this repository and no implementation at all for a pattern: the catalog never invents an implementation that
+//!   was not written.
 //!
 //! # The answer carries the counterexamples and the risks
 //!

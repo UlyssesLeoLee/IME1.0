@@ -18,12 +18,12 @@
 //!
 //! # The pipeline of the plan service
 //!
-//! The plan service of detailed design §2.3 runs nine steps: identity, schema, the permission of the repository and
+//! The plan service of detailed design §2.3 runs ten steps: identity, schema, the permission of the repository and
 //! of the branch, the content addresses, the pinning of the template, the static checks, the order of the operations,
-//! the canonical JSON, the digest and the save of the `plan_id`. The steps that this crate covers are the static
-//! checks ([`validator::validate_plan`]), the canonical JSON and the digest ([`plan_hash::canonical_json`] and
-//! [`plan_hash::digest_of`]). The steps that need the repository, the registry or the semantic layer are not here:
-//! this crate never goes and looks.
+//! the canonical JSON, the SHA-256 digest of the plan, the save of the `plan_id`. The steps that this crate covers
+//! are the static checks ([`validator::validate_plan`]), the canonical JSON and the digest
+//! ([`plan_hash::canonical_json`] and [`plan_hash::digest_of`]). The steps that need the repository, the registry or
+//! the semantic layer are not here: this crate never goes and looks.
 //!
 //! The crate has no third-party dependency: the JSON and the SHA-256 come from `pime-core` and the DTOs from
 //! `tase-contract`.

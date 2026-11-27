@@ -1,6 +1,6 @@
 //! The validation of a plan (detailed design §2.3).
 //!
-//! The plan service of detailed design §2.3 runs a pipeline of nine steps: identity, schema, the permission of the
+//! The plan service of detailed design §2.3 runs a pipeline of ten steps: identity, schema, the permission of the
 //! repository and of the branch, the content addresses, the pinning of the template, the static checks, the order of
 //! the operations (the DAG), the canonical JSON, the SHA-256 digest of the plan and the save of the `plan_id`.
 //!

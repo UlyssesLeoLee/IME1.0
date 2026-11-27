@@ -17,9 +17,9 @@
 //!
 //! # Nothing is invented
 //!
-//! The catalog of this repository holds **no implementation at all**: every one of the 93 assets is a knowledge
-//! card. The registry built out of it is therefore empty, and every query about an implementation answers with
-//! nothing.
+//! The catalog of this repository holds **no approved implementation at all**: the fifty algorithm cards carry one
+//! Rust implementation whose state is `TESTED`, the forty-three pattern cards carry none. The registry built out of
+//! it therefore holds fifty implementations, and every query about an *approved* implementation answers with nothing.
 
 use tase_contract::TaseError;
 use tase_contract::api::AssetImplementation;

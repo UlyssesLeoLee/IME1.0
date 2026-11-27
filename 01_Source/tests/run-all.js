@@ -31,7 +31,7 @@ const verification = path.join(root, '02_Verification');
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
 const all = has('--all');
-const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|ime-live|tsf-ui|worker|ipc|setup|agent|tase|bench|mutation|installer|uat|uat-rust|report)$/.test(a)) && !all;
+const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-live|ime-live|tsf-ui|worker|ipc|setup|agent|tase|bench|mutation|installer|tray|uat|uat-rust|report)$/.test(a)) && !all;
 // no flags = the fast set (no GUI); --all adds the two UAT runs; single flags select single steps
 // The UAT is NOT part of the fast set any more (the user, 2026-11-19): it drives the VS Code **bridge**, not the
 // input method itself, and it was the most fragile step of the gate - about 2.2% of its scenarios fail per run and
@@ -39,7 +39,7 @@ const fast = !args.some(a => /^--(syntax|fixtures|golden|js|rust|smoke|tsf|tsf-l
 // (`node tests/run-all.js --uat`) and its evidence stays in 02_Verification/uat, but it is no longer a gate.
 // What watches the input method itself is the step that drives the real TSF DLL through the real msctf
 // (`--ime-live`: the installed DLL, a real window with the keyboard focus, the real keyboard).
-const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'bench', 'mutation', 'setup', 'installer'];
+const FAST = ['syntax', 'fixtures', 'golden', 'rust', 'js', 'smoke', 'tsf', 'agent', 'tase', 'tray', 'bench', 'mutation', 'setup', 'installer'];
 const want = k => all || (fast && FAST.includes(k)) || has(`--${k}`);
 const onlyUat = (() => { const i = args.indexOf('--only-uat'); return i >= 0 ? args[i + 1] : null; })();
 const targetDir = process.env.CARGO_TARGET_DIR || path.join(os.tmpdir(), 'pime-cargo-target');
@@ -301,6 +301,12 @@ if (want('worker')) {
     const b = cargoRetry('pime-ai-worker', ['build']);
     return b.ok ? sh(process.execPath, [path.join(tests, 'smoke', 'ai-worker-smoke.js')], {env: {...process.env, CARGO_TARGET_DIR: targetDir}}) : b;
   });
+}
+if (want('tray')) {
+  // The resident tray: the logo it draws at run time, the autostart switch and the voice input. The tray is its own
+  // workspace (it needs unsafe), so it is built in its own directory, like the TSF crate.
+  step('resident tray (crates/pime-tray): cargo test (the logo at run time, the autostart and the voice input)',
+    () => cargoRetry('pime-tray', ['test']));
 }
 if (want('bench')) {
   // The cost and the latency benchmark: the local candidate path has to stay inside its budget (DD-IME §20.2:
