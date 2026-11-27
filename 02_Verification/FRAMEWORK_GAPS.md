@@ -2511,3 +2511,53 @@ laser.set_input_mode`）**没有单元测试**——`Inner` 需要真的 `ITfThr
 
 **登记**：D-182（已修，改了产品行为，等裁定）。
 
+### 5.43 第四十六轮（2026-11-27）：**子代理分头开发** —— 台账里那 22 条登记在案的缺陷，一次修完
+
+这一轮的起因是你 2026-11-27 的一句话：「**后续内容开子代理分头开发**」。
+台账 §2 里那 149 条待裁定的条目，绝大多数是**产品取舍**（要你拍板），
+但有一批是**答案已经唯一**的——**注释说的和代码做的不是一回事**、**clippy 不干净**、**卡里写着不存在的 API**、
+**TASE 存储的租约没有围栏**。这批不需要再问你，于是分给 **8 个子代理并行**做，
+**每个子代理只碰自己那几个文件**（互不重叠），主代理最后统一验证、统一记账、统一提交。
+
+#### 5.43.1 八组分头做了什么
+
+| 组 | 范围 | 做了什么 | 验证 |
+|---|---|---|---|
+| A | `assets/tase-catalog/assets/**/card.md` | **D-77 / D-78 / D-79 / D-80**：卡里那个**不存在的标准库 API**（`str::edit_distance` 从未稳定）、「容量 0 的合法握手」（与本轮要求冲突）、与 clippy 冲突的写法、以及「不要手写、优先标准库」与本 catalog 定位冲突 —— **5 张卡** | `validate-tase-catalog.js` **93 assets / 0 problems** |
+| B | `crates/pime-tsf/src/**` | **D-41** 的 clippy（实测不止台账写的 3 条）＋ **D-153 / D-154 / D-159 / D-163** 四处注释 | crate 内 clippy 零告警、**402** 项全过 |
+| C | `crates/pime-core/src/**` | **D-26** 的 clippy（实测 **9 条**：多出 `fill_shadow` 里一段**被同名变量遮蔽、从未被读的死赋值**（`commit 271550c` 的遗留）与 `agent_proto.rs` 三处 `should_implement_trait`）＋ **D-152 / D-155 / D-156 / D-161 / D-162** 五处注释 | clippy exit 0、**462** 项全过（条数未变） |
+| D | `crates/tase-local-store/**` | **D-67 / D-68 / D-69 / D-76** 四个**真缺陷**：写终态没有 epoch 围栏、释放时刻写成获取时刻、journal 时间写死 0、领取时就计 attempt | **72 → 78** 项全过（新增 6 条用例） |
+| E | `crates/tase-ime-core`、`crates/pime-ipc`、`editor-bridges/vscode/src` | **D-157 / D-158 / D-160** 三处注释（只改文字） | ime-core **39**、ipc **91**、JS **357** 全过、语法 103/103 |
+| F | `tests/tsf/**` | B 组新报出的 **10 条 clippy**（台账漏记的那一大片） | **402** 项全过 |
+| G | `crates/pime-tsf/src` 的 `#[cfg(test)]` 模块 | **4 条 `field_reassign_with_default`**（台账漏记） | clippy exit 0、**402** 项全过 |
+| H | `crates/tase-worker`、`crates/tase-local-hub` | D 组改了 store 的**公开签名**，下游必须适配：**worker 传领取时的 epoch**（不是报告时现读）、**开工时调 `begin_execution`**、hub 把 epoch 从发放带到回报 | worker **90 → 92**、hub **119**、clippy 零告警 |
+
+#### 5.43.2 这一轮真正改了**行为**的地方（只有一处，已登记进 §1 等你裁定）
+
+**TASE 存储的租约围栏**（D-67）：`Store::finish_job` 现在多一个 `lease_epoch` 参数，
+与行里的 epoch 不一致就返回 `PERMISSION_DENIED`、事务回滚、**不写任何状态**——
+原来**租约已过期的旧 worker 照样能写终态**（设计书 §8.1 要求「epoch 比较失败必须终止」，这条路径上原来没有围栏）。
+`release_lease` 记真实的释放时刻与真实的 journal 时间；`lease_job` 不再递增 attempt，
+改由新增的 `begin_execution` 在**真正开工时**递增（领取→放回→再领取，attempt 仍为 0）。
+
+**一个口径选择也归你裁定**：`epoch` 仍在**领取**时递增（挪到执行开始会让围栏出现空洞：领取到执行之间新旧持有者 epoch 相同），
+`attempt` 才是开工时计数。
+
+#### 5.43.3 顺带发现、没动的（交你裁定）
+
+- **另外 4 张算法卡**还有 D-80 同类冲突（`euclidean_gcd` / `binary_search` / `quickselect` / `kmp` 仍写「不要手写」）；
+- `hash_table` / `binary_heap` 两张卡的**示例代码**仍是标准库用法（本 crate 的实现是手写的）；
+- `crates/pime-ipc/Cargo.lock` 钉着 **0.2.0**，而 manifest 已是 0.3.4（每次构建 cargo 都会重写它 ⇒ 工作树会脏）；
+- `crates/pime-tsf/src/laser_ui/hit.rs:63` 有一处措辞偏松（「屏幕中间」其实是工作区中间），A 组判断「不算错」故未动。
+
+#### 5.43.4 这一轮的机器侧教训
+
+**两轮门禁都被机器打断**：11-25 那一轮是 360 隔离二进制 + 提交额度只剩 2.0 GB（§5.42.6）；
+这一轮 15:00 的门禁在**变异轮跑到第 43 条**时被任务管理器「lost」连带杀死 ⇒
+**源码被留在变异中途**（`laser_ui/hit.rs` 的 `action_at(x, y)` 被调换成 `action_at(y, x)`）——
+已 `git checkout` 还原，并逐个核对了与变异用例**重叠**的那几个文件，确认没有别的残留。
+⇒ **门禁从此脱离工具的进程树跑**（`Start-Process` + 日志文件），任务再「lost」也杀不死它。
+
+**登记**：本轮修掉的 22 条已在台账 §2 逐行标为「已修」；D-182 与 TASE 围栏的行为改动在 §1 等你追认。
+
+
