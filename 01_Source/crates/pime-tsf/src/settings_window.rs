@@ -180,7 +180,7 @@ pub enum Toggle {
     SpaceConfirms,
     /// A composition is opened as soon as candidates appear.
     AutoCompose,
-    /// The input method starts in input mode.
+    /// The next start is in the natural language input (the factory default is the code input).
     InputMode,
     /// The laser interface is shown.
     LaserUi,

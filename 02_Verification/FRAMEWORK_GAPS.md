@@ -2777,6 +2777,48 @@ cargo 却照样给它链一个测试壳，而那正是被破坏的文件 ⇒ 标
 ⇒ **红绿轮的证据链也会「静默少验」**。
 **门禁工具本身的那个洞没有动** —— 按规矩交你裁定。
 
+### 5.48 第五十轮（2026-11-28 05:00~）：**「模式」与「输入法」这两件事，一次对齐**（D-131）＋ 矩阵里同一处假话
+
+这一轮两组子代理 + 主代理：把**同一处旧口径**在代码与文档里都改掉。
+
+#### 5.48.1 D-131：`ime_switch.rs` 的模块头还在讲老口径
+
+它写的是「one key (Ctrl+F12) brings IME1.0, the same key brings the Japanese input method back」——
+**那是 2026-11-11 之前的老口径**（你的裁定：**Ctrl+F12 = 切「模式」**；输入法切换**没有快捷键**）。
+**代码早就是新的**：`switch_now()` 只被**面板手势**（`tip/panel.rs:293`）与**托盘菜单**（`pime-tray/src/main.rs:130`）调用，
+托盘只注册了 Ctrl+Alt+V ⇒ **注释在骗人**。⇒ 改成现在的事实（**只改注释，一行代码没动**），
+并补一句「Ctrl+F12 与 Alt+F1 切的是**模式**，与输入法无关」。
+
+子代理还做了一件该做的事：第一次跑测试时 `ime_functions` **起不来**（`os error 14001`），
+它**用 HEAD 的原版做了 A/B 对照**（不 checkout、不 stash，只把原文件取出来临时换上）⇒ **同样失败**
+⇒ 证明那是 360 的临时判定，与这次改动无关；扫描缓存热了以后同一条二进制自己就过了。
+
+#### 5.48.2 同类的清扫：三个 crate 里还有 18 行同样的旧口径
+
+「模式」与「输入法」这两件事在 2026-11-11 分家之后，代码里分清了，**注释里还有 18 行没跟上**
+（`pime-core/src/imeswitch.rs` 的「one-key switch」「presses the switch key」、
+`pime-tsf/src/keymap.rs` 里已经删掉的「悬浮窗」、`imesettings.rs` 里**方向写反**的 `input_mode` 说明、
+`controller.rs` / `menus.rs` / `settings_window.rs` 里的「direct mode / input mode」）⇒ 全部改成现在的事实
+（**只改注释，一行代码没动**）。**四个 crate 全绿**：pime-core **464** / pime-tsf **410** /
+pime-tray **9** / pime-setup **127**，clippy 零告警。
+
+子代理还替安装器 crate 找到**同一处**（`pime-setup/src/payload.rs`：「the one-key switch」）⇒ 也改掉了。
+
+#### 5.48.3 框架矩阵（**当前状态**）里的一处假话
+
+`IME_FRAMEWORK_MATRIX.md` 的能力行写「`crates/pime-tray`：托盘图标、**Ctrl+F12 一键切换**、Ctrl+Alt+V 录音识别」
+——**托盘现在不注册 Ctrl+F12** ⇒ 改成「**托盘菜单里的输入法切换（没有快捷键）**」。
+**历史轮次记录里的旧说法保持原样**（那时它是真的：那一轮 Ctrl+F12 就是切输入法）。
+
+#### 5.48.4 这一轮的门禁
+
+**没有再跑整轮门禁**：这一轮**只改注释**（`git diff` 里全是 `//` 行），测试数与 claims 不变，
+而今晚的整轮门禁**连续五轮都因机器红**（D-183，见 §5.46.5）⇒ 再跑一轮的期望值只有「再红一次」。
+**各 crate 自己的门禁都跑了**（上面那四个 crate 的 `cargo test` + `cargo clippy -D warnings`），
+**清单与交付数字校验照跑**（`update-manifest --check` 通过、交付数字校验只剩一处**如实报红**：
+「计划书写 410，日志说 41」）。
+**要一份全绿的整轮实录，得等那台机器放行**（或者你定了 D-183 的处置）。
+
 
 
 

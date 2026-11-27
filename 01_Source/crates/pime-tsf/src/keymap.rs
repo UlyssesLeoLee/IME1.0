@@ -127,9 +127,9 @@ pub fn is_compose_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::SPACE && mods.ctrl && mods.alt && !mods.shift && !mods.win
 }
 
-/// Alt+F1: switch between direct mode (nothing is eaten) and input mode (the mainstream behaviour: typing opens a
-/// composition and the candidate list takes the digits and the Tab key). The floating window offers the same as a
-/// button.
+/// Alt+F1: the same action as Ctrl+F12 - switch between the **code input** (the direct mode: nothing is eaten) and
+/// the **natural language input** (the input mode: typing opens a composition and the candidate list takes the digits
+/// and the Tab key). The panel of the laser interface offers the same as a row.
 pub fn is_input_mode_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::F1 && mods.alt && !mods.ctrl && !mods.shift && !mods.win
 }
@@ -146,8 +146,6 @@ pub fn is_mode_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::F12 && mods.ctrl && !mods.alt && !mods.shift && !mods.win
 }
 
-/// Alt+F2: walk through the three languages of the product (zh-CN, en-US, ja-JP). The panel of the laser interface
-/// offers the same as a row.
 /// Ctrl+Alt+V: switch the vertical writing mode (the text that is written stands as a column).
 pub fn is_vertical_chord(code: u32, mods: Modifiers) -> bool {
     code == vk::V && mods.alt && mods.ctrl && !mods.shift && !mods.win

@@ -51,7 +51,7 @@ const ID_SEARCH: i32 = 1;
 /// What a menu item asks for.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MenuAction {
-    /// Switch between direct mode and input mode.
+    /// Switch between the code input and the natural language input.
     ToggleInputMode,
     /// The AI features run with this effort ("auto", "low", "medium", "high").
     SetEffort(String),

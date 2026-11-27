@@ -1,9 +1,13 @@
-//! Switching the active input method: the one-key switch between IME1.0 and the input method the user came from.
+//! Switching the active input method: the switch between IME1.0 and the input method the user came from.
 //!
-//! The user is writing in the Japanese input method and wants to write code: one key (Ctrl+F12) brings IME1.0, the
-//! same key brings the Japanese input method back. The decision is pure (`pime_core::imeswitch`); this module is the
+//! The user is writing in the Japanese input method and wants to write code: the switch brings IME1.0, the switch
+//! again brings the Japanese input method back. The decision is pure (`pime_core::imeswitch`); this module is the
 //! Windows part: which profile is active now, how another one is activated, and where the profile we came from is
-//! remembered between the presses.
+//! remembered between the switches.
+//!
+//! The switch is reached from the laser panel and from the tray menu - it has no keyboard shortcut of its own.
+//! Ctrl+F12 and Alt+F1 switch the writing **mode** instead (the code input and the natural language input, the code
+//! input being the factory mode); they have nothing to do with the input method.
 //!
 //! Everything that can fail degrades to "nothing happened": a switch that cannot be read or written must never
 //! leave the user without an input method, and it must never take the focus away from the program they are writing
@@ -141,7 +145,7 @@ pub enum SwitchError {
 
 /// The profile the switch goes to, and the one to remember afterwards.
 ///
-/// None when there is nowhere to go: the key must never leave the user without an input method.
+/// None when there is nowhere to go: the switch must never leave the user without an input method.
 pub fn next_switch() -> Option<(Profile, Option<Profile>)> {
     let ours = own_profiles();
     let current = active_profile();

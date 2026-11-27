@@ -30,7 +30,7 @@ pub const VERSION: i64 = 2;
 
 /// The language profiles the product ships, in the order the settings window lists them.
 ///
-/// The list itself is the one of the core: the switch key walks through the same three languages.
+/// The list itself is the one of the core: the language chord walks through the same three languages.
 pub const LANGUAGES: [&str; 3] = pime_core::imeswitch::LANGUAGES;
 
 /// The plugin languages the product knows, with the name the settings window shows.
@@ -85,7 +85,7 @@ pub fn language_for_id(langid: u16) -> Option<&'static str> {
 
 /// The settings of one language profile.
 ///
-/// The defaults are the ones the product ships with: the input method starts in direct mode (it eats no code
+/// The defaults are the ones the product ships with: the next start is in the code input (it eats no code
 /// character), the candidate page holds five rows, the Tab key moves the highlight of the list (the programmer
 /// habit: Tab selects, Enter/Space/digit take the candidate) and the space key confirms the highlighted candidate
 /// while the candidate list is on screen.
@@ -109,8 +109,8 @@ pub struct LanguageSettings {
     pub keymap_preset: KeymapPreset,
     /// A composition is opened as soon as candidates appear (the Sogou behaviour).
     pub auto_compose: bool,
-    /// The input method starts in the **code input** (typing goes into the document exactly as it was typed)
-    /// instead of the natural language input.
+    /// The **next start** is in the natural language input when this is on; off (the factory default) it is in the
+    /// **code input** (typing goes into the document exactly as it was typed).
     pub input_mode: bool,
     /// The laser interface (the blue glow at the left of the screen and the panel on it) is shown while this
     /// profile is active.
@@ -122,7 +122,7 @@ impl Default for LanguageSettings {
         LanguageSettings {
             page_size: 5,
             // The mainstream behaviour: while the candidate list is on screen, Space takes the highlighted
-            // candidate. Direct mode (Alt+F1) still lets every character through to the host.
+            // candidate. The code input (the factory mode) still lets every character through to the host.
             space_confirms: true,
             // The programmer habit the user asked for: Tab selects (it moves the highlight), Enter/Space/digit
             // take the candidate.

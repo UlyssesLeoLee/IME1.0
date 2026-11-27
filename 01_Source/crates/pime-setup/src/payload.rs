@@ -30,7 +30,8 @@ pub const LICENSE: &str = "LICENSE";
 pub const VSIX: &str = "programming-ime.vsix";
 /// The icon of the Add/Remove Programs entry: it is installed next to the other files and removed with them.
 pub const ICON: &str = "pime.ico";
-/// The resident tray: the logo in the notification area, the one-key switch and the voice input.
+/// The resident tray: the logo in the notification area, the switch of the input method (in its menu, it has no
+/// keyboard shortcut of its own) and the voice input.
 pub const TRAY: &str = "pime-tray.exe";
 /// The AI worker: it sends the audio to the speech service and keeps the API key in the Credential Manager.
 pub const WORKER: &str = "pime-ai-worker.exe";
@@ -42,7 +43,7 @@ pub const META: &str = "meta.json";
 /// Entries that must be present, and every entry that is allowed at all.
 ///
 /// The tray and the worker are required: the product ships them, and an installation without them would have the
-/// buttons of the tray (the one-key switch, the voice input) pointing at nothing. The MCP server and the command line
+/// buttons of the tray (the switch of the input method, the voice input) pointing at nothing. The MCP server and the command line
 /// are required for the same reason: without them an AI client has nothing to call.
 const REQUIRED: [&str; 8] = [DLL, CORE, LICENSE, META, TRAY, WORKER, MCP, CLI];
 const ALLOWED: [&str; 10] = [

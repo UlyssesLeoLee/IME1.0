@@ -400,8 +400,8 @@ impl<U: CandidateUi, H: HostText, P: PredictPort> TipController<U, H, P> {
         self.guarded(false, |c| c.key_up(key))
     }
 
-    /// Whether the input method is in input mode (the mainstream behaviour: typing opens a composition and the
-    /// candidate list takes the digits) or in direct mode (nothing is eaten).
+    /// Whether the writing mode is the **natural language input** (typing opens a composition and the candidate
+    /// list takes the digits) or the **code input** (the input method never eats a code character).
     pub fn input_mode(&self) -> bool {
         self.config.input_mode
     }
