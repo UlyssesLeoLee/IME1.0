@@ -376,3 +376,4 @@ function writeTheCount(file, re, build) {
 writeTheCount('README_交付说明.md', /全量刷新，(\d+) 条全部对得上/, m => `全量刷新，${count} 条全部对得上`);
 writeTheCount('README_交付说明.md', /清单 \*\*(\d+) 条/, m => `清单 **${count} 条`);
 writeTheCount('02_Verification/IME_FRAMEWORK_MATRIX.md', /\*\*(\d+) \/ \d+ 对得上\*\*/, () => `**${count} / ${count} 对得上**`);
+writeTheCount('02_Verification/DEFECT_SUBMISSION_2026-11-07.md', /`MANIFEST_SHA256\.txt`（\*\*(\d+) 条\*\*/, m => `\`MANIFEST_SHA256.txt\`（**${count} 条**`);
