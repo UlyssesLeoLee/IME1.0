@@ -1,31 +1,31 @@
-IME1.0 installer 0.3.3
+IME1.0 installer 0.3.4
   cargo target dir: C:\cargo-target-ime
 
 == pime-core: cargo build --release --target x86_64-pc-windows-gnu -p pime-core --bin pime-core  (.)
 warning: `pime-core` (lib) generated 1 warning (run `cargo fix --lib -p pime-core` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 38.78s
+    Finished `release` profile [optimized] target(s) in 31.33s
 
 == pime-tsf (text service DLL): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tsf)
 warning: `pime-tsf` (lib) generated 2 warnings (run `cargo fix --lib -p pime-tsf` to apply 2 suggestions)
-    Finished `release` profile [optimized] target(s) in 35.15s
+    Finished `release` profile [optimized] target(s) in 27.10s
 
 == pime-tray (resident tray): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-tray)
    Compiling pime-tray v0.1.0 (E:\IME1.0\01_Source\crates\pime-tray)
-    Finished `release` profile [optimized] target(s) in 51.31s
+    Finished `release` profile [optimized] target(s) in 38.91s
 
 == pime-ai-worker (speech service client): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-ai-worker)
-   Compiling pime-ai-worker v0.3.3 (E:\IME1.0\01_Source\crates\pime-ai-worker)
-    Finished `release` profile [optimized] target(s) in 21.91s
+   Compiling pime-ai-worker v0.3.4 (E:\IME1.0\01_Source\crates\pime-ai-worker)
+    Finished `release` profile [optimized] target(s) in 16.95s
 
 == pime-agent (the interface for the AI clients): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-agent)
    Compiling pime-agent v0.1.0 (E:\IME1.0\01_Source\crates\pime-agent)
-    Finished `release` profile [optimized] target(s) in 48.18s
+    Finished `release` profile [optimized] target(s) in 36.91s
 
 == VS Code extension
   note: the extension has no media/ folder yet (P6 produces it); the .vsix is built without one
-  vsce 4.0.0: npx --yes @vscode/vsce@4.0.0 package --no-dependencies --allow-missing-repository --out E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.3.vsix
+  vsce 4.0.0: npx --yes @vscode/vsce@4.0.0 package --no-dependencies --allow-missing-repository --out E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.4.vsix
     | INFO  Files included in the VSIX:
-  | programming-ime-vscode-bridge-0.3.3.vsix
+  | programming-ime-vscode-bridge-0.3.4.vsix
   | ├─ [Content_Types].xml 
   | ├─ extension.vsixmanifest 
   | └─ extension/
@@ -61,8 +61,8 @@ warning: `pime-tsf` (lib) generated 2 warnings (run `cargo fix --lib -p pime-tsf
   | 
   | => Run vsce ls --tree to see all included files.
   | 
-  |  DONE  Packaged: E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.3.vsix (50 files, 213.84 KB)
-  programming-ime-vscode-bridge-0.3.3.vsix: 218970 bytes, 50 files
+  |  DONE  Packaged: E:\IME1.0\01_Source\dist\programming-ime-vscode-bridge-0.3.4.vsix (50 files, 213.84 KB)
+  programming-ime-vscode-bridge-0.3.4.vsix: 218970 bytes, 50 files
          [Content_Types].xml
          extension.vsixmanifest
          extension/LICENSE.txt
@@ -117,8 +117,8 @@ warning: `pime-tsf` (lib) generated 2 warnings (run `cargo fix --lib -p pime-tsf
   ok   contains src/ (33 files), package.nls*.json (3), LICENSE, language-packs/ (7), language-plugins/ (3)
   note: no media/ in the package (the extension folder has none yet)
   ok   no scripts/, .vscode/, node_modules/, tests or source maps
-  ok   package.json version 0.3.3
-  ok   extension.vsixmanifest: pime-local-prototype.programming-ime-vscode-bridge 0.3.3
+  ok   package.json version 0.3.4
+  ok   extension.vsixmanifest: pime-local-prototype.programming-ime-vscode-bridge 0.3.4
   ok   33 JavaScript files pass node --check
   ok   every relative require() and __dirname path resolves inside the package
   note: extension/src/core/languages.js: ../../../../language-packs leaves the extension (development-layout fallback of findPackDir() (the in-package language-packs/ is tried first))
@@ -126,8 +126,8 @@ warning: `pime-tsf` (lib) generated 2 warnings (run `cargo fix --lib -p pime-tsf
   ok   negative control: without the packaged language-packs/ the same call fails (it does not find the repository copy)
 
 == pime-setup (installer stub): cargo build --release --target x86_64-pc-windows-gnu  (crates\pime-setup)
-   Compiling pime-setup v0.3.3 (E:\IME1.0\01_Source\crates\pime-setup)
-    Finished `release` profile [optimized] target(s) in 25.83s
+warning: `pime-core` (lib) generated 1 warning (run `cargo fix --lib -p pime-core` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 19.88s
 
 == checks on the result
 ok   machine is x64 (0x8664), found x64 (AMD64)
@@ -144,9 +144,9 @@ ok   --dry-run finds and verifies the payload (exit 0)
 ok   --dry-run created nothing
 
 build-installer: OK
-  installer   E:\IME1.0\01_Source\dist\ProgrammingIME-0.3.3-win-x64-setup.exe
-              10416270 bytes   sha256 ccea37237ca2ccb4f89e9c31dfa9e360ad28cc7fa1f12f1d3fd81439b8bebe30   (ProgrammingIME-0.3.3-win-x64-setup.exe.sha256 written)
-  stub        788992 bytes (pime-setup.exe, x64 console, unsigned)
-  payload     pime_tsf.dll 2708480, pime-core.exe 3220896, LICENSE 1085, programming-ime.vsix 218970, pime.ico 66724, pime-tray.exe 1144832, pime-ai-worker.exe 400896, pime-mcp.exe 1013760, pime-ime.exe 850944, meta.json 87
-  extension   programming-ime-vscode-bridge-0.3.3.vsix 218970 bytes, 50 files, id pime-local-prototype.programming-ime-vscode-bridge
+  installer   E:\IME1.0\01_Source\dist\ProgrammingIME-0.3.4-win-x64-setup.exe
+              10414901 bytes   sha256 15efd877b229a066d85059de633b718668906ade5e4ebae75cae9feac2fbfdc6   (ProgrammingIME-0.3.4-win-x64-setup.exe.sha256 written)
+  stub        791552 bytes (pime-setup.exe, x64 console, unsigned)
+  payload     pime_tsf.dll 2706432, pime-core.exe 3221063, LICENSE 1085, programming-ime.vsix 218970, pime.ico 66724, pime-tray.exe 1142784, pime-ai-worker.exe 400896, pime-mcp.exe 1013760, pime-ime.exe 850944, meta.json 87
+  extension   programming-ime-vscode-bridge-0.3.4.vsix 218970 bytes, 50 files, id pime-local-prototype.programming-ime-vscode-bridge
   NOT signed (SmartScreen will warn). NOT run: the text service DLL is unverified in a VM, so this is a pre-release.

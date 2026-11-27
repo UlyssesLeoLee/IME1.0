@@ -1,6 +1,6 @@
 {
  "summary": {
-  "generated": "2026-11-25T08:18:57.744Z",
+  "generated": "2026-11-27T01:36:59.327Z",
   "node": "v24.19.0",
   "js": {
    "total": 357,
@@ -121,10 +121,10 @@
     "tsf"
    ],
    "tests": [
-    "rust: input::tests::ut_005_secure_input_clears_context_and_never_predicts",
-    "input::tests::ut_005_secure_input_clears_context_and_never_predicts",
     "rust: input::tests::ut_005_policy_disabled_behaves_like_secure_input",
-    "input::tests::ut_005_policy_disabled_behaves_like_secure_input"
+    "input::tests::ut_005_policy_disabled_behaves_like_secure_input",
+    "rust: input::tests::ut_005_secure_input_clears_context_and_never_predicts",
+    "input::tests::ut_005_secure_input_clears_context_and_never_predicts"
    ],
    "failed": [],
    "reason": ""
@@ -1102,10 +1102,10 @@
     "UT-062 / IT-040 / ST-036 secrets are blocked or redacted before any byte leaves",
     "js: AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)",
     "AI engine: redaction keeps the originals in the engine and restores a reply exactly; a shared set behaves as in the reference (UT-062)",
-    "rust: secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values",
-    "secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values",
     "rust: secrets::tests::ut_062_env_files_are_sensitive_by_name",
-    "secrets::tests::ut_062_env_files_are_sensitive_by_name"
+    "secrets::tests::ut_062_env_files_are_sensitive_by_name",
+    "rust: secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values",
+    "secrets::tests::ut_062_mixed_secret_content_is_blocked_without_echoing_values"
    ],
    "failed": [],
    "reason": ""
@@ -1288,10 +1288,10 @@
     "UT-059 / UT-073 / IT-039 / ST-033 migration is atomic: a failure keeps the previous settings and rules",
     "js: UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption",
     "UT-073 atomic file writes: ENOSPC or a crash before rename leave the last valid file; .bak recovers corruption",
-    "rust: settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file",
-    "settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file",
     "rust: settings_io::tests::ut_073_a_corrupt_file_is_recovered_from_the_bak",
-    "settings_io::tests::ut_073_a_corrupt_file_is_recovered_from_the_bak"
+    "settings_io::tests::ut_073_a_corrupt_file_is_recovered_from_the_bak",
+    "rust: settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file",
+    "settings_io::tests::ut_073_a_failure_before_the_rename_leaves_the_last_valid_file_and_no_temp_file"
    ],
    "failed": [],
    "reason": ""
